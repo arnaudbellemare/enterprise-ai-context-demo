@@ -1,17 +1,7 @@
-# Essential FastAPI dependencies
+# Minimal Vercel dependencies
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 pydantic>=2.0.0
-
-# AI dependencies (minimal)
 httpx>=0.25.0
-requests>=2.31.0
-
-# Database
 supabase>=2.0.0
-
-# Environment
 python-dotenv>=1.0.0
-
-# Logging
-structlog>=23.2.0
