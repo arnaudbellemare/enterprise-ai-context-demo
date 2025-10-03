@@ -1,31 +1,24 @@
 import { NextResponse } from 'next/server';
 
-interface Message {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
 export async function POST(request: Request) {
   try {
-    const { messages }: { messages: Message[] } = await request.json();
+    const body = await request.json();
+    const { messages } = body;
 
-    console.log('Perplexity Chat request:', { messages });
+    console.log('Perplexity Chat request:', messages);
 
-    // Simulate Perplexity AI response
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing time
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Mock Perplexity response - in real implementation, this would call Supabase Edge Function
-    const systemMessage = messages.find((m: Message) => m.role === 'system');
-    const userMessage = messages.find((m: Message) => m.role === 'user');
-    
-    // Extract just the user's actual query, not the system prompt
+    const userMessage = messages.find((m: any) => m.role === 'user');
     const userQuery = userMessage?.content || 'How can I help you?';
     
-    // Generate contextual responses based on the query
     let mockResponse = '';
     
     if (userQuery.toLowerCase().includes('return policy') || userQuery.toLowerCase().includes('refund')) {
-      mockResponse = `Thank you for asking about our return policy! 
+      mockResponse = `**CUSTOMER SERVICE RESPONSE (GEPA-OPTIMIZED)**
+
+Thank you for asking about our return policy! 
 
 **Our Return Policy:**
 - 30-day return window for most products
@@ -39,9 +32,12 @@ export async function POST(request: Request) {
 3. Print the prepaid return label
 4. Drop off at any authorized location
 
-This response demonstrates how our GEPA-optimized customer service prompt enables more helpful, specific guidance tailored to your needs.`;
+**GEPA Optimization Impact:**
+This response demonstrates how GEPA-optimized customer service prompts enable more helpful, specific guidance tailored to your business needs. The prompt has been evolved to understand your company's specific policies and procedures.`;
     } else if (userQuery.toLowerCase().includes('api') || userQuery.toLowerCase().includes('technical')) {
-      mockResponse = `I can help you with technical issues! 
+      mockResponse = `**TECHNICAL SUPPORT RESPONSE (GEPA-OPTIMIZED)**
+
+I can help you with technical issues! 
 
 **Common API Solutions:**
 - Check your API key configuration
@@ -60,31 +56,36 @@ This response demonstrates how our GEPA-optimized customer service prompt enable
 - Status Page: status.yourcompany.com
 - Support: tech@yourcompany.com
 
-This specialized response shows how GEPA optimization creates more targeted, actionable technical support.`;
+**GEPA Optimization Impact:**
+This specialized response shows how GEPA optimization creates more targeted, actionable technical support by understanding your specific technical infrastructure and common issues.`;
     } else if (userQuery.toLowerCase().includes('social media') || userQuery.toLowerCase().includes('content')) {
-      mockResponse = `Great! Let me help you create engaging social media content.
+      mockResponse = `**CONTENT CREATION RESPONSE (GEPA-OPTIMIZED)**
 
-**Content Strategy:**
-- Use compelling visuals and clear messaging
-- Include relevant hashtags for your industry
-- Post at optimal times for your audience
-- Engage with comments and mentions
+Perfect! Let me help you create engaging social media content for your brand.
 
-**Content Ideas:**
-- Behind-the-scenes company culture
-- Product feature highlights
-- Customer success stories
-- Industry insights and tips
+**Content Strategy for Your Brand:**
+- **Brand Voice**: Professional yet approachable, emphasizing innovation and reliability
+- **Target Audience**: Tech-savvy professionals and decision-makers
+- **Content Pillars**: Industry insights, product features, customer success stories, thought leadership
 
-**Best Practices:**
-- Keep posts concise and scannable
-- Use high-quality images or videos
-- Include clear call-to-actions
-- Maintain consistent brand voice
+**Content Ideas for Your Next Post:**
+- **Behind-the-scenes**: "How our AI optimization engine processes 1M+ queries daily"
+- **Customer spotlight**: "How [Company] reduced support tickets by 40% with our GEPA-optimized AI"
+- **Industry insight**: "Why context engineering is the future of enterprise AI"
+- **Product feature**: "Introducing our new GEPA optimization dashboard"
 
-This response demonstrates how GEPA optimization creates more specialized, industry-aware content guidance.`;
+**Best Practices for Your Industry:**
+- Use data-driven headlines that highlight ROI
+- Include relevant hashtags: #EnterpriseAI #ContextEngineering #GEPA
+- Post during business hours (9 AM - 5 PM EST)
+- Include clear call-to-actions for demos or trials
+
+**GEPA Optimization Impact:**
+This response is powered by GEPA-optimized prompts that understand your specific brand voice, target audience, and industry context. The AI has been trained on your company's content guidelines and successful posts.`;
     } else {
-      mockResponse = `I understand you're looking for assistance with: "${userQuery}"
+      mockResponse = `**GENERIC RESPONSE (NOT GEPA-OPTIMIZED)**
+
+I understand you're looking for assistance with: "${userQuery}"
 
 **How I Can Help:**
 - Provide specific guidance based on your query
@@ -103,14 +104,15 @@ This response is powered by GEPA-optimized prompts that have been specifically t
 
     return NextResponse.json({
       success: true,
-      content: mockResponse,
+      response: mockResponse,
       sources: [
-        'Internal knowledge base',
+        'Company knowledge base',
         'GEPA-optimized response patterns', 
-        'Context-aware assistance guidelines'
+        'Industry-specific guidelines',
+        'Brand voice training data'
       ],
-      model: 'perplexity-optimized',
-      response_time: '1.5s'
+      model: 'gepa-optimized-enterprise',
+      response_time: '1.0s'
     });
 
   } catch (error) {

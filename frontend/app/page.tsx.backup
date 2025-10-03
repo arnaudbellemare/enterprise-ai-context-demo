@@ -26,6 +26,36 @@ const initialContextSources: ContextSource[] = [
   { id: 'prod_db', name: 'PRODUCT.DB', status: 'CONNECTED' },
 ];
 
+const ContextSourceCard: React.FC<{ source: ContextSource }> = ({ source }) => (
+  <div
+    className={`p-4 border ${
+      source.status === 'CONNECTED' ? 'border-green-500' : 'border-gray-700'
+    } flex items-center justify-between`}
+  >
+    <div className="flex items-center">
+      <span
+        className={`w-2 h-2 rounded-full mr-3 ${
+          source.status === 'CONNECTED' ? 'bg-green-500' : 'bg-gray-500'
+        }`}
+      ></span>
+      <span
+        className={`font-mono text-sm ${
+          source.status === 'CONNECTED' ? 'text-green-400' : 'text-gray-400'
+        }`}
+      >
+        {source.name}
+      </span>
+    </div>
+    <span
+      className={`font-mono text-xs ${
+        source.status === 'CONNECTED' ? 'text-green-500' : 'text-gray-500'
+      }`}
+    >
+      {source.status}
+    </span>
+  </div>
+);
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [originalPrompt, setOriginalPrompt] = useState('');
@@ -1609,36 +1639,6 @@ I understand you have a question, but I want to make sure I give you the most he
     alert(`Commerce Intelligence Agent saved with ${workflowNodes.length} specialized agents and ${workflowConnections.length} communication channels!`);
   };
 
-  const ContextSourceCard: React.FC<{ source: ContextSource }> = ({ source }) => (
-    <div
-      className={`p-4 border ${
-        source.status === 'CONNECTED' ? 'border-green-500' : 'border-gray-700'
-      } flex items-center justify-between`}
-    >
-      <div className="flex items-center">
-        <span
-          className={`w-2 h-2 rounded-full mr-3 ${
-            source.status === 'CONNECTED' ? 'bg-green-500' : 'bg-gray-500'
-          }`}
-        ></span>
-        <span
-          className={`font-mono text-sm ${
-            source.status === 'CONNECTED' ? 'text-green-400' : 'text-gray-400'
-          }`}
-        >
-          {source.name}
-        </span>
-      </div>
-      <span
-        className={`font-mono text-xs ${
-          source.status === 'CONNECTED' ? 'text-green-500' : 'text-gray-500'
-        }`}
-      >
-        {source.status}
-      </span>
-    </div>
-  );
-
   return (
     <div className={`min-h-screen bg-black text-green-400 font-mono p-8 relative overflow-hidden`}>
       {/* Grid Overlay */}
@@ -2124,16 +2124,20 @@ I understand you have a question, but I want to make sure I give you the most he
                 
                   {/* Workflow Canvas */}
                   <div 
-                    className="relative w-full flex-1 bg-gray-900 overflow-auto"
+                    className="relative w-full flex-grow bg-gray-900 overflow-hidden"
                     style={{
                       backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(34, 197, 94, 0.1) 1px, transparent 0)',
                       backgroundSize: '20px 20px',
                       minWidth: '800px',
                       minHeight: '400px'
                     }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={handleCanvasDrop}
                   >
+                    {/* Scrollable Content Area */}
+                    <div 
+                      className="relative w-full h-full overflow-auto pb-12"
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={handleCanvasDrop}
+                    >
                     {/* Workflow Connections */}
                     <svg className="absolute inset-0 pointer-events-none" style={{zIndex: 1, width: '800px', height: '400px'}}>
                       {workflowConnections.map((connection) => {
@@ -2294,8 +2298,10 @@ I understand you have a question, but I want to make sure I give you the most he
                       </div>
                     )}
 
-                    {/* Agent Workflow Controls */}
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 bg-gray-800 border border-gray-600 px-3 py-1 rounded z-10">
+                    </div>
+                    
+                    {/* Agent Workflow Controls - Fixed at bottom */}
+                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex items-center space-x-3 bg-gray-800 border border-gray-600 px-3 py-1 rounded z-10">
                   <button
                         onClick={() => setIsConnecting(!isConnecting)}
                         className={`text-white hover:text-green-400 px-2 py-1 rounded text-xs font-mono ${isConnecting ? 'bg-blue-500' : 'bg-gray-700'}`}
@@ -2303,30 +2309,31 @@ I understand you have a question, but I want to make sure I give you the most he
                   >
                         {isConnecting ? 'CONNECTING...' : 'CONNECT'}
                   </button>
-                       
-                       <button 
-                          onClick={handleExecuteWorkflow}
-                          disabled={workflowNodes.length === 0 || workflowStatus === 'running'}
-                          className={`text-white hover:text-green-400 px-2 py-1 rounded text-xs font-mono ${
-                            workflowStatus === 'running' ? 'bg-blue-500' : 
-                            workflowStatus === 'completed' ? 'bg-green-500' : 
-                            workflowStatus === 'error' ? 'bg-red-500' : 'bg-green-600'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
-                          title="Execute workflow"
-                        >
-                          {workflowStatus === 'running' ? '⏳ RUNNING...' : 
-                           workflowStatus === 'completed' ? '✅ COMPLETED' : 
-                           workflowStatus === 'error' ? '❌ ERROR' : '▶️ RUN'}
-                        </button>
-                       
-                        <div className="flex items-center space-x-1 text-xs text-gray-400">
-                          <span>A:{workflowNodes.length}</span>
-                          <span>|</span>
-                          <span>C:{workflowConnections.length}</span>
-                          <span>|</span>
-                          <span>{workflowStatus.toUpperCase()}</span>
-                        </div>
+
+                      <button
+                        onClick={handleExecuteWorkflow}
+                        disabled={workflowNodes.length === 0 || workflowStatus === 'running'}
+                        className={`text-white hover:text-green-400 px-2 py-1 rounded text-xs font-mono ${
+                          workflowStatus === 'running' ? 'bg-blue-500' :
+                          workflowStatus === 'completed' ? 'bg-green-500' :
+                          workflowStatus === 'error' ? 'bg-red-500' : 'bg-green-600'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        title="Execute workflow"
+                      >
+                        {workflowStatus === 'running' ? '⏳ RUNNING...' :
+                         workflowStatus === 'completed' ? '✅ COMPLETED' :
+                         workflowStatus === 'error' ? '❌ ERROR' : '▶️ RUN'}
+                      </button>
+
+                      <div className="flex items-center space-x-2 text-xs text-gray-400">
+                        <span>A:{workflowNodes.length}</span>
+                        <span>|</span>
+                        <span>C:{workflowConnections.length}</span>
+                        <span>|</span>
+                        <span>{workflowStatus.toUpperCase()}</span>
+                </div>
               </div>
+                  </div>
 
                     {/* Workflow Status */}
                     {workflowStatus !== 'idle' && (
@@ -2342,13 +2349,6 @@ I understand you have a question, but I want to make sure I give you the most he
                              workflowStatus === 'completed' ? 'COMPLETED' :
                              workflowStatus === 'error' ? 'ERROR' : 'IDLE'}
                           </span>
-            </div>
-          </div>
-        )}
-
-    </div>
-                </div>
-              </div>
             </div>
           </div>
         )}
