@@ -1286,7 +1286,7 @@ export default function Home() {
     }).filter(Boolean);
 
     setWorkflowConnections(connections);
-    setWorkflowStatus('ready');
+    setWorkflowStatus('idle');
   };
 
   const handleTestAgent = async () => {
@@ -2464,156 +2464,238 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
   const loadCustomerScenarios = () => {
     let scenarios: string[] = [];
     
-    // Get scenarios based on selected industry or current workflow
-    if (selectedIndustry) {
-      const industry = industryExamples[selectedIndustry as keyof typeof industryExamples];
+    // Get scenarios based on selected industry and category
+    if (selectedIndustry && selectedCategory) {
+      const categoryData = industryCategories[selectedCategory as keyof typeof industryCategories];
+      const industry = categoryData?.industries[selectedIndustry as keyof typeof categoryData.industries];
+      
       if (industry) {
-        switch (selectedIndustry) {
+        // Provide industry-specific scenarios based on the selected workflow
+        switch (selectedCategory) {
           case 'healthcare':
-            scenarios = [
-              "I've been experiencing headaches for the past week, should I be concerned?",
-              "What are the side effects of my current medication?",
-              "How can I improve my sleep quality based on my health data?",
-              "Is my blood pressure reading normal for my age?",
-              "What lifestyle changes should I make based on my lab results?",
-              "Should I be worried about these symptoms I'm experiencing?",
-              "How often should I check my blood sugar levels?",
-              "What exercises are safe for my heart condition?",
-              "What's the best diet plan for my diabetes management?",
-              "How can I track my medication adherence effectively?"
-            ];
+            if (selectedIndustry === 'telemedicine') {
+              scenarios = [
+                "I have chest pain and shortness of breath, should I go to the ER?",
+                "My blood pressure is 150/95, is this dangerous?",
+                "I've had a fever for 3 days, when should I see a doctor?",
+                "My child has a rash, can you help me identify what it might be?",
+                "I'm experiencing severe headaches, should I be concerned?",
+                "My medication is causing side effects, what should I do?",
+                "I need a prescription refill, can you help?",
+                "I have diabetes and my blood sugar is high, what should I do?",
+                "I'm pregnant and having morning sickness, is this normal?",
+                "I have anxiety and panic attacks, can you help me manage this?"
+              ];
+            } else if (selectedIndustry === 'clinical_research') {
+              scenarios = [
+                "What are the latest clinical trial results for diabetes treatment?",
+                "How can I find clinical trials for my condition?",
+                "What are the success rates for this new cancer treatment?",
+                "Are there any drug interactions I should be aware of?",
+                "What are the side effects of this experimental medication?",
+                "How long do clinical trials typically take?",
+                "What are the eligibility criteria for this study?",
+                "What are the risks and benefits of participating?",
+                "How is patient safety monitored during trials?",
+                "What happens after a clinical trial ends?"
+              ];
+            }
             break;
           case 'finance':
-            scenarios = [
-              "How can I optimize my investment portfolio?",
-              "What's my spending pattern this month compared to last?",
-              "Should I refinance my mortgage given current rates?",
-              "How much should I save for retirement based on my income?",
-              "What are the best credit cards for my spending habits?",
-              "Is it a good time to invest in the stock market?",
-              "How can I reduce my monthly expenses?",
-              "What's the best way to pay off my credit card debt?",
-              "Should I open a high-yield savings account?",
-              "How can I improve my credit score quickly?"
-            ];
+            if (selectedIndustry === 'investment_banking') {
+              scenarios = [
+                "What's the current valuation of this acquisition target?",
+                "How should we structure this M&A transaction?",
+                "What are the regulatory requirements for this deal?",
+                "What's the risk assessment for this investment?",
+                "How can we optimize the deal structure for tax efficiency?",
+                "What due diligence should we conduct?",
+                "What are the market conditions for this sector?",
+                "How should we price this IPO?",
+                "What are the financing options for this transaction?",
+                "What are the competitive dynamics in this market?"
+              ];
+            } else if (selectedIndustry === 'fintech') {
+              scenarios = [
+                "How can we improve our fraud detection system?",
+                "What's the best way to optimize payment processing?",
+                "How can we enhance our credit scoring algorithm?",
+                "What are the compliance requirements for this feature?",
+                "How can we improve customer onboarding?",
+                "What's the best way to handle chargebacks?",
+                "How can we optimize our lending criteria?",
+                "What are the security requirements for this integration?",
+                "How can we improve our mobile banking experience?",
+                "What's the best way to handle regulatory reporting?"
+              ];
+            }
             break;
-          case 'education':
-            scenarios = [
-              "What learning style works best for me based on my performance?",
-              "Which subjects should I focus on to improve my grades?",
-              "How can I better retain information from my studies?",
-              "What career paths match my current skills and interests?",
-              "How can I optimize my study schedule for maximum efficiency?",
-              "What study techniques would work best for me?",
-              "How can I improve my writing skills?",
-              "What extracurricular activities would help my college applications?",
-              "How should I prepare for standardized tests?",
-              "What resources are available for struggling students?"
-            ];
-            break;
-          case 'manufacturing':
-            scenarios = [
-              "When should I schedule maintenance for Machine #3?",
-              "What's causing the quality issues in Production Line B?",
-              "How can I optimize our supply chain for cost reduction?",
-              "What's the predicted failure rate for our equipment this quarter?",
-              "How can I improve our production efficiency metrics?",
-              "How can I reduce energy costs in my facility?",
-              "What safety protocols should I implement?",
-              "How can I improve worker productivity?",
-              "What maintenance schedule should I follow?",
-              "How can I reduce waste in my manufacturing process?"
-            ];
+          case 'technology':
+            if (selectedIndustry === 'cybersecurity') {
+              scenarios = [
+                "We detected a potential security breach, what should we do?",
+                "How can we improve our security posture?",
+                "What are the latest threat intelligence insights?",
+                "How can we prevent phishing attacks?",
+                "What's the best way to handle a data breach?",
+                "How can we improve our incident response?",
+                "What are the compliance requirements for our industry?",
+                "How can we enhance our security training?",
+                "What's the best way to monitor for threats?",
+                "How can we improve our vulnerability management?"
+              ];
+            } else if (selectedIndustry === 'devops') {
+              scenarios = [
+                "Our deployment failed, how can we fix it?",
+                "How can we improve our CI/CD pipeline?",
+                "What's the best way to handle this production incident?",
+                "How can we optimize our infrastructure costs?",
+                "What's the best way to scale our application?",
+                "How can we improve our monitoring and alerting?",
+                "What's the best way to handle database migrations?",
+                "How can we improve our code quality?",
+                "What's the best way to handle secrets management?",
+                "How can we improve our disaster recovery?"
+              ];
+            }
             break;
           case 'retail':
-            scenarios = [
-              "What products should I recommend to this customer?",
-              "How can I optimize our inventory levels for the holiday season?",
-              "What's causing the drop in sales for Product Category X?",
-              "How can I improve customer satisfaction scores?",
-              "What pricing strategy should I use for the new product launch?",
-              "How can I increase foot traffic to my store?",
-              "What's the best way to handle customer complaints?",
-              "How can I improve my online presence?",
-              "What marketing campaigns would work best for my target audience?",
-              "How can I reduce inventory costs while maintaining stock?"
-            ];
+            if (selectedIndustry === 'omnichannel') {
+              scenarios = [
+                "How can we improve our customer experience across channels?",
+                "What's the best way to synchronize our inventory?",
+                "How can we personalize our marketing campaigns?",
+                "What's the best way to handle order fulfillment?",
+                "How can we improve our customer service?",
+                "What's the best way to analyze customer behavior?",
+                "How can we optimize our pricing strategy?",
+                "What's the best way to handle returns and exchanges?",
+                "How can we improve our supply chain visibility?",
+                "What's the best way to measure customer satisfaction?"
+              ];
+            } else if (selectedIndustry === 'supply_chain') {
+              scenarios = [
+                "How can we optimize our supply chain costs?",
+                "What's the best way to manage supplier relationships?",
+                "How can we improve our demand forecasting?",
+                "What's the best way to handle supply disruptions?",
+                "How can we optimize our logistics network?",
+                "What's the best way to ensure quality control?",
+                "How can we improve our inventory management?",
+                "What's the best way to handle supplier compliance?",
+                "How can we optimize our transportation costs?",
+                "What's the best way to measure supply chain performance?"
+              ];
+            }
             break;
-          case 'agriculture':
-            scenarios = [
-              "When should I plant my crops based on weather forecasts?",
-              "How can I optimize water usage for my fields?",
-              "What's the predicted yield for this season?",
-              "How can I reduce pesticide usage while maintaining crop health?",
-              "What's the best fertilizer schedule for my soil conditions?",
-              "How can I reduce fertilizer costs?",
-              "What soil conditions are best for my crops?",
-              "How can I prevent crop diseases?",
-              "What's the best time to harvest my crops?",
-              "How can I improve my crop yield?"
-            ];
+          case 'manufacturing':
+            if (selectedIndustry === 'smart_factory') {
+              scenarios = [
+                "How can we optimize our production efficiency?",
+                "What's the best way to implement predictive maintenance?",
+                "How can we improve our quality control?",
+                "What's the best way to optimize our energy usage?",
+                "How can we enhance our safety protocols?",
+                "What's the best way to track our KPIs?",
+                "How can we improve our equipment utilization?",
+                "What's the best way to handle production planning?",
+                "How can we optimize our workforce scheduling?",
+                "What's the best way to measure manufacturing performance?"
+              ];
+            } else if (selectedIndustry === 'automotive') {
+              scenarios = [
+                "How can we optimize our assembly line efficiency?",
+                "What's the best way to ensure parts quality?",
+                "How can we improve our testing processes?",
+                "What's the best way to manage our supply chain?",
+                "How can we ensure regulatory compliance?",
+                "What's the best way to analyze production performance?",
+                "How can we optimize our manufacturing processes?",
+                "What's the best way to handle quality issues?",
+                "How can we improve our supplier relationships?",
+                "What's the best way to measure automotive manufacturing success?"
+              ];
+            }
+            break;
+          case 'education':
+            if (selectedIndustry === 'personalized_learning') {
+              scenarios = [
+                "How can we personalize learning for each student?",
+                "What's the best way to assess student knowledge gaps?",
+                "How can we curate content for different learning styles?",
+                "What's the best way to track student progress?",
+                "How can we provide adaptive tutoring support?",
+                "What's the best way to monitor student engagement?",
+                "How can we analyze learning outcomes?",
+                "What's the best way to optimize learning experiences?",
+                "How can we enhance student achievement?",
+                "What's the best way to measure learning effectiveness?"
+              ];
+            } else if (selectedIndustry === 'corporate_training') {
+              scenarios = [
+                "How can we assess employee skills and development needs?",
+                "What's the best way to design training programs?",
+                "How can we facilitate effective learning sessions?",
+                "What's the best way to track competency development?",
+                "How can we measure training ROI?",
+                "What's the best way to optimize learning outcomes?",
+                "How can we enhance employee development?",
+                "What's the best way to measure training effectiveness?",
+                "How can we improve professional development?",
+                "What's the best way to track career growth?"
+              ];
+            }
+            break;
+          case 'logistics':
+            if (selectedIndustry === 'fleet_management') {
+              scenarios = [
+                "How can we optimize our delivery routes?",
+                "What's the best way to monitor vehicle health?",
+                "How can we improve driver performance?",
+                "What's the best way to optimize fuel consumption?",
+                "How can we schedule maintenance efficiently?",
+                "What's the best way to track fleet performance?",
+                "How can we improve driver safety?",
+                "What's the best way to optimize vehicle utilization?",
+                "How can we reduce operational costs?",
+                "What's the best way to measure fleet efficiency?"
+              ];
+            } else if (selectedIndustry === 'warehouse_automation') {
+              scenarios = [
+                "How can we optimize our inventory management?",
+                "What's the best way to improve order picking?",
+                "How can we optimize storage space utilization?",
+                "What's the best way to ensure product quality?",
+                "How can we coordinate automated systems?",
+                "What's the best way to monitor warehouse performance?",
+                "How can we improve picking efficiency?",
+                "What's the best way to optimize warehouse operations?",
+                "How can we enhance productivity?",
+                "What's the best way to measure warehouse success?"
+              ];
+            }
             break;
         }
       }
     }
     
-    // If no industry selected, check if we have workflow nodes with specific types
-    if (scenarios.length === 0 && workflowNodes.length > 0) {
-      const nodeTypes = workflowNodes.map(node => node.agent_type || node.type).join(' ').toLowerCase();
-      
-      if (nodeTypes.includes('health') || nodeTypes.includes('medical')) {
-        scenarios = [
-          "I've been experiencing headaches for the past week, should I be concerned?",
-          "What are the side effects of my current medication?",
-          "How can I improve my sleep quality based on my health data?"
-        ];
-      } else if (nodeTypes.includes('finance') || nodeTypes.includes('investment')) {
-        scenarios = [
-          "How can I optimize my investment portfolio?",
-          "What's my spending pattern this month compared to last?",
-          "Should I refinance my mortgage given current rates?"
-        ];
-      } else if (nodeTypes.includes('education') || nodeTypes.includes('learning')) {
-        scenarios = [
-          "What learning style works best for me based on my performance?",
-          "Which subjects should I focus on to improve my grades?",
-          "How can I better retain information from my studies?"
-        ];
-      } else if (nodeTypes.includes('manufacturing') || nodeTypes.includes('production')) {
-        scenarios = [
-          "When should I schedule maintenance for Machine #3?",
-          "What's causing the quality issues in Production Line B?",
-          "How can I optimize our supply chain for cost reduction?"
-        ];
-      } else if (nodeTypes.includes('retail') || nodeTypes.includes('customer')) {
-        scenarios = [
-          "What products should I recommend to this customer?",
-          "How can I optimize our inventory levels for the holiday season?",
-          "What's causing the drop in sales for Product Category X?"
-        ];
-      } else if (nodeTypes.includes('agriculture') || nodeTypes.includes('crop')) {
-        scenarios = [
-          "When should I plant my crops based on weather forecasts?",
-          "How can I optimize water usage for my fields?",
-          "What's the predicted yield for this season?"
-        ];
-      }
-    }
-    
-    // Fallback to general e-commerce scenarios if no specific context
+    // Fallback to generic scenarios if no specific industry is selected
     if (scenarios.length === 0) {
       scenarios = [
-        "What's your return policy for electronics?",
-        "How long does shipping take to California?",
-        "Do you have the iPhone 15 in stock?",
-        "What are your business hours?",
-        "Can I track my order #12345?",
-        "Do you offer international shipping?",
-        "What's your warranty policy?",
-        "How do I contact customer service?"
+        "How can I improve my business performance?",
+        "What's the best way to optimize my operations?",
+        "How can I enhance customer satisfaction?",
+        "What's the best way to reduce costs?",
+        "How can I improve efficiency?",
+        "What's the best way to measure success?",
+        "How can I optimize my processes?",
+        "What's the best way to enhance quality?",
+        "How can I improve productivity?",
+        "What's the best way to achieve my goals?"
       ];
     }
     
+    // Set a random scenario
     const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
     setTestQuery(randomScenario);
   };
