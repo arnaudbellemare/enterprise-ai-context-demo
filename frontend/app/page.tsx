@@ -510,6 +510,105 @@ export default function Home() {
           ]
         }
       }
+    },
+    advanced_ai: {
+      name: '🚀 Advanced AI Systems',
+      description: 'State-of-the-art AI systems with LangGraph orchestration and GEPA optimization',
+      industries: {
+        langgraph_inventory: {
+          name: '🏭 LangGraph Inventory Optimizer',
+          description: 'Stateful graph-based inventory optimization with GEPA reflection and LangStruct extraction',
+          agents: [
+            { name: 'Context Assembler', type: 'context', description: 'Assembles multi-source context using dynamic RAG' },
+            { name: 'GEPA Optimizer', type: 'optimization', description: 'Reflective prompt evolution with 35x fewer rollouts' },
+            { name: 'LangStruct Extractor', type: 'extraction', description: 'Structured data extraction with 85% accuracy' },
+            { name: 'Inventory Dispatcher', type: 'dispatch', description: 'Generates execution plans with fault recovery' },
+            { name: 'Graph RAG Node', type: 'graph_rag', description: 'Multi-hop reasoning with Text2Cypher queries' },
+            { name: 'State Persistence', type: 'persistence', description: 'Checkpoint management and state recovery' }
+          ],
+          dataSources: ['Inventory Data', 'Supplier Networks', 'Market Trends', 'Customer Demand', 'Supply Chain APIs'],
+          prompt: 'You are a specialized LangGraph-based inventory optimization AI agent that uses stateful graph workflows, GEPA reflective optimization, and LangStruct structured extraction to achieve 38% turnover gains and 65% error reduction in enterprise inventory management.',
+          processing_pipeline: [
+            '🔍 Context Assembly: Multi-source context retrieval with hybrid RAG',
+            '🧠 GEPA Optimization: Reflective prompt evolution with 10%+ gains per iteration',
+            '📊 LangStruct Extraction: Structured data extraction with Pydantic schemas',
+            '🔄 Graph Orchestration: Stateful workflow with conditional edges and cycles',
+            '🌐 Graph RAG Processing: Multi-hop reasoning with Text2Cypher queries',
+            '💾 State Persistence: Checkpoint management and fault recovery',
+            '📈 Performance Tracking: Real-time metrics and ROI optimization',
+            '🚀 Implementation: Actionable inventory optimization strategies'
+          ],
+          agent_communications: [
+            { from: 'Context Assembler', to: 'GEPA Optimizer', message: 'Context assembled: 15 sources, 2.3K data points, confidence 87%', timestamp: '10:23:45' },
+            { from: 'GEPA Optimizer', to: 'LangStruct Extractor', message: 'Prompt evolved: 12% improvement, 3 iterations completed', timestamp: '10:23:47' },
+            { from: 'LangStruct Extractor', to: 'Inventory Dispatcher', message: 'Structured data extracted: InventoryItem schema, 94% accuracy', timestamp: '10:23:49' },
+            { from: 'Graph RAG Node', to: 'State Persistence', message: 'Multi-hop query resolved: Supplier→Turnover→Stock analysis complete', timestamp: '10:23:51' },
+            { from: 'Inventory Dispatcher', to: 'State Persistence', message: 'Execution plan generated: 38% turnover boost, $2.3M savings projected', timestamp: '10:23:53' }
+          ]
+        },
+        gepa_rag_system: {
+          name: '🔬 GEPA-RAG System',
+          description: 'Advanced RAG with GEPA optimization and LangStruct integration for enterprise knowledge management',
+          agents: [
+            { name: 'Query Analyzer', type: 'analysis', description: 'Analyzes user queries and determines retrieval strategy' },
+            { name: 'Hybrid Retriever', type: 'retrieval', description: 'Vector + BM25 hybrid retrieval with 65% error reduction' },
+            { name: 'Reranker', type: 'ranking', description: 'Advanced reranking for 85% accuracy improvement' },
+            { name: 'LangStruct Parser', type: 'parsing', description: 'Structured extraction with evolving schemas' },
+            { name: 'GEPA Reflector', type: 'reflection', description: 'Reflective optimization of extraction prompts' },
+            { name: 'Response Generator', type: 'generation', description: 'Contextual response generation with citations' }
+          ],
+          dataSources: ['Knowledge Base', 'Document Repositories', 'Vector Databases', 'Structured Data', 'Real-time Feeds'],
+          prompt: 'You are a specialized GEPA-RAG AI agent that combines advanced retrieval with reflective optimization to achieve 65% error reduction and 85% context accuracy in enterprise knowledge management systems.',
+          processing_pipeline: [
+            '🔍 Query Analysis: Advanced query understanding and intent recognition',
+            '📊 Hybrid Retrieval: Vector + BM25 retrieval with adaptive indexing',
+            '🎯 Reranking: Advanced reranking for optimal context selection',
+            '📋 LangStruct Parsing: Structured extraction with evolving schemas',
+            '🧠 GEPA Reflection: Reflective optimization of extraction prompts',
+            '📝 Response Generation: Contextual response with source citations',
+            '📈 Performance Monitoring: Real-time accuracy and efficiency tracking',
+            '🔄 Continuous Learning: Adaptive improvement based on feedback'
+          ],
+          agent_communications: [
+            { from: 'Query Analyzer', to: 'Hybrid Retriever', message: 'Query complexity: High, 5 retrieval strategies identified', timestamp: '10:23:45' },
+            { from: 'Hybrid Retriever', to: 'Reranker', message: 'Retrieved 47 documents, relevance scores calculated', timestamp: '10:23:47' },
+            { from: 'Reranker', to: 'LangStruct Parser', message: 'Top 12 documents selected, confidence 89%', timestamp: '10:23:49' },
+            { from: 'GEPA Reflector', to: 'Response Generator', message: 'Extraction optimized: 15% improvement, schema evolved', timestamp: '10:23:51' },
+            { from: 'Response Generator', to: 'Query Analyzer', message: 'Response generated: 94% accuracy, 8 sources cited', timestamp: '10:23:53' }
+          ]
+        },
+        multi_agent_swarm: {
+          name: '🤖 Multi-Agent Swarm',
+          description: 'Hierarchical multi-agent system with LangGraph orchestration and fault tolerance',
+          agents: [
+            { name: 'Swarm Coordinator', type: 'coordination', description: 'Orchestrates multi-agent workflows with fault recovery' },
+            { name: 'Task Decomposer', type: 'decomposition', description: 'Breaks complex tasks into manageable subtasks' },
+            { name: 'Agent Router', type: 'routing', description: 'Routes tasks to specialized agents based on capabilities' },
+            { name: 'Parallel Executor', type: 'execution', description: 'Executes tasks in parallel with load balancing' },
+            { name: 'Result Aggregator', type: 'aggregation', description: 'Aggregates results from multiple agents' },
+            { name: 'Quality Assurance', type: 'quality', description: 'Validates results and ensures quality standards' }
+          ],
+          dataSources: ['Task Queues', 'Agent Capabilities', 'Execution Logs', 'Performance Metrics', 'Error Reports'],
+          prompt: 'You are a specialized multi-agent swarm coordinator that orchestrates complex workflows using LangGraph stateful graphs, ensuring fault tolerance, load balancing, and optimal resource utilization in enterprise environments.',
+          processing_pipeline: [
+            '🎯 Task Analysis: Complex task decomposition and capability mapping',
+            '🔄 Swarm Orchestration: Hierarchical agent coordination with LangGraph',
+            '⚡ Parallel Execution: Multi-agent task execution with load balancing',
+            '📊 Result Aggregation: Intelligent result synthesis and validation',
+            '🛡️ Fault Recovery: Automatic error handling and task reassignment',
+            '📈 Performance Monitoring: Real-time swarm efficiency tracking',
+            '🔄 Dynamic Scaling: Adaptive agent scaling based on workload',
+            '📋 Quality Assurance: Comprehensive result validation and quality control'
+          ],
+          agent_communications: [
+            { from: 'Swarm Coordinator', to: 'Task Decomposer', message: 'Complex task received: 8 subtasks identified', timestamp: '10:23:45' },
+            { from: 'Task Decomposer', to: 'Agent Router', message: 'Tasks decomposed: 3 parallel, 2 sequential, 3 conditional', timestamp: '10:23:47' },
+            { from: 'Agent Router', to: 'Parallel Executor', message: 'Agents assigned: 5 specialized agents activated', timestamp: '10:23:49' },
+            { from: 'Parallel Executor', to: 'Result Aggregator', message: 'Execution complete: 4 successful, 1 retry needed', timestamp: '10:23:51' },
+            { from: 'Result Aggregator', to: 'Quality Assurance', message: 'Results aggregated: 97% confidence, validation in progress', timestamp: '10:23:53' }
+          ]
+        }
+      }
     }
   };
 
@@ -2692,6 +2791,49 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 "What's the best way to optimize warehouse operations?",
                 "How can we enhance productivity?",
                 "What's the best way to measure warehouse success?"
+              ];
+            }
+            break;
+            
+          case 'advanced_ai':
+            if (selectedIndustry === 'langgraph_inventory') {
+              scenarios = [
+                "How can we optimize our Q4 inventory turnover using LangGraph workflows?",
+                "What's the best way to implement GEPA optimization for our supply chain?",
+                "How can we use LangStruct extraction to improve inventory forecasting?",
+                "What's the optimal graph orchestration for our multi-warehouse system?",
+                "How can we achieve 38% turnover gains with stateful agent workflows?",
+                "What's the best way to implement fault recovery in our inventory system?",
+                "How can we use Graph RAG for multi-hop supplier analysis?",
+                "What's the optimal checkpoint strategy for our inventory optimization?",
+                "How can we achieve 65% error reduction with reflective optimization?",
+                "What's the best way to scale our LangGraph inventory system to 10k req/min?"
+              ];
+            } else if (selectedIndustry === 'gepa_rag_system') {
+              scenarios = [
+                "How can we implement GEPA-RAG for our enterprise knowledge base?",
+                "What's the best way to achieve 85% context accuracy with LangStruct?",
+                "How can we optimize our retrieval system with reflective evolution?",
+                "What's the optimal hybrid retrieval strategy for our documents?",
+                "How can we achieve 65% error reduction in our RAG system?",
+                "What's the best way to implement structured extraction with evolving schemas?",
+                "How can we optimize our reranking for 85% accuracy improvement?",
+                "What's the optimal GEPA reflection strategy for our knowledge base?",
+                "How can we achieve real-time performance monitoring in our RAG system?",
+                "What's the best way to implement continuous learning in our retrieval system?"
+              ];
+            } else if (selectedIndustry === 'multi_agent_swarm') {
+              scenarios = [
+                "How can we orchestrate our multi-agent system with LangGraph?",
+                "What's the best way to implement fault tolerance in our agent swarm?",
+                "How can we achieve optimal load balancing across our agents?",
+                "What's the optimal task decomposition strategy for complex workflows?",
+                "How can we implement dynamic scaling for our agent system?",
+                "What's the best way to achieve 97% confidence in result aggregation?",
+                "How can we optimize our agent routing for maximum efficiency?",
+                "What's the optimal parallel execution strategy for our workflows?",
+                "How can we achieve comprehensive quality assurance in our swarm?",
+                "What's the best way to implement hierarchical coordination in our agents?"
               ];
             }
             break;
