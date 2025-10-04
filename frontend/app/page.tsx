@@ -792,6 +792,7 @@ export default function Home() {
   const [dataProcessing, setDataProcessing] = useState(false);
   const [dataInsights, setDataInsights] = useState(null);
   const [dataQuality, setDataQuality] = useState(null);
+  const [showDataIntegration, setShowDataIntegration] = useState(false);
   
   // Workflow Builder State
   const [workflowSteps, setWorkflowSteps] = useState([
@@ -3378,125 +3379,139 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       </div>
                     </div>
 
-                    {/* Real Data Integration */}
-                    <div className="mt-4 bg-gray-800 border border-gray-600 p-4 rounded">
-                      <div className="text-green-400 text-sm font-mono mb-3">◄ REAL DATA INTEGRATION</div>
-                      
-                      {/* Data Type Selection */}
-                      <div className="mb-4">
-                        <label className="text-gray-400 text-xs font-mono mb-2 block">SELECT DATA TYPES TO CONNECT</label>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                          {['inventory', 'orders', 'storage', 'quality_metrics', 'automation_data'].map((dataType) => (
+                    {/* Real Data Integration Toggle */}
+                    <div className="mt-4 bg-gray-800 border border-gray-600 rounded">
                 <button
-                              key={dataType}
-                              onClick={() => processRealData(dataType, 'analyze', {})}
-                              disabled={dataProcessing}
-                              className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded text-xs font-mono border border-gray-600 hover:border-green-500 transition-colors disabled:opacity-50"
-                            >
-                              {dataType.replace('_', ' ').toUpperCase()}
-                </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Connection Forms */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-gray-400 text-xs font-mono mb-2 block">DATABASE CONNECTION</label>
-                          <div className="space-y-2">
-                            <input
-                              type="text"
-                              placeholder="Database URL (e.g., postgresql://user:pass@host:5432/db)"
-                              className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Table/Collection Name"
-                              className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
-                            />
-                <button
-                              onClick={() => connectDataSource('database', 'postgresql://demo:demo@localhost:5432/enterprise', ['inventory', 'orders'], {})}
-                              disabled={dataProcessing}
-                              className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400 disabled:opacity-50"
-                >
-                              {dataProcessing ? 'CONNECTING...' : 'CONNECT DATABASE'}
-                </button>
+                        onClick={() => setShowDataIntegration(!showDataIntegration)}
+                        className="w-full p-4 text-left hover:bg-gray-700 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="text-green-400 text-sm font-mono">◄ REAL DATA INTEGRATION</div>
+                          <div className="text-gray-400 text-xs font-mono">
+                            {showDataIntegration ? '▼' : '▶'} {realDataConnections.length > 0 ? `(${realDataConnections.length} connected)` : '(Click to expand)'}
                           </div>
                         </div>
-                        
-                        <div>
-                          <label className="text-gray-400 text-xs font-mono mb-2 block">API INTEGRATION</label>
-                          <div className="space-y-2">
-                            <input
-                              type="text"
-                              placeholder="API Endpoint (e.g., https://api.crm.com/v1)"
-                              className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="API Key"
-                              className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
-                            />
-                <button
-                              onClick={() => connectDataSource('api', 'https://api.enterprise.com/v1', ['quality_metrics', 'automation_data'], { apiKey: 'demo-key' })}
-                              disabled={dataProcessing}
-                              className="bg-green-500 text-white px-3 py-2 text-sm font-mono hover:bg-green-400 disabled:opacity-50"
-                >
-                              {dataProcessing ? 'CONNECTING...' : 'CONNECT API'}
                 </button>
+                      
+                      {showDataIntegration && (
+                        <div className="p-4 border-t border-gray-600">
+                          {/* Data Type Selection */}
+                          <div className="mb-4">
+                            <label className="text-gray-400 text-xs font-mono mb-2 block">SELECT DATA TYPES TO CONNECT</label>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                              {['inventory', 'orders', 'storage', 'quality_metrics', 'automation_data'].map((dataType) => (
+                <button
+                                  key={dataType}
+                                  onClick={() => processRealData(dataType, 'analyze', {})}
+                                  disabled={dataProcessing}
+                                  className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded text-xs font-mono border border-gray-600 hover:border-green-500 transition-colors disabled:opacity-50"
+                                >
+                                  {dataType.replace('_', ' ').toUpperCase()}
+                </button>
+                              ))}
                   </div>
                 </div>
-              </div>
 
-                      {/* Real Data Connections Status */}
-                      {realDataConnections.length > 0 && (
-                        <div className="mt-4">
-                          <div className="text-green-400 text-xs font-mono mb-2">◄ CONNECTED DATA SOURCES</div>
-                          <div className="space-y-2">
-                            {realDataConnections.map((conn: any, index: number) => (
-                              <div key={index} className="bg-gray-900 border border-green-500 p-3 rounded">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="text-green-400 text-sm font-mono">{conn.name}</div>
-                                    <div className="text-gray-400 text-xs">Type: {conn.type} | Status: {conn.status}</div>
-                    </div>
-                                  <div className="text-green-400 text-xs font-mono">
-                                    {conn.lastSync}
-                                  </div>
-                                </div>
-                                <div className="text-gray-500 text-xs mt-1">
-                                  Data Types: {conn.dataTypes.join(', ')}
-                                </div>
+                          {/* Connection Forms */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-gray-400 text-xs font-mono mb-2 block">DATABASE CONNECTION</label>
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  placeholder="Database URL (e.g., postgresql://user:pass@host:5432/db)"
+                                  className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Table/Collection Name"
+                                  className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
+                                />
+                      <button
+                                  onClick={() => connectDataSource('database', 'postgresql://demo:demo@localhost:5432/enterprise', ['inventory', 'orders'], {})}
+                                  disabled={dataProcessing}
+                                  className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400 disabled:opacity-50"
+                      >
+                                  {dataProcessing ? 'CONNECTING...' : 'CONNECT DATABASE'}
+                      </button>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Data Quality Metrics */}
-                      {dataQuality && (
-                    <div className="mt-4">
-                          <div className="text-green-400 text-xs font-mono mb-2">◄ DATA QUALITY METRICS</div>
-                          <div className="bg-gray-900 border border-gray-600 p-3 rounded">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
-                              <div>
-                                <div className="text-gray-400">Completeness</div>
-                                <div className="text-green-400">{Math.round(dataQuality.completeness * 100)}%</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-400">Accuracy</div>
-                                <div className="text-green-400">{Math.round(dataQuality.accuracy * 100)}%</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-400">Freshness</div>
-                                <div className="text-green-400">{Math.round(dataQuality.freshness * 100)}%</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-400">Consistency</div>
-                                <div className="text-green-400">{Math.round(dataQuality.consistency * 100)}%</div>
+                            </div>
+                            
+                            <div>
+                              <label className="text-gray-400 text-xs font-mono mb-2 block">API INTEGRATION</label>
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  placeholder="API Endpoint (e.g., https://api.crm.com/v1)"
+                                  className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="API Key"
+                                  className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
+                                />
+                              <button
+                                  onClick={() => connectDataSource('api', 'https://api.enterprise.com/v1', ['quality_metrics', 'automation_data'], { apiKey: 'demo-key' })}
+                                  disabled={dataProcessing}
+                                  className="bg-green-500 text-white px-3 py-2 text-sm font-mono hover:bg-green-400 disabled:opacity-50"
+                                >
+                                  {dataProcessing ? 'CONNECTING...' : 'CONNECT API'}
+                              </button>
                               </div>
                             </div>
                           </div>
+
+                          {/* Real Data Connections Status */}
+                          {realDataConnections.length > 0 && (
+                            <div className="mt-4">
+                              <div className="text-green-400 text-xs font-mono mb-2">◄ CONNECTED DATA SOURCES</div>
+                              <div className="space-y-2">
+                                {realDataConnections.map((conn: any, index: number) => (
+                                  <div key={index} className="bg-gray-900 border border-green-500 p-3 rounded">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="text-green-400 text-sm font-mono">{conn.name}</div>
+                                        <div className="text-gray-400 text-xs">Type: {conn.type} | Status: {conn.status}</div>
+                                      </div>
+                                      <div className="text-green-400 text-xs font-mono">
+                                        {conn.lastSync}
+                                      </div>
+                                    </div>
+                                    <div className="text-gray-500 text-xs mt-1">
+                                      Data Types: {conn.dataTypes.join(', ')}
+                                    </div>
+                                  </div>
+                            ))}
+                          </div>
+                            </div>
+                          )}
+
+                          {/* Data Quality Metrics */}
+                          {dataQuality && (
+                            <div className="mt-4">
+                              <div className="text-green-400 text-xs font-mono mb-2">◄ DATA QUALITY METRICS</div>
+                              <div className="bg-gray-900 border border-gray-600 p-3 rounded">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
+                                  <div>
+                                    <div className="text-gray-400">Completeness</div>
+                                    <div className="text-green-400">{Math.round(dataQuality.completeness * 100)}%</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-400">Accuracy</div>
+                                    <div className="text-green-400">{Math.round(dataQuality.accuracy * 100)}%</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-400">Freshness</div>
+                                    <div className="text-green-400">{Math.round(dataQuality.freshness * 100)}%</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-400">Consistency</div>
+                                    <div className="text-green-400">{Math.round(dataQuality.consistency * 100)}%</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
