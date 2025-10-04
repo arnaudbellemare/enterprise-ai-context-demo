@@ -55,13 +55,18 @@ export default function PromptTester() {
       })
       
       const result = await response.json()
+      console.log('API Response:', result) // Debug logging
       if (result.success) {
-        setTestResults({
+        const testResult = {
           query: testQuery,
           response: result.content,
           sources: result.sources || [],
           model: result.model
-        })
+        }
+        console.log('Setting test results:', testResult) // Debug logging
+        setTestResults(testResult)
+      } else {
+        console.error('API returned success: false', result)
       }
     } catch (error) {
       console.error('Test failed:', error)
@@ -159,7 +164,7 @@ export default function PromptTester() {
                   {testResults ? (
                     <div>
                       <p className="text-sm text-gray-800 mb-2">{testResults.response}</p>
-                      {testResults.sources.length > 0 && (
+                      {testResults.sources && testResults.sources.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-gray-200">
                           <p className="text-xs text-gray-600 font-medium">Sources:</p>
                           <ul className="text-xs text-gray-600 mt-1">
@@ -171,7 +176,10 @@ export default function PromptTester() {
                       )}
                     </div>
                   ) : (
-                    <p className="text-gray-500 italic">AI response will appear here...</p>
+                    <div>
+                      <p className="text-gray-500 italic">AI response will appear here...</p>
+                      <p className="text-xs text-gray-400 mt-2">Debug: testResults = {JSON.stringify(testResults)}</p>
+                    </div>
                   )}
                 </div>
               </div>
