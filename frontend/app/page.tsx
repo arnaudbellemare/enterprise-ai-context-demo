@@ -3975,7 +3975,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       
                       {/* Loading text */}
                       <div className="text-green-400 text-xs font-mono text-center">
-                        Processing AI response... ████████████████████ 100%
+                        Processing AI response... ████████████████████ 92%
                       </div>
                       
                       {/* Terminal dots animation */}
