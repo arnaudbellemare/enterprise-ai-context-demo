@@ -3114,6 +3114,12 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
 
   return (
     <div className={`min-h-screen bg-black text-green-400 font-mono p-8 relative overflow-hidden`}>
+      <style jsx>{`
+        @keyframes loading {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
       {/* Grid Overlay */}
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
         {Array.from({ length: 50 }).map((_, i) => (
@@ -3949,10 +3955,37 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
               </div>
 
               {/* Agent Response */}
-              <div>
+              <div className="mb-8">
                 <div className="text-green-400 text-xs font-mono mb-2">◄ AGENT RESPONSE</div>
                 <div className="bg-black border border-gray-600 p-4 rounded h-32 overflow-y-auto">
-                  {agentResponse ? (
+                  {isTestingAgent && !agentResponse ? (
+                    <div className="space-y-3">
+                      {/* Terminal-style loading bar */}
+                      <div className="bg-gray-800 rounded h-2 overflow-hidden">
+                        <div 
+                          className="bg-green-500 h-full animate-pulse" 
+                          style={{
+                            width: '100%',
+                            background: 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #10b981 100%)',
+                            backgroundSize: '200% 100%',
+                            animation: 'loading 2s ease-in-out infinite'
+                          }}
+                        ></div>
+                      </div>
+                      
+                      {/* Loading text */}
+                      <div className="text-green-400 text-xs font-mono text-center">
+                        Processing AI response... ████████████████████ 100%
+                      </div>
+                      
+                      {/* Terminal dots animation */}
+                      <div className="flex justify-center space-x-1">
+                        <div className="w-1 h-1 bg-green-500 rounded-full animate-bounce"></div>
+                        <div className="w-1 h-1 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                        <div className="w-1 h-1 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      </div>
+                    </div>
+                  ) : agentResponse ? (
                     <pre className="text-xs text-white font-mono whitespace-pre-wrap">{agentResponse}</pre>
                   ) : (
                     <div className="text-gray-500 text-sm">Agent response will appear here...</div>
