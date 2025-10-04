@@ -42,6 +42,7 @@ export default function Home() {
   const [showAgentDetails, setShowAgentDetails] = useState(false);
   
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [customAgentPrompt, setCustomAgentPrompt] = useState('');
   const [dataSources, setDataSources] = useState<string[]>([]);
   const [newDataSource, setNewDataSource] = useState('');
@@ -2860,33 +2861,79 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                             </div>
                     </div>
 
-                    {/* Industry Examples - Always Visible */}
+                    {/* Industry Examples - Two-Step Selection */}
                     <div className="mt-4">
                       <div className="bg-gray-800 border border-gray-600 p-4 rounded mb-4">
                         <div className="text-green-400 text-sm font-mono mb-3">◄ PRE-BUILT INDUSTRY AGENTS</div>
                         
-                        {/* Industry Categories */}
-                        {Object.entries(industryCategories).map(([categoryKey, category]) => (
-                          <div key={categoryKey} className="mb-6">
-                            <div className="text-blue-400 text-sm font-mono mb-2">{category.name}</div>
-                            <div className="text-gray-400 text-xs mb-3">{category.description}</div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {Object.entries(category.industries).map(([industryKey, industry]) => (
+                        {!selectedCategory ? (
+                          /* Step 1: Select Industry Category */
+                          <div>
+                            <div className="text-blue-400 text-sm font-mono mb-3">Select Industry Category:</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                              {Object.entries(industryCategories).map(([categoryKey, category]) => (
                                 <button
-                                  key={industryKey}
-                                  onClick={() => loadIndustryExample(industryKey, categoryKey)}
-                                  className="text-left p-3 bg-gray-700 border border-gray-600 rounded hover:border-green-500 transition-colors"
+                                  key={categoryKey}
+                                  onClick={() => setSelectedCategory(categoryKey)}
+                                  className="text-left p-4 bg-gray-700 border border-gray-600 rounded hover:border-green-500 transition-colors"
                                 >
-                                  <div className="text-white text-sm font-mono mb-1">{industry.name}</div>
-                                  <div className="text-gray-400 text-xs mb-2">{industry.description}</div>
+                                  <div className="text-white text-sm font-mono mb-2">{category.name}</div>
+                                  <div className="text-gray-400 text-xs mb-2">{category.description}</div>
                                   <div className="text-gray-500 text-xs">
-                                    {industry.agents.length} specialized agents
+                                    {Object.keys(category.industries).length} workflow options
                                   </div>
                                 </button>
                               ))}
                             </div>
                           </div>
-                        ))}
+                        ) : (
+                          /* Step 2: Select Specific Workflow */
+                          <div>
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <div className="text-blue-400 text-sm font-mono">
+                                  {industryCategories[selectedCategory as keyof typeof industryCategories].name}
+                                </div>
+                                <div className="text-gray-400 text-xs">
+                                  {industryCategories[selectedCategory as keyof typeof industryCategories].description}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => setSelectedCategory(null)}
+                                className="text-gray-400 hover:text-white text-xs font-mono"
+                              >
+                                ← Back to Categories
+                              </button>
+                            </div>
+                            
+                            <div className="text-green-400 text-sm font-mono mb-3">Available Workflows:</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {Object.entries(industryCategories[selectedCategory as keyof typeof industryCategories].industries).map(([industryKey, industry]) => (
+                                <button
+                                  key={industryKey}
+                                  onClick={() => loadIndustryExample(industryKey, selectedCategory)}
+                                  className="text-left p-4 bg-gray-700 border border-gray-600 rounded hover:border-green-500 transition-colors"
+                                >
+                                  <div className="text-white text-sm font-mono mb-2">{industry.name}</div>
+                                  <div className="text-gray-400 text-xs mb-2">{industry.description}</div>
+                                  <div className="text-gray-500 text-xs mb-2">
+                                    {industry.agents.length} specialized agents
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {industry.agents.slice(0, 3).map((agent, index) => (
+                                      <span key={index} className="text-xs bg-gray-600 text-gray-300 px-2 py-1 rounded">
+                                        {agent.name}
+                                      </span>
+                                    ))}
+                                    {industry.agents.length > 3 && (
+                                      <span className="text-xs text-gray-500">+{industry.agents.length - 3} more</span>
+                                    )}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
