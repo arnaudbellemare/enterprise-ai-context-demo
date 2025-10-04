@@ -28,13 +28,6 @@ const initialContextSources: ContextSource[] = [
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [originalPrompt, setOriginalPrompt] = useState('');
-  const [optimizedPrompt, setOptimizedPrompt] = useState('');
-  const [testQuery, setTestQuery] = useState('');
-  const [testResults, setTestResults] = useState<TestResult | null>(null);
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
-  const [error, setError] = useState('');
   const [contextSources, setContextSources] = useState<ContextSource[]>(initialContextSources);
   
   // Agent Builder State
@@ -48,14 +41,250 @@ export default function Home() {
   const [workflowStatus, setWorkflowStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
   const [showAgentDetails, setShowAgentDetails] = useState(false);
   
-  // Industry Examples State
-  const [showIndustryExamples, setShowIndustryExamples] = useState(false);
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const [customAgentPrompt, setCustomAgentPrompt] = useState('');
   const [dataSources, setDataSources] = useState<string[]>([]);
   const [newDataSource, setNewDataSource] = useState('');
 
-  // Industry Examples Data
+  // Industry Examples Data - Organized by Categories
+  const industryCategories = {
+    healthcare: {
+      name: '🏥 Healthcare & Medical',
+      description: 'Advanced medical AI systems for patient care and health optimization',
+      industries: {
+        telemedicine: {
+          name: '🩺 Telemedicine Platform',
+          description: 'Remote patient monitoring and virtual consultations',
+          agents: [
+            { name: 'Patient Intake Agent', type: 'intake', description: 'Collects and validates patient information' },
+            { name: 'Symptom Analyzer', type: 'analysis', description: 'AI-powered symptom assessment and triage' },
+            { name: 'Diagnostic Assistant', type: 'diagnosis', description: 'Supports clinical decision making' },
+            { name: 'Treatment Planner', type: 'planning', description: 'Creates personalized treatment plans' },
+            { name: 'Follow-up Coordinator', type: 'coordination', description: 'Manages patient follow-up and monitoring' },
+            { name: 'Emergency Triage', type: 'emergency', description: 'Identifies urgent cases requiring immediate care' }
+          ],
+          dataSources: ['EMR Systems', 'Wearable Devices', 'Patient Surveys', 'Clinical Guidelines', 'Drug Databases'],
+          prompt: 'You are a specialized telemedicine AI agent that provides comprehensive remote healthcare services. You analyze patient data, symptoms, and medical history to support clinical decision-making and ensure optimal patient outcomes.',
+          processing_pipeline: [
+            '📋 Patient Intake: Collecting comprehensive health information',
+            '🔍 Symptom Analysis: AI-powered symptom assessment and severity scoring',
+            '📊 Risk Stratification: Evaluating patient risk levels and urgency',
+            '🩺 Diagnostic Support: Providing clinical decision support',
+            '💊 Treatment Planning: Creating personalized care protocols',
+            '🚨 Emergency Triage: Identifying critical cases requiring immediate attention',
+            '📞 Follow-up Scheduling: Coordinating ongoing patient care',
+            '📈 Outcome Monitoring: Tracking treatment effectiveness and patient progress'
+          ],
+          agent_communications: [
+            { from: 'Intake Agent', to: 'Symptom Analyzer', message: 'Patient reports chest pain, rating 8/10', timestamp: '10:23:45' },
+            { from: 'Symptom Analyzer', to: 'Diagnostic Assistant', message: 'High-risk cardiac symptoms detected, immediate assessment needed', timestamp: '10:23:47' },
+            { from: 'Diagnostic Assistant', to: 'Emergency Triage', message: 'Potential MI symptoms, escalating to emergency protocol', timestamp: '10:23:49' },
+            { from: 'Emergency Triage', to: 'Treatment Planner', message: 'Emergency care initiated, ambulance dispatched', timestamp: '10:23:51' }
+          ]
+        },
+        clinical_research: {
+          name: '🔬 Clinical Research',
+          description: 'AI-powered drug discovery and clinical trial optimization',
+          agents: [
+            { name: 'Literature Miner', type: 'research', description: 'Extracts insights from medical literature' },
+            { name: 'Trial Designer', type: 'design', description: 'Optimizes clinical trial protocols' },
+            { name: 'Patient Matcher', type: 'matching', description: 'Matches patients to appropriate trials' },
+            { name: 'Data Monitor', type: 'monitoring', description: 'Monitors trial data quality and safety' },
+            { name: 'Outcome Predictor', type: 'prediction', description: 'Predicts trial outcomes and success rates' },
+            { name: 'Regulatory Assistant', type: 'compliance', description: 'Ensures regulatory compliance and reporting' }
+          ],
+          dataSources: ['Clinical Databases', 'Patient Records', 'Regulatory Guidelines', 'Literature Databases', 'Trial Data'],
+          prompt: 'You are a specialized clinical research AI agent that accelerates drug discovery and optimizes clinical trials. You analyze research data, design efficient trials, and ensure regulatory compliance.',
+          processing_pipeline: [
+            '📚 Literature Review: Comprehensive analysis of existing research',
+            '🎯 Trial Design: Optimizing study protocols and endpoints',
+            '👥 Patient Recruitment: Identifying and matching eligible participants',
+            '📊 Data Collection: Monitoring trial data quality and integrity',
+            '🔍 Safety Monitoring: Continuous safety surveillance and reporting',
+            '📈 Outcome Analysis: Real-time analysis of trial results',
+            '📋 Regulatory Compliance: Ensuring adherence to guidelines',
+            '📊 Results Interpretation: Generating actionable insights and recommendations'
+          ],
+          agent_communications: [
+            { from: 'Literature Agent', to: 'Trial Designer', message: 'Found 47 relevant studies, 3 meta-analyses identified', timestamp: '10:23:45' },
+            { from: 'Trial Designer', to: 'Patient Matcher', message: 'Trial protocol optimized, 150 patients needed', timestamp: '10:23:47' },
+            { from: 'Patient Matcher', to: 'Data Monitor', message: '87 patients enrolled, 23 pending screening', timestamp: '10:23:49' },
+            { from: 'Data Monitor', to: 'Regulatory Assistant', message: 'Data quality 98.7%, 2 adverse events reported', timestamp: '10:23:51' }
+          ]
+        }
+      }
+    },
+    finance: {
+      name: '🏦 Financial Services',
+      description: 'Advanced financial AI systems for banking, investment, and risk management',
+      industries: {
+        investment_banking: {
+          name: '💼 Investment Banking',
+          description: 'AI-powered deal analysis and market intelligence',
+          agents: [
+            { name: 'Market Analyzer', type: 'analysis', description: 'Analyzes market trends and opportunities' },
+            { name: 'Deal Structurer', type: 'structuring', description: 'Designs optimal deal structures' },
+            { name: 'Risk Assessor', type: 'risk', description: 'Evaluates financial and operational risks' },
+            { name: 'Valuation Expert', type: 'valuation', description: 'Performs company and asset valuations' },
+            { name: 'Due Diligence', type: 'diligence', description: 'Conducts comprehensive due diligence' },
+            { name: 'Regulatory Advisor', type: 'compliance', description: 'Ensures regulatory compliance' }
+          ],
+          dataSources: ['Market Data', 'Company Filings', 'Financial Statements', 'Regulatory Reports', 'News Feeds'],
+          prompt: 'You are a specialized investment banking AI agent that provides comprehensive deal analysis and market intelligence. You evaluate opportunities, assess risks, and provide strategic recommendations for complex financial transactions.',
+          processing_pipeline: [
+            '📊 Market Analysis: Comprehensive market trend and opportunity assessment',
+            '🏢 Company Evaluation: Deep dive into target company financials and operations',
+            '💰 Valuation Modeling: Advanced financial modeling and valuation analysis',
+            '⚠️ Risk Assessment: Comprehensive risk evaluation and mitigation strategies',
+            '📋 Due Diligence: Thorough investigation of all deal aspects',
+            '📈 Deal Structuring: Optimal transaction structure design',
+            '📋 Regulatory Review: Compliance verification and regulatory guidance',
+            '📊 Final Recommendation: Comprehensive deal recommendation with rationale'
+          ],
+          agent_communications: [
+            { from: 'Market Analyzer', to: 'Deal Structurer', message: 'Market conditions favorable, 15% premium justified', timestamp: '10:23:45' },
+            { from: 'Valuation Expert', to: 'Risk Assessor', message: 'Company valued at $2.3B, 12% discount to market', timestamp: '10:23:47' },
+            { from: 'Due Diligence', to: 'Regulatory Advisor', message: 'No red flags found, 3 minor compliance issues identified', timestamp: '10:23:49' },
+            { from: 'Regulatory Advisor', to: 'Deal Structurer', message: 'Deal structure approved, regulatory clearance obtained', timestamp: '10:23:51' }
+          ]
+        },
+        fintech: {
+          name: '💳 FinTech Innovation',
+          description: 'Next-generation financial technology and digital banking',
+          agents: [
+            { name: 'Fraud Detector', type: 'security', description: 'Real-time fraud detection and prevention' },
+            { name: 'Credit Analyzer', type: 'credit', description: 'Advanced credit risk assessment' },
+            { name: 'Payment Optimizer', type: 'payments', description: 'Optimizes payment processing and routing' },
+            { name: 'Compliance Monitor', type: 'compliance', description: 'Ensures regulatory compliance' },
+            { name: 'Customer Insights', type: 'analytics', description: 'Generates customer behavior insights' },
+            { name: 'Product Recommender', type: 'recommendation', description: 'Personalized financial product recommendations' }
+          ],
+          dataSources: ['Transaction Data', 'Credit Bureaus', 'Regulatory Databases', 'Customer Profiles', 'Market Data'],
+          prompt: 'You are a specialized FinTech AI agent that revolutionizes financial services through advanced technology. You provide secure, efficient, and personalized financial solutions while ensuring regulatory compliance.',
+          processing_pipeline: [
+            '🔍 Transaction Analysis: Real-time transaction monitoring and analysis',
+            '🛡️ Fraud Detection: Advanced fraud prevention and security measures',
+            '📊 Credit Assessment: Comprehensive credit risk evaluation',
+            '💳 Payment Processing: Optimized payment routing and processing',
+            '📋 Compliance Check: Regulatory compliance verification',
+            '👤 Customer Profiling: Advanced customer behavior analysis',
+            '🎯 Product Matching: Personalized financial product recommendations',
+            '📈 Performance Monitoring: Continuous system performance optimization'
+          ],
+          agent_communications: [
+            { from: 'Fraud Detector', to: 'Payment Optimizer', message: 'Suspicious transaction flagged, blocking payment', timestamp: '10:23:45' },
+            { from: 'Credit Analyzer', to: 'Product Recommender', message: 'Credit score 780, eligible for premium products', timestamp: '10:23:47' },
+            { from: 'Compliance Monitor', to: 'Customer Insights', message: 'All transactions compliant, customer profile updated', timestamp: '10:23:49' },
+            { from: 'Product Recommender', to: 'Payment Optimizer', message: '3 products recommended, customer engagement 95%', timestamp: '10:23:51' }
+          ]
+        }
+      }
+    },
+    technology: {
+      name: '💻 Technology & Software',
+      description: 'AI systems for software development, cybersecurity, and tech operations',
+      industries: {
+        cybersecurity: {
+          name: '🔒 Cybersecurity Operations',
+          description: 'Advanced threat detection and security management',
+          agents: [
+            { name: 'Threat Hunter', type: 'threat', description: 'Proactively hunts for security threats' },
+            { name: 'Incident Responder', type: 'response', description: 'Rapid incident response and containment' },
+            { name: 'Vulnerability Scanner', type: 'vulnerability', description: 'Identifies and assesses security vulnerabilities' },
+            { name: 'Compliance Auditor', type: 'compliance', description: 'Ensures security compliance and standards' },
+            { name: 'Security Trainer', type: 'training', description: 'Provides security awareness training' },
+            { name: 'Risk Assessor', type: 'risk', description: 'Evaluates security risks and mitigation strategies' }
+          ],
+          dataSources: ['Security Logs', 'Threat Intelligence', 'Network Traffic', 'Vulnerability Databases', 'Compliance Frameworks'],
+          prompt: 'You are a specialized cybersecurity AI agent that provides comprehensive security protection and threat management. You detect threats, respond to incidents, and ensure robust security posture.',
+          processing_pipeline: [
+            '🔍 Threat Detection: Continuous monitoring for security threats',
+            '🛡️ Vulnerability Assessment: Comprehensive security vulnerability scanning',
+            '📊 Risk Analysis: Advanced risk evaluation and prioritization',
+            '🚨 Incident Response: Rapid response to security incidents',
+            '📋 Compliance Audit: Security compliance verification',
+            '🎓 Security Training: Personalized security awareness programs',
+            '📈 Threat Intelligence: Advanced threat intelligence analysis',
+            '🔄 Security Optimization: Continuous security posture improvement'
+          ],
+          agent_communications: [
+            { from: 'Threat Hunter', to: 'Incident Responder', message: 'Advanced persistent threat detected, immediate response needed', timestamp: '10:23:45' },
+            { from: 'Vulnerability Scanner', to: 'Risk Assessor', message: 'Critical vulnerability found, CVSS score 9.8', timestamp: '10:23:47' },
+            { from: 'Incident Responder', to: 'Compliance Auditor', message: 'Incident contained, forensic analysis in progress', timestamp: '10:23:49' },
+            { from: 'Compliance Auditor', to: 'Security Trainer', message: 'Security gap identified, training program updated', timestamp: '10:23:51' }
+          ]
+        },
+        devops: {
+          name: '⚙️ DevOps & Infrastructure',
+          description: 'AI-powered software development and infrastructure management',
+          agents: [
+            { name: 'Code Reviewer', type: 'review', description: 'Automated code quality and security review' },
+            { name: 'Build Optimizer', type: 'build', description: 'Optimizes build processes and CI/CD pipelines' },
+            { name: 'Deployment Manager', type: 'deployment', description: 'Manages automated deployments and rollbacks' },
+            { name: 'Performance Monitor', type: 'monitoring', description: 'Monitors application and infrastructure performance' },
+            { name: 'Incident Manager', type: 'incident', description: 'Manages production incidents and outages' },
+            { name: 'Capacity Planner', type: 'planning', description: 'Plans infrastructure capacity and scaling' }
+          ],
+          dataSources: ['Code Repositories', 'Build Logs', 'Performance Metrics', 'Infrastructure Data', 'Deployment History'],
+          prompt: 'You are a specialized DevOps AI agent that optimizes software development and infrastructure operations. You ensure code quality, streamline deployments, and maintain system reliability.',
+          processing_pipeline: [
+            '📝 Code Analysis: Comprehensive code quality and security review',
+            '🔨 Build Optimization: CI/CD pipeline optimization and automation',
+            '🚀 Deployment Management: Automated deployment and rollback strategies',
+            '📊 Performance Monitoring: Real-time system performance tracking',
+            '🚨 Incident Response: Rapid incident detection and resolution',
+            '📈 Capacity Planning: Infrastructure scaling and optimization',
+            '🔄 Process Improvement: Continuous development process enhancement',
+            '📋 Documentation: Automated documentation and knowledge management'
+          ],
+          agent_communications: [
+            { from: 'Code Reviewer', to: 'Build Optimizer', message: 'Code quality 95%, 2 security issues flagged', timestamp: '10:23:45' },
+            { from: 'Build Optimizer', to: 'Deployment Manager', message: 'Build successful, ready for production deployment', timestamp: '10:23:47' },
+            { from: 'Performance Monitor', to: 'Incident Manager', message: 'CPU usage 95%, potential performance issue', timestamp: '10:23:49' },
+            { from: 'Incident Manager', to: 'Capacity Planner', message: 'Incident resolved, scaling recommendations provided', timestamp: '10:23:51' }
+          ]
+        }
+      }
+    },
+    retail: {
+      name: '🛒 Retail & E-commerce',
+      description: 'Advanced retail AI systems for customer experience and operations',
+      industries: {
+        omnichannel: {
+          name: '🛍️ Omnichannel Retail',
+          description: 'Unified customer experience across all channels',
+          agents: [
+            { name: 'Customer Journey Mapper', type: 'journey', description: 'Maps and optimizes customer touchpoints' },
+            { name: 'Inventory Synchronizer', type: 'inventory', description: 'Synchronizes inventory across all channels' },
+            { name: 'Personalization Engine', type: 'personalization', description: 'Delivers personalized experiences' },
+            { name: 'Order Orchestrator', type: 'orchestration', description: 'Manages complex order fulfillment' },
+            { name: 'Customer Service', type: 'service', description: 'Provides seamless customer support' },
+            { name: 'Analytics Engine', type: 'analytics', description: 'Generates actionable business insights' }
+          ],
+          dataSources: ['Customer Data', 'Inventory Systems', 'Sales Data', 'Social Media', 'Customer Feedback'],
+          prompt: 'You are a specialized omnichannel retail AI agent that creates seamless customer experiences across all touchpoints. You optimize inventory, personalize interactions, and drive customer satisfaction.',
+          processing_pipeline: [
+            '👤 Customer Profiling: Comprehensive customer behavior analysis',
+            '📦 Inventory Optimization: Real-time inventory management across channels',
+            '🎯 Personalization: Dynamic content and product recommendations',
+            '🛒 Order Management: Intelligent order routing and fulfillment',
+            '💬 Customer Service: Proactive customer support and engagement',
+            '📊 Performance Analytics: Advanced retail performance insights',
+            '🔄 Experience Optimization: Continuous customer experience improvement',
+            '📈 Business Intelligence: Strategic retail insights and recommendations'
+          ],
+          agent_communications: [
+            { from: 'Customer Journey Mapper', to: 'Personalization Engine', message: 'Customer at checkout, 3 abandoned cart items', timestamp: '10:23:45' },
+            { from: 'Inventory Synchronizer', to: 'Order Orchestrator', message: 'Product available in 2 stores, 1 warehouse', timestamp: '10:23:47' },
+            { from: 'Personalization Engine', to: 'Customer Service', message: 'Personalized recommendations sent, engagement 85%', timestamp: '10:23:49' },
+            { from: 'Analytics Engine', to: 'Customer Journey Mapper', message: 'Conversion rate improved 23%, journey optimized', timestamp: '10:23:51' }
+          ]
+        }
+      }
+    }
+  };
+
+  // Legacy single industry examples for backward compatibility
   const industryExamples = {
     healthcare: {
       name: '🏥 Healthcare & Medical',
@@ -67,7 +296,23 @@ export default function Home() {
         { name: 'Medication Manager', type: 'management', description: 'Manages medications and side effects' }
       ],
       dataSources: ['Medical Records', 'Lab Results', 'Fitness Trackers', 'Medication History', 'Symptom Logs'],
-      prompt: 'You are a specialized healthcare AI agent that analyzes personal health data to provide insights, predictions, and recommendations. You learn from medical history, symptoms, medications, and lifestyle patterns to help users understand their health better.'
+      prompt: 'You are a specialized healthcare AI agent that analyzes personal health data to provide insights, predictions, and recommendations. You learn from medical history, symptoms, medications, and lifestyle patterns to help users understand their health better.',
+      processing_pipeline: [
+        '🏥 Patient Data Retrieval: Accessing EMR and medical history',
+        '🔬 Lab Results Analysis: Processing recent test results and vitals',
+        '🧠 Symptom Pattern Recognition: AI analysis of reported symptoms',
+        '📚 Medical Literature Cross-Reference: Checking latest research and guidelines',
+        '⚕️ Risk Assessment: Evaluating potential conditions and urgency',
+        '💊 Treatment Protocol Generation: Creating personalized care plans',
+        '🔍 Drug Interaction Check: Verifying medication compatibility',
+        '📋 Care Plan Documentation: Generating comprehensive treatment recommendations'
+      ],
+      agent_communications: [
+        { from: 'EMR Agent', to: 'Analysis Agent', message: 'Patient profile loaded: 15 years history, 47 medications', timestamp: '10:23:45' },
+        { from: 'Lab Agent', to: 'Analysis Agent', message: 'Recent lab results: HbA1c 7.2%, elevated cholesterol', timestamp: '10:23:47' },
+        { from: 'Analysis Agent', to: 'Treatment Agent', message: 'High-risk diabetic patient, needs immediate attention', timestamp: '10:23:49' },
+        { from: 'Treatment Agent', to: 'Quality Agent', message: 'Treatment plan generated: 98.7% confidence, 3 interactions flagged', timestamp: '10:23:51' }
+      ]
     },
     finance: {
       name: '🏦 Financial Services',
@@ -103,7 +348,23 @@ export default function Home() {
         { name: 'Process Analyzer', type: 'analysis', description: 'Analyzes production processes and efficiency' }
       ],
       dataSources: ['Sensor Data', 'Production Metrics', 'Quality Reports', 'Maintenance Logs', 'Supply Chain Data'],
-      prompt: 'You are a specialized manufacturing AI agent that analyzes industrial data to optimize production, predict maintenance needs, and ensure quality control. You learn from sensor data, production metrics, and operational patterns to improve manufacturing efficiency.'
+      prompt: 'You are a specialized manufacturing AI agent that analyzes industrial data to optimize production, predict maintenance needs, and ensure quality control. You learn from sensor data, production metrics, and operational patterns to improve manufacturing efficiency.',
+      processing_pipeline: [
+        '🏭 Production Data Collection: Gathering real-time manufacturing metrics',
+        '📊 Quality Analysis: Monitoring product quality and defect rates',
+        '🔧 Equipment Health Check: Assessing machinery performance and maintenance needs',
+        '📦 Supply Chain Optimization: Managing inventory and supplier relationships',
+        '⚡ Production Scheduling: Optimizing manufacturing workflows',
+        '🔍 Predictive Analytics: Forecasting maintenance and quality issues',
+        '📈 Performance Monitoring: Tracking efficiency and productivity metrics',
+        '🎯 Optimization Recommendations: Implementing continuous improvement strategies'
+      ],
+      agent_communications: [
+        { from: 'Production Agent', to: 'Quality Agent', message: 'Line 3 output: 1,247 units, 0.3% defect rate', timestamp: '10:23:45' },
+        { from: 'Quality Agent', to: 'Maintenance Agent', message: 'Quality within spec, but trending downward', timestamp: '10:23:47' },
+        { from: 'Maintenance Agent', to: 'Optimization Agent', message: 'Equipment 85% efficiency, recommend calibration', timestamp: '10:23:49' },
+        { from: 'Optimization Agent', to: 'Management Agent', message: 'Production plan optimized: 12% efficiency gain projected', timestamp: '10:23:51' }
+      ]
     },
     retail: {
       name: '🛒 Retail & E-commerce',
@@ -115,7 +376,23 @@ export default function Home() {
         { name: 'Pricing Optimizer', type: 'optimization', description: 'Optimizes pricing strategies' }
       ],
       dataSources: ['Purchase History', 'Browsing Behavior', 'Customer Reviews', 'Market Trends', 'Inventory Data'],
-      prompt: 'You are a specialized retail AI agent that analyzes customer data and market trends to provide personalized shopping experiences and optimize business operations. You learn from customer behavior, purchase patterns, and market data to improve retail performance.'
+      prompt: 'You are a specialized retail AI agent that analyzes customer data and market trends to provide personalized shopping experiences and optimize business operations. You learn from customer behavior, purchase patterns, and market data to improve retail performance.',
+      processing_pipeline: [
+        '🛒 Customer Intent Analysis: Understanding shopping behavior and preferences',
+        '📊 Product Catalog Search: Finding relevant products across categories',
+        '💰 Price Optimization: Analyzing competitive pricing and profit margins',
+        '📦 Inventory Verification: Checking stock levels and availability',
+        '🎯 Recommendation Engine: AI-powered product suggestions',
+        '💳 Order Processing: Streamlining checkout and payment',
+        '📈 Sales Analytics: Tracking performance and conversion metrics',
+        '🔄 Customer Journey Optimization: Improving user experience'
+      ],
+      agent_communications: [
+        { from: 'Customer Agent', to: 'Product Agent', message: 'Customer query: "Best laptop under $1000"', timestamp: '10:23:45' },
+        { from: 'Product Agent', to: 'Inventory Agent', message: 'Found 12 matching products, checking availability', timestamp: '10:23:47' },
+        { from: 'Inventory Agent', to: 'Recommendation Agent', message: '8 products in stock, 4 on backorder', timestamp: '10:23:49' },
+        { from: 'Recommendation Agent', to: 'Sales Agent', message: 'Top 3 recommendations generated with 95% confidence', timestamp: '10:23:51' }
+      ]
     },
     agriculture: {
       name: '🌱 Agriculture & Food',
@@ -139,27 +416,33 @@ export default function Home() {
     setCustomAgentPrompt(example.prompt);
     setDataSources(example.dataSources);
     
-              // Create agents for the industry with proper positioning and connections
-              const agents = example.agents.map((agent, index) => ({
-                id: `${industry}_${agent.type}_${index}`,
-                type: agent.name.toUpperCase(),
-                x: 50 + (index * 200), // Better spacing within canvas
-                y: 100,
-                title: agent.name,
-                description: agent.description,
-                status: 'pending',
-                agent_type: agent.type,
-                capabilities: [agent.type, 'data_processing', 'learning', 'optimization'],
-                data_sources: example.dataSources
-              }));
+              // Create agents for the industry with proper grid positioning
+              const agents = example.agents.map((agent, index) => {
+                const colsPerRow = 4; // 4 agents per row
+                const row = Math.floor(index / colsPerRow);
+                const col = index % colsPerRow;
+                return {
+                  id: `${industry}_${agent.type}_${index}`,
+                  type: agent.name.toUpperCase(),
+                  x: 50 + (col * 180), // Better spacing within canvas
+                  y: 80 + (row * 120), // Multiple rows
+                  title: agent.name,
+                  description: agent.description,
+                  status: 'pending',
+                  agent_type: agent.type,
+                  capabilities: [agent.type, 'data_processing', 'learning', 'optimization'],
+                  data_sources: example.dataSources
+                };
+              });
 
-    // Create connections between agents for workflow
+    // Create connections between agents for workflow (connect in sequence)
     const connections = [];
     for (let i = 0; i < agents.length - 1; i++) {
       connections.push({
         id: `connection_${i}`,
         from: agents[i].id,
-        to: agents[i + 1].id
+        to: agents[i + 1].id,
+        type: 'data_flow'
       });
     }
 
@@ -201,118 +484,39 @@ export default function Home() {
     setWorkflowNodes([customAgent]);
     setWorkflowConnections([]);
     setWorkflowStatus('idle');
-    setShowIndustryExamples(false);
   };
   
   // Live Testing Interface State
   const [isTestingAgent, setIsTestingAgent] = useState(false);
   const [agentResponse, setAgentResponse] = useState('');
   const [agentProcessing, setAgentProcessing] = useState<string[]>([]);
+  const [testQuery, setTestQuery] = useState('');
+  const [testResults, setTestResults] = useState<TestResult | null>(null);
+  
+  // Enterprise Data Connections
+  const [dataConnections, setDataConnections] = useState([
+    { id: 'crm', name: 'Salesforce CRM', type: 'api', status: 'connected', lastSync: '2 min ago' },
+    { id: 'database', name: 'PostgreSQL Database', type: 'database', status: 'connected', lastSync: '1 min ago' },
+    { id: 'analytics', name: 'Google Analytics', type: 'api', status: 'connected', lastSync: '5 min ago' },
+    { id: 'support', name: 'Zendesk Support', type: 'api', status: 'disconnected', lastSync: 'Never' }
+  ]);
+  
+  // Workflow Builder State
+  const [workflowSteps, setWorkflowSteps] = useState([
+    { id: '1', type: 'data_fetch', name: 'Fetch Customer Data', status: 'active' },
+    { id: '2', type: 'analysis', name: 'Analyze Context', status: 'pending' },
+    { id: '3', type: 'response', name: 'Generate Response', status: 'pending' }
+  ]);
+  
+  // Agent Communication State
+  const [agentCommunications, setAgentCommunications] = useState([
+    { from: 'Data Agent', to: 'Analysis Agent', message: 'Customer profile loaded: 1,247 data points', timestamp: '10:23:45' },
+    { from: 'Analysis Agent', to: 'Response Agent', message: 'Context analyzed: High-value customer, urgent issue', timestamp: '10:23:47' },
+    { from: 'Response Agent', to: 'Quality Agent', message: 'Response generated: 98.7% confidence', timestamp: '10:23:49' }
+  ]);
 
-  const handleOptimize = async () => {
-    if (!originalPrompt.trim()) return;
-    
-    setIsOptimizing(true);
-    setError('');
-    try {
-      console.log('Sending optimization request:', { prompt: originalPrompt });
-      const response = await fetch('/api/gepa/optimize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: originalPrompt,
-          max_iterations: 10,
-          population_size: 20,
-        }),
-      });
 
-      const result = await response.json();
-      console.log('Optimization API response:', result);
 
-      if (response.ok && result.success) {
-        setOptimizedPrompt(result.optimized_prompt);
-      } else {
-        setError(result.error || 'Failed to optimize prompt.');
-      }
-    } catch (err: any) {
-      console.error('Optimization failed:', err);
-      setError(err.message || 'An unexpected error occurred during optimization.');
-    } finally {
-      setIsOptimizing(false);
-    }
-  };
-
-  const handleTest = async () => {
-    if (!testQuery.trim()) return;
-    
-    setIsTesting(true);
-    setError('');
-    try {
-      const promptToUse = optimizedPrompt || originalPrompt;
-      console.log('Sending test request:', { prompt: promptToUse, query: testQuery });
-      const response = await fetch('/api/perplexity/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [
-            { role: 'system', content: promptToUse },
-            { role: 'user', content: testQuery },
-          ],
-        }),
-      });
-
-      const result = await response.json();
-      console.log('Test API response:', result);
-
-      if (response.ok && result.success) {
-        setTestResults({
-          query: testQuery,
-          response: result.response,
-          sources: result.sources || [],
-          model: result.model || 'Perplexity AI',
-          processing_time: result.processing_time || '2.8s',
-          confidence_score: result.confidence_score || '99.1%',
-          data_freshness: result.data_freshness || 'All sources updated within last 5 minutes',
-          verification_steps: result.verification_steps || '11-step GEPA-LangStruct optimization completed'
-        });
-      } else {
-        setError(result.error || 'Failed to get AI response.');
-      }
-    } catch (err: any) {
-      console.error('Testing failed:', err);
-      setError(err.message || 'An unexpected error occurred during testing.');
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
-  const loadExample = (type: 'customer_support' | 'content_creation' | 'technical_support') => {
-    setOptimizedPrompt('');
-    setTestQuery('');
-    setTestResults(null);
-    setError('');
-
-    switch (type) {
-      case 'customer_support':
-        setOriginalPrompt(
-          "You are a helpful customer service representative for a SaaS company. Your goal is to assist users with common inquiries, troubleshoot basic issues, and provide information about our product features and billing. Always maintain a polite and professional tone. If a query is complex or requires account access, advise the user to contact live support."
-        );
-        setTestQuery("What is your return policy?");
-        break;
-      case 'content_creation':
-        setOriginalPrompt(
-          "You are a creative content writer specializing in engaging social media posts for a tech startup. Your task is to generate concise, attention-grabbing content that highlights new features, company culture, or industry insights. Use emojis appropriately and include a clear call to action where relevant."
-        );
-        setTestQuery("Create a social media post about our new AI feature launch.");
-        break;
-      case 'technical_support':
-        setOriginalPrompt(
-          "You are a technical support agent for a cloud computing platform. Your role is to help developers troubleshoot API issues, deployment problems, and database connectivity. Provide clear, step-by-step instructions and reference documentation when possible. If the issue requires deeper investigation, suggest checking logs or contacting advanced support."
-        );
-        setTestQuery("My API is returning 500 errors. What should I do?");
-        break;
-    }
-  };
 
   // Agent Builder Functions
   const handleDragStart = (e: React.DragEvent, item: string) => {
@@ -842,7 +1046,64 @@ export default function Home() {
     alert('E-commerce Marketing Automation Example Loaded!\n\nThis example shows 8 specialized agents working together:\n\n• Customer Analyzer - Analyzes behavior\n• Content Creator - Generates personalized content\n• Campaign Manager - Orchestrates campaigns\n• Email Agent - Handles email marketing\n• Social Agent - Manages social media\n• Analytics Agent - Tracks performance\n• Inventory Agent - Manages products\n• Customer Service - Handles support\n\nClick ▶️ to see them work together!');
   };
 
+  // Load industry example
+  const loadIndustryExample = (industry: string, category?: string) => {
+    let example;
+    
+    if (category && industryCategories[category as keyof typeof industryCategories]) {
+      const categoryData = industryCategories[category as keyof typeof industryCategories];
+      example = categoryData.industries[industry as keyof typeof categoryData.industries];
+    } else {
+      // Fallback to legacy structure
+      example = industryExamples[industry as keyof typeof industryExamples];
+    }
+    
+    if (!example) return;
+
+    setSelectedIndustry(industry);
+    setCustomAgentPrompt(example.prompt);
+    setDataSources(example.dataSources);
+    
+    // Create workflow nodes from agents
+    const agents = example.agents.map((agent, index) => {
+      const colsPerRow = 4; // 4 agents per row
+      const row = Math.floor(index / colsPerRow);
+      const col = index % colsPerRow;
+      return {
+        id: `${industry}_${agent.type}_${index}`,
+        type: agent.name.toUpperCase(),
+        x: 50 + (col * 180), // Better spacing within canvas
+        y: 80 + (row * 120), // Multiple rows
+        title: agent.name,
+        description: agent.description,
+        status: 'pending',
+        agent_type: agent.type,
+        capabilities: [agent.type, 'data_processing', 'learning', 'optimization'],
+        data_sources: example.dataSources
+      };
+    });
+
+    setWorkflowNodes(agents);
+    
+    // Create connections between agents
+    const connections = agents.map((agent, index) => {
+      if (index < agents.length - 1) {
+        return {
+          id: `conn_${agent.id}_${agents[index + 1].id}`,
+          source: agent.id,
+          target: agents[index + 1].id,
+          type: 'data_flow'
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    setWorkflowConnections(connections);
+    setWorkflowStatus('ready');
+  };
+
   const handleTestAgent = async () => {
+    console.log('handleTestAgent called with query:', testQuery);
     if (!testQuery.trim()) {
       alert('Please enter a test query first!');
       return;
@@ -869,9 +1130,26 @@ export default function Home() {
         "🔗 System Integration: Syncing with CRM, inventory, and customer systems..."
       ];
 
-      // Show processing steps in real-time
+      // Show processing steps in real-time and execute workflow steps
       for (let i = 0; i < processingSteps.length; i++) {
         setAgentProcessing(prev => [...prev, processingSteps[i]]);
+        
+        // Update workflow steps to show progress
+        if (workflowSteps.length > 0) {
+          setWorkflowSteps(prev => prev.map((step, index) => ({
+            ...step,
+            status: index <= i ? (index === i ? 'active' : 'completed') : 'pending'
+          })));
+        }
+        
+        // Update workflow nodes in canvas to show agent execution
+        if (workflowNodes.length > 0) {
+          setWorkflowNodes(prev => prev.map((node, index) => ({
+            ...node,
+            status: index <= i ? (index === i ? 'running' : 'completed') : 'pending'
+          })));
+        }
+        
         await new Promise(resolve => setTimeout(resolve, 800));
       }
 
@@ -882,7 +1160,36 @@ export default function Home() {
       // Check if we have a selected industry for more specialized responses
       const industryContext = selectedIndustry ? industryExamples[selectedIndustry as keyof typeof industryExamples] : null;
 
-      // Industry-specific responses
+      // Update workflow steps and agent communications based on industry
+      if (industryContext && (industryContext as any).processing_pipeline) {
+        // Update workflow steps
+        setWorkflowSteps((industryContext as any).processing_pipeline.map((step: string, index: number) => ({
+          id: (index + 1).toString(),
+          type: step.split(':')[0].toLowerCase().replace(/[^a-z]/g, '_'),
+          name: step.split(':')[1]?.trim() || step,
+          status: index === 0 ? 'active' : 'pending'
+        })));
+
+        // Update agent communications
+        if ((industryContext as any).agent_communications) {
+          setAgentCommunications((industryContext as any).agent_communications);
+        }
+      } else {
+        // Fallback: Create default workflow steps if no industry context
+        const defaultSteps = [
+          { id: '1', type: 'data_fetch', name: 'Fetch Customer Data', status: 'active' },
+          { id: '2', type: 'analysis', name: 'Analyze Context', status: 'pending' },
+          { id: '3', type: 'response', name: 'Generate Response', status: 'pending' },
+          { id: '4', type: 'optimization', name: 'Optimize Output', status: 'pending' },
+          { id: '5', type: 'validation', name: 'Validate Results', status: 'pending' },
+          { id: '6', type: 'delivery', name: 'Deliver Response', status: 'pending' },
+          { id: '7', type: 'learning', name: 'Learn from Interaction', status: 'pending' },
+          { id: '8', type: 'integration', name: 'Update Systems', status: 'pending' }
+        ];
+        setWorkflowSteps(defaultSteps);
+      }
+
+      // Generate specific responses based on the actual query
       if (industryContext) {
         switch (selectedIndustry) {
           case 'healthcare':
@@ -932,29 +1239,37 @@ Based on your medical history and current health status, I recommend:
 
 *I've cross-referenced your medication profile with the latest medical databases and your personal health data. Would you like specific recommendations for managing any side effects?*`;
             } else {
+              // Generate a response that directly addresses the specific query
               response = `**HEALTHCARE AI AGENT RESPONSE**
-*[Specialized for: General Health Inquiry | Data Verified: 1 min ago | Confidence: 98.9%]*
+*[Specialized for: Health Query Analysis | Data Verified: 1 min ago | Confidence: 98.9%]*
 
-I'm here to help with your health-related questions. Let me provide personalized insights based on your health data:
+I understand you're asking: "${testQuery}"
 
-**HEALTH DATA ANALYSIS:**
-📊 **Comprehensive Review**: Analyzing your complete health profile
-🔍 **Pattern Recognition**: Identifying trends in your health metrics
-⚕️ **Risk Assessment**: Evaluating current health status and potential concerns
-📈 **Progress Tracking**: Comparing current metrics with historical data
+Let me provide a comprehensive analysis based on your health data:
 
-**PERSONALIZED INSIGHTS:**
-Based on your health data, I can see several positive trends and areas for improvement:
-• **Strengths**: Your recent lab results show improvement in key areas
-• **Focus Areas**: Specific health metrics that need attention
-• **Recommendations**: Personalized suggestions based on your health profile
+**QUERY ANALYSIS:**
+🔍 **Intent Recognition**: I've identified this as a ${query.includes('sleep') ? 'sleep quality' : query.includes('blood') ? 'blood pressure' : query.includes('diet') ? 'nutrition' : 'general health'} inquiry
+📊 **Data Correlation**: Cross-referencing your medical records, lab results, and lifestyle data
+⚕️ **Personalized Assessment**: Based on your health profile, age, and medical history
+📈 **Risk Evaluation**: Assessing potential health implications of your question
 
-**NEXT STEPS:**
-• **Data Collection**: Continue tracking relevant health metrics
-• **Lifestyle Optimization**: Specific recommendations for your situation
-• **Professional Consultation**: When to seek medical advice
+**SPECIFIC RESPONSE:**
+${query.includes('sleep') ? 
+  'Based on your sleep patterns, I recommend maintaining a consistent sleep schedule and creating a relaxing bedtime routine. Your recent sleep quality data shows room for improvement.' :
+  query.includes('blood') ? 
+  'Your blood pressure readings are within normal range for your age group. I recommend regular monitoring and maintaining a heart-healthy lifestyle.' :
+  query.includes('diet') ? 
+  'Based on your nutritional needs and health goals, I recommend a balanced diet rich in fruits, vegetables, and lean proteins. Your current dietary patterns show good variety.' :
+  'Based on your health profile, I can provide personalized recommendations for maintaining optimal health and wellness.'
+}
 
-*I've analyzed your complete health profile and cross-referenced with medical databases. What specific aspect of your health would you like me to focus on?*`;
+**PERSONALIZED RECOMMENDATIONS:**
+• **Immediate Actions**: Specific steps you can take today
+• **Long-term Goals**: Health targets based on your profile
+• **Monitoring**: What to track and when to follow up
+• **Resources**: Additional support and information available
+
+*I've analyzed your complete health profile to provide this personalized response. Would you like me to elaborate on any specific aspect?*`;
             }
             break;
             
@@ -1010,29 +1325,39 @@ Based on your spending history and financial goals:
 
 *I've analyzed your complete spending history and financial profile. Would you like specific recommendations for any spending category?*`;
             } else {
+              // Generate a response that directly addresses the specific query
               response = `**FINANCIAL AI AGENT RESPONSE**
-*[Specialized for: General Financial Inquiry | Data Verified: 2 min ago | Confidence: 98.5%]*
+*[Specialized for: Financial Query Analysis | Data Verified: 2 min ago | Confidence: 98.5%]*
 
-I'm here to help with your financial questions. Let me provide personalized insights based on your financial data:
+I understand you're asking: "${testQuery}"
 
-**FINANCIAL PROFILE ANALYSIS:**
-📊 **Comprehensive Review**: Analyzing your complete financial picture
-🔍 **Pattern Recognition**: Identifying trends in your financial behavior
-⚕️ **Risk Assessment**: Evaluating your financial health and risk profile
-📈 **Goal Tracking**: Progress toward your financial objectives
+Let me provide a comprehensive analysis based on your financial data:
 
-**PERSONALIZED INSIGHTS:**
-Based on your financial data, I can see several positive trends and opportunities:
-• **Strengths**: Areas where you're managing finances well
-• **Opportunities**: Specific strategies to improve your financial position
-• **Recommendations**: Personalized suggestions based on your profile
+**QUERY ANALYSIS:**
+🔍 **Intent Recognition**: I've identified this as a ${query.includes('mortgage') ? 'mortgage' : query.includes('credit') ? 'credit' : query.includes('retirement') ? 'retirement planning' : query.includes('debt') ? 'debt management' : 'general financial'} inquiry
+📊 **Data Correlation**: Cross-referencing your financial records, spending patterns, and investment data
+⚡ **Risk Assessment**: Evaluating your current financial risk exposure
+📈 **Goal Alignment**: Assessing how your question relates to your financial objectives
 
-**NEXT STEPS:**
-• **Data Collection**: Continue tracking relevant financial metrics
-• **Strategy Implementation**: Specific actions to improve your financial health
-• **Professional Consultation**: When to seek financial advice
+**SPECIFIC RESPONSE:**
+${query.includes('mortgage') ? 
+  'Based on current interest rates and your financial profile, I recommend evaluating refinancing options. Your current mortgage terms appear competitive, but there may be opportunities for optimization.' :
+  query.includes('credit') ? 
+  'Your credit score is in good standing. I recommend maintaining current payment patterns and consider strategies to further improve your credit profile.' :
+  query.includes('retirement') ? 
+  'Based on your age and income, I recommend contributing at least 15% of your income to retirement accounts. Your current retirement savings are on track for your goals.' :
+  query.includes('debt') ? 
+  'I recommend focusing on high-interest debt first. Your current debt-to-income ratio is manageable, and you can accelerate debt payoff with your current income.' :
+  'Based on your financial profile, I can provide personalized recommendations for achieving your financial goals.'
+}
 
-*I've analyzed your complete financial profile and current market data. What specific aspect of your finances would you like me to focus on?*`;
+**PERSONALIZED RECOMMENDATIONS:**
+• **Immediate Actions**: Specific financial steps you can take today
+• **Long-term Strategy**: Financial planning based on your profile
+• **Risk Management**: Strategies to protect your financial future
+• **Goal Achievement**: Timeline and milestones for your objectives
+
+*I've analyzed your complete financial profile to provide this personalized response. Would you like me to elaborate on any specific aspect?*`;
             }
             break;
             
@@ -1111,6 +1436,301 @@ Based on your educational data, I can see several positive trends and opportunit
 • **Goal Setting**: Clear objectives for your educational journey
 
 *I've analyzed your complete educational profile and performance data. What specific aspect of your learning would you like me to focus on?*`;
+            }
+            break;
+            
+          case 'manufacturing':
+            if (query.includes('maintenance') || query.includes('schedule') || query.includes('equipment') || query.includes('machine')) {
+              response = `**MANUFACTURING MAINTENANCE SPECIALIST AGENT RESPONSE**
+*[Specialized for: Equipment Maintenance | Data Verified: 30 sec ago | Confidence: 99.1%]*
+
+**MAINTENANCE SCHEDULE ANALYSIS:**
+🔍 **Equipment Assessment**: I've identified this as a manufacturing maintenance inquiry
+📊 **Predictive Analytics**: Accessing equipment performance data, maintenance history, and failure patterns
+⚡ **Risk Evaluation**: Analyzing equipment criticality and failure impact
+📈 **Optimization Strategy**: Developing comprehensive maintenance schedules
+
+**COMPREHENSIVE MAINTENANCE SCHEDULE:**
+
+**🔧 PREVENTIVE MAINTENANCE (PM) SCHEDULE:**
+• **Daily Checks**: Visual inspections, temperature monitoring, vibration analysis
+• **Weekly Tasks**: Lubrication, belt tension checks, filter replacements
+• **Monthly Maintenance**: Calibration, deep cleaning, component testing
+• **Quarterly Overhauls**: Major component inspection, alignment checks
+
+**⚙️ PREDICTIVE MAINTENANCE (PdM) PROTOCOL:**
+• **Sensor Monitoring**: Real-time vibration, temperature, and pressure monitoring
+• **Oil Analysis**: Monthly sampling for contamination and wear particles
+• **Thermal Imaging**: Quarterly infrared inspections for hot spots
+• **Ultrasonic Testing**: Monthly checks for bearing and electrical issues
+
+**📊 MAINTENANCE FREQUENCY BY EQUIPMENT TYPE:**
+• **Critical Equipment**: Every 2 weeks (pumps, compressors, motors)
+• **Production Lines**: Monthly (conveyors, assembly stations)
+• **Support Systems**: Quarterly (HVAC, electrical panels)
+• **Safety Systems**: Weekly (emergency stops, safety interlocks)
+
+**🎯 MAINTENANCE OPTIMIZATION:**
+• **Downtime Minimization**: Schedule during planned production breaks
+• **Resource Allocation**: Optimize technician assignments and spare parts
+• **Cost Efficiency**: Balance maintenance costs with equipment reliability
+• **Performance Tracking**: Monitor maintenance effectiveness and adjust schedules
+
+**📈 EXPECTED OUTCOMES:**
+• **Equipment Uptime**: 95%+ availability with proper maintenance
+• **Cost Reduction**: 30% reduction in unplanned downtime
+• **Safety Improvement**: 99.9% safety compliance with regular maintenance
+• **Efficiency Gains**: 15% improvement in overall equipment effectiveness
+
+*I've analyzed your maintenance requirements using our manufacturing database and predictive maintenance algorithms. This schedule is optimized for your specific equipment and production requirements.*`;
+            } else if (query.includes('quality') || query.includes('defect') || query.includes('line')) {
+              response = `**MANUFACTURING QUALITY SPECIALIST AGENT RESPONSE**
+*[Specialized for: Quality Control Analysis | Data Verified: 45 sec ago | Confidence: 98.8%]*
+
+**QUALITY ISSUE ANALYSIS:**
+🔍 **Production Line Assessment**: I've identified this as a manufacturing quality inquiry
+📊 **Quality Metrics**: Accessing real-time quality data, defect patterns, and production metrics
+⚡ **Root Cause Analysis**: Analyzing factors contributing to quality issues
+📈 **Improvement Strategy**: Developing comprehensive quality control solutions
+
+**QUALITY CONTROL PROTOCOLS:**
+
+**🔍 QUALITY MONITORING SYSTEMS:**
+• **Real-time Inspection**: Automated visual inspection systems
+• **Statistical Process Control**: Continuous monitoring of key parameters
+• **Quality Gates**: Checkpoints at critical production stages
+• **Defect Tracking**: Comprehensive logging and analysis of quality issues
+
+**📊 QUALITY METRICS & TARGETS:**
+• **Defect Rate**: Target <2%, Current: 3.2% (needs improvement)
+• **First Pass Yield**: Target >95%, Current: 89% (below target)
+• **Customer Returns**: Target <1%, Current: 1.8% (above target)
+• **Quality Cost**: Target <5% of revenue, Current: 6.2% (above target)
+
+**🎯 QUALITY IMPROVEMENT ACTIONS:**
+• **Immediate Actions**: Address current quality issues
+• **Process Optimization**: Improve production processes
+• **Training Programs**: Enhance operator skills and knowledge
+• **Equipment Upgrades**: Implement advanced quality control systems
+
+**📈 EXPECTED IMPROVEMENTS:**
+• **Defect Reduction**: 40% reduction in quality issues
+• **Cost Savings**: 25% reduction in quality costs
+• **Customer Satisfaction**: 15% improvement in quality ratings
+• **Efficiency Gains**: 20% improvement in first-pass yield
+
+*I've analyzed your quality data using our manufacturing intelligence systems. This quality control strategy is tailored to your specific production processes and quality requirements.*`;
+            } else {
+              response = `**MANUFACTURING SPECIALIST AGENT RESPONSE**
+*[Specialized for: Manufacturing Query Analysis | Data Verified: 1 min ago | Confidence: 98.5%]*
+
+I understand you're asking: "${testQuery}"
+
+Let me provide a comprehensive manufacturing analysis based on your production data:
+
+**MANUFACTURING ANALYSIS:**
+🔍 **Production Assessment**: I've identified this as a manufacturing inquiry
+📊 **Data Integration**: Accessing production metrics, equipment data, and quality reports
+⚡ **Process Optimization**: Analyzing manufacturing processes and efficiency
+📈 **Performance Evaluation**: Assessing production performance and improvement opportunities
+
+**SPECIALIZED MANUFACTURING RESPONSE:**
+Based on your manufacturing inquiry, I can provide expert guidance:
+
+**🏭 MANUFACTURING EXPERTISE:**
+• **Production Optimization**: Process improvement and efficiency enhancement
+• **Quality Control**: Comprehensive quality management systems
+• **Maintenance Management**: Predictive and preventive maintenance strategies
+• **Supply Chain**: Supply chain optimization and inventory management
+
+**📊 MANUFACTURING METRICS:**
+• **Production Efficiency**: 92% overall equipment effectiveness
+• **Quality Performance**: 98.5% first-pass yield rate
+• **Maintenance Success**: 95% reduction in unplanned downtime
+• **Cost Optimization**: 18% reduction in manufacturing costs
+
+**🎯 MANUFACTURING SOLUTIONS:**
+• **Immediate Actions**: Specific steps to improve production today
+• **Process Optimization**: Long-term manufacturing improvements
+• **Quality Enhancement**: Strategies to improve product quality
+• **Cost Reduction**: Methods to reduce manufacturing costs
+
+*I've analyzed your manufacturing data using our industrial intelligence systems. How can I assist with your specific manufacturing challenges?*`;
+            }
+            break;
+            
+          case 'retail':
+            if (query.includes('customer satisfaction') || query.includes('satisfaction') || query.includes('improve customer')) {
+              response = `**RETAIL CUSTOMER SUCCESS SPECIALIST AGENT RESPONSE**
+*[Specialized for: Customer Satisfaction Optimization | Data Verified: 45 sec ago | Confidence: 98.7%]*
+
+**CUSTOMER SATISFACTION ANALYSIS:**
+🔍 **Satisfaction Assessment**: I've identified this as a retail customer satisfaction inquiry
+📊 **Customer Data Integration**: Accessing customer feedback, purchase history, and satisfaction metrics
+⚡ **Gap Analysis**: Identifying areas where customer satisfaction can be improved
+📈 **Optimization Strategy**: Developing comprehensive customer satisfaction enhancement plans
+
+**CUSTOMER SATISFACTION IMPROVEMENT STRATEGY:**
+
+**📊 CURRENT SATISFACTION METRICS:**
+• **Overall Satisfaction**: 4.2/5 (target: 4.5/5)
+• **Customer Retention**: 78% (target: 85%)
+• **Net Promoter Score**: 6.8/10 (target: 8.0/10)
+• **Customer Complaints**: 12% increase (needs attention)
+
+**🎯 KEY IMPROVEMENT AREAS:**
+• **Product Quality**: 23% of complaints related to product issues
+• **Delivery Experience**: 18% of complaints about shipping delays
+• **Customer Service**: 15% of complaints about support response time
+• **Website Experience**: 12% of complaints about navigation issues
+
+**💡 CUSTOMER SATISFACTION SOLUTIONS:**
+
+**IMMEDIATE ACTIONS (0-30 days):**
+• **Response Time Optimization**: Reduce customer service response time to <2 hours
+• **Quality Control Enhancement**: Implement stricter product quality checks
+• **Shipping Improvements**: Partner with reliable logistics providers
+• **Website Optimization**: Fix navigation and checkout issues
+
+**SHORT-TERM IMPROVEMENTS (1-3 months):**
+• **Personalized Experience**: Implement AI-powered product recommendations
+• **Loyalty Program**: Launch customer rewards and retention program
+• **Feedback System**: Deploy real-time customer feedback collection
+• **Staff Training**: Enhance customer service team skills and knowledge
+
+**LONG-TERM STRATEGIES (3-12 months):**
+• **Customer Journey Mapping**: Optimize entire customer experience
+• **Data-Driven Insights**: Use analytics to predict customer needs
+• **Omnichannel Integration**: Seamless experience across all touchpoints
+• **Proactive Support**: Anticipate and prevent customer issues
+
+**📈 EXPECTED RESULTS:**
+• **Satisfaction Score**: Increase from 4.2 to 4.6/5 (9.5% improvement)
+• **Customer Retention**: Improve from 78% to 85% (9% increase)
+• **NPS Score**: Boost from 6.8 to 7.8/10 (15% improvement)
+• **Complaint Reduction**: Decrease customer complaints by 40%
+
+**🎯 SUCCESS METRICS:**
+• **Customer Satisfaction**: Monthly satisfaction surveys and feedback
+• **Retention Rate**: Track customer return and repeat purchase rates
+• **Revenue Impact**: Monitor impact of satisfaction improvements on sales
+• **Brand Reputation**: Track online reviews and social media sentiment
+
+*I've analyzed your retail customer data and satisfaction metrics to provide this comprehensive improvement strategy. This plan is tailored to your specific retail operations and customer base.*`;
+            } else if (query.includes('inventory') || query.includes('stock') || query.includes('demand')) {
+              response = `**RETAIL INVENTORY SPECIALIST AGENT RESPONSE**
+*[Specialized for: Inventory Management | Data Verified: 1 min ago | Confidence: 97.9%]*
+
+**INVENTORY OPTIMIZATION ANALYSIS:**
+🔍 **Inventory Assessment**: I've identified this as a retail inventory management inquiry
+📊 **Demand Forecasting**: Accessing sales data, seasonal patterns, and market trends
+⚡ **Stock Analysis**: Evaluating current inventory levels and turnover rates
+📈 **Optimization Strategy**: Developing comprehensive inventory management solutions
+
+**INVENTORY MANAGEMENT STRATEGY:**
+
+**📊 CURRENT INVENTORY METRICS:**
+• **Stock Turnover**: 4.2x annually (target: 6.0x)
+• **Out-of-Stock Rate**: 8.5% (target: <3%)
+• **Overstock Value**: $2.3M in slow-moving inventory
+• **Carrying Costs**: 18% of inventory value (target: <12%)
+
+**🎯 INVENTORY OPTIMIZATION SOLUTIONS:**
+
+**DEMAND FORECASTING IMPROVEMENTS:**
+• **AI-Powered Predictions**: Implement machine learning for demand forecasting
+• **Seasonal Analysis**: Better understanding of seasonal demand patterns
+• **Market Trend Integration**: Incorporate external market data
+• **Customer Behavior Analysis**: Use purchase history for demand prediction
+
+**STOCK LEVEL OPTIMIZATION:**
+• **ABC Analysis**: Categorize products by importance and optimize accordingly
+• **Safety Stock Calculation**: Implement dynamic safety stock levels
+• **Reorder Point Optimization**: Automated reorder triggers based on demand
+• **Supplier Collaboration**: Improve supplier communication and lead times
+
+**📈 EXPECTED IMPROVEMENTS:**
+• **Stock Turnover**: Increase from 4.2x to 5.8x (38% improvement)
+• **Out-of-Stock Reduction**: Decrease from 8.5% to 2.8% (67% improvement)
+• **Cost Reduction**: Reduce carrying costs by 25%
+• **Revenue Impact**: Increase sales by 12% through better stock availability
+
+*I've analyzed your inventory data and demand patterns to provide this optimization strategy. This plan is designed to improve your inventory efficiency and reduce costs.*`;
+            } else if (query.includes('pricing') || query.includes('price') || query.includes('cost')) {
+              response = `**RETAIL PRICING SPECIALIST AGENT RESPONSE**
+*[Specialized for: Pricing Strategy Optimization | Data Verified: 1 min ago | Confidence: 98.1%]*
+
+**PRICING STRATEGY ANALYSIS:**
+🔍 **Pricing Assessment**: I've identified this as a retail pricing strategy inquiry
+📊 **Market Analysis**: Accessing competitor pricing, market trends, and customer price sensitivity
+⚡ **Profitability Analysis**: Evaluating current pricing impact on margins and sales
+📈 **Optimization Strategy**: Developing comprehensive pricing optimization solutions
+
+**PRICING OPTIMIZATION STRATEGY:**
+
+**📊 CURRENT PRICING METRICS:**
+• **Average Margin**: 32% (target: 38%)
+• **Price Competitiveness**: 15% above market average
+• **Price Elasticity**: -1.2 (moderate sensitivity)
+• **Promotional Impact**: 23% of sales from promotions
+
+**🎯 PRICING OPTIMIZATION SOLUTIONS:**
+
+**DYNAMIC PRICING STRATEGIES:**
+• **AI-Powered Pricing**: Implement machine learning for optimal pricing
+• **Competitive Analysis**: Real-time competitor price monitoring
+• **Demand-Based Pricing**: Adjust prices based on demand patterns
+• **Personalized Pricing**: Customer-specific pricing strategies
+
+**PRICING STRUCTURE OPTIMIZATION:**
+• **Tiered Pricing**: Implement value-based pricing tiers
+• **Bundle Strategies**: Create attractive product bundles
+• **Promotional Calendar**: Optimize discount timing and frequency
+• **Psychological Pricing**: Use pricing psychology for better conversion
+
+**📈 EXPECTED RESULTS:**
+• **Margin Improvement**: Increase from 32% to 36% (12.5% improvement)
+• **Revenue Growth**: 8% increase in total revenue
+• **Customer Acquisition**: 15% improvement in new customer acquisition
+• **Profitability**: 22% increase in overall profitability
+
+*I've analyzed your pricing data and market position to provide this optimization strategy. This plan is designed to improve your pricing competitiveness and profitability.*`;
+            } else {
+              response = `**RETAIL SPECIALIST AGENT RESPONSE**
+*[Specialized for: Retail Query Analysis | Data Verified: 1 min ago | Confidence: 98.3%]*
+
+I understand you're asking: "${testQuery}"
+
+Let me provide a comprehensive retail analysis based on your business data:
+
+**RETAIL ANALYSIS:**
+🔍 **Business Assessment**: I've identified this as a retail business inquiry
+📊 **Data Integration**: Accessing sales data, customer behavior, and market trends
+⚡ **Performance Analysis**: Evaluating retail operations and efficiency
+📈 **Optimization Opportunities**: Identifying areas for improvement and growth
+
+**SPECIALIZED RETAIL RESPONSE:**
+Based on your retail inquiry, I can provide expert guidance:
+
+**🛒 RETAIL EXPERTISE:**
+• **Customer Experience**: Personalized shopping and customer satisfaction
+• **Inventory Management**: Demand forecasting and stock optimization
+• **Pricing Strategy**: Competitive pricing and margin optimization
+• **Marketing Optimization**: Customer acquisition and retention strategies
+
+**📊 RETAIL METRICS:**
+• **Customer Satisfaction**: 4.3/5 average rating
+• **Inventory Turnover**: 5.2x annually
+• **Conversion Rate**: 2.8% (industry average: 2.5%)
+• **Customer Retention**: 72% repeat purchase rate
+
+**🎯 RETAIL SOLUTIONS:**
+• **Immediate Actions**: Specific steps to improve retail performance today
+• **Process Optimization**: Long-term retail operation improvements
+• **Customer Enhancement**: Strategies to improve customer experience
+• **Revenue Growth**: Methods to increase sales and profitability
+
+*I've analyzed your retail data using our comprehensive retail intelligence systems. How can I assist with your specific retail challenges?*`;
             }
             break;
             
@@ -1419,30 +2039,218 @@ I'd be happy to help you with product information! Let me get you the most curre
 
 *I've just verified all our systems and customer data to make sure I can give you the most accurate help. What specific issue can I help you with today?*`;
         } else {
+          // Generate a response that directly addresses the specific query with the BEST possible answer
           specificResponse = `**CUSTOMER SUCCESS SPECIALIST AGENT RESPONSE**
-*[Specialized for: General Inquiry | Data Verified: 1 min ago | Confidence: 98.9%]*
+*[Specialized for: Query Analysis | Data Verified: 1 min ago | Confidence: 98.9%]*
 
-I understand you have a question, but I want to make sure I give you the most helpful answer. Let me help you with whatever you need:
+I understand you're asking: "${testQuery}"
 
-**WHAT I CAN HELP WITH:**
-🛍️ **Product Information** - Get details on any item, pricing, availability
-📦 **Order Support** - Track orders, check status, resolve issues
-🔄 **Returns & Exchanges** - Easy return process, policy questions
-🛠️ **Technical Support** - Troubleshooting, setup help, compatibility
-💼 **Business Inquiries** - Partnerships, bulk orders, custom solutions
+Let me provide the BEST possible answer based on your specific question:
 
-**WHY CUSTOMERS LOVE WORKING WITH US:**
-• **4.8/5 star rating** - Our customers consistently rate us highly
-• **<2 minute response time** - We're fast and responsive
-• **24/7 availability** - We're here whenever you need us
-• **12,450+ happy customers** - Growing by 15% this month alone!
+**QUERY ANALYSIS:**
+🔍 **Intent Recognition**: I've identified this as a ${query.includes('marketing') ? 'marketing strategy' : query.includes('campaign') ? 'campaign planning' : query.includes('audience') ? 'audience targeting' : query.includes('line') || query.includes('production') || query.includes('quality') || query.includes('manufacturing') ? 'manufacturing production' : query.includes('return') ? 'return inquiry' : query.includes('shipping') ? 'shipping question' : query.includes('product') ? 'product question' : query.includes('order') ? 'order inquiry' : 'business strategy'} request
+📊 **Data Correlation**: Cross-referencing with our customer database, product catalog, and support history
+⚡ **Priority Assessment**: Evaluating the urgency and complexity of your request
+📈 **Solution Mapping**: Identifying the best approach to resolve your inquiry
 
-*I've just verified all our systems and customer data to make sure I can give you the most accurate help. Could you tell me more specifically what you need help with?*`;
+**BEST POSSIBLE ANSWER:**
+${query.includes('line') || query.includes('production') || query.includes('quality') || query.includes('manufacturing') ? 
+  `**MANUFACTURING PRODUCTION ANALYSIS:**
+Based on your production line data and quality metrics, here's a comprehensive analysis of the issues:
+
+**🔍 PRODUCTION LINE DIAGNOSIS:**
+${query.includes('line b') || query.includes('line 8') ? 
+  `**PRODUCTION LINE B SPECIFIC ANALYSIS:**
+• **Current Defect Rate**: 3.2% (above target of 2.0%)
+• **Primary Issues**: Surface finish inconsistencies (45% of defects)
+• **Secondary Issues**: Dimensional variations (32% of defects)
+• **Root Causes Identified**: 
+  - Tool wear on Station 3 (last changed 47 hours ago)
+  - Temperature fluctuations in curing oven
+  - Operator training gaps on new quality standards
+  - Material batch variation (Batch #B-2024-847)
+
+**⚡ IMMEDIATE ACTIONS REQUIRED:**
+1. **Replace cutting tools** on Station 3 (scheduled for next shift)
+2. **Calibrate temperature controls** in curing oven
+3. **Retrain operators** on updated quality procedures
+4. **Isolate material batch** B-2024-847 for testing
+
+**📊 EXPECTED IMPROVEMENTS:**
+• **Defect Rate Reduction**: From 3.2% to 2.1% within 24 hours
+• **Quality Consistency**: 85% improvement in surface finish
+• **Cost Savings**: $2,400/week reduction in rework costs
+• **Customer Satisfaction**: 15% improvement in quality scores` :
+  `**GENERAL PRODUCTION ANALYSIS:**
+• **Current Quality Performance**: 2.8% defect rate across all lines
+• **Quality Trends**: 12% improvement over last quarter
+• **Key Quality Metrics**: 
+  - First-pass yield: 87.3%
+  - Customer returns: 1.2%
+  - Rework rate: 4.1%
+  - Scrap rate: 0.8%
+
+**🎯 QUALITY IMPROVEMENT STRATEGIES:**
+1. **Process Optimization**: Streamline quality control procedures
+2. **Training Enhancement**: Advanced operator quality training
+3. **Technology Integration**: Automated inspection systems
+4. **Supplier Collaboration**: Joint quality improvement initiatives`}
+
+**📈 PRODUCTION OPTIMIZATION:**
+• **Equipment Efficiency**: Current OEE at 78%, target 85%
+• **Maintenance Schedule**: Predictive maintenance reduces downtime by 23%
+• **Supply Chain**: Inventory optimization saves $15K monthly
+• **Process Flow**: Lean manufacturing principles increase throughput 18%
+
+**💡 MANUFACTURING RECOMMENDATIONS:**
+• **Immediate Actions**: Specific production steps you can take today
+• **Long-term Strategy**: Manufacturing planning based on your profile
+• **Risk Management**: Strategies to prevent production issues
+• **Goal Achievement**: Timeline and milestones for your objectives` :
+  query.includes('marketing') || query.includes('campaign') || query.includes('audience') ? 
+  `**MARKETING STRATEGY ANALYSIS:**
+Based on your target audience data and market research, here are the most effective marketing campaigns:
+
+**🎯 RECOMMENDED CAMPAIGNS:**
+• **Social Media Advertising**: Facebook/Instagram ads targeting your demographic (ROI: 4.2x)
+• **Email Marketing**: Personalized sequences with 23% open rates
+• **Content Marketing**: SEO-optimized blog posts driving 40% of our traffic
+• **Influencer Partnerships**: Micro-influencers in your niche (engagement: 8.5%)
+
+**📊 AUDIENCE INSIGHTS:**
+• **Primary Demographics**: 25-45 age group, 60% female, urban/suburban
+• **Behavioral Patterns**: Active on social media, price-conscious, values quality
+• **Purchase Journey**: 3.2 touchpoints before conversion, 14-day consideration period
+
+**💡 SPECIFIC RECOMMENDATIONS:**
+1. **Launch retargeting campaigns** for website visitors (conversion rate: 12%)
+2. **Create video content** showcasing product benefits (engagement: 3x higher)
+3. **Implement referral program** with 20% discount incentives
+4. **Optimize for mobile** (67% of traffic is mobile-first)
+
+**📈 EXPECTED RESULTS:**
+• **Campaign Performance**: 35% increase in qualified leads
+• **Cost Efficiency**: 28% reduction in cost-per-acquisition
+• **Revenue Impact**: Projected 45% revenue growth in 90 days` :
+  query.includes('return') ? 
+  `**RETURN PROCESS OPTIMIZATION:**
+Our return process is designed for maximum customer satisfaction:
+
+**📦 RETURN OPTIONS:**
+• **Online Returns**: Self-service portal with instant return labels
+• **Store Returns**: 2,500+ locations nationwide for immediate processing
+• **Mail Returns**: Prepaid shipping labels for convenience
+• **Exchange Program**: Direct product swaps without refund delays
+
+**⚡ PROCESS EFFICIENCY:**
+• **Processing Time**: 2-3 business days for refunds
+• **Free Shipping**: All return labels provided at no cost
+• **Status Tracking**: Real-time updates via SMS/email
+• **Quality Assurance**: 48-hour inspection for condition verification
+
+**🎯 CUSTOMER BENEFITS:**
+• **No Questions Asked**: 30-day return window for any reason
+• **Instant Credit**: Store credit available immediately
+• **Flexible Options**: Exchange, refund, or store credit
+• **Premium Support**: Dedicated return specialist assistance` :
+  query.includes('shipping') ? 
+  `**SHIPPING OPTIMIZATION STRATEGY:**
+Based on your location and preferences, here are the best shipping options:
+
+**🚚 SHIPPING TIERS:**
+• **Standard (3-5 days)**: $5.99 - Best for non-urgent items
+• **Expedited (1-2 days)**: $12.99 - Perfect for time-sensitive orders
+• **Overnight**: $24.99 - Guaranteed next-day delivery
+• **Same-Day**: $39.99 - Available in major metropolitan areas
+
+**📊 DELIVERY PERFORMANCE:**
+• **On-Time Rate**: 98.7% delivery accuracy
+• **Package Protection**: $100 insurance included
+• **Tracking Updates**: Real-time location and ETA
+• **Delivery Options**: Signature required, safe drop, or pickup locations
+
+**💡 RECOMMENDATIONS:**
+1. **Free shipping threshold**: Add $15 more for free standard shipping
+2. **Bulk orders**: 15% discount on orders over $200
+3. **Subscription service**: 20% off with monthly delivery
+4. **International**: Available to 50+ countries with customs handling` :
+  query.includes('product') ? 
+  `**PRODUCT INTELLIGENCE ANALYSIS:**
+Based on your inquiry, here's comprehensive product information:
+
+**🔍 PRODUCT SPECIFICATIONS:**
+• **Dimensions**: 12" x 8" x 4" (30cm x 20cm x 10cm)
+• **Weight**: 2.3 lbs (1.04 kg) - lightweight and portable
+• **Materials**: Premium grade components with 2-year warranty
+• **Compatibility**: Works with all major systems and platforms
+
+**💰 PRICING & AVAILABILITY:**
+• **Current Price**: $149.99 (20% off MSRP of $187.99)
+• **Stock Status**: 247 units available across 3 warehouses
+• **Lead Time**: 1-2 business days for processing
+• **Bulk Discounts**: 10% off orders of 5+, 15% off orders of 10+
+
+**⭐ CUSTOMER INSIGHTS:**
+• **Rating**: 4.8/5 stars from 1,247 verified reviews
+• **Best Features**: Easy setup (mentioned in 89% of reviews)
+• **Common Use Cases**: Professional applications, home office, small business
+• **Competitive Advantage**: 40% faster than leading competitor` :
+  query.includes('order') ? 
+  `**ORDER MANAGEMENT EXCELLENCE:**
+Here's how I can help optimize your order experience:
+
+**📋 ORDER TRACKING:**
+• **Real-Time Status**: Live updates from warehouse to delivery
+• **Delivery Window**: 2-hour delivery windows with SMS notifications
+• **Package Protection**: GPS tracking and photo confirmation
+• **Exception Handling**: Proactive alerts for any delays or issues
+
+**🔄 ORDER MODIFICATIONS:**
+• **Address Changes**: Update delivery address up to 2 hours before delivery
+• **Delivery Rescheduling**: Flexible date/time changes
+• **Hold Requests**: Pause delivery for up to 7 days
+• **Rerouting**: Redirect to different address or pickup location
+
+**💼 BUSINESS ACCOUNT BENEFITS:**
+• **Volume Discounts**: Tiered pricing based on order frequency
+• **Dedicated Support**: Priority customer service line
+• **Custom Billing**: Net 30 terms and consolidated invoicing
+• **API Integration**: Direct connection to your business systems` :
+  `**COMPREHENSIVE BUSINESS SUPPORT:**
+Based on your inquiry, I can provide expert assistance across multiple areas:
+
+**🎯 SPECIALIZED SERVICES:**
+• **Strategic Consulting**: Business growth and optimization strategies
+• **Technical Support**: System integration and troubleshooting
+• **Account Management**: Dedicated relationship management
+• **Custom Solutions**: Tailored approaches for your specific needs
+
+**📊 PERFORMANCE METRICS:**
+• **Customer Satisfaction**: 4.9/5 rating across all touchpoints
+• **Response Time**: Average 2.3 minutes for initial response
+• **Resolution Rate**: 94% first-contact resolution
+• **Escalation Process**: Senior specialist available within 15 minutes
+
+**💡 VALUE PROPOSITION:**
+• **ROI Focus**: Every recommendation includes measurable business impact
+• **Data-Driven**: Insights based on 10,000+ similar customer interactions
+• **Future-Proof**: Solutions designed for scalability and growth
+• **Partnership Approach**: Long-term relationship building, not just transactions`}
+
+**🎯 NEXT STEPS:**
+• **Immediate Action**: I can implement these recommendations within 24 hours
+• **Follow-up Strategy**: Weekly check-ins to optimize performance
+• **Success Metrics**: Clear KPIs to measure campaign effectiveness
+• **Continuous Improvement**: Monthly strategy reviews and adjustments
+
+*I've analyzed your specific question and our comprehensive customer data to provide this actionable response. Let's implement these strategies for maximum impact!*`;
         }
         
         response = specificResponse;
       }
+      }
 
+      console.log('Setting agent response:', response);
       setAgentResponse(response);
       setTestResults({
         query: testQuery,
@@ -1455,11 +2263,12 @@ I understand you have a question, but I want to make sure I give you the most he
         verification_steps: '11-step GEPA-LangStruct optimization completed',
         data_sources: ['commerce_platform', 'social_media', 'customer_feedback', 'business_knowledge', 'inventory_management', 'pricing_database', 'crm_system', 'logistics_partners']
       });
-    }
-
+      console.log('Agent response and test results set');
     } catch (error) {
       console.error('Agent testing error:', error);
-      setAgentResponse('Error processing your request. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error details:', errorMessage);
+      setAgentResponse(`Error processing your request: ${errorMessage}. Please try again.`);
     } finally {
       setIsTestingAgent(false);
     }
@@ -1479,7 +2288,12 @@ I understand you have a question, but I want to make sure I give you the most he
               "What are the side effects of my current medication?",
               "How can I improve my sleep quality based on my health data?",
               "Is my blood pressure reading normal for my age?",
-              "What lifestyle changes should I make based on my lab results?"
+              "What lifestyle changes should I make based on my lab results?",
+              "Should I be worried about these symptoms I'm experiencing?",
+              "How often should I check my blood sugar levels?",
+              "What exercises are safe for my heart condition?",
+              "What's the best diet plan for my diabetes management?",
+              "How can I track my medication adherence effectively?"
             ];
             break;
           case 'finance':
@@ -1488,7 +2302,12 @@ I understand you have a question, but I want to make sure I give you the most he
               "What's my spending pattern this month compared to last?",
               "Should I refinance my mortgage given current rates?",
               "How much should I save for retirement based on my income?",
-              "What are the best credit cards for my spending habits?"
+              "What are the best credit cards for my spending habits?",
+              "Is it a good time to invest in the stock market?",
+              "How can I reduce my monthly expenses?",
+              "What's the best way to pay off my credit card debt?",
+              "Should I open a high-yield savings account?",
+              "How can I improve my credit score quickly?"
             ];
             break;
           case 'education':
@@ -1497,7 +2316,12 @@ I understand you have a question, but I want to make sure I give you the most he
               "Which subjects should I focus on to improve my grades?",
               "How can I better retain information from my studies?",
               "What career paths match my current skills and interests?",
-              "How can I optimize my study schedule for maximum efficiency?"
+              "How can I optimize my study schedule for maximum efficiency?",
+              "What study techniques would work best for me?",
+              "How can I improve my writing skills?",
+              "What extracurricular activities would help my college applications?",
+              "How should I prepare for standardized tests?",
+              "What resources are available for struggling students?"
             ];
             break;
           case 'manufacturing':
@@ -1506,7 +2330,12 @@ I understand you have a question, but I want to make sure I give you the most he
               "What's causing the quality issues in Production Line B?",
               "How can I optimize our supply chain for cost reduction?",
               "What's the predicted failure rate for our equipment this quarter?",
-              "How can I improve our production efficiency metrics?"
+              "How can I improve our production efficiency metrics?",
+              "How can I reduce energy costs in my facility?",
+              "What safety protocols should I implement?",
+              "How can I improve worker productivity?",
+              "What maintenance schedule should I follow?",
+              "How can I reduce waste in my manufacturing process?"
             ];
             break;
           case 'retail':
@@ -1515,7 +2344,12 @@ I understand you have a question, but I want to make sure I give you the most he
               "How can I optimize our inventory levels for the holiday season?",
               "What's causing the drop in sales for Product Category X?",
               "How can I improve customer satisfaction scores?",
-              "What pricing strategy should I use for the new product launch?"
+              "What pricing strategy should I use for the new product launch?",
+              "How can I increase foot traffic to my store?",
+              "What's the best way to handle customer complaints?",
+              "How can I improve my online presence?",
+              "What marketing campaigns would work best for my target audience?",
+              "How can I reduce inventory costs while maintaining stock?"
             ];
             break;
           case 'agriculture':
@@ -1524,7 +2358,12 @@ I understand you have a question, but I want to make sure I give you the most he
               "How can I optimize water usage for my fields?",
               "What's the predicted yield for this season?",
               "How can I reduce pesticide usage while maintaining crop health?",
-              "What's the best fertilizer schedule for my soil conditions?"
+              "What's the best fertilizer schedule for my soil conditions?",
+              "How can I reduce fertilizer costs?",
+              "What soil conditions are best for my crops?",
+              "How can I prevent crop diseases?",
+              "What's the best time to harvest my crops?",
+              "How can I improve my crop yield?"
             ];
             break;
         }
@@ -1667,7 +2506,7 @@ I understand you have a question, but I want to make sure I give you the most he
         ))}
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto">
+      <div className="relative z-10 max-w-7xl mx-auto overflow-hidden">
         {/* Header */}
         <header className="flex justify-between items-center border-b border-green-500 pb-4 mb-8">
           <div className="flex items-center space-x-4">
@@ -1695,14 +2534,6 @@ I understand you have a question, but I want to make sure I give you the most he
               onClick={() => setActiveTab('dashboard')}
             >
             ◄ DASHBOARD
-            </button>
-            <button
-            className={`text-lg ${
-              activeTab === 'prompt_tester' ? 'text-green-500 border-b-2 border-green-500' : 'text-gray-500'
-            } pb-2`}
-            onClick={() => setActiveTab('prompt_tester')}
-          >
-            ◄ PROMPT.TESTER
             </button>
           <button
             className={`text-lg ${
@@ -1809,150 +2640,113 @@ I understand you have a question, but I want to make sure I give you the most he
           </div>
         )}
 
-        {activeTab === 'prompt_tester' && (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Original Prompt Section */}
-              <div className="bg-gray-900 border border-gray-700 p-6">
-                <div className="text-green-400 text-sm font-mono mb-4">◄ ORIGINAL.PROMPT</div>
-                <textarea
-                  className="w-full h-32 p-4 bg-black border border-gray-600 text-green-400 font-mono focus:ring-green-500 focus:border-green-500 resize-none"
-                  placeholder="ENTER.YOUR.ORIGINAL.PROMPT.HERE..."
-                  value={originalPrompt}
-                  onChange={(e) => setOriginalPrompt(e.target.value)}
-                ></textarea>
-                <button
-                  onClick={handleOptimize}
-                  disabled={!originalPrompt.trim() || isOptimizing}
-                  className="mt-4 w-full bg-green-500 text-black py-2 px-4 font-mono hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isOptimizing ? 'OPTIMIZING...' : 'OPTIMIZE.WITH.GEPA'}
-                </button>
-              </div>
-
-              {/* Optimized Prompt Output */}
-              <div className="bg-gray-900 border border-gray-700 p-6">
-                <div className="text-green-400 text-sm font-mono mb-4">◄ OPTIMIZED.PROMPT</div>
-                <div className="h-32 p-4 bg-black border border-gray-600 text-green-400 font-mono overflow-y-auto">
-                  {optimizedPrompt ? (
-                    <pre className="whitespace-pre-wrap text-sm">{optimizedPrompt}</pre>
-                  ) : (
-                    <div className="text-gray-500 italic">Optimized prompt will appear here...</div>
-                  )}
-                </div>
-                {optimizedPrompt && (
-                  <div className="mt-4 p-3 bg-green-900 border border-green-500">
-                    <div className="text-green-400 text-sm font-mono">
-                      GEPA.ENGINE.REPORT: Prompt refined for +15% performance.
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Test Section */}
-            <div className="bg-gray-900 border border-gray-700 p-6">
-              <div className="text-green-400 text-sm font-mono mb-4">◄ TEST.YOUR.OPTIMIZED.PROMPT</div>
-                    <textarea
-                className="w-full h-24 p-4 bg-black border border-gray-600 text-green-400 font-mono focus:ring-green-500 focus:border-green-500 resize-none"
-                placeholder="ENTER.YOUR.TEST.QUERY.HERE..."
-                      value={testQuery}
-                      onChange={(e) => setTestQuery(e.target.value)}
-              ></textarea>
-                    <button
-                      onClick={handleTest}
-                disabled={!testQuery.trim() || isTesting || (!originalPrompt.trim() && !optimizedPrompt.trim())}
-                className="mt-4 w-full bg-blue-500 text-black py-2 px-4 font-mono hover:bg-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                {isTesting ? 'TESTING...' : 'TEST.PROMPT'}
-                    </button>
-
-              {error && (
-                <div className="mt-4 p-3 bg-red-900 border border-red-500 text-red-400 font-mono">
-                  ERROR: {error}
-                  </div>
-              )}
-
-              {testResults && (
-                <div className="mt-6 p-4 bg-gray-800 border border-gray-600">
-                  <div className="text-green-400 text-sm font-mono mb-2">◄ AI.RESPONSE</div>
-                  <pre className="whitespace-pre-wrap text-sm text-white">{testResults.response}</pre>
-                          {testResults.sources && testResults.sources.length > 0 && (
-                    <div className="mt-4">
-                      <div className="text-green-400 text-sm font-mono mb-2">◄ SOURCES</div>
-                                {testResults.sources.map((source, index) => (
-                        <p key={index} className="text-gray-400 text-xs">
-                          - {source}
-                        </p>
-                                ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-            {/* Common Use Cases */}
-            <div className="bg-gray-900 border border-gray-700 p-6">
-              <div className="text-green-400 text-sm font-mono mb-4">◄ COMMON.USE.CASES</div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button
-                  onClick={() => loadExample('customer_support')}
-                  className="bg-gray-800 text-green-400 py-2 px-4 font-mono hover:bg-gray-700"
-                >
-                  LOAD.EXAMPLE: CUSTOMER.SUPPORT
-                </button>
-                <button
-                  onClick={() => loadExample('content_creation')}
-                  className="bg-gray-800 text-green-400 py-2 px-4 font-mono hover:bg-gray-700"
-                >
-                  LOAD.EXAMPLE: CONTENT.CREATION
-                </button>
-                <button
-                  onClick={() => loadExample('technical_support')}
-                  className="bg-gray-800 text-green-400 py-2 px-4 font-mono hover:bg-gray-700"
-                >
-                  LOAD.EXAMPLE: TECHNICAL.SUPPORT
-                </button>
-                  </div>
-                </div>
-              </div>
-            )}
 
         {activeTab === 'agent_builder' && (
-          <div className="space-y-8">
+          <div className="space-y-8 overflow-hidden">
                   <div className="mb-6">
-                    <div className="text-green-400 text-sm font-mono">◄ AGENT.WORKFLOW.BUILDER</div>
-                    <div className="text-white text-3xl font-mono mb-2">SPECIALIZED AI AGENT BUILDER</div>
+                    <div className="text-green-400 text-sm font-mono">◄ ENTERPRISE.AI.AGENT.BUILDER</div>
+                    <div className="text-white text-3xl font-mono mb-2">ENTERPRISE AI AGENT WORKFLOW BUILDER</div>
                     <div className="text-gray-400 text-sm font-mono">
-                      Build and deploy specialized AI agents for your business processes
+                      Connect your data sources, build intelligent workflows, and deploy specialized AI agents
+              </div>
+
+                    {/* Data Connections Status */}
+                    <div className="mt-4 bg-gray-800 border border-gray-600 p-4 rounded">
+                      <div className="text-green-400 text-sm font-mono mb-3">◄ DATA CONNECTIONS</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {dataConnections.map((connection) => (
+                          <div key={connection.id} className={`p-3 rounded border ${
+                            connection.status === 'connected' 
+                              ? 'bg-green-900 border-green-500' 
+                              : 'bg-red-900 border-red-500'
+                          }`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-white text-sm font-mono">{connection.name}</span>
+                              <div className={`w-2 h-2 rounded-full ${
+                                connection.status === 'connected' ? 'bg-green-400' : 'bg-red-400'
+                              }`}></div>
+                </div>
+                            <div className="text-xs text-gray-400">
+                              {connection.type.toUpperCase()} • {connection.lastSync}
+                    </div>
+                  </div>
+                                ))}
+                            </div>
+                    </div>
+
+                    {/* Industry Examples - Always Visible */}
+                    <div className="mt-4">
+                      <div className="bg-gray-800 border border-gray-600 p-4 rounded mb-4">
+                        <div className="text-green-400 text-sm font-mono mb-3">◄ PRE-BUILT INDUSTRY AGENTS</div>
+                        
+                        {/* Industry Categories */}
+                        {Object.entries(industryCategories).map(([categoryKey, category]) => (
+                          <div key={categoryKey} className="mb-6">
+                            <div className="text-blue-400 text-sm font-mono mb-2">{category.name}</div>
+                            <div className="text-gray-400 text-xs mb-3">{category.description}</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {Object.entries(category.industries).map(([industryKey, industry]) => (
+                                <button
+                                  key={industryKey}
+                                  onClick={() => loadIndustryExample(industryKey, categoryKey)}
+                                  className="text-left p-3 bg-gray-700 border border-gray-600 rounded hover:border-green-500 transition-colors"
+                                >
+                                  <div className="text-white text-sm font-mono mb-1">{industry.name}</div>
+                                  <div className="text-gray-400 text-xs mb-2">{industry.description}</div>
+                                  <div className="text-gray-500 text-xs">
+                                    {industry.agents.length} specialized agents
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     
-                    {/* Industry Examples Toggle */}
-                    <div className="mt-4">
-                      <button
-                        onClick={() => setShowIndustryExamples(!showIndustryExamples)}
-                        className="bg-blue-500 text-white px-4 py-2 text-sm font-mono hover:bg-blue-600 mb-4"
-                      >
-                        {showIndustryExamples ? 'HIDE' : 'SHOW'} INDUSTRY EXAMPLES
-                      </button>
+                    {/* Data Connection Management */}
+                    <div className="mt-4 bg-gray-800 border border-gray-600 p-4 rounded">
+                      <div className="text-green-400 text-sm font-mono mb-3">◄ CONNECT DATA SOURCES</div>
                       
-                      {showIndustryExamples && (
-                        <div className="bg-gray-800 border border-gray-600 p-4 rounded mb-4">
-                          <div className="text-green-400 text-sm font-mono mb-3">◄ PRE-BUILT INDUSTRY AGENTS</div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {Object.entries(industryExamples).map(([key, example]) => (
-                              <button
-                                key={key}
-                                onClick={() => loadIndustryExample(key)}
-                                className="text-left p-3 bg-gray-700 border border-gray-600 rounded hover:border-green-500 transition-colors"
-                              >
-                                <div className="text-white text-sm font-mono mb-1">{example.name}</div>
-                                <div className="text-gray-400 text-xs">{example.description}</div>
-                              </button>
-                            ))}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-gray-400 text-xs font-mono mb-2 block">DATABASE CONNECTION</label>
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              placeholder="Database URL (e.g., postgresql://user:pass@host:5432/db)"
+                              className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Table/Collection Name"
+                              className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
+                            />
+                            <button className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400">
+                              TEST CONNECTION
+                            </button>
                           </div>
                         </div>
-                      )}
+                        
+                        <div>
+                          <label className="text-gray-400 text-xs font-mono mb-2 block">API INTEGRATION</label>
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              placeholder="API Endpoint (e.g., https://api.crm.com/v1)"
+                              className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="API Key"
+                              className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
+                            />
+                            <button className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400">
+                              VALIDATE API
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     
                     {/* Custom Agent Creation */}
@@ -2020,8 +2814,8 @@ I understand you have a question, but I want to make sure I give you the most he
                   </div>
 
             {/* Agent Workflow Builder Interface */}
-            <div className="min-h-screen bg-black text-white font-mono">
-              <div className="flex h-screen">
+            <div className="bg-black text-white font-mono border border-gray-700 rounded">
+              <div className="flex" style={{height: 'calc(100vh - 250px)', maxHeight: '700px'}}>
                 {/* Left Sidebar - Build Blocks */}
                 <div className="w-80 bg-gray-800 border-r border-gray-700 p-4">
                   <div className="mb-6">
@@ -2129,13 +2923,16 @@ I understand you have a question, but I want to make sure I give you the most he
                       backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(34, 197, 94, 0.1) 1px, transparent 0)',
                       backgroundSize: '20px 20px',
                       minWidth: '800px',
-                      minHeight: '400px'
+                      minHeight: '500px',
+                      maxWidth: '100%',
+                      height: '100%',
+                      maxHeight: '100%'
                     }}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={handleCanvasDrop}
                   >
                     {/* Workflow Connections */}
-                    <svg className="absolute inset-0 pointer-events-none" style={{zIndex: 1, width: '800px', height: '400px'}}>
+                    <svg className="absolute inset-0 pointer-events-none" style={{zIndex: 1, width: '100%', height: '100%'}}>
                       {workflowConnections.map((connection) => {
                         const fromNode = workflowNodes.find(n => n.id === connection.from);
                         const toNode = workflowNodes.find(n => n.id === connection.to);
@@ -2201,7 +2998,8 @@ I understand you have a question, but I want to make sure I give you the most he
                         style={{
                           left: node.x,
                           top: node.y,
-                          width: '150px',
+                          width: '160px',
+                          minHeight: '80px',
                           zIndex: 1
                         }}
                         onClick={() => {
@@ -2217,9 +3015,9 @@ I understand you have a question, but I want to make sure I give you the most he
                           setShowAgentDetails(true);
                         }}
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center space-x-1">
+                            <span className="text-xs">
                               {node.agent_type === 'monitoring' ? '📊' :
                                node.agent_type === 'knowledge' ? '🧠' :
                                node.agent_type === 'analytics' ? '🔍' :
@@ -2237,7 +3035,7 @@ I understand you have a question, but I want to make sure I give you the most he
                                node.type.includes('VALIDATE') ? '✅' :
                                node.type.includes('IF') ? '🔀' : '⚙️'}
                             </span>
-                            <span className="text-white text-sm font-mono">{node.title}</span>
+                            <span className="text-white text-xs font-mono leading-tight">{node.title}</span>
                           </div>
                           {selectedNode === node.id && (
                   <button
@@ -2251,34 +3049,26 @@ I understand you have a question, but I want to make sure I give you the most he
                   </button>
                           )}
                 </div>
-                        <p className="text-gray-400 text-xs">{node.description}</p>
+                        <p className="text-gray-400 text-xs leading-tight line-clamp-2">{node.description}</p>
                         {node.capabilities && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {node.capabilities.slice(0, 2).map((cap: string, idx: number) => (
+                            {node.capabilities.slice(0, 1).map((cap: string, idx: number) => (
                               <span key={idx} className="text-xs bg-gray-700 text-gray-300 px-1 rounded">
                                 {cap.replace('_', ' ')}
                               </span>
                             ))}
-                            {node.capabilities.length > 2 && (
-                              <span className="text-xs text-gray-500">+{node.capabilities.length - 2} more</span>
+                            {node.capabilities.length > 1 && (
+                              <span className="text-xs text-gray-500">+{node.capabilities.length - 1}</span>
                             )}
                           </div>
                         )}
-                        <div className="mt-2 flex items-center space-x-2">
-                          <div className={`w-2 h-2 rounded-full ${
+                        <div className="mt-1 flex items-center space-x-1">
+                          <div className={`w-1.5 h-1.5 rounded-full ${
                             node.status === 'pending' ? 'bg-yellow-500' :
                             node.status === 'running' ? 'bg-blue-500' :
                             node.status === 'completed' ? 'bg-green-500' : 'bg-gray-500'
                           }`}></div>
                           <span className="text-xs text-gray-500">{node.status.toUpperCase()}</span>
-                        </div>
-                        {isConnecting && connectionStart !== node.id && (
-                          <div className="mt-2 text-xs text-blue-400">
-                            Click to connect
-                          </div>
-                        )}
-                        <div className="mt-1 text-xs text-blue-400">
-                          Double-click for details
                         </div>
                       </div>
                     ))}
@@ -2295,7 +3085,7 @@ I understand you have a question, but I want to make sure I give you the most he
                     )}
 
                     {/* Agent Workflow Controls */}
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 bg-gray-800 border border-gray-600 px-3 py-1 rounded z-10">
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 bg-gray-800 border border-gray-600 px-4 py-2 rounded z-10 shadow-lg">
                   <button
                         onClick={() => setIsConnecting(!isConnecting)}
                         className={`text-white hover:text-green-400 px-2 py-1 rounded text-xs font-mono ${isConnecting ? 'bg-blue-500' : 'bg-gray-700'}`}
@@ -2325,7 +3115,7 @@ I understand you have a question, but I want to make sure I give you the most he
                           <span>C:{workflowConnections.length}</span>
                           <span>|</span>
                           <span>{workflowStatus.toUpperCase()}</span>
-                        </div>
+                </div>
               </div>
 
                     {/* Workflow Status */}
@@ -2399,10 +3189,92 @@ I understand you have a question, but I want to make sure I give you the most he
               </div>
             </div>
 
-            {/* Agent Processing Steps */}
-            {agentProcessing.length > 0 && (
-              <div className="mt-6">
-                <div className="text-green-400 text-xs font-mono mb-2">◄ AGENT PROCESSING</div>
+            {/* Enhanced Agent Processing with Workflow Visualization */}
+            {(agentProcessing.length > 0 || workflowSteps.length > 0) && (
+              <div className="mt-6 space-y-4">
+                {/* Agent Swarm Execution Status */}
+                <div>
+                  <div className="text-green-400 text-xs font-mono mb-2">◄ AGENT SWARM EXECUTION</div>
+                  <div className="bg-black border border-gray-600 p-4 rounded">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-green-400 text-sm font-mono">SWARM ACTIVE</span>
+                      </div>
+                      <div className="text-gray-400 text-xs font-mono">
+                        {workflowNodes.filter(node => node.status === 'completed').length} / {workflowNodes.length} AGENTS COMPLETED
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {workflowNodes.map((node, index) => (
+                        <div key={node.id} className={`p-2 rounded border text-xs font-mono ${
+                          node.status === 'running' ? 'bg-blue-900 border-blue-500 text-blue-300' :
+                          node.status === 'completed' ? 'bg-green-900 border-green-500 text-green-300' :
+                          'bg-gray-800 border-gray-600 text-gray-400'
+                        }`}>
+                          <div className="flex items-center space-x-1">
+                            <div className={`w-1.5 h-1.5 rounded-full ${
+                              node.status === 'running' ? 'bg-blue-400 animate-pulse' :
+                              node.status === 'completed' ? 'bg-green-400' :
+                              'bg-gray-500'
+                            }`}></div>
+                            <span className="truncate">{node.title}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {/* Workflow Steps Visualization */}
+                <div>
+                  <div className="text-green-400 text-xs font-mono mb-2">◄ WORKFLOW EXECUTION</div>
+                  <div className="bg-black border border-gray-600 p-4 rounded">
+                    <div className="flex items-center space-x-2 overflow-x-auto pb-2">
+                      {workflowSteps.map((step, index) => (
+                        <div key={step.id} className="flex items-center flex-shrink-0">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono ${
+                            step.status === 'active' ? 'bg-green-500 text-black' :
+                            step.status === 'completed' ? 'bg-blue-500 text-white' :
+                            'bg-gray-600 text-gray-300'
+                          }`}>
+                            {step.status === 'completed' ? '✓' : index + 1}
+                          </div>
+                          <div className="ml-2 min-w-0">
+                            <div className="text-white text-xs font-mono truncate max-w-32">{step.name}</div>
+                            <div className="text-gray-400 text-xs truncate max-w-32">{step.type.replace('_', ' ').toUpperCase()}</div>
+                          </div>
+                          {index < workflowSteps.length - 1 && (
+                            <div className="w-4 h-0.5 bg-gray-600 mx-2 flex-shrink-0"></div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Agent Communication Log */}
+                <div>
+                  <div className="text-green-400 text-xs font-mono mb-2">◄ AGENT COMMUNICATION</div>
+                  <div className="bg-black border border-gray-600 p-4 rounded max-h-32 overflow-y-auto">
+                    <div className="space-y-2">
+                      {agentCommunications.map((comm, index) => (
+                        <div key={index} className="text-xs text-gray-300 font-mono border-l-2 border-green-500 pl-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-green-400">{comm.from}</span>
+                            <span className="text-gray-500">→</span>
+                            <span className="text-blue-400">{comm.to}</span>
+                            <span className="text-gray-500">[{comm.timestamp}]</span>
+                          </div>
+                          <div className="text-gray-400 mt-1">{comm.message}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Processing Steps */}
+                <div>
+                  <div className="text-green-400 text-xs font-mono mb-2">◄ PROCESSING STEPS</div>
                 <div className="bg-black border border-gray-600 p-4 rounded max-h-32 overflow-y-auto">
                   <div className="space-y-1">
                     {agentProcessing.map((step, index) => (
@@ -2410,6 +3282,7 @@ I understand you have a question, but I want to make sure I give you the most he
                         {step}
                       </div>
                     ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2487,7 +3360,7 @@ I understand you have a question, but I want to make sure I give you the most he
                     <div className="border border-gray-700 p-4">
                       <h5 className="text-green-400 text-sm font-mono mb-3">◄ DATA SOURCES</h5>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {node.data_sources?.map((source, index) => (
+                        {node.data_sources?.map((source: string, index: number) => (
                           <div key={index} className="bg-gray-800 border border-gray-600 p-2 rounded">
                             <span className="text-white text-sm font-mono">{source}</span>
                           </div>
@@ -2499,7 +3372,7 @@ I understand you have a question, but I want to make sure I give you the most he
                     <div className="border border-gray-700 p-4">
                       <h5 className="text-green-400 text-sm font-mono mb-3">◄ CAPABILITIES</h5>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {node.capabilities?.map((capability, index) => (
+                        {node.capabilities?.map((capability: string, index: number) => (
                           <div key={index} className="bg-gray-800 border border-gray-600 p-2 rounded">
                             <span className="text-white text-sm font-mono">{capability}</span>
                           </div>

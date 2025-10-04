@@ -2,32 +2,184 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Terminal UI Theme */
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 34, 197, 94; /* Green-500 */
+  --background-rgb: 0, 0, 0; /* Black */
+  --grid-rgb: 31, 41, 55; /* Gray-800 */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  background-color: rgb(var(--background-rgb));
+  color: rgb(var(--foreground-rgb));
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: #000000;
+  color: #22c55e;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  line-height: 1.4;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* Terminal grid pattern */
+.terminal-grid {
+  background-image: 
+    linear-gradient(rgba(31, 41, 55, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 41, 55, 0.1) 1px, transparent 1px);
+  background-size: 2rem 2rem;
+}
+
+/* Terminal text effects */
+.terminal-glow {
+  text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+}
+
+.terminal-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
   }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Terminal button styles */
+.terminal-button {
+  background: transparent;
+  border: 1px solid #22c55e;
+  color: #22c55e;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  transition: all 0.2s ease;
+}
+
+.terminal-button:hover {
+  background: #22c55e;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+/* Terminal input styles */
+.terminal-input {
+  background: transparent;
+  border: 1px solid #22c55e;
+  color: #22c55e;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  outline: none;
+}
+
+.terminal-input:focus {
+  box-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+}
+
+/* Terminal card styles */
+.terminal-card {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid #22c55e;
+  color: #22c55e;
+}
+
+/* Terminal status indicators */
+.status-online {
+  color: #22c55e;
+  text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+}
+
+.status-offline {
+  color: #ef4444;
+  text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+}
+
+/* Terminal scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #22c55e;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #16a34a;
+}
+
+/* Terminal selection */
+::selection {
+  background: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+/* Terminal focus styles */
+.terminal-focus:focus {
+  outline: 2px solid #22c55e;
+  outline-offset: 2px;
+}
+
+/* Terminal animation classes */
+.terminal-blink {
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.terminal-fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Terminal responsive design */
+@media (max-width: 768px) {
+  .terminal-grid {
+    background-size: 1rem 1rem;
+  }
+}
+
+/* Terminal utility classes */
+.text-terminal {
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+}
+
+.bg-terminal {
+  background-color: #000000;
+}
+
+.border-terminal {
+  border-color: #22c55e;
+}
+
+.text-terminal-green {
+  color: #22c55e;
+}
+
+.text-terminal-gray {
+  color: #6b7280;
+}
+
+.text-terminal-white {
+  color: #ffffff;
 }
