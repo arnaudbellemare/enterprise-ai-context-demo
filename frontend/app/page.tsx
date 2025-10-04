@@ -778,6 +778,7 @@ export default function Home() {
   const [agentProcessing, setAgentProcessing] = useState<string[]>([]);
   const [testQuery, setTestQuery] = useState('');
   const [testResults, setTestResults] = useState<TestResult | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   
   // Enterprise Data Connections
   const [dataConnections, setDataConnections] = useState([
@@ -1520,6 +1521,7 @@ ${recommendations.map(rec => `• ${rec}`).join('\n')}
     setAgentProcessing([]);
     setAgentResponse('');
     setTestResults(null);
+    setLoadingProgress(0);
 
     try {
       // Simulate specialized agent processing with GEPA-LangStruct optimization
@@ -1540,6 +1542,10 @@ ${recommendations.map(rec => `• ${rec}`).join('\n')}
       // Show processing steps in real-time and execute workflow steps
       for (let i = 0; i < processingSteps.length; i++) {
         setAgentProcessing(prev => [...prev, processingSteps[i]]);
+        
+        // Update loading progress gradually from 0% to 100%
+        const progress = Math.round((i / processingSteps.length) * 100);
+        setLoadingProgress(progress);
         
         // Update workflow steps to show progress (map to 8 steps)
         if (workflowSteps.length > 0) {
@@ -3957,15 +3963,15 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
               {/* Agent Response */}
               <div className="mb-8">
                 <div className="text-green-400 text-xs font-mono mb-2">◄ AGENT RESPONSE</div>
-                <div className="bg-black border border-gray-600 p-4 rounded h-96 overflow-y-auto flex flex-col">
+                <div className="bg-black border border-gray-600 p-4 rounded h-64 overflow-y-auto flex flex-col">
                   {isTestingAgent && !agentResponse ? (
                     <div className="space-y-3 flex-1 flex flex-col justify-center">
                       {/* Terminal-style loading bar */}
                       <div className="bg-gray-800 rounded h-2 overflow-hidden">
                         <div 
-                          className="bg-green-500 h-full animate-pulse" 
+                          className="bg-green-500 h-full transition-all duration-500 ease-out" 
                           style={{
-                            width: '100%',
+                            width: `${loadingProgress}%`,
                             background: 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #10b981 100%)',
                             backgroundSize: '200% 100%',
                             animation: 'loading 2s ease-in-out infinite'
@@ -3973,9 +3979,9 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         ></div>
                       </div>
                       
-                      {/* Loading text */}
+                      {/* Loading text with gradual progress */}
                       <div className="text-green-400 text-xs font-mono text-center">
-                        Processing AI response... ████████████████████ 85%
+                        Processing AI response... ████████████████████ {loadingProgress}%
                       </div>
                       
                       {/* Terminal dots animation */}
