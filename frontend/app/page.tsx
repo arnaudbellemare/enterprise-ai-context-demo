@@ -408,48 +408,6 @@ export default function Home() {
     }
   };
 
-  const loadIndustryExample = (industry: string) => {
-    const example = industryExamples[industry as keyof typeof industryExamples];
-    if (!example) return;
-
-    setSelectedIndustry(industry);
-    setCustomAgentPrompt(example.prompt);
-    setDataSources(example.dataSources);
-    
-              // Create agents for the industry with proper grid positioning
-              const agents = example.agents.map((agent, index) => {
-                const colsPerRow = 4; // 4 agents per row
-                const row = Math.floor(index / colsPerRow);
-                const col = index % colsPerRow;
-                return {
-                  id: `${industry}_${agent.type}_${index}`,
-                  type: agent.name.toUpperCase(),
-                  x: 50 + (col * 180), // Better spacing within canvas
-                  y: 80 + (row * 120), // Multiple rows
-                  title: agent.name,
-                  description: agent.description,
-                  status: 'pending',
-                  agent_type: agent.type,
-                  capabilities: [agent.type, 'data_processing', 'learning', 'optimization'],
-                  data_sources: example.dataSources
-                };
-              });
-
-    // Create connections between agents for workflow (connect in sequence)
-    const connections = [];
-    for (let i = 0; i < agents.length - 1; i++) {
-      connections.push({
-        id: `connection_${i}`,
-        from: agents[i].id,
-        to: agents[i + 1].id,
-        type: 'data_flow'
-      });
-    }
-
-    setWorkflowNodes(agents);
-    setWorkflowConnections(connections);
-    setWorkflowStatus('idle');
-  };
 
   const addDataSource = () => {
     if (newDataSource.trim() && !dataSources.includes(newDataSource.trim())) {
