@@ -2881,7 +2881,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             
           case 'advanced_ai':
             if (selectedIndustry === 'langgraph_inventory') {
-              scenarios = [
+        scenarios = [
                 "How can we optimize our Q4 inventory turnover using LangGraph workflows?",
                 "What's the best way to implement GEPA optimization for our supply chain?",
                 "How can we use LangStruct extraction to improve inventory forecasting?",
@@ -2894,7 +2894,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 "What's the best way to scale our LangGraph inventory system to 10k req/min?"
               ];
             } else if (selectedIndustry === 'gepa_rag_system') {
-              scenarios = [
+        scenarios = [
                 "How can we implement GEPA-RAG for our enterprise knowledge base?",
                 "What's the best way to achieve 85% context accuracy with LangStruct?",
                 "How can we optimize our retrieval system with reflective evolution?",
@@ -3764,7 +3764,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           setWorkflowNodes([]);
                           setAgentCommunications([]);
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                        className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded text-sm font-mono transition-colors border border-blue-500 hover:border-blue-400"
                       >
                         🔄 TEST NEW QUERY
                       </button>
@@ -3773,7 +3773,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           navigator.clipboard.writeText(agentResponse);
                           alert('Agent response copied to clipboard!');
                         }}
-                        className="bg-green-600 hover:bg-green-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                        className="bg-green-600 hover:bg-green-700 text-white p-3 rounded text-sm font-mono transition-colors border border-green-500 hover:border-green-400"
                       >
                         📋 COPY RESPONSE
                       </button>
@@ -3787,7 +3787,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           element.click();
                           document.body.removeChild(element);
                         }}
-                        className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                        className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded text-sm font-mono transition-colors border border-purple-500 hover:border-purple-400"
                       >
                         💾 SAVE RESPONSE
                       </button>
@@ -3795,7 +3795,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         onClick={() => {
                           setTestQuery(testQuery + '\n\nFollow-up: Can you provide more specific implementation details?');
                         }}
-                        className="bg-orange-600 hover:bg-orange-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                        className="bg-orange-600 hover:bg-orange-700 text-white p-3 rounded text-sm font-mono transition-colors border border-orange-500 hover:border-orange-400"
                       >
                         🔍 ASK FOLLOW-UP
                       </button>
@@ -3803,7 +3803,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         onClick={() => {
                           alert('🚀 IMPLEMENTATION ROADMAP\n\n1. Review the agent response\n2. Identify key action items\n3. Assign team members\n4. Set implementation timeline\n5. Track progress and results\n\nReady to implement these strategies!');
                         }}
-                        className="bg-red-600 hover:bg-red-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                        className="bg-red-600 hover:bg-red-700 text-white p-3 rounded text-sm font-mono transition-colors border border-red-500 hover:border-red-400"
                       >
                         🚀 IMPLEMENT NOW
                       </button>
@@ -3811,7 +3811,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         onClick={() => {
                           alert('📊 ANALYTICS DASHBOARD\n\n• Track implementation progress\n• Monitor key performance indicators\n• Measure ROI and impact\n• Generate reports for stakeholders\n\nAccess your analytics dashboard to track results!');
                         }}
-                        className="bg-cyan-600 hover:bg-cyan-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white p-3 rounded text-sm font-mono transition-colors border border-cyan-500 hover:border-cyan-400"
                       >
                         📊 VIEW ANALYTICS
                       </button>
