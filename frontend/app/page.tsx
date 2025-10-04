@@ -1340,6 +1340,22 @@ export default function Home() {
         await new Promise(resolve => setTimeout(resolve, 800));
       }
 
+      // Ensure all workflow steps are marked as completed after processing
+      if (workflowSteps.length > 0) {
+        setWorkflowSteps(prev => prev.map((step, index) => ({
+          ...step,
+          status: 'completed'
+        })));
+      }
+
+      // Ensure all workflow nodes are marked as completed after processing
+      if (workflowNodes.length > 0) {
+        setWorkflowNodes(prev => prev.map((node, index) => ({
+          ...node,
+          status: 'completed'
+        })));
+      }
+
       // Generate realistic agent response based on query and selected industry
       let response = '';
       const query = testQuery.toLowerCase();
@@ -2474,7 +2490,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
         switch (selectedCategory) {
           case 'healthcare':
             if (selectedIndustry === 'telemedicine') {
-              scenarios = [
+            scenarios = [
                 "I have chest pain and shortness of breath, should I go to the ER?",
                 "My blood pressure is 150/95, is this dangerous?",
                 "I've had a fever for 3 days, when should I see a doctor?",
@@ -2503,7 +2519,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             break;
           case 'finance':
             if (selectedIndustry === 'investment_banking') {
-              scenarios = [
+            scenarios = [
                 "What's the current valuation of this acquisition target?",
                 "How should we structure this M&A transaction?",
                 "What are the regulatory requirements for this deal?",
@@ -2516,7 +2532,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 "What are the competitive dynamics in this market?"
               ];
             } else if (selectedIndustry === 'fintech') {
-              scenarios = [
+            scenarios = [
                 "How can we improve our fraud detection system?",
                 "What's the best way to optimize payment processing?",
                 "How can we enhance our credit scoring algorithm?",
@@ -2532,7 +2548,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             break;
           case 'technology':
             if (selectedIndustry === 'cybersecurity') {
-              scenarios = [
+            scenarios = [
                 "We detected a potential security breach, what should we do?",
                 "How can we improve our security posture?",
                 "What are the latest threat intelligence insights?",
@@ -2561,7 +2577,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             break;
           case 'retail':
             if (selectedIndustry === 'omnichannel') {
-              scenarios = [
+            scenarios = [
                 "How can we improve our customer experience across channels?",
                 "What's the best way to synchronize our inventory?",
                 "How can we personalize our marketing campaigns?",
@@ -2574,7 +2590,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 "What's the best way to measure customer satisfaction?"
               ];
             } else if (selectedIndustry === 'supply_chain') {
-              scenarios = [
+            scenarios = [
                 "How can we optimize our supply chain costs?",
                 "What's the best way to manage supplier relationships?",
                 "How can we improve our demand forecasting?",
@@ -2590,7 +2606,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             break;
           case 'manufacturing':
             if (selectedIndustry === 'smart_factory') {
-              scenarios = [
+        scenarios = [
                 "How can we optimize our production efficiency?",
                 "What's the best way to implement predictive maintenance?",
                 "How can we improve our quality control?",
@@ -2603,7 +2619,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 "What's the best way to measure manufacturing performance?"
               ];
             } else if (selectedIndustry === 'automotive') {
-              scenarios = [
+        scenarios = [
                 "How can we optimize our assembly line efficiency?",
                 "What's the best way to ensure parts quality?",
                 "How can we improve our testing processes?",
@@ -2619,7 +2635,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             break;
           case 'education':
             if (selectedIndustry === 'personalized_learning') {
-              scenarios = [
+        scenarios = [
                 "How can we personalize learning for each student?",
                 "What's the best way to assess student knowledge gaps?",
                 "How can we curate content for different learning styles?",
@@ -2632,7 +2648,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 "What's the best way to measure learning effectiveness?"
               ];
             } else if (selectedIndustry === 'corporate_training') {
-              scenarios = [
+        scenarios = [
                 "How can we assess employee skills and development needs?",
                 "What's the best way to design training programs?",
                 "How can we facilitate effective learning sessions?",
@@ -2648,7 +2664,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             break;
           case 'logistics':
             if (selectedIndustry === 'fleet_management') {
-              scenarios = [
+        scenarios = [
                 "How can we optimize our delivery routes?",
                 "What's the best way to monitor vehicle health?",
                 "How can we improve driver performance?",
@@ -2661,7 +2677,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 "What's the best way to measure fleet efficiency?"
               ];
             } else if (selectedIndustry === 'warehouse_automation') {
-              scenarios = [
+        scenarios = [
                 "How can we optimize our inventory management?",
                 "What's the best way to improve order picking?",
                 "How can we optimize storage space utilization?",
@@ -2940,8 +2956,8 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                     </div>
                   </div>
                                 ))}
-                            </div>
-                    </div>
+              </div>
+            </div>
 
                     {/* Industry Examples - Two-Step Selection */}
                     <div className="mt-4">
@@ -2954,7 +2970,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                             <div className="text-blue-400 text-sm font-mono mb-3">Select Industry Category:</div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                               {Object.entries(industryCategories).map(([categoryKey, category]) => (
-                                <button
+                    <button
                                   key={categoryKey}
                                   onClick={() => setSelectedCategory(categoryKey)}
                                   className="text-left p-4 bg-gray-700 border border-gray-600 rounded hover:border-green-500 transition-colors"
@@ -2963,11 +2979,11 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                   <div className="text-gray-400 text-xs mb-2">{category.description}</div>
                                   <div className="text-gray-500 text-xs">
                                     {Object.keys(category.industries).length} workflow options
-                                  </div>
+                  </div>
                                 </button>
-                              ))}
+                                ))}
                             </div>
-                          </div>
+                        </div>
                         ) : (
                           /* Step 2: Select Specific Workflow */
                           <div>
@@ -2975,23 +2991,23 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                               <div>
                                 <div className="text-blue-400 text-sm font-mono">
                                   {industryCategories[selectedCategory as keyof typeof industryCategories].name}
-                                </div>
+                    </div>
                                 <div className="text-gray-400 text-xs">
                                   {industryCategories[selectedCategory as keyof typeof industryCategories].description}
                                 </div>
                               </div>
-                              <button
+                <button
                                 onClick={() => setSelectedCategory(null)}
                                 className="text-gray-400 hover:text-white text-xs font-mono"
-                              >
+                >
                                 ← Back to Categories
-                              </button>
+                </button>
                             </div>
                             
                             <div className="text-green-400 text-sm font-mono mb-3">Available Workflows:</div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               {Object.entries(industryCategories[selectedCategory as keyof typeof industryCategories].industries).map(([industryKey, industry]) => (
-                                <button
+                <button
                                   key={industryKey}
                                   onClick={() => loadIndustryExample(industryKey, selectedCategory)}
                                   className="text-left p-4 bg-gray-700 border border-gray-600 rounded hover:border-green-500 transition-colors"
@@ -3000,7 +3016,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                   <div className="text-gray-400 text-xs mb-2">{industry.description}</div>
                                   <div className="text-gray-500 text-xs mb-2">
                                     {industry.agents.length} specialized agents
-                                  </div>
+                  </div>
                                   <div className="flex flex-wrap gap-1">
                                     {industry.agents.slice(0, 3).map((agent, index) => (
                                       <span key={index} className="text-xs bg-gray-600 text-gray-300 px-2 py-1 rounded">
@@ -3013,9 +3029,9 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                   </div>
                                 </button>
                               ))}
-                            </div>
-                          </div>
-                        )}
+                </div>
+              </div>
+            )}
                       </div>
                     </div>
                     
@@ -3039,7 +3055,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                             />
                             <button className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400">
                               TEST CONNECTION
-                            </button>
+                      </button>
                           </div>
                         </div>
                         
@@ -3058,7 +3074,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                             />
                             <button className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400">
                               VALIDATE API
-                            </button>
+                              </button>
                           </div>
                         </div>
                       </div>
