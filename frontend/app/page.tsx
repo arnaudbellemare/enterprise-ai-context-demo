@@ -1703,9 +1703,7 @@ Use this enhanced context to provide a more accurate and specialized response.
           const aiData = await aiResponse.json();
           response = aiData.content || aiData.response;
           
-          // Enhance response with GEPA-LangStruct metadata
-          response = enhanceResponseWithGEPALangStruct(response, gepaMetrics, langstructMetrics, extractedData);
-          console.log('Enhanced AI response with GEPA-LangStruct processing completed');
+          console.log('AI response received from Perplexity API');
         } else {
           throw new Error(`AI API call failed: ${aiResponse.status}`);
         }
@@ -2830,33 +2828,6 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
     }
   };
 
-  // Enhance response with GEPA-LangStruct metadata
-  const enhanceResponseWithGEPALangStruct = (response: string, gepaMetrics: any, langstructMetrics: any, extractedData: any) => {
-    const gepaInfo = gepaMetrics ? `
-**GEPA OPTIMIZATION RESULTS:**
-- Optimization Score: ${gepaMetrics.optimization_score}%
-- Efficiency Gain: ${gepaMetrics.efficiency_gain}
-- Rollouts Used: ${gepaMetrics.rollouts}
-- Reflection Depth: ${gepaMetrics.reflection_depth}
-` : '';
-
-    const langstructInfo = langstructMetrics ? `
-**LANGSTRUCT EXTRACTION RESULTS:**
-- Accuracy: ${langstructMetrics.accuracy}%
-- Schema Compliance: ${langstructMetrics.schema_optimization}%
-- Extraction Completeness: ${langstructMetrics.extraction_completeness}%
-- Processing Efficiency: ${langstructMetrics.processing_efficiency}%
-` : '';
-
-    const extractedInfo = extractedData ? `
-**EXTRACTED DATA:**
-- Fields: ${extractedData.fields?.length || 0} structured fields
-- Confidence: ${Math.round((extractedData.confidence || 0.9) * 100)}%
-- Schema Compliance: ${Math.round((extractedData.schema_compliance || 0.9) * 100)}%
-` : '';
-
-    return response;
-  };
 
   // Mock response generator for fallback
   const generateMockResponse = (query: string, selectedIndustry: string | null, industryContext: any) => {
