@@ -798,7 +798,12 @@ export default function Home() {
   const [workflowSteps, setWorkflowSteps] = useState([
     { id: '1', type: 'data_fetch', name: 'Fetch Customer Data', status: 'active' },
     { id: '2', type: 'analysis', name: 'Analyze Context', status: 'pending' },
-    { id: '3', type: 'response', name: 'Generate Response', status: 'pending' }
+    { id: '3', type: 'response', name: 'Generate Response', status: 'pending' },
+    { id: '4', type: 'optimization', name: 'Optimize Output', status: 'pending' },
+    { id: '5', type: 'validation', name: 'Validate Results', status: 'pending' },
+    { id: '6', type: 'delivery', name: 'Deliver Response', status: 'pending' },
+    { id: '7', type: 'learning', name: 'Learn from Interaction', status: 'pending' },
+    { id: '8', type: 'integration', name: 'Update Systems', status: 'pending' }
   ]);
   
   // Agent Communication State
@@ -4084,27 +4089,27 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 <div>
                   <div className="text-green-400 text-xs font-mono mb-2">◄ WORKFLOW EXECUTION</div>
                   <div className="bg-black border border-gray-600 p-4 rounded">
-                    <div className="flex items-center space-x-1 overflow-x-auto pb-2 min-w-full relative">
+                    <div className="flex items-center space-x-2 overflow-x-auto pb-2 min-w-full relative">
                       {workflowSteps.map((step, index) => (
                         <div key={step.id} className="flex items-center flex-shrink-0 min-w-0">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono ${
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-mono ${
                             step.status === 'active' ? 'bg-green-500 text-black' :
                             step.status === 'completed' ? 'bg-blue-500 text-white' :
                             'bg-gray-600 text-gray-300'
                           }`}>
                             {step.status === 'completed' ? '✓' : index + 1}
                           </div>
-                          <div className="ml-1 min-w-0">
-                            <div className="text-white text-xs font-mono truncate max-w-24">{step.name}</div>
-                            <div className="text-gray-400 text-xs truncate max-w-24">{step.type.replace('_', ' ').toUpperCase()}</div>
+                          <div className="ml-2 min-w-0">
+                            <div className="text-white text-xs font-mono truncate max-w-32">{step.name}</div>
+                            <div className="text-gray-400 text-xs truncate max-w-32">{step.type.replace('_', ' ').toUpperCase()}</div>
                           </div>
                           {index < workflowSteps.length - 1 && (
-                            <div className="w-2 h-0.5 bg-gray-600 mx-1 flex-shrink-0"></div>
+                            <div className="w-4 h-0.5 bg-gray-600 mx-2 flex-shrink-0"></div>
                           )}
                         </div>
                       ))}
                       {/* Scroll indicator */}
-                      {workflowSteps.length > 6 && (
+                      {workflowSteps.length > 4 && (
                         <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
                           ← scroll →
                         </div>
