@@ -3957,9 +3957,9 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
               {/* Agent Response */}
               <div className="mb-8">
                 <div className="text-green-400 text-xs font-mono mb-2">◄ AGENT RESPONSE</div>
-                <div className="bg-black border border-gray-600 p-4 rounded h-32 overflow-y-auto">
+                <div className="bg-black border border-gray-600 p-4 rounded h-96 overflow-y-auto flex flex-col">
                   {isTestingAgent && !agentResponse ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3 flex-1 flex flex-col justify-center">
                       {/* Terminal-style loading bar */}
                       <div className="bg-gray-800 rounded h-2 overflow-hidden">
                         <div 
@@ -3975,7 +3975,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       
                       {/* Loading text */}
                       <div className="text-green-400 text-xs font-mono text-center">
-                        Processing AI response... ████████████████████ 92%
+                        Processing AI response... ████████████████████ 85%
                       </div>
                       
                       {/* Terminal dots animation */}
@@ -3986,9 +3986,13 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       </div>
                     </div>
                   ) : agentResponse ? (
-                    <pre className="text-xs text-white font-mono whitespace-pre-wrap">{agentResponse}</pre>
+                    <div className="flex-1 overflow-auto">
+                      <pre className="text-xs text-white font-mono whitespace-pre-wrap h-full">{agentResponse}</pre>
+                    </div>
                   ) : (
-                    <div className="text-gray-500 text-sm">Agent response will appear here...</div>
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-gray-500 text-sm">Agent response will appear here...</div>
+                    </div>
                   )}
                 </div>
               </div>
