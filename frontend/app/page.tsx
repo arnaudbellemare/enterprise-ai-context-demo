@@ -1323,19 +1323,21 @@ export default function Home() {
       for (let i = 0; i < processingSteps.length; i++) {
         setAgentProcessing(prev => [...prev, processingSteps[i]]);
         
-        // Update workflow steps to show progress
+        // Update workflow steps to show progress (map to 8 steps)
         if (workflowSteps.length > 0) {
+          const workflowStepIndex = Math.min(i, workflowSteps.length - 1);
           setWorkflowSteps(prev => prev.map((step, index) => ({
             ...step,
-            status: index <= i ? (index === i ? 'active' : 'completed') : 'pending'
+            status: index <= workflowStepIndex ? (index === workflowStepIndex ? 'active' : 'completed') : 'pending'
           })));
         }
         
         // Update workflow nodes in canvas to show agent execution
         if (workflowNodes.length > 0) {
+          const nodeIndex = Math.min(i, workflowNodes.length - 1);
           setWorkflowNodes(prev => prev.map((node, index) => ({
             ...node,
-            status: index <= i ? (index === i ? 'running' : 'completed') : 'pending'
+            status: index <= nodeIndex ? (index === nodeIndex ? 'running' : 'completed') : 'pending'
           })));
         }
         
@@ -3576,9 +3578,9 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 <div>
                   <div className="text-green-400 text-xs font-mono mb-2">◄ WORKFLOW EXECUTION</div>
                   <div className="bg-black border border-gray-600 p-4 rounded">
-                    <div className="flex items-center space-x-2 overflow-x-auto pb-2">
+                    <div className="flex items-center space-x-1 overflow-x-auto pb-2 min-w-full relative">
                       {workflowSteps.map((step, index) => (
-                        <div key={step.id} className="flex items-center flex-shrink-0">
+                        <div key={step.id} className="flex items-center flex-shrink-0 min-w-0">
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono ${
                             step.status === 'active' ? 'bg-green-500 text-black' :
                             step.status === 'completed' ? 'bg-blue-500 text-white' :
@@ -3586,15 +3588,21 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           }`}>
                             {step.status === 'completed' ? '✓' : index + 1}
                           </div>
-                          <div className="ml-2 min-w-0">
-                            <div className="text-white text-xs font-mono truncate max-w-32">{step.name}</div>
-                            <div className="text-gray-400 text-xs truncate max-w-32">{step.type.replace('_', ' ').toUpperCase()}</div>
+                          <div className="ml-1 min-w-0">
+                            <div className="text-white text-xs font-mono truncate max-w-24">{step.name}</div>
+                            <div className="text-gray-400 text-xs truncate max-w-24">{step.type.replace('_', ' ').toUpperCase()}</div>
                           </div>
                           {index < workflowSteps.length - 1 && (
-                            <div className="w-4 h-0.5 bg-gray-600 mx-2 flex-shrink-0"></div>
+                            <div className="w-2 h-0.5 bg-gray-600 mx-1 flex-shrink-0"></div>
                           )}
                         </div>
                       ))}
+                      {/* Scroll indicator */}
+                      {workflowSteps.length > 6 && (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
+                          ← scroll →
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
