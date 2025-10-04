@@ -854,42 +854,68 @@ export default function Home() {
 
   const getNodeTitle = (type: string) => {
     const titles: { [key: string]: string } = {
-      '/VALIDATE': 'VALIDATE INPUT',
-      '/SPLIT': 'SPLIT DATA',
-      '/IF': 'CONDITIONAL LOGIC',
-      '/CONTAINS': 'CHECK CONTAINS',
-      '/MATCH': 'PATTERN MATCH',
-      '/COMPARE': 'COMPARE VALUES',
-      '</A> MANAGE SEQUENCE': 'MANAGE SEQUENCE',
-      '</A> MANAGE LIST': 'MANAGE LIST',
-      '</A> MANAGE DEALS': 'MANAGE DEALS',
-      '</A> RUN AI PROMPT': 'RUN AI PROMPT',
-      '</A> FETCH DATA': 'FETCH DATA',
-      '</A> ENRICH DATA': 'ENRICH DATA',
-      '</A> ASSIGN MANUAL TASKS': 'ASSIGN TASKS',
-      '</A> SEND NOTIFICATION': 'SEND NOTIFICATION'
+      // AI Processing Components
+      'GEPA_OPTIMIZER': 'GEPA OPTIMIZER',
+      'LANGSTRUCT_EXTRACTOR': 'LANGSTRUCT EXTRACTOR',
+      'RAG_RETRIEVER': 'RAG RETRIEVER',
+      'CONTEXT_ASSEMBLER': 'CONTEXT ASSEMBLER',
+      'RESPONSE_GENERATOR': 'RESPONSE GENERATOR',
+      'QUALITY_VALIDATOR': 'QUALITY VALIDATOR',
+      
+      // Data Processing Components
+      'DATA_VALIDATOR': 'DATA VALIDATOR',
+      'SCHEMA_EXTRACTOR': 'SCHEMA EXTRACTOR',
+      'VECTOR_INDEXER': 'VECTOR INDEXER',
+      'HYBRID_RETRIEVER': 'HYBRID RETRIEVER',
+      'RERANKER': 'RERANKER',
+      'METADATA_ENRICHER': 'METADATA ENRICHER',
+      'QUALITY_SCORER': 'QUALITY SCORER',
+      'CONTEXT_FUSION': 'CONTEXT FUSION',
+      
+      // Agent Orchestration Components
+      'SWARM_COORDINATOR': 'SWARM COORDINATOR',
+      'TASK_DISPATCHER': 'TASK DISPATCHER',
+      'PARALLEL_EXECUTOR': 'PARALLEL EXECUTOR',
+      'RESULT_AGGREGATOR': 'RESULT AGGREGATOR',
+      'FAULT_RECOVERY': 'FAULT RECOVERY',
+      'LOAD_BALANCER': 'LOAD BALANCER',
+      'STATE_MANAGER': 'STATE MANAGER',
+      'COMMUNICATION_HUB': 'COMMUNICATION HUB'
     };
     return titles[type] || type;
   };
 
   const getNodeDescription = (type: string) => {
     const descriptions: { [key: string]: string } = {
-      '/VALIDATE': 'Validate input data and format',
-      '/SPLIT': 'Split data into components',
-      '/IF': 'Execute conditional logic',
-      '/CONTAINS': 'Check if data contains value',
-      '/MATCH': 'Match data against pattern',
-      '/COMPARE': 'Compare two values',
-      '</A> MANAGE SEQUENCE': 'Manage workflow sequence',
-      '</A> MANAGE LIST': 'Manage data lists',
-      '</A> MANAGE DEALS': 'Manage business deals',
-      '</A> RUN AI PROMPT': 'Execute AI prompt',
-      '</A> FETCH DATA': 'Fetch data from source',
-      '</A> ENRICH DATA': 'Enrich data with context',
-      '</A> ASSIGN MANUAL TASKS': 'Assign manual tasks',
-      '</A> SEND NOTIFICATION': 'Send notifications'
+      // AI Processing Components
+      'GEPA_OPTIMIZER': 'Reflective prompt optimization with 35x fewer rollouts',
+      'LANGSTRUCT_EXTRACTOR': 'Structured data extraction with schema optimization',
+      'RAG_RETRIEVER': 'Hybrid retrieval with vector and BM25 search',
+      'CONTEXT_ASSEMBLER': 'Multi-source context assembly and fusion',
+      'RESPONSE_GENERATOR': 'AI response generation with enhanced context',
+      'QUALITY_VALIDATOR': 'Response quality assessment and validation',
+      
+      // Data Processing Components
+      'DATA_VALIDATOR': 'Input data validation and format checking',
+      'SCHEMA_EXTRACTOR': 'Extract structured schemas from unstructured data',
+      'VECTOR_INDEXER': 'Create and manage vector embeddings',
+      'HYBRID_RETRIEVER': 'Combine vector and keyword search results',
+      'RERANKER': 'Advanced reranking for optimal context selection',
+      'METADATA_ENRICHER': 'Enhance data with metadata and context',
+      'QUALITY_SCORER': 'Score data quality and confidence metrics',
+      'CONTEXT_FUSION': 'Fuse multiple data sources into coherent context',
+      
+      // Agent Orchestration Components
+      'SWARM_COORDINATOR': 'Coordinate multi-agent swarm execution',
+      'TASK_DISPATCHER': 'Dispatch tasks to specialized agents',
+      'PARALLEL_EXECUTOR': 'Execute tasks in parallel with load balancing',
+      'RESULT_AGGREGATOR': 'Aggregate results from multiple agents',
+      'FAULT_RECOVERY': 'Handle failures and recover from errors',
+      'LOAD_BALANCER': 'Balance workload across available agents',
+      'STATE_MANAGER': 'Manage persistent state and checkpoints',
+      'COMMUNICATION_HUB': 'Facilitate inter-agent communication'
     };
-    return descriptions[type] || 'Agent component';
+    return descriptions[type] || 'AI workflow component';
   };
 
   const handleNodeClick = (nodeId: string) => {
@@ -3705,55 +3731,94 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                   <div className="mb-6">
                     <h3 className="text-green-400 text-sm font-mono mb-4">◄ BUILD BLOCKS</h3>
                     
-                    {/* Rules Section */}
+                    {/* AI Processing Components */}
                     <div className="mb-6">
                       <div className="flex items-center mb-3">
-                        <span className="text-green-400 text-sm">► RULES</span>
+                        <span className="text-green-400 text-sm">► AI PROCESSING</span>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        {['/VALIDATE', '/SPLIT', '/IF', '/CONTAINS', '/MATCH', '/COMPARE'].map((rule) => (
+                        {[
+                          'GEPA_OPTIMIZER',
+                          'LANGSTRUCT_EXTRACTOR', 
+                          'RAG_RETRIEVER',
+                          'CONTEXT_ASSEMBLER',
+                          'RESPONSE_GENERATOR',
+                          'QUALITY_VALIDATOR'
+                        ].map((component) => (
                           <div 
-                            key={rule} 
+                            key={component} 
                             draggable
-                            onDragStart={(e) => handleDragStart(e, rule)}
+                            onDragStart={(e) => handleDragStart(e, component)}
                             onDragEnd={handleDragEnd}
                             className="bg-gray-700 border border-gray-600 p-3 cursor-move hover:bg-gray-600 relative hover:border-green-500 transition-colors"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-300">{rule}</span>
-                              <span className="text-red-500 text-xs">+</span>
+                              <span className="text-xs text-gray-300">{component}</span>
+                              <span className="text-green-500 text-xs">+</span>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Actions Section */}
+                    {/* Data Processing Components */}
                     <div className="mb-6">
                       <div className="flex items-center mb-3">
-                        <span className="text-green-400 text-sm">► LIST & SEQUENCE MANAGEMENT</span>
+                        <span className="text-green-400 text-sm">► DATA PROCESSING</span>
                       </div>
                       <div className="space-y-2">
                         {[
-                          '</A> MANAGE SEQUENCE',
-                          '</A> MANAGE LIST', 
-                          '</A> MANAGE DEALS',
-                          '</A> RUN AI PROMPT',
-                          '</A> FETCH DATA',
-                          '</A> ENRICH DATA',
-                          '</A> ASSIGN MANUAL TASKS',
-                          '</A> SEND NOTIFICATION'
-                        ].map((action) => (
+                          'DATA_VALIDATOR',
+                          'SCHEMA_EXTRACTOR', 
+                          'VECTOR_INDEXER',
+                          'HYBRID_RETRIEVER',
+                          'RERANKER',
+                          'METADATA_ENRICHER',
+                          'QUALITY_SCORER',
+                          'CONTEXT_FUSION'
+                        ].map((component) => (
                           <div 
-                            key={action} 
+                            key={component} 
                             draggable
-                            onDragStart={(e) => handleDragStart(e, action)}
+                            onDragStart={(e) => handleDragStart(e, component)}
                             onDragEnd={handleDragEnd}
                             className="bg-gray-700 border border-gray-600 p-3 cursor-move hover:bg-gray-600 relative hover:border-green-500 transition-colors"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-300">{action}</span>
-                              <span className="text-red-500 text-xs">+</span>
+                              <span className="text-xs text-gray-300">{component}</span>
+                              <span className="text-blue-500 text-xs">+</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Agent Orchestration Components */}
+                    <div className="mb-6">
+                      <div className="flex items-center mb-3">
+                        <span className="text-green-400 text-sm">► AGENT ORCHESTRATION</span>
+                      </div>
+                      <div className="space-y-2">
+                        {[
+                          'SWARM_COORDINATOR',
+                          'TASK_DISPATCHER', 
+                          'PARALLEL_EXECUTOR',
+                          'RESULT_AGGREGATOR',
+                          'FAULT_RECOVERY',
+                          'LOAD_BALANCER',
+                          'STATE_MANAGER',
+                          'COMMUNICATION_HUB'
+                        ].map((component) => (
+                          <div 
+                            key={component} 
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, component)}
+                            onDragEnd={handleDragEnd}
+                            className="bg-gray-700 border border-gray-600 p-3 cursor-move hover:bg-gray-600 relative hover:border-green-500 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-300">{component}</span>
+                              <span className="text-purple-500 text-xs">+</span>
                             </div>
                           </div>
                         ))}
@@ -4097,7 +4162,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                     </div>
                   ) : (
                     <div className="flex-1 flex items-center justify-center">
-                      <div className="text-gray-500 text-sm">Agent response will appear here...</div>
+                    <div className="text-gray-500 text-sm">Agent response will appear here...</div>
                     </div>
                   )}
                 </div>
