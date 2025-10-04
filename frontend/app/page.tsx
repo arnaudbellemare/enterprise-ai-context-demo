@@ -3482,6 +3482,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
       </span>
     </div>
   );
+  }
 
   return (
     <div className={`min-h-screen bg-black text-green-400 font-mono p-8 relative overflow-hidden`}>
