@@ -1297,6 +1297,8 @@ export default function Home() {
     }
 
     setIsTestingAgent(true);
+    // Only clear processing steps if we're starting a completely new test
+    // Keep workflow execution visible from previous test
     setAgentProcessing([]);
     setAgentResponse('');
     setTestResults(null);
@@ -3521,7 +3523,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             </div>
 
             {/* Enhanced Agent Processing with Workflow Visualization */}
-            {(agentProcessing.length > 0 || workflowSteps.length > 0) && (
+            {(agentProcessing.length > 0 || workflowSteps.length > 0 || workflowNodes.some(node => node.status === 'completed')) && (
               <div className="mt-6 space-y-4">
                 {/* Agent Swarm Execution Status */}
                 <div>
@@ -3529,8 +3531,22 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                   <div className="bg-black border border-gray-600 p-4 rounded">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-green-400 text-sm font-mono">SWARM ACTIVE</span>
+                        {workflowNodes.some(node => node.status === 'running') ? (
+                          <>
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-green-400 text-sm font-mono">SWARM ACTIVE</span>
+                          </>
+                        ) : workflowNodes.some(node => node.status === 'completed') ? (
+                          <>
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span className="text-blue-400 text-sm font-mono">SWARM COMPLETED</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                            <span className="text-gray-400 text-sm font-mono">SWARM IDLE</span>
+                          </>
+                        )}
                       </div>
                       <div className="text-gray-400 text-xs font-mono">
                         {workflowNodes.filter(node => node.status === 'completed').length} / {workflowNodes.length} AGENTS COMPLETED
