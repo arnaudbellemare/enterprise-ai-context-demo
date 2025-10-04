@@ -3527,38 +3527,6 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             {/* Enhanced Agent Processing with Workflow Visualization */}
             {(agentProcessing.length > 0 || workflowSteps.length > 0 || workflowNodes.some(node => node.status === 'completed')) && (
               <div className="mt-6 space-y-4">
-                {/* Workflow Steps Visualization */}
-                <div>
-                  <div className="text-green-400 text-xs font-mono mb-2">◄ WORKFLOW EXECUTION</div>
-                  <div className="bg-black border border-gray-600 p-4 rounded">
-                    <div className="flex items-center space-x-1 overflow-x-auto pb-2 min-w-full relative">
-                      {workflowSteps.map((step, index) => (
-                        <div key={step.id} className="flex items-center flex-shrink-0 min-w-0">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono ${
-                            step.status === 'active' ? 'bg-green-500 text-black' :
-                            step.status === 'completed' ? 'bg-blue-500 text-white' :
-                            'bg-gray-600 text-gray-300'
-                          }`}>
-                            {step.status === 'completed' ? '✓' : index + 1}
-                          </div>
-                          <div className="ml-1 min-w-0">
-                            <div className="text-white text-xs font-mono truncate max-w-24">{step.name}</div>
-                            <div className="text-gray-400 text-xs truncate max-w-24">{step.type.replace('_', ' ').toUpperCase()}</div>
-                          </div>
-                          {index < workflowSteps.length - 1 && (
-                            <div className="w-2 h-0.5 bg-gray-600 mx-1 flex-shrink-0"></div>
-                          )}
-                        </div>
-                      ))}
-                      {/* Scroll indicator */}
-                      {workflowSteps.length > 6 && (
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
-                          ← scroll →
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
                 {/* Agent Swarm Execution Status */}
                 <div>
                   <div className="text-green-400 text-xs font-mono mb-2">◄ AGENT SWARM EXECUTION</div>
@@ -3603,6 +3571,38 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                </div>
+                {/* Workflow Steps Visualization */}
+                <div>
+                  <div className="text-green-400 text-xs font-mono mb-2">◄ WORKFLOW EXECUTION</div>
+                  <div className="bg-black border border-gray-600 p-4 rounded">
+                    <div className="flex items-center space-x-1 overflow-x-auto pb-2 min-w-full relative">
+                      {workflowSteps.map((step, index) => (
+                        <div key={step.id} className="flex items-center flex-shrink-0 min-w-0">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono ${
+                            step.status === 'active' ? 'bg-green-500 text-black' :
+                            step.status === 'completed' ? 'bg-blue-500 text-white' :
+                            'bg-gray-600 text-gray-300'
+                          }`}>
+                            {step.status === 'completed' ? '✓' : index + 1}
+                          </div>
+                          <div className="ml-1 min-w-0">
+                            <div className="text-white text-xs font-mono truncate max-w-24">{step.name}</div>
+                            <div className="text-gray-400 text-xs truncate max-w-24">{step.type.replace('_', ' ').toUpperCase()}</div>
+                          </div>
+                          {index < workflowSteps.length - 1 && (
+                            <div className="w-2 h-0.5 bg-gray-600 mx-1 flex-shrink-0"></div>
+                          )}
+                        </div>
+                      ))}
+                      {/* Scroll indicator */}
+                      {workflowSteps.length > 6 && (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
+                          ← scroll →
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
