@@ -279,6 +279,234 @@ export default function Home() {
             { from: 'Personalization Engine', to: 'Customer Service', message: 'Personalized recommendations sent, engagement 85%', timestamp: '10:23:49' },
             { from: 'Analytics Engine', to: 'Customer Journey Mapper', message: 'Conversion rate improved 23%, journey optimized', timestamp: '10:23:51' }
           ]
+        },
+        supply_chain: {
+          name: '🚚 Supply Chain Optimization',
+          description: 'AI-powered supply chain management and logistics',
+          agents: [
+            { name: 'Demand Forecaster', type: 'forecasting', description: 'Predicts demand patterns and inventory needs' },
+            { name: 'Route Optimizer', type: 'optimization', description: 'Optimizes delivery routes and logistics' },
+            { name: 'Supplier Manager', type: 'management', description: 'Manages supplier relationships and performance' },
+            { name: 'Quality Controller', type: 'quality', description: 'Monitors product quality throughout supply chain' },
+            { name: 'Cost Analyzer', type: 'analysis', description: 'Analyzes costs and identifies savings opportunities' },
+            { name: 'Risk Assessor', type: 'risk', description: 'Assesses and mitigates supply chain risks' }
+          ],
+          dataSources: ['ERP Systems', 'Supplier Data', 'Logistics Data', 'Quality Reports', 'Cost Data'],
+          prompt: 'You are a specialized supply chain AI agent that optimizes logistics, reduces costs, and ensures quality throughout the supply chain. You analyze demand patterns, optimize routes, and manage supplier relationships.',
+          processing_pipeline: [
+            '📊 Demand Analysis: Comprehensive demand forecasting and pattern analysis',
+            '🚚 Route Optimization: Advanced logistics and delivery route planning',
+            '🏭 Supplier Management: Supplier performance monitoring and relationship management',
+            '🔍 Quality Control: End-to-end quality monitoring and assurance',
+            '💰 Cost Analysis: Cost optimization and savings identification',
+            '⚠️ Risk Assessment: Supply chain risk evaluation and mitigation',
+            '📈 Performance Monitoring: Continuous supply chain performance tracking',
+            '🔄 Process Improvement: Supply chain optimization and efficiency enhancement'
+          ],
+          agent_communications: [
+            { from: 'Demand Forecaster', to: 'Route Optimizer', message: 'Demand spike predicted for Q4, 23% increase', timestamp: '10:23:45' },
+            { from: 'Supplier Manager', to: 'Quality Controller', message: 'New supplier onboarded, quality standards verified', timestamp: '10:23:47' },
+            { from: 'Cost Analyzer', to: 'Risk Assessor', message: 'Cost reduction opportunity identified: $2.3M savings', timestamp: '10:23:49' },
+            { from: 'Risk Assessor', to: 'Demand Forecaster', message: 'Supply disruption risk: 15% probability, mitigation plan ready', timestamp: '10:23:51' }
+          ]
+        }
+      }
+    },
+    manufacturing: {
+      name: '🏭 Manufacturing & Industrial',
+      description: 'AI systems for manufacturing optimization and industrial automation',
+      industries: {
+        smart_factory: {
+          name: '🏭 Smart Factory',
+          description: 'AI-powered manufacturing and production optimization',
+          agents: [
+            { name: 'Production Optimizer', type: 'optimization', description: 'Optimizes production schedules and efficiency' },
+            { name: 'Quality Inspector', type: 'quality', description: 'Automated quality control and defect detection' },
+            { name: 'Predictive Maintainer', type: 'maintenance', description: 'Predicts equipment failures and schedules maintenance' },
+            { name: 'Energy Manager', type: 'energy', description: 'Optimizes energy usage and sustainability' },
+            { name: 'Safety Monitor', type: 'safety', description: 'Monitors safety compliance and risk assessment' },
+            { name: 'Performance Tracker', type: 'tracking', description: 'Tracks KPIs and performance metrics' }
+          ],
+          dataSources: ['Production Data', 'Quality Metrics', 'Equipment Sensors', 'Energy Data', 'Safety Reports'],
+          prompt: 'You are a specialized smart factory AI agent that optimizes manufacturing processes, ensures quality, and maximizes efficiency. You monitor production, predict maintenance needs, and optimize energy usage.',
+          processing_pipeline: [
+            '🏭 Production Analysis: Comprehensive production efficiency and optimization analysis',
+            '🔍 Quality Control: Advanced quality monitoring and defect prevention',
+            '🔧 Predictive Maintenance: Equipment health monitoring and maintenance scheduling',
+            '⚡ Energy Optimization: Energy usage analysis and sustainability optimization',
+            '🛡️ Safety Monitoring: Safety compliance monitoring and risk assessment',
+            '📊 Performance Tracking: Manufacturing KPIs and performance metrics analysis',
+            '🔄 Process Improvement: Continuous manufacturing process optimization',
+            '📈 Efficiency Enhancement: Manufacturing efficiency and productivity improvement'
+          ],
+          agent_communications: [
+            { from: 'Production Optimizer', to: 'Quality Inspector', message: 'Production line 3 efficiency at 94%, quality check needed', timestamp: '10:23:45' },
+            { from: 'Predictive Maintainer', to: 'Energy Manager', message: 'Equipment 7 maintenance due in 48 hours, energy optimization ready', timestamp: '10:23:47' },
+            { from: 'Safety Monitor', to: 'Performance Tracker', message: 'Safety compliance 99.8%, performance metrics updated', timestamp: '10:23:49' },
+            { from: 'Performance Tracker', to: 'Production Optimizer', message: 'OEE improved 12%, production targets exceeded', timestamp: '10:23:51' }
+          ]
+        },
+        automotive: {
+          name: '🚗 Automotive Manufacturing',
+          description: 'Specialized AI for automotive production and quality control',
+          agents: [
+            { name: 'Assembly Coordinator', type: 'coordination', description: 'Coordinates complex assembly processes' },
+            { name: 'Parts Inspector', type: 'inspection', description: 'Inspects components for defects and quality' },
+            { name: 'Testing Engineer', type: 'testing', description: 'Conducts comprehensive vehicle testing' },
+            { name: 'Supply Chain Manager', type: 'supply', description: 'Manages automotive supply chain and parts' },
+            { name: 'Compliance Auditor', type: 'compliance', description: 'Ensures regulatory compliance and standards' },
+            { name: 'Performance Analyzer', type: 'analysis', description: 'Analyzes manufacturing performance and efficiency' }
+          ],
+          dataSources: ['Assembly Data', 'Quality Metrics', 'Test Results', 'Parts Inventory', 'Compliance Records'],
+          prompt: 'You are a specialized automotive manufacturing AI agent that optimizes production processes, ensures quality standards, and maintains regulatory compliance. You coordinate assembly, inspect parts, and analyze performance.',
+          processing_pipeline: [
+            '🔧 Assembly Coordination: Complex automotive assembly process management',
+            '🔍 Parts Inspection: Comprehensive component quality control and defect detection',
+            '🧪 Testing Management: Advanced vehicle testing and validation processes',
+            '📦 Supply Chain Optimization: Automotive parts and supply chain management',
+            '📋 Compliance Verification: Regulatory compliance and standards verification',
+            '📊 Performance Analysis: Manufacturing performance and efficiency analysis',
+            '🔄 Process Optimization: Continuous automotive manufacturing improvement',
+            '📈 Quality Enhancement: Automotive quality standards and performance improvement'
+          ],
+          agent_communications: [
+            { from: 'Assembly Coordinator', to: 'Parts Inspector', message: 'Assembly line 2 ready, 847 components to inspect', timestamp: '10:23:45' },
+            { from: 'Testing Engineer', to: 'Compliance Auditor', message: 'Vehicle testing complete, all standards met', timestamp: '10:23:47' },
+            { from: 'Supply Chain Manager', to: 'Performance Analyzer', message: 'Parts inventory optimized, 15% cost reduction achieved', timestamp: '10:23:49' },
+            { from: 'Performance Analyzer', to: 'Assembly Coordinator', message: 'Production efficiency 96%, quality targets exceeded', timestamp: '10:23:51' }
+          ]
+        }
+      }
+    },
+    education: {
+      name: '🎓 Education & Learning',
+      description: 'AI systems for educational technology and learning optimization',
+      industries: {
+        personalized_learning: {
+          name: '📚 Personalized Learning',
+          description: 'AI-powered personalized education and learning paths',
+          agents: [
+            { name: 'Learning Assessor', type: 'assessment', description: 'Assesses student knowledge and learning gaps' },
+            { name: 'Content Curator', type: 'curation', description: 'Curates personalized learning content' },
+            { name: 'Progress Tracker', type: 'tracking', description: 'Tracks student progress and achievements' },
+            { name: 'Adaptive Tutor', type: 'tutoring', description: 'Provides personalized tutoring and support' },
+            { name: 'Engagement Monitor', type: 'engagement', description: 'Monitors student engagement and motivation' },
+            { name: 'Performance Analyzer', type: 'analysis', description: 'Analyzes learning outcomes and effectiveness' }
+          ],
+          dataSources: ['Student Data', 'Learning Content', 'Assessment Results', 'Progress Reports', 'Engagement Metrics'],
+          prompt: 'You are a specialized personalized learning AI agent that creates customized educational experiences for each student. You assess learning needs, curate content, and provide adaptive tutoring support.',
+          processing_pipeline: [
+            '📊 Learning Assessment: Comprehensive student knowledge and skill evaluation',
+            '📚 Content Curation: Personalized learning content selection and organization',
+            '📈 Progress Tracking: Student learning progress and achievement monitoring',
+            '🎓 Adaptive Tutoring: Personalized tutoring and learning support',
+            '💡 Engagement Monitoring: Student engagement and motivation tracking',
+            '📊 Performance Analysis: Learning outcomes and effectiveness analysis',
+            '🔄 Learning Optimization: Continuous learning experience improvement',
+            '📈 Achievement Enhancement: Student achievement and success optimization'
+          ],
+          agent_communications: [
+            { from: 'Learning Assessor', to: 'Content Curator', message: 'Student needs advanced math content, level 8 identified', timestamp: '10:23:45' },
+            { from: 'Progress Tracker', to: 'Adaptive Tutor', message: 'Student progress 87%, additional support recommended', timestamp: '10:23:47' },
+            { from: 'Engagement Monitor', to: 'Performance Analyzer', message: 'Engagement increased 23%, learning outcomes improved', timestamp: '10:23:49' },
+            { from: 'Performance Analyzer', to: 'Learning Assessor', message: 'Learning effectiveness 94%, assessment updated', timestamp: '10:23:51' }
+          ]
+        },
+        corporate_training: {
+          name: '💼 Corporate Training',
+          description: 'AI-powered corporate learning and professional development',
+          agents: [
+            { name: 'Skill Assessor', type: 'assessment', description: 'Assesses employee skills and development needs' },
+            { name: 'Training Designer', type: 'design', description: 'Designs customized training programs' },
+            { name: 'Learning Facilitator', type: 'facilitation', description: 'Facilitates learning sessions and workshops' },
+            { name: 'Competency Tracker', type: 'tracking', description: 'Tracks competency development and certifications' },
+            { name: 'ROI Analyzer', type: 'analysis', description: 'Analyzes training ROI and business impact' },
+            { name: 'Learning Optimizer', type: 'optimization', description: 'Optimizes learning experiences and outcomes' }
+          ],
+          dataSources: ['Employee Data', 'Training Content', 'Skill Assessments', 'Performance Data', 'Business Metrics'],
+          prompt: 'You are a specialized corporate training AI agent that designs and delivers effective professional development programs. You assess skills, design training, and measure business impact.',
+          processing_pipeline: [
+            '📊 Skill Assessment: Comprehensive employee skill and competency evaluation',
+            '🎯 Training Design: Customized corporate training program development',
+            '👥 Learning Facilitation: Interactive learning session and workshop management',
+            '📈 Competency Tracking: Employee competency development and certification tracking',
+            '💰 ROI Analysis: Training return on investment and business impact analysis',
+            '🔄 Learning Optimization: Continuous learning experience and outcome improvement',
+            '📊 Performance Measurement: Training effectiveness and business impact measurement',
+            '📈 Development Enhancement: Employee development and career growth optimization'
+          ],
+          agent_communications: [
+            { from: 'Skill Assessor', to: 'Training Designer', message: 'Leadership skills gap identified, program design needed', timestamp: '10:23:45' },
+            { from: 'Learning Facilitator', to: 'Competency Tracker', message: 'Training session completed, 23 employees certified', timestamp: '10:23:47' },
+            { from: 'ROI Analyzer', to: 'Learning Optimizer', message: 'Training ROI 340%, business impact significant', timestamp: '10:23:49' },
+            { from: 'Learning Optimizer', to: 'Skill Assessor', message: 'Learning effectiveness improved 28%, assessment updated', timestamp: '10:23:51' }
+          ]
+        }
+      }
+    },
+    logistics: {
+      name: '📦 Logistics & Transportation',
+      description: 'AI systems for logistics optimization and transportation management',
+      industries: {
+        fleet_management: {
+          name: '🚛 Fleet Management',
+          description: 'AI-powered fleet optimization and vehicle management',
+          agents: [
+            { name: 'Route Optimizer', type: 'optimization', description: 'Optimizes delivery routes and schedules' },
+            { name: 'Vehicle Monitor', type: 'monitoring', description: 'Monitors vehicle health and performance' },
+            { name: 'Driver Manager', type: 'management', description: 'Manages driver schedules and performance' },
+            { name: 'Fuel Optimizer', type: 'optimization', description: 'Optimizes fuel consumption and costs' },
+            { name: 'Maintenance Scheduler', type: 'scheduling', description: 'Schedules vehicle maintenance and repairs' },
+            { name: 'Performance Tracker', type: 'tracking', description: 'Tracks fleet performance and efficiency' }
+          ],
+          dataSources: ['Vehicle Data', 'Route Information', 'Driver Records', 'Fuel Data', 'Maintenance Records'],
+          prompt: 'You are a specialized fleet management AI agent that optimizes vehicle operations, reduces costs, and improves efficiency. You optimize routes, monitor vehicles, and manage driver performance.',
+          processing_pipeline: [
+            '🗺️ Route Optimization: Advanced delivery route planning and optimization',
+            '🚗 Vehicle Monitoring: Comprehensive vehicle health and performance tracking',
+            '👨‍💼 Driver Management: Driver schedule and performance management',
+            '⛽ Fuel Optimization: Fuel consumption analysis and cost optimization',
+            '🔧 Maintenance Scheduling: Predictive maintenance and repair scheduling',
+            '📊 Performance Tracking: Fleet performance and efficiency monitoring',
+            '🔄 Process Improvement: Continuous fleet operation optimization',
+            '📈 Efficiency Enhancement: Fleet efficiency and cost reduction optimization'
+          ],
+          agent_communications: [
+            { from: 'Route Optimizer', to: 'Driver Manager', message: 'Route optimized, 15% time savings, driver assigned', timestamp: '10:23:45' },
+            { from: 'Vehicle Monitor', to: 'Maintenance Scheduler', message: 'Vehicle 3 maintenance due, scheduling repair', timestamp: '10:23:47' },
+            { from: 'Fuel Optimizer', to: 'Performance Tracker', message: 'Fuel efficiency improved 12%, costs reduced', timestamp: '10:23:49' },
+            { from: 'Performance Tracker', to: 'Route Optimizer', message: 'Fleet efficiency 94%, route optimization successful', timestamp: '10:23:51' }
+          ]
+        },
+        warehouse_automation: {
+          name: '🏪 Warehouse Automation',
+          description: 'AI-powered warehouse operations and inventory management',
+          agents: [
+            { name: 'Inventory Manager', type: 'management', description: 'Manages inventory levels and stock optimization' },
+            { name: 'Picking Optimizer', type: 'optimization', description: 'Optimizes order picking and fulfillment' },
+            { name: 'Storage Planner', type: 'planning', description: 'Plans optimal storage and space utilization' },
+            { name: 'Quality Controller', type: 'quality', description: 'Controls product quality and accuracy' },
+            { name: 'Automation Coordinator', type: 'coordination', description: 'Coordinates automated systems and robots' },
+            { name: 'Performance Monitor', type: 'monitoring', description: 'Monitors warehouse performance and efficiency' }
+          ],
+          dataSources: ['Inventory Data', 'Order Information', 'Storage Data', 'Quality Metrics', 'Automation Data'],
+          prompt: 'You are a specialized warehouse automation AI agent that optimizes inventory management, improves picking efficiency, and coordinates automated systems. You manage inventory, optimize operations, and ensure quality.',
+          processing_pipeline: [
+            '📦 Inventory Management: Comprehensive inventory level and stock optimization',
+            '📋 Picking Optimization: Advanced order picking and fulfillment optimization',
+            '🏪 Storage Planning: Optimal storage and space utilization planning',
+            '🔍 Quality Control: Product quality and accuracy control',
+            '🤖 Automation Coordination: Automated systems and robot coordination',
+            '📊 Performance Monitoring: Warehouse performance and efficiency monitoring',
+            '🔄 Process Improvement: Continuous warehouse operation optimization',
+            '📈 Efficiency Enhancement: Warehouse efficiency and productivity improvement'
+          ],
+          agent_communications: [
+            { from: 'Inventory Manager', to: 'Picking Optimizer', message: 'Inventory levels updated, 47 orders ready for picking', timestamp: '10:23:45' },
+            { from: 'Storage Planner', to: 'Quality Controller', message: 'Storage optimized, quality checkpoints established', timestamp: '10:23:47' },
+            { from: 'Automation Coordinator', to: 'Performance Monitor', message: 'Robots deployed, automation efficiency 96%', timestamp: '10:23:49' },
+            { from: 'Performance Monitor', to: 'Inventory Manager', message: 'Warehouse efficiency improved 18%, inventory optimized', timestamp: '10:23:51' }
+          ]
         }
       }
     }
@@ -3413,3 +3641,4 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
     </div>
   );
 }
+
