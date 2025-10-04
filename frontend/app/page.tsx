@@ -3965,7 +3965,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 <div className="mt-4">
                   <div className="text-green-400 text-xs font-mono mb-2">◄ NEXT STEPS</div>
                   <div className="bg-black border border-gray-600 p-4 rounded">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                       <button 
                         onClick={() => {
                           setTestQuery('');
@@ -3975,7 +3975,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           setWorkflowNodes([]);
                           setAgentCommunications([]);
                         }}
-                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded text-xs font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         🔄 TEST NEW QUERY
                       </button>
@@ -3984,7 +3984,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           navigator.clipboard.writeText(agentResponse);
                           alert('Agent response copied to clipboard!');
                         }}
-                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded text-xs font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         📋 COPY RESPONSE
                       </button>
@@ -3998,7 +3998,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           element.click();
                           document.body.removeChild(element);
                         }}
-                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded text-xs font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         💾 SAVE RESPONSE
                       </button>
@@ -4006,7 +4006,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         onClick={() => {
                           setTestQuery(testQuery + '\n\nFollow-up: Can you provide more specific implementation details?');
                         }}
-                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded text-xs font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         🔍 ASK FOLLOW-UP
                       </button>
@@ -4014,7 +4014,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         onClick={() => {
                           alert('🚀 IMPLEMENTATION ROADMAP\n\n1. Review the agent response\n2. Identify key action items\n3. Assign team members\n4. Set implementation timeline\n5. Track progress and results\n\nReady to implement these strategies!');
                         }}
-                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded text-xs font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         🚀 IMPLEMENT NOW
                       </button>
@@ -4022,7 +4022,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         onClick={() => {
                           alert('📊 ANALYTICS DASHBOARD\n\n• Track implementation progress\n• Monitor key performance indicators\n• Measure ROI and impact\n• Generate reports for stakeholders\n\nAccess your analytics dashboard to track results!');
                         }}
-                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded text-xs font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         📊 VIEW ANALYTICS
                       </button>
