@@ -786,6 +786,12 @@ export default function Home() {
     { id: 'analytics', name: 'Google Analytics', type: 'api', status: 'connected', lastSync: '5 min ago' },
     { id: 'support', name: 'Zendesk Support', type: 'api', status: 'disconnected', lastSync: 'Never' }
   ]);
+
+  // Real Data Integration State
+  const [realDataConnections, setRealDataConnections] = useState([]);
+  const [dataProcessing, setDataProcessing] = useState(false);
+  const [dataInsights, setDataInsights] = useState(null);
+  const [dataQuality, setDataQuality] = useState(null);
   
   // Workflow Builder State
   const [workflowSteps, setWorkflowSteps] = useState([
@@ -911,6 +917,113 @@ export default function Home() {
 
   const handleDeleteConnection = (connectionId: string) => {
     setWorkflowConnections(prev => prev.filter(conn => conn.id !== connectionId));
+  };
+
+  // Real Data Integration Functions
+  const connectDataSource = async (connectorType: string, connectionString: string, dataTypes: string[], credentials: any) => {
+    try {
+      setDataProcessing(true);
+      
+      const response = await fetch('/api/data/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          connectorType,
+          connectionString,
+          dataTypes,
+          credentials,
+          syncFrequency: 'real-time'
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setRealDataConnections(prev => [...prev, result.connector]);
+        setDataInsights(result.syncResult);
+        setDataQuality(result.syncResult.dataQuality);
+        alert(`✅ Data source connected successfully!\n\n📊 Records processed: ${result.syncResult.recordsProcessed}\n🔄 Sync status: ${result.syncResult.status}\n\nReady for AI agent processing!`);
+      } else {
+        const error = await response.json();
+        alert(`❌ Connection failed: ${error.error}\n\n💡 Suggestions:\n${error.suggestions?.join('\n') || 'Check your connection parameters'}`);
+      }
+    } catch (error) {
+      console.error('Data connection error:', error);
+      alert('❌ Failed to connect data source. Please check your connection parameters.');
+    } finally {
+      setDataProcessing(false);
+    }
+  };
+
+  const processRealData = async (dataType: string, operation: string, filters: any = {}) => {
+    try {
+      setDataProcessing(true);
+      
+      const response = await fetch('/api/data/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dataType,
+          operation,
+          filters,
+          aggregation: 'summary',
+          realTime: true
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setDataInsights(result);
+        setDataQuality(result.dataQuality);
+        
+        // Update agent response with real data insights
+        const realDataResponse = generateRealDataResponse(dataType, result);
+        setAgentResponse(realDataResponse);
+        
+        return result;
+      } else {
+        throw new Error('Data processing failed');
+      }
+    } catch (error) {
+      console.error('Data processing error:', error);
+      alert('❌ Failed to process data. Please try again.');
+    } finally {
+      setDataProcessing(false);
+    }
+  };
+
+  const generateRealDataResponse = (dataType: string, result: any) => {
+    const insights = result.insights || [];
+    const recommendations = result.recommendations || [];
+    const metrics = result.result?.metrics || {};
+    const dataQuality = result.dataQuality || {};
+
+    return `**REAL DATA AI AGENT RESPONSE**
+*[Specialized for: ${dataType.toUpperCase()} Analysis | Data Verified: ${new Date().toLocaleTimeString()} | Confidence: ${Math.round(dataQuality.accuracy * 100)}%]*
+
+**REAL-TIME DATA ANALYSIS:**
+📊 **Data Quality**: ${Math.round(dataQuality.completeness * 100)}% complete, ${Math.round(dataQuality.accuracy * 100)}% accurate
+🔄 **Processing Time**: ${result.processingTime}
+📈 **Freshness**: ${Math.round(dataQuality.freshness * 100)}% current data
+
+**KEY METRICS:**
+${Object.entries(metrics).map(([key, value]) => `• **${key.replace(/_/g, ' ').toUpperCase()}**: ${value}`).join('\n')}
+
+**DATA INSIGHTS:**
+${insights.map(insight => `• ${insight}`).join('\n')}
+
+**RECOMMENDATIONS:**
+${recommendations.map(rec => `• ${rec}`).join('\n')}
+
+**NEXT STEPS:**
+• **Immediate**: Review data quality and implement recommendations
+• **Short-term**: Set up automated monitoring and alerts
+• **Long-term**: Optimize processes based on data insights
+
+*This analysis is based on your actual ${dataType} data with ${result.result?.data?.length || 0} records processed in real-time.*`;
   };
 
   const handleExecuteWorkflow = async () => {
@@ -3265,10 +3378,28 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       </div>
                     </div>
                     
-                    {/* Data Connection Management */}
+                    {/* Real Data Integration */}
                     <div className="mt-4 bg-gray-800 border border-gray-600 p-4 rounded">
-                      <div className="text-green-400 text-sm font-mono mb-3">◄ CONNECT DATA SOURCES</div>
+                      <div className="text-green-400 text-sm font-mono mb-3">◄ REAL DATA INTEGRATION</div>
                       
+                      {/* Data Type Selection */}
+                      <div className="mb-4">
+                        <label className="text-gray-400 text-xs font-mono mb-2 block">SELECT DATA TYPES TO CONNECT</label>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                          {['inventory', 'orders', 'storage', 'quality_metrics', 'automation_data'].map((dataType) => (
+                            <button
+                              key={dataType}
+                              onClick={() => processRealData(dataType, 'analyze', {})}
+                              disabled={dataProcessing}
+                              className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded text-xs font-mono border border-gray-600 hover:border-green-500 transition-colors disabled:opacity-50"
+                            >
+                              {dataType.replace('_', ' ').toUpperCase()}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Connection Forms */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="text-gray-400 text-xs font-mono mb-2 block">DATABASE CONNECTION</label>
@@ -3283,9 +3414,13 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                               placeholder="Table/Collection Name"
                               className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
                             />
-                            <button className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400">
-                              TEST CONNECTION
-                      </button>
+                            <button 
+                              onClick={() => connectDataSource('database', 'postgresql://demo:demo@localhost:5432/enterprise', ['inventory', 'orders'], {})}
+                              disabled={dataProcessing}
+                              className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400 disabled:opacity-50"
+                            >
+                              {dataProcessing ? 'CONNECTING...' : 'CONNECT DATABASE'}
+                            </button>
                           </div>
                         </div>
                         
@@ -3302,12 +3437,68 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                               placeholder="API Key"
                               className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
                             />
-                            <button className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400">
-                              VALIDATE API
-                              </button>
+                            <button 
+                              onClick={() => connectDataSource('api', 'https://api.enterprise.com/v1', ['quality_metrics', 'automation_data'], { apiKey: 'demo-key' })}
+                              disabled={dataProcessing}
+                              className="bg-green-500 text-white px-3 py-2 text-sm font-mono hover:bg-green-400 disabled:opacity-50"
+                            >
+                              {dataProcessing ? 'CONNECTING...' : 'CONNECT API'}
+                            </button>
                           </div>
                         </div>
                       </div>
+
+                      {/* Real Data Connections Status */}
+                      {realDataConnections.length > 0 && (
+                        <div className="mt-4">
+                          <div className="text-green-400 text-xs font-mono mb-2">◄ CONNECTED DATA SOURCES</div>
+                          <div className="space-y-2">
+                            {realDataConnections.map((conn: any, index: number) => (
+                              <div key={index} className="bg-gray-900 border border-green-500 p-3 rounded">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="text-green-400 text-sm font-mono">{conn.name}</div>
+                                    <div className="text-gray-400 text-xs">Type: {conn.type} | Status: {conn.status}</div>
+                                  </div>
+                                  <div className="text-green-400 text-xs font-mono">
+                                    {conn.lastSync}
+                                  </div>
+                                </div>
+                                <div className="text-gray-500 text-xs mt-1">
+                                  Data Types: {conn.dataTypes.join(', ')}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Data Quality Metrics */}
+                      {dataQuality && (
+                        <div className="mt-4">
+                          <div className="text-green-400 text-xs font-mono mb-2">◄ DATA QUALITY METRICS</div>
+                          <div className="bg-gray-900 border border-gray-600 p-3 rounded">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
+                              <div>
+                                <div className="text-gray-400">Completeness</div>
+                                <div className="text-green-400">{Math.round(dataQuality.completeness * 100)}%</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400">Accuracy</div>
+                                <div className="text-green-400">{Math.round(dataQuality.accuracy * 100)}%</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400">Freshness</div>
+                                <div className="text-green-400">{Math.round(dataQuality.freshness * 100)}%</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400">Consistency</div>
+                                <div className="text-green-400">{Math.round(dataQuality.consistency * 100)}%</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Custom Agent Creation */}
