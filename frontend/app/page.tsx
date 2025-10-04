@@ -3522,6 +3522,80 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                   )}
                 </div>
               </div>
+
+              {/* Next Steps - Only show when agent response is complete */}
+              {agentResponse && (
+                <div className="mt-4">
+                  <div className="text-green-400 text-xs font-mono mb-2">◄ NEXT STEPS</div>
+                  <div className="bg-black border border-gray-600 p-4 rounded">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <button 
+                        onClick={() => {
+                          setTestQuery('');
+                          setAgentResponse('');
+                          setAgentProcessing([]);
+                          setWorkflowSteps([]);
+                          setWorkflowNodes([]);
+                          setAgentCommunications([]);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                      >
+                        🔄 TEST NEW QUERY
+                      </button>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(agentResponse);
+                          alert('Agent response copied to clipboard!');
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                      >
+                        📋 COPY RESPONSE
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const element = document.createElement('a');
+                          const file = new Blob([agentResponse], {type: 'text/plain'});
+                          element.href = URL.createObjectURL(file);
+                          element.download = `agent-response-${new Date().toISOString().split('T')[0]}.txt`;
+                          document.body.appendChild(element);
+                          element.click();
+                          document.body.removeChild(element);
+                        }}
+                        className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                      >
+                        💾 SAVE RESPONSE
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setTestQuery(testQuery + '\n\nFollow-up: Can you provide more specific implementation details?');
+                        }}
+                        className="bg-orange-600 hover:bg-orange-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                      >
+                        🔍 ASK FOLLOW-UP
+                      </button>
+                      <button 
+                        onClick={() => {
+                          alert('🚀 IMPLEMENTATION ROADMAP\n\n1. Review the agent response\n2. Identify key action items\n3. Assign team members\n4. Set implementation timeline\n5. Track progress and results\n\nReady to implement these strategies!');
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                      >
+                        🚀 IMPLEMENT NOW
+                      </button>
+                      <button 
+                        onClick={() => {
+                          alert('📊 ANALYTICS DASHBOARD\n\n• Track implementation progress\n• Monitor key performance indicators\n• Measure ROI and impact\n• Generate reports for stakeholders\n\nAccess your analytics dashboard to track results!');
+                        }}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white p-3 rounded text-sm font-mono transition-colors"
+                      >
+                        📊 VIEW ANALYTICS
+                      </button>
+                    </div>
+                    <div className="mt-3 text-xs text-gray-400 font-mono">
+                      💡 <strong>Pro Tip:</strong> Use these actions to implement the agent's recommendations and track your progress!
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Enhanced Agent Processing with Workflow Visualization */}
