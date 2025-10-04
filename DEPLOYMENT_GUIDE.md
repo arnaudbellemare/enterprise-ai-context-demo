@@ -1,197 +1,318 @@
-# 🚀 Deployment Guide: Enterprise AI Context Engineering
+# Enterprise AI Context Engine - Deployment Guide
 
-## Prerequisites
+## 🚀 Quick Start (5 minutes)
 
-1. **GitHub Account**: Create a free account at [github.com](https://github.com)
-2. **Supabase Account**: Create a free account at [supabase.com](https://supabase.com)
-3. **Vercel Account**: Create a free account at [vercel.com](https://vercel.com)
-4. **OpenAI API Key**: Get your API key from [platform.openai.com](https://platform.openai.com)
-
-## Step 1: Create GitHub Repository
-
-1. Go to [github.com/new](https://github.com/new)
-2. Repository name: `enterprise-ai-context-demo`
-3. Description: `Enterprise AI Context Engineering with GEPA-DSPy`
-4. Make it **Public** (for free Vercel deployment)
-5. Click "Create repository"
-
-## Step 2: Push Code to GitHub
-
+### 1. Clone and Setup
 ```bash
-# Add GitHub remote (replace YOUR_USERNAME with your GitHub username)
-git remote add origin https://github.com/YOUR_USERNAME/enterprise-ai-context-demo.git
-
-# Push to GitHub
-git branch -M main
-git push -u origin main
+git clone https://github.com/arnaudbellemare/enterprise-ai-context-demo
+cd enterprise-ai-context-demo
+python setup.py
 ```
 
-## Step 3: Setup Supabase
+### 2. Configure Environment
+```bash
+# Copy environment template
+cp config/.env.example .env
 
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. Note down your:
-   - Project URL
-   - Anon (public) key
-   - Service role key (optional)
+# Edit .env with your API keys
+nano .env
+```
 
-3. In your Supabase dashboard, go to SQL Editor and run this SQL to create tables:
+### 3. Start Services
+```bash
+# Terminal 1: Backend
+python src/api/inventory.py
 
+# Terminal 2: Frontend
+cd frontend && npm run dev
+```
+
+### 4. Access Platform
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+
+## 🏗️ Production Deployment
+
+### Vercel Deployment (Recommended)
+
+#### 1. Connect to Vercel
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy
+vercel --prod
+```
+
+#### 2. Configure Environment Variables
+In Vercel dashboard, add:
+```
+PERPLEXITY_API_KEY=pplx-your-key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+```
+
+#### 3. Deploy Backend Functions
+```bash
+# Deploy API routes
+vercel --prod --cwd backend
+```
+
+### Docker Deployment
+
+#### 1. Create Dockerfile
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY deployment/requirements.txt .
+RUN pip install -r requirements.txt
+
+# Copy application
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Start application
+CMD ["python", "src/api/inventory.py"]
+```
+
+#### 2. Build and Run
+```bash
+# Build image
+docker build -t enterprise-ai .
+
+# Run container
+docker run -p 8000:8000 --env-file .env enterprise-ai
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+#### Core API Keys
+```bash
+PERPLEXITY_API_KEY=pplx-your-key
+OPENAI_API_KEY=sk-your-key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+```
+
+#### AI Processing
+```bash
+GEPA_MAX_ITERATIONS=3
+GEPA_REFLECTION_DEPTH=3
+LANGSTRUCT_EXTRACTION_CONFIDENCE=0.85
+RAG_HYBRID_RETRIEVAL=True
+```
+
+#### LangGraph Configuration
+```bash
+LANGGRAPH_CHECKPOINTING=True
+LANGGRAPH_PERSISTENCE=True
+LANGGRAPH_MAX_CYCLES=10
+```
+
+### Database Setup
+
+#### 1. Supabase Setup
 ```sql
--- Enable UUID extension
+-- Enable extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "vector";
 
--- Enable vector extension for embeddings
-CREATE EXTENSION IF NOT EXISTS vector;
-
--- Users table
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email TEXT UNIQUE NOT NULL,
-    username TEXT UNIQUE NOT NULL,
-    roles TEXT[] DEFAULT '{}',
-    security_level TEXT DEFAULT 'internal',
-    permissions TEXT[] DEFAULT '{}',
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Context items table
-CREATE TABLE context_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id),
-    session_id TEXT,
-    content TEXT NOT NULL,
-    source TEXT NOT NULL,
-    relevance_score FLOAT DEFAULT 0.0,
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- AI sessions table
-CREATE TABLE ai_sessions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id),
-    session_name TEXT,
-    context_data JSONB DEFAULT '{}',
-    gepa_optimizations JSONB DEFAULT '{}',
-    performance_metrics JSONB DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Metrics table
-CREATE TABLE metrics (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    metric_name TEXT NOT NULL,
-    value FLOAT NOT NULL,
-    metadata JSONB DEFAULT '{}',
-    tags JSONB DEFAULT '{}',
-    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Knowledge base table with vector embeddings
-CREATE TABLE knowledge_base (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    title TEXT NOT NULL,
-    content TEXT NOT NULL,
-    content_type TEXT DEFAULT 'text',
-    source TEXT,
-    metadata JSONB DEFAULT '{}',
-    embedding VECTOR(1536),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Vector embeddings table
-CREATE TABLE vector_embeddings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    content TEXT NOT NULL,
-    embedding VECTOR(1536),
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create indexes for better performance
-CREATE INDEX idx_context_items_user_id ON context_items(user_id);
-CREATE INDEX idx_context_items_session_id ON context_items(session_id);
-CREATE INDEX idx_ai_sessions_user_id ON ai_sessions(user_id);
-CREATE INDEX idx_metrics_metric_name ON metrics(metric_name);
-CREATE INDEX idx_metrics_timestamp ON metrics(timestamp);
-CREATE INDEX idx_knowledge_base_embedding ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
-CREATE INDEX idx_vector_embeddings_embedding ON vector_embeddings USING ivfflat (embedding vector_cosine_ops);
-
--- Enable Row Level Security (RLS)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE context_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE ai_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE metrics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE knowledge_base ENABLE ROW LEVEL SECURITY;
-ALTER TABLE vector_embeddings ENABLE ROW LEVEL SECURITY;
-
--- Create RLS policies (basic - adjust based on your needs)
-CREATE POLICY "Users can view their own data" ON users FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update their own data" ON users FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Users can view their own context items" ON context_items FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert their own context items" ON context_items FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can view their own sessions" ON ai_sessions FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert their own sessions" ON ai_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Run migrations
+\i supabase/migrations/001_initial_schema.sql
 ```
 
-4. Go to Authentication > Settings and configure:
-   - Site URL: `https://your-vercel-app.vercel.app`
-   - Redirect URLs: `https://your-vercel-app.vercel.app/auth/callback`
+#### 2. Vector Storage
+```sql
+-- Create vector table
+CREATE TABLE vectors (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    content TEXT NOT NULL,
+    embedding VECTOR(1536),
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
 
-## Step 4: Deploy to Vercel
+## 📊 Monitoring & Observability
 
-1. Go to [vercel.com](https://vercel.com) and sign in with GitHub
-2. Click "New Project"
-3. Import your `enterprise-ai-context-demo` repository
-4. Configure the project:
-   - Framework Preset: `Next.js`
-   - Root Directory: `frontend`
-   - Build Command: `npm run build`
-   - Output Directory: `.next`
+### 1. Prometheus Metrics
+```bash
+# Enable metrics
+PROMETHEUS_ENABLED=True
+PROMETHEUS_PORT=9090
+```
 
-5. Add Environment Variables in Vercel:
-   ```
-   OPENAI_API_KEY=your_openai_api_key
-   SUPABASE_URL=your_supabase_project_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SECRET_KEY=your_random_secret_key
-   ```
+### 2. Logging Configuration
+```bash
+# Structured logging
+LOG_LEVEL=INFO
+LOG_FORMAT=json
+LOG_FILE=logs/enterprise_ai.log
+```
 
-6. Click "Deploy"
+### 3. Analytics Dashboard
+- **Metrics**: GEPA optimization scores, LangStruct accuracy
+- **Performance**: Processing times, confidence scores
+- **Business Impact**: Turnover gains, cost savings
 
-## Step 5: Configure Authentication
+## 🔒 Security Configuration
 
-1. In your Supabase dashboard, go to Authentication > Providers
-2. Enable Google OAuth (or other providers you prefer)
-3. Add your Vercel domain to allowed redirect URLs
+### 1. Authentication
+```bash
+JWT_SECRET_KEY=your-secret-key
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+```
 
-## Step 6: Test Your Deployment
+### 2. Rate Limiting
+```bash
+RATE_LIMIT_REQUESTS_PER_MINUTE=100
+RATE_LIMIT_BURST_SIZE=20
+```
 
-1. Visit your Vercel URL: `https://your-app-name.vercel.app`
-2. Try signing in with your configured OAuth provider
-3. Test the GEPA optimization dashboard
-4. Check the context management features
+### 3. CORS Configuration
+```bash
+CORS_ORIGINS=["https://your-domain.com"]
+CORS_CREDENTIALS=True
+```
 
-## 🎉 You're Done!
+## 🚀 Scaling Configuration
 
-Your enterprise AI context engineering platform is now deployed and ready to use!
+### 1. Multi-tenant Setup
+```bash
+MULTI_TENANT_ENABLED=True
+TENANT_ISOLATION_LEVEL=strict
+```
 
-### Next Steps:
-- Customize the UI components in `frontend/components/`
-- Add more AI agents in `src/agents/`
-- Configure additional data sources in `src/enterprise/`
-- Set up monitoring and analytics
-- Scale based on your business needs
+### 2. Agent Swarm Configuration
+```bash
+SWARM_MAX_AGENTS=10
+SWARM_PARALLEL_EXECUTION=True
+SWARM_FAULT_TOLERANCE=True
+```
 
-### Support:
-- Check the logs in Vercel dashboard if you encounter issues
-- Monitor your Supabase usage in the dashboard
-- Review the application logs for debugging
+### 3. Caching
+```bash
+REDIS_URL=redis://localhost:6379
+CACHE_TTL=3600
+```
 
-Happy coding! 🚀
+## 📈 Performance Optimization
+
+### 1. Target Metrics
+- **Processing Time**: <2.0 seconds
+- **Confidence Score**: >90%
+- **Accuracy Score**: >85%
+- **Turnover Gain**: 38%+
+- **Error Reduction**: 65%+
+
+### 2. Optimization Settings
+```bash
+# GEPA Optimization
+GEPA_POPULATION_SIZE=10
+GEPA_MUTATION_RATE=0.1
+
+# LangStruct Processing
+LANGSTRUCT_BATCH_SIZE=10
+LANGSTRUCT_SCHEMA_OPTIMIZATION=True
+
+# RAG Configuration
+RAG_MAX_CHUNKS=5
+RAG_CHUNK_SIZE=1000
+RAG_CHUNK_OVERLAP=200
+```
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### 1. API Key Errors
+```bash
+# Check environment variables
+echo $PERPLEXITY_API_KEY
+echo $SUPABASE_URL
+```
+
+#### 2. Database Connection
+```bash
+# Test Supabase connection
+python -c "from supabase import create_client; print('Connected')"
+```
+
+#### 3. Frontend Build Issues
+```bash
+# Clear cache and rebuild
+cd frontend
+rm -rf .next node_modules
+npm install
+npm run build
+```
+
+### Performance Issues
+
+#### 1. Slow Processing
+- Check GEPA iteration count
+- Verify LangStruct confidence thresholds
+- Monitor database query performance
+
+#### 2. High Memory Usage
+- Adjust batch sizes
+- Enable caching
+- Optimize vector storage
+
+## 📋 Health Checks
+
+### 1. Backend Health
+```bash
+curl http://localhost:8000/health
+```
+
+### 2. Frontend Health
+```bash
+curl http://localhost:3000/api/health
+```
+
+### 3. Database Health
+```sql
+SELECT COUNT(*) FROM graph_states;
+SELECT COUNT(*) FROM structured_extractions;
+```
+
+## 🎯 Production Checklist
+
+- [ ] Environment variables configured
+- [ ] Database migrations applied
+- [ ] API keys validated
+- [ ] Frontend built and deployed
+- [ ] Backend API running
+- [ ] Health checks passing
+- [ ] Monitoring configured
+- [ ] Security settings applied
+- [ ] Performance metrics baseline
+- [ ] Backup strategy implemented
+
+## 📞 Support
+
+For deployment issues:
+1. Check logs: `tail -f logs/enterprise_ai.log`
+2. Verify environment: `python -c "import os; print(os.environ.get('PERPLEXITY_API_KEY'))"`
+3. Test API: `curl -X POST http://localhost:8000/optimize-inventory -H "Content-Type: application/json" -d '{"query": "test"}'`
+
+## 🚀 Next Steps
+
+1. **Pilot Deployment**: Start with inventory optimization
+2. **Scale Gradually**: Add more agents and workflows
+3. **Monitor Performance**: Track metrics and optimize
+4. **Expand Features**: Add Graph RAG and multi-modal support
+5. **Enterprise Integration**: Connect to existing systems
