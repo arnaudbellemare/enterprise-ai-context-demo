@@ -3323,7 +3323,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                   <div className="text-gray-500 text-xs">
                                     {Object.keys(category.industries).length} workflow options
                   </div>
-                                </button>
+                    </button>
                                 ))}
                             </div>
                         </div>
@@ -3371,13 +3371,13 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                     )}
                                   </div>
                                 </button>
-                              ))}
-                </div>
-              </div>
-            )}
+                                ))}
+                            </div>
+                        </div>
+                      )}
                       </div>
                     </div>
-                    
+
                     {/* Real Data Integration */}
                     <div className="mt-4 bg-gray-800 border border-gray-600 p-4 rounded">
                       <div className="text-green-400 text-sm font-mono mb-3">◄ REAL DATA INTEGRATION</div>
@@ -3387,14 +3387,14 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         <label className="text-gray-400 text-xs font-mono mb-2 block">SELECT DATA TYPES TO CONNECT</label>
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                           {['inventory', 'orders', 'storage', 'quality_metrics', 'automation_data'].map((dataType) => (
-                            <button
+                <button
                               key={dataType}
                               onClick={() => processRealData(dataType, 'analyze', {})}
                               disabled={dataProcessing}
                               className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded text-xs font-mono border border-gray-600 hover:border-green-500 transition-colors disabled:opacity-50"
                             >
                               {dataType.replace('_', ' ').toUpperCase()}
-                            </button>
+                </button>
                           ))}
                         </div>
                       </div>
@@ -3414,13 +3414,13 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                               placeholder="Table/Collection Name"
                               className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
                             />
-                            <button 
+                <button
                               onClick={() => connectDataSource('database', 'postgresql://demo:demo@localhost:5432/enterprise', ['inventory', 'orders'], {})}
                               disabled={dataProcessing}
                               className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400 disabled:opacity-50"
-                            >
+                >
                               {dataProcessing ? 'CONNECTING...' : 'CONNECT DATABASE'}
-                            </button>
+                </button>
                           </div>
                         </div>
                         
@@ -3437,16 +3437,16 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                               placeholder="API Key"
                               className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
                             />
-                            <button 
+                <button
                               onClick={() => connectDataSource('api', 'https://api.enterprise.com/v1', ['quality_metrics', 'automation_data'], { apiKey: 'demo-key' })}
                               disabled={dataProcessing}
                               className="bg-green-500 text-white px-3 py-2 text-sm font-mono hover:bg-green-400 disabled:opacity-50"
-                            >
+                >
                               {dataProcessing ? 'CONNECTING...' : 'CONNECT API'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                </button>
+                  </div>
+                </div>
+              </div>
 
                       {/* Real Data Connections Status */}
                       {realDataConnections.length > 0 && (
@@ -3459,7 +3459,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                   <div>
                                     <div className="text-green-400 text-sm font-mono">{conn.name}</div>
                                     <div className="text-gray-400 text-xs">Type: {conn.type} | Status: {conn.status}</div>
-                                  </div>
+                    </div>
                                   <div className="text-green-400 text-xs font-mono">
                                     {conn.lastSync}
                                   </div>
@@ -3475,7 +3475,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
 
                       {/* Data Quality Metrics */}
                       {dataQuality && (
-                        <div className="mt-4">
+                    <div className="mt-4">
                           <div className="text-green-400 text-xs font-mono mb-2">◄ DATA QUALITY METRICS</div>
                           <div className="bg-gray-900 border border-gray-600 p-3 rounded">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
@@ -3955,7 +3955,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           setWorkflowNodes([]);
                           setAgentCommunications([]);
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded text-sm font-mono transition-colors border border-blue-500 hover:border-blue-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         🔄 TEST NEW QUERY
                       </button>
@@ -3964,7 +3964,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           navigator.clipboard.writeText(agentResponse);
                           alert('Agent response copied to clipboard!');
                         }}
-                        className="bg-green-600 hover:bg-green-700 text-white p-3 rounded text-sm font-mono transition-colors border border-green-500 hover:border-green-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         📋 COPY RESPONSE
                       </button>
@@ -3978,7 +3978,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                           element.click();
                           document.body.removeChild(element);
                         }}
-                        className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded text-sm font-mono transition-colors border border-purple-500 hover:border-purple-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         💾 SAVE RESPONSE
                       </button>
@@ -3986,7 +3986,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         onClick={() => {
                           setTestQuery(testQuery + '\n\nFollow-up: Can you provide more specific implementation details?');
                         }}
-                        className="bg-orange-600 hover:bg-orange-700 text-white p-3 rounded text-sm font-mono transition-colors border border-orange-500 hover:border-orange-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         🔍 ASK FOLLOW-UP
                       </button>
@@ -3994,7 +3994,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         onClick={() => {
                           alert('🚀 IMPLEMENTATION ROADMAP\n\n1. Review the agent response\n2. Identify key action items\n3. Assign team members\n4. Set implementation timeline\n5. Track progress and results\n\nReady to implement these strategies!');
                         }}
-                        className="bg-red-600 hover:bg-red-700 text-white p-3 rounded text-sm font-mono transition-colors border border-red-500 hover:border-red-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         🚀 IMPLEMENT NOW
                       </button>
@@ -4002,7 +4002,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         onClick={() => {
                           alert('📊 ANALYTICS DASHBOARD\n\n• Track implementation progress\n• Monitor key performance indicators\n• Measure ROI and impact\n• Generate reports for stakeholders\n\nAccess your analytics dashboard to track results!');
                         }}
-                        className="bg-cyan-600 hover:bg-cyan-700 text-white p-3 rounded text-sm font-mono transition-colors border border-cyan-500 hover:border-cyan-400"
+                        className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded text-sm font-mono transition-colors border border-gray-500 hover:border-gray-400"
                       >
                         📊 VIEW ANALYTICS
                       </button>
