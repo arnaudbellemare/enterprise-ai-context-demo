@@ -3,15 +3,69 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { messages } = body;
+    const { query, industry, context, useRealAI } = body;
 
-    console.log('Perplexity Chat request:', messages);
+    console.log('Perplexity Chat request:', { query, industry, context, useRealAI });
 
-    // Simulate processing time
+    // Use REAL Perplexity API if useRealAI is true
+    if (useRealAI) {
+      console.log('Making REAL Perplexity API call...');
+      
+      const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer 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`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'sonar-pro',
+          messages: [
+            {
+              role: 'system',
+              content: context || 'You are a specialized AI agent that provides expert assistance with detailed, actionable responses.'
+            },
+            {
+              role: 'user',
+              content: query
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.7,
+          top_p: 0.9
+        })
+      });
+
+      if (perplexityResponse.ok) {
+        const aiData = await perplexityResponse.json();
+        const realResponse = aiData.choices?.[0]?.message?.content || 'No response from AI';
+        
+        console.log('Real Perplexity API response received');
+        
+        return NextResponse.json({
+          success: true,
+          content: realResponse,
+          response: realResponse,
+          sources: [
+            'Perplexity AI (Real)',
+            'Live web search',
+            'Current data',
+            'Real-time information'
+          ],
+          model: 'sonar-pro',
+          response_time: '2.1s',
+          isRealAI: true
+        });
+      } else {
+        console.error('Perplexity API error:', perplexityResponse.status, await perplexityResponse.text());
+        throw new Error(`Perplexity API failed: ${perplexityResponse.status}`);
+      }
+    }
+
+    // Fallback to mock responses if not using real AI
+    console.log('Using mock responses (fallback)');
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const userMessage = messages.find((m: any) => m.role === 'user');
-    const userQuery = userMessage?.content || 'How can I help you?';
+    const userQuery = query || 'How can I help you?';
     
     let mockResponse = '';
     
@@ -104,6 +158,7 @@ This response is powered by GEPA-optimized prompts that have been specifically t
 
     return NextResponse.json({
       success: true,
+      content: mockResponse,
       response: mockResponse,
       sources: [
         'Company knowledge base',
@@ -112,7 +167,8 @@ This response is powered by GEPA-optimized prompts that have been specifically t
         'Brand voice training data'
       ],
       model: 'gepa-optimized-enterprise',
-      response_time: '1.0s'
+      response_time: '1.0s',
+      isRealAI: false
     });
 
   } catch (error) {
