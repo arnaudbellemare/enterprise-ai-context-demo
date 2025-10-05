@@ -133,28 +133,73 @@ export async function POST(req: Request) {
     // Extract conversation context from previous messages
     const conversationContext = messages.slice(-3).map((msg: any) => msg.content).join(' ');
     
-    // Detect various industry contexts
-    const hasClinicalTrialContext = conversationContext.toLowerCase().includes('clinical trial') || 
-                                   conversationContext.toLowerCase().includes('cancer treatment') ||
-                                   conversationContext.toLowerCase().includes('medical study');
+    // Use AI to semantically understand conversation context
+    let detectedContext = 'General';
+    let contextPrefix = '';
     
-    const hasTransportationContext = conversationContext.toLowerCase().includes('transportation') ||
-                                    conversationContext.toLowerCase().includes('shipping') ||
-                                    conversationContext.toLowerCase().includes('logistics') ||
-                                    conversationContext.toLowerCase().includes('freight') ||
-                                    conversationContext.toLowerCase().includes('delivery');
-    
-    const hasFinTechContext = conversationContext.toLowerCase().includes('crypto') ||
-                             conversationContext.toLowerCase().includes('trading') ||
-                             conversationContext.toLowerCase().includes('finance') ||
-                             conversationContext.toLowerCase().includes('banking');
-    
-    const detectedContext = hasClinicalTrialContext ? 'Clinical Trial' : 
-                           hasTransportationContext ? 'Transportation' :
-                           hasFinTechContext ? 'FinTech' : 'General';
+    try {
+      // Use AI to analyze conversation context semantically
+      const contextAnalysis = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'http://localhost:3000',
+          'X-Title': 'Context Analysis'
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `Analyze the conversation context and determine the primary domain/topic. Return only one of these categories:
+- Clinical Trial (medical research, healthcare, clinical studies)
+- Transportation (logistics, shipping, delivery, freight)
+- FinTech (cryptocurrency, trading, finance, banking)
+- Supplier Management (supplier relationships, vendor management, procurement, supply chain)
+- General (if no specific domain detected)
+
+Return only the category name, nothing else.`
+            },
+            {
+              role: 'user',
+              content: `Analyze this conversation context: ${conversationContext}`
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 50
+        })
+      });
+
+      if (contextAnalysis.ok) {
+        const contextData = await contextAnalysis.json();
+        detectedContext = contextData.choices[0].message.content.trim();
+        
+        // Set context-specific prefix
+        switch (detectedContext) {
+          case 'Clinical Trial':
+            contextPrefix = `[CLINICAL TRIAL CONTEXT DETECTED] You are discussing clinical trials, medical research, or cancer treatment. `;
+            break;
+          case 'Transportation':
+            contextPrefix = `[TRANSPORTATION CONTEXT DETECTED] You are discussing transportation, logistics, shipping, or delivery optimization. `;
+            break;
+          case 'FinTech':
+            contextPrefix = `[FINTECH CONTEXT DETECTED] You are discussing cryptocurrency, trading, finance, or banking. `;
+            break;
+          case 'Supplier Management':
+            contextPrefix = `[SUPPLIER MANAGEMENT CONTEXT DETECTED] You are discussing supplier relationships, vendor management, procurement, or supply chain optimization. `;
+            break;
+          default:
+            contextPrefix = `[GENERAL CONTEXT] `;
+        }
+      }
+    } catch (error) {
+      console.error('❌ Context analysis failed:', error);
+      contextPrefix = `[GENERAL CONTEXT] `;
+    }
     
     console.log('🚀 [REAL FRAMEWORKS] Agent chat request:', userQuery);
-    console.log('📝 Conversation context detected:', detectedContext);
+    console.log('📝 AI-detected conversation context:', detectedContext);
 
     // Initialize real frameworks
     await initializeRealFrameworks();
@@ -187,17 +232,7 @@ export async function POST(req: Request) {
     const contextData = await contextEngine.assembleContext(userQuery);
     console.log('✅ REAL Context Engine completed:', contextData.sources_used.length, 'sources');
 
-    // Step 5: Build full context with REAL frameworks and conversation context
-    let contextPrefix = '';
-    if (hasClinicalTrialContext) {
-      contextPrefix = `[CLINICAL TRIAL CONTEXT DETECTED] You are discussing clinical trials, medical research, or cancer treatment. `;
-    } else if (hasTransportationContext) {
-      contextPrefix = `[TRANSPORTATION CONTEXT DETECTED] You are discussing transportation, logistics, shipping, or delivery optimization. `;
-    } else if (hasFinTechContext) {
-      contextPrefix = `[FINTECH CONTEXT DETECTED] You are discussing cryptocurrency, trading, finance, or banking. `;
-    } else {
-      contextPrefix = `[GENERAL CONTEXT] `;
-    }
+    // Step 5: Build full context with REAL frameworks and AI-detected conversation context
     
     const fullContext = `
 [Complete System Context - REAL Ax + GEPA Stack]
