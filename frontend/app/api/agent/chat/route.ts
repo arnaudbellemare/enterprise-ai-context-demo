@@ -72,7 +72,7 @@ Provide expert-level responses about workflow optimization, GEPA strategies, Gra
     const aiResponse = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Authorization': 'Bearer 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',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
