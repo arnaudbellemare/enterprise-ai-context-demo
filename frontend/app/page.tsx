@@ -48,6 +48,15 @@ export default function Home() {
   const [newDataSource, setNewDataSource] = useState('');
   const [followUpQuestion, setFollowUpQuestion] = useState<string>('');
   const [conversationHistory, setConversationHistory] = useState<Array<{query: string, response: string}>>([]);
+  const [messages, setMessages] = useState<Array<{role: string, content: string}>>([]);
+
+  // Clear chat function
+  const clearChat = () => {
+    setConversationHistory([]);
+    setMessages([]);
+    setFollowUpQuestion('');
+    console.log('🧹 Chat cleared - starting fresh conversation');
+  };
 
   // Industry Examples Data - Organized by Categories
   const industryCategories = {
@@ -5072,6 +5081,19 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 Engage with your workflow agents using GEPA optimization, Graph RAG, and Langstruct for intelligent dialogue
               </div>
 
+              {/* Clear Chat Button */}
+              <div className="flex justify-between items-center mb-6">
+                <div className="text-gray-400 text-xs font-mono">
+                  💬 {conversationHistory.length} messages in conversation
+                </div>
+                <button
+                  onClick={clearChat}
+                  className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 text-xs font-mono rounded border border-red-500 transition-colors"
+                >
+                  🧹 CLEAR CHAT
+                </button>
+              </div>
+
               {/* Active Systems Indicators */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                 <div className="bg-gray-800 border border-purple-500 p-3 rounded">
@@ -5208,17 +5230,23 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       setConversationHistory(prev => [...prev, { query: userQuery, response: 'Processing...' }]);
                       
                       try {
+                        // Add user message to messages array
+                        const newMessages = [...messages, { role: 'user', content: userQuery }];
+                        setMessages(newMessages);
+                        
                         const response = await fetch('/api/agent/chat', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
-                            messages: [
-                              { role: 'user', content: userQuery }
-                            ]
+                            messages: newMessages
                           })
                         });
                         
                         const data = await response.json();
+                        
+                        // Add assistant response to messages array
+                        const assistantMessage = { role: 'assistant', content: data.content || data.response || 'Response received' };
+                        setMessages(prev => [...prev, assistantMessage]);
                         
                         // Update with actual response
                         setConversationHistory(prev => {
