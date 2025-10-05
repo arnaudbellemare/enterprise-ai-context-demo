@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { AI, AxAI } from '@ax-llm/ax';
+import { ai, AxAI } from '@ax-llm/ax';
 
 export const runtime = 'nodejs';
 
@@ -23,7 +23,6 @@ function initializeAxAI(): AxAI | null {
       name: 'openai' as any,
       apiKey: openrouterKey,
       config: {
-        baseURL: 'https://openrouter.ai/api/v1',
         model: 'openai/gpt-4o-mini',
       },
     });

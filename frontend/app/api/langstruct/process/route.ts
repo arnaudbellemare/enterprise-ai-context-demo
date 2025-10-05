@@ -108,7 +108,7 @@ Return as valid JSON.`;
     try {
       // Clean the result
       const cleaned = rawResult.replace(/```json\s*/, '').replace(/```\s*/, '');
-      const jsonMatch = cleaned.match(/\{.*\}/s);
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);

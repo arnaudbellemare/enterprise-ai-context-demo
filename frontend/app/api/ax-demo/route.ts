@@ -47,7 +47,7 @@ export async function GET() {
     
     // Try with OpenAI if key is available
     const llm = ai({
-      name: 'openai:gpt-4',
+      name: 'openai',
       apiKey: openaiKey
     });
 
