@@ -79,28 +79,7 @@ function applyGEPAOptimization(userQuery: string): {
   optimized_directives: string;
   metrics: GEPAMetrics;
 } {
-  const directives = `[GEPA Reflective Evolution Optimization - Real Framework]
-
-Original Query: ${userQuery}
-
-Optimization Strategy (Based on GEPA Paper + Ax Framework):
-1. **Reflective Reasoning**: Apply multi-turn reflection (depth=3)
-2. **Domain Expertise**: Use proven metrics (93% accuracy on MATH benchmark)
-3. **Efficiency Target**: Achieve 35x improvement over baseline
-4. **Quality Assurance**: Maintain production-grade responses
-5. **Ax Integration**: Leverage TypeScript DSPy signatures (axllm.dev)
-6. **Continuous Learning**: Apply feedback loops for evolution
-
-Framework Stack:
-- Ax (TypeScript DSPy): Version 14.0.29 from axllm.dev
-- GEPA: Reflective evolution + multi-objective optimization
-- Graph RAG: Knowledge graph retrieval (92% relevance)
-- Langstruct: Workflow parsing (85% accuracy)
-- Context Engine: Real-time assembly (250ms response time)
-- OpenRouter: GPT-4o-mini (production-ready)
-
-Evolution Generation: 2 (Quality vs Speed trade-offs)
-Quality Standard: Enterprise-grade, production-ready responses`;
+  const directives = `You are an expert AI assistant. Provide clear, accurate, and helpful responses to user questions. Focus on the user's actual question without mentioning internal processing frameworks unless specifically asked about them.`;
 
   return {
     optimized_directives: directives,
@@ -294,15 +273,7 @@ async function fallbackToPerplexity(userQuery: string) {
   try {
     console.log('🤖 Using Perplexity fallback (with real citations)...');
     
-    const systemPrompt = `You are an advanced AI agent powered by the enterprise AI stack:
-
-**Ax Framework**: Real TypeScript DSPy from axllm.dev (v14.0.29)
-**GEPA Optimizer**: Reflective evolution (93% accuracy, 35x efficiency)
-**Graph RAG**: Knowledge graph retrieval (92% relevance)
-**Langstruct**: Workflow pattern parsing (85% accuracy)
-**Context Engine**: Real-time multi-source assembly (250ms)
-
-Provide expert, detailed responses with specific metrics, citations, and actionable insights.`;
+    const systemPrompt = `You are an expert AI assistant. Provide clear, accurate, and helpful responses to user questions. Focus on answering the user's actual question without mentioning internal processing frameworks unless specifically asked about them.`;
 
     const aiResponse = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
