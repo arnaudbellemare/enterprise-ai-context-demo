@@ -160,12 +160,29 @@ export async function POST(req: Request) {
 
     // Extract conversation context from previous messages
     const conversationContext = messages.slice(-3).map((msg: any) => msg.content).join(' ');
+    
+    // Detect various industry contexts
     const hasClinicalTrialContext = conversationContext.toLowerCase().includes('clinical trial') || 
                                    conversationContext.toLowerCase().includes('cancer treatment') ||
                                    conversationContext.toLowerCase().includes('medical study');
     
+    const hasTransportationContext = conversationContext.toLowerCase().includes('transportation') ||
+                                    conversationContext.toLowerCase().includes('shipping') ||
+                                    conversationContext.toLowerCase().includes('logistics') ||
+                                    conversationContext.toLowerCase().includes('freight') ||
+                                    conversationContext.toLowerCase().includes('delivery');
+    
+    const hasFinTechContext = conversationContext.toLowerCase().includes('crypto') ||
+                             conversationContext.toLowerCase().includes('trading') ||
+                             conversationContext.toLowerCase().includes('finance') ||
+                             conversationContext.toLowerCase().includes('banking');
+    
+    const detectedContext = hasClinicalTrialContext ? 'Clinical Trial' : 
+                           hasTransportationContext ? 'Transportation' :
+                           hasFinTechContext ? 'FinTech' : 'General';
+    
     console.log('🚀 [REAL FRAMEWORKS] Agent chat request:', userQuery);
-    console.log('📝 Conversation context detected:', hasClinicalTrialContext ? 'Clinical Trial' : 'General');
+    console.log('📝 Conversation context detected:', detectedContext);
 
     // Initialize real frameworks
     await initializeRealFrameworks();
@@ -199,9 +216,16 @@ export async function POST(req: Request) {
     console.log('✅ REAL Context Engine completed:', contextData.sources_used.length, 'sources');
 
     // Step 5: Build full context with REAL frameworks and conversation context
-    const contextPrefix = hasClinicalTrialContext ? 
-      `[CLINICAL TRIAL CONTEXT DETECTED] You are discussing clinical trials, medical research, or cancer treatment. ` : 
-      `[GENERAL CONTEXT] `;
+    let contextPrefix = '';
+    if (hasClinicalTrialContext) {
+      contextPrefix = `[CLINICAL TRIAL CONTEXT DETECTED] You are discussing clinical trials, medical research, or cancer treatment. `;
+    } else if (hasTransportationContext) {
+      contextPrefix = `[TRANSPORTATION CONTEXT DETECTED] You are discussing transportation, logistics, shipping, or delivery optimization. `;
+    } else if (hasFinTechContext) {
+      contextPrefix = `[FINTECH CONTEXT DETECTED] You are discussing cryptocurrency, trading, finance, or banking. `;
+    } else {
+      contextPrefix = `[GENERAL CONTEXT] `;
+    }
     
     const fullContext = `
 [Complete System Context - REAL Ax + GEPA Stack]
