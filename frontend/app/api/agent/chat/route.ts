@@ -336,6 +336,7 @@ Respond with technical depth, specific examples, and production-grade insights. 
         model: 'openai/gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
+          ...messages.slice(0, -1), // Include conversation history
           { role: 'user', content: userQuery }
         ],
         max_tokens: 2000,
