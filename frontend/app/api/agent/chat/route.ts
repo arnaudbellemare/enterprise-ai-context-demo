@@ -158,7 +158,14 @@ export async function POST(req: Request) {
     const lastMessage = messages[messages.length - 1];
     const userQuery = lastMessage.content;
 
+    // Extract conversation context from previous messages
+    const conversationContext = messages.slice(-3).map((msg: any) => msg.content).join(' ');
+    const hasClinicalTrialContext = conversationContext.toLowerCase().includes('clinical trial') || 
+                                   conversationContext.toLowerCase().includes('cancer treatment') ||
+                                   conversationContext.toLowerCase().includes('medical study');
+    
     console.log('🚀 [REAL FRAMEWORKS] Agent chat request:', userQuery);
+    console.log('📝 Conversation context detected:', hasClinicalTrialContext ? 'Clinical Trial' : 'General');
 
     // Initialize real frameworks
     await initializeRealFrameworks();
@@ -191,11 +198,15 @@ export async function POST(req: Request) {
     const contextData = await contextEngine.assembleContext(userQuery);
     console.log('✅ REAL Context Engine completed:', contextData.sources_used.length, 'sources');
 
-    // Step 5: Build full context with REAL frameworks
+    // Step 5: Build full context with REAL frameworks and conversation context
+    const contextPrefix = hasClinicalTrialContext ? 
+      `[CLINICAL TRIAL CONTEXT DETECTED] You are discussing clinical trials, medical research, or cancer treatment. ` : 
+      `[GENERAL CONTEXT] `;
+    
     const fullContext = `
 [Complete System Context - REAL Ax + GEPA Stack]
 
-${optimized_directives}
+${contextPrefix}${optimized_directives}
 
 [REAL Graph RAG Results]
 Entities: ${graphData.entities.map(e => e.label).join(', ')}
