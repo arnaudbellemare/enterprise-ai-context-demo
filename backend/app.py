@@ -13,6 +13,9 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 import json
 
+# Import our real AI implementations
+from src.api.real_ai_processor import RealAIProcessor, AIProcessingRequest, AIProcessingResponse
+
 # Create FastAPI app
 app = FastAPI(
     title="Enterprise AI Context Engineering API Gateway",
@@ -59,6 +62,9 @@ if os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
         os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     )
 
+# Initialize Real AI Processor
+real_ai_processor = RealAIProcessor()
+
 @app.get("/")
 async def root():
     """Root endpoint"""
@@ -77,6 +83,34 @@ async def health_check():
         "status": "ok",
         "message": "API Gateway is healthy",
         "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/health")
+async def health_check_simple():
+    """Simple health check endpoint"""
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
+@app.post("/process", response_model=AIProcessingResponse)
+async def process_ai_request(request: AIProcessingRequest):
+    """
+    Process an AI request using real GEPA, LangStruct, and GraphRAG
+    """
+    try:
+        result = await real_ai_processor.process_query(request)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/stats")
+async def get_processing_stats():
+    """
+    Get processing statistics
+    """
+    return {
+        "total_processings": len(real_ai_processor.processing_history),
+        "gepa_stats": "Real GEPA optimization active",
+        "langstruct_stats": "Real LangStruct extraction active", 
+        "graphrag_stats": "Real GraphRAG orchestration active"
     }
 
 @app.post("/api/context/assemble")

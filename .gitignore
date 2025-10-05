@@ -153,3 +153,4 @@ chroma_db/
 # Supabase
 .supabase/
 YOUR_ACTUAL_CREDENTIALS.md
+enterprise-ai-context-demo-1/

@@ -3,14 +3,18 @@ fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 pydantic>=2.0.0
 httpx>=0.25.0
+aiohttp>=3.9.0
 supabase>=2.0.0
 python-dotenv>=1.0.0
 
 # AI/ML Core Dependencies
 dspy>=2.0.0
-gepa>=1.0.0
-langstruct>=0.1.0
 perplexity-ai>=0.1.0
+
+# Real GEPA and LangStruct Implementation
+# Note: These are custom implementations based on research papers
+# gepa>=1.0.0  # Custom implementation in src/core/gepa_real.py
+# langstruct>=0.1.0  # Custom implementation in src/core/langstruct_real.py
 
 # LangGraph and LangChain Ecosystem
 langgraph>=0.1.0

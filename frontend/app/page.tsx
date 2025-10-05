@@ -2002,7 +2002,7 @@ Use this enhanced context to provide a more accurate and specialized response.
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              query: optimizedPrompt,
+              query: testQuery,  // ✅ Send user's REAL question, not GEPA's meta-instruction
               industry: selectedIndustry,
               context: enhancedContext,
               useRealAI: true
