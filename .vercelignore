@@ -1,0 +1,20 @@
+# EXCLUDE EVERYTHING EXCEPT FRONTEND SOURCE
+*
+
+# ONLY INCLUDE FRONTEND SOURCE FILES
+!frontend/
+!frontend/app/
+!frontend/app/**/*
+!frontend/components/
+!frontend/components/**/*
+!frontend/lib/
+!frontend/lib/**/*
+!frontend/public/
+!frontend/public/**/*
+!frontend/package.json
+!frontend/next.config.js
+!frontend/tailwind.config.js
+!frontend/tsconfig.json
+!frontend/postcss.config.js
+!frontend/globals.css
+!frontend/layout.tsx
