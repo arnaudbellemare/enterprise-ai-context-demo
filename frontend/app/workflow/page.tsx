@@ -277,15 +277,30 @@ export default function WorkflowPage() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionLog, setExecutionLog] = useState<string[]>([]);
   const [nodeConfigs, setNodeConfigs] = useState<Record<string, any>>({});
+  const [workflowErrors, setWorkflowErrors] = useState<string[]>([]);
 
   const onNodesChange = useCallback(
-    (changes: any) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    []
+    (changes: any) => {
+      setNodes((nds) => {
+        const newNodes = applyNodeChanges(changes, nds);
+        // Validate workflow after node changes
+        setTimeout(() => validateWorkflow(newNodes, edges), 100);
+        return newNodes;
+      });
+    },
+    [edges]
   );
 
   const onEdgesChange = useCallback(
-    (changes: any) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    []
+    (changes: any) => {
+      setEdges((eds) => {
+        const newEdges = applyEdgeChanges(changes, eds);
+        // Validate workflow after edge changes
+        setTimeout(() => validateWorkflow(nodes, newEdges), 100);
+        return newEdges;
+      });
+    },
+    [nodes]
   );
 
   // Handle drag connections between nodes
@@ -353,6 +368,77 @@ export default function WorkflowPage() {
 
   const addLog = (message: string) => {
     setExecutionLog((logs) => [`[${new Date().toLocaleTimeString()}] ${message}`, ...logs.slice(0, 99)]);
+  };
+
+  // Workflow validation function
+  const validateWorkflow = (nodes: FlowNode[], edges: FlowEdge[]) => {
+    const errors: string[] = [];
+    const invalidEdges: Set<string> = new Set();
+
+    // Check for orphaned nodes (no connections)
+    const connectedNodes = new Set<string>();
+    edges.forEach(edge => {
+      connectedNodes.add(edge.source);
+      connectedNodes.add(edge.target);
+    });
+
+    nodes.forEach(node => {
+      if (!connectedNodes.has(node.id) && nodes.length > 1) {
+        errors.push(`Node "${node.data.label}" is not connected to the workflow`);
+      }
+    });
+
+    // Check for cycles (would cause infinite loops)
+    const visited = new Set<string>();
+    const recursionStack = new Set<string>();
+
+    const hasCycle = (nodeId: string): boolean => {
+      if (recursionStack.has(nodeId)) return true;
+      if (visited.has(nodeId)) return false;
+
+      visited.add(nodeId);
+      recursionStack.add(nodeId);
+
+      const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+      for (const edge of outgoingEdges) {
+        if (hasCycle(edge.target)) {
+          invalidEdges.add(edge.id);
+          return true;
+        }
+      }
+
+      recursionStack.delete(nodeId);
+      return false;
+    };
+
+    nodes.forEach(node => {
+      if (hasCycle(node.id)) {
+        errors.push(`Circular dependency detected involving node "${node.data.label}"`);
+      }
+    });
+
+    // Check for multiple entry points (nodes with no incoming edges)
+    const incomingCount: Record<string, number> = {};
+    nodes.forEach(node => incomingCount[node.id] = 0);
+    edges.forEach(edge => incomingCount[edge.target]++);
+
+    const entryPoints = nodes.filter(node => incomingCount[node.id] === 0);
+    if (entryPoints.length > 1 && nodes.length > 1) {
+      errors.push(`Multiple entry points detected. Workflow should have only one starting node.`);
+    }
+
+    // Check for dead ends (nodes with no outgoing edges)
+    const outgoingCount: Record<string, number> = {};
+    nodes.forEach(node => outgoingCount[node.id] = 0);
+    edges.forEach(edge => outgoingCount[edge.source]++);
+
+    const deadEnds = nodes.filter(node => outgoingCount[node.id] === 0);
+    if (deadEnds.length > 1 && nodes.length > 1) {
+      errors.push(`Multiple end points detected. Consider connecting all paths to a final node.`);
+    }
+
+    setWorkflowErrors(errors);
+    return { errors, invalidEdges };
   };
 
   const executeWorkflow = async () => {
@@ -548,7 +634,7 @@ export default function WorkflowPage() {
   };
 
   const edgeTypes = {
-    animated: Edge.Animated,
+    animated: (props: any) => <Edge.Animated {...props} isValid={!workflowErrors.length} />,
     temporary: Edge.Temporary,
   };
 
@@ -591,6 +677,21 @@ export default function WorkflowPage() {
           })}
         </div>
 
+        {/* Workflow Validation Errors */}
+        {workflowErrors.length > 0 && (
+          <div className="mt-6 pt-6 border-t border-border">
+            <h3 className="text-sm font-semibold mb-2 text-red-600">⚠️ Workflow Issues</h3>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 max-h-40 overflow-y-auto">
+              {workflowErrors.map((error, idx) => (
+                <div key={idx} className="text-xs text-red-700 mb-1 flex items-start gap-2">
+                  <span className="text-red-500 mt-0.5">•</span>
+                  <span>{error}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 pt-6 border-t border-border">
           <h3 className="text-sm font-semibold mb-2">Execution Log</h3>
           <div className="bg-background border border-border rounded-lg p-2 max-h-60 overflow-y-auto">
@@ -625,9 +726,10 @@ export default function WorkflowPage() {
               <Button 
                 size="sm" 
                 onClick={executeWorkflow}
-                disabled={isExecuting || nodes.length === 0}
+                disabled={isExecuting || nodes.length === 0 || workflowErrors.length > 0}
+                variant={workflowErrors.length > 0 ? "destructive" : "default"}
               >
-                {isExecuting ? 'Running...' : 'Execute'}
+                {isExecuting ? 'Running...' : workflowErrors.length > 0 ? 'Fix Issues First' : 'Execute'}
               </Button>
               <Button 
                 size="sm" 
@@ -670,10 +772,22 @@ export default function WorkflowPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status:</span>
-                  <span className={`font-semibold ${isExecuting ? 'text-yellow-600' : 'text-green-600'}`}>
-                    {isExecuting ? 'Running' : 'Ready'}
+                  <span className={`font-semibold ${
+                    isExecuting ? 'text-yellow-600' : 
+                    workflowErrors.length > 0 ? 'text-red-600' : 
+                    'text-green-600'
+                  }`}>
+                    {isExecuting ? 'Running' : 
+                     workflowErrors.length > 0 ? 'Issues Found' : 
+                     'Ready'}
                   </span>
                 </div>
+                {workflowErrors.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Errors:</span>
+                    <span className="font-semibold text-red-600">{workflowErrors.length}</span>
+                  </div>
+                )}
               </div>
             </div>
           </Panel>

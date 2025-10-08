@@ -195,9 +195,19 @@ body {
   animation: dashdraw 0.5s linear infinite;
 }
 
+.react-flow__edge.animate-dash-error {
+  animation: dashdraw-error 0.3s linear infinite;
+}
+
 @keyframes dashdraw {
   to {
     stroke-dashoffset: -10;
+  }
+}
+
+@keyframes dashdraw-error {
+  to {
+    stroke-dashoffset: -12;
   }
 }
 

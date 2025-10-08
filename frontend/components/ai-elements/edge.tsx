@@ -3,7 +3,7 @@
 import { BaseEdge, EdgeProps, getSmoothStepPath, EdgeLabelRenderer, getBezierPath } from '@xyflow/react';
 
 export const Edge = {
-  Animated: (props: EdgeProps) => {
+  Animated: (props: EdgeProps & { isValid?: boolean }) => {
     const [edgePath, labelX, labelY] = getBezierPath({
       sourceX: props.sourceX,
       sourceY: props.sourceY,
@@ -13,23 +13,27 @@ export const Edge = {
       targetPosition: props.targetPosition,
     });
 
+    // Determine edge color based on validation status
+    const edgeColor = props.isValid === false ? '#ef4444' : '#6b7280'; // Red if invalid, gray if valid
+    const strokeWidth = props.isValid === false ? 4 : 3; // Thicker if invalid
+
     return (
       <>
         <BaseEdge
           id={props.id}
           path={edgePath}
           style={{
-            stroke: '#3b82f6',
-            strokeWidth: 3,
+            stroke: edgeColor,
+            strokeWidth: strokeWidth,
           }}
         />
         <path
           d={edgePath}
           fill="none"
-          stroke="#3b82f6"
-          strokeWidth={3}
-          strokeDasharray="5,5"
-          className="animate-dash"
+          stroke={edgeColor}
+          strokeWidth={strokeWidth}
+          strokeDasharray={props.isValid === false ? "8,4" : "5,5"}
+          className={props.isValid === false ? "animate-dash-error" : "animate-dash"}
         />
         {/* Arrow marker */}
         <defs>
@@ -44,10 +48,17 @@ export const Edge = {
           >
             <path
               d="M0,0 L0,20 L20,10 z"
-              fill="#3b82f6"
+              fill={edgeColor}
             />
           </marker>
         </defs>
+        {/* Error indicator for invalid edges */}
+        {props.isValid === false && (
+          <g>
+            <circle cx={labelX} cy={labelY} r="8" fill="#ef4444" />
+            <text x={labelX} y={labelY + 2} textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">!</text>
+          </g>
+        )}
       </>
     );
   },
