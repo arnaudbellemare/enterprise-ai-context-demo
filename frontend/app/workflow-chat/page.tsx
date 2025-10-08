@@ -51,30 +51,31 @@ export default function WorkflowChatPage() {
         localStorage.removeItem('workflowChatData');
         
         // Initialize chat with detailed workflow summary
+        let summaryContent = 'I\'ve analyzed your **' + parsed.workflowName + '** workflow execution and have access to all the real data. Here\'s what was processed:\n\n';
+        summaryContent += '📊 **Workflow Summary:**\n';
+        summaryContent += '- Execution completed in ' + parsed.executionTime + '\n';
+        summaryContent += '- ' + parsed.nodes.length + ' nodes processed successfully\n\n';
+        summaryContent += '🔍 **Real Data Available:**\n';
+        
+        Object.entries(parsed.results).forEach(([nodeId, result]) => {
+          const node = parsed.nodes.find((n: any) => n.id === nodeId);
+          const resultText = Array.isArray(result) ? result.join(' ') : String(result);
+          const truncated = resultText.length > 150 ? resultText.substring(0, 150) + '...' : resultText;
+          summaryContent += '- **' + (node?.label || nodeId) + '**: ' + truncated + '\n';
+        });
+        
+        summaryContent += '\n💬 **I can help you with:**\n';
+        summaryContent += '- **Investment recommendations** based on the market analysis\n';
+        summaryContent += '- **Property insights** from the database search\n';
+        summaryContent += '- **Market trends** and pricing analysis\n';
+        summaryContent += '- **Risk assessment** and opportunities\n';
+        summaryContent += '- **Detailed reports** and summaries\n\n';
+        summaryContent += '**What specific aspect would you like me to focus on?** I have all the workflow data ready to provide detailed, actionable insights.';
+        
         const initialMessage: Message = {
           id: '1',
           role: 'assistant',
-          content: `I've analyzed your **${parsed.workflowName}** workflow execution and have access to all the real data. Here's what was processed:
-
-📊 **Workflow Summary:**
-- Execution completed in ${parsed.executionTime}
-- ${parsed.nodes.length} nodes processed successfully
-
-🔍 **Real Data Available:**
-${Object.entries(parsed.results).map(([nodeId, result]) => {
-  const node = parsed.nodes.find((n: any) => n.id === nodeId);
-  const resultText = Array.isArray(result) ? result.join(' ') : String(result);
-  return `- **${node?.label || nodeId}**: ${resultText.substring(0, 150)}${resultText.length > 150 ? '...' : ''}`;
-}).join('\n')}
-
-💬 **I can help you with:**
-- **Investment recommendations** based on the market analysis
-- **Property insights** from the database search
-- **Market trends** and pricing analysis
-- **Risk assessment** and opportunities
-- **Detailed reports** and summaries
-
-**What specific aspect would you like me to focus on?** I have all the workflow data ready to provide detailed, actionable insights.`,
+          content: summaryContent,
           timestamp: new Date(),
           metadata: { type: 'workflow_summary' }
         };
@@ -107,20 +108,21 @@ ${Object.entries(parsed.results).map(([nodeId, result]) => {
 
     try {
       // Prepare detailed workflow context
-      const workflowContextText = workflowContext ? `
-=== WORKFLOW EXECUTION RESULTS ===
-Workflow: ${workflowContext.workflowName}
-Execution Time: ${workflowContext.executionTime}
-
-DETAILED RESULTS FROM EACH NODE:
-${Object.entries(workflowContext.results).map(([nodeId, result]) => {
-  const node = workflowContext.nodes.find((n: any) => n.id === nodeId);
-  const resultText = Array.isArray(result) ? result.join('\n') : String(result);
-  return `\n**${node?.label || nodeId}**:\n${resultText}`;
-}).join('\n')}
-
-=== END WORKFLOW CONTEXT ===
-` : '';
+      let workflowContextText = '';
+      if (workflowContext) {
+        workflowContextText = '=== WORKFLOW EXECUTION RESULTS ===\n';
+        workflowContextText += 'Workflow: ' + workflowContext.workflowName + '\n';
+        workflowContextText += 'Execution Time: ' + workflowContext.executionTime + '\n\n';
+        workflowContextText += 'DETAILED RESULTS FROM EACH NODE:\n';
+        
+        Object.entries(workflowContext.results).forEach(([nodeId, result]) => {
+          const node = workflowContext.nodes.find((n: any) => n.id === nodeId);
+          const resultText = Array.isArray(result) ? result.join('\n') : String(result);
+          workflowContextText += '\n**' + (node?.label || nodeId) + '**:\n' + resultText + '\n';
+        });
+        
+        workflowContextText += '\n=== END WORKFLOW CONTEXT ===\n';
+      }
 
       const response = await fetch('/api/agent/chat', {
         method: 'POST',
@@ -131,20 +133,7 @@ ${Object.entries(workflowContext.results).map(([nodeId, result]) => {
           messages: [
             {
               role: 'system',
-              content: `You are a real estate investment expert AI assistant with access to detailed workflow execution results. 
-
-IMPORTANT: You have access to REAL workflow data from a Real Estate Market Analysis workflow. Use this data to provide specific, actionable recommendations based on the actual market research, property data, and analysis results.
-
-${workflowContextText}
-
-INSTRUCTIONS:
-- Base ALL responses on the workflow results above
-- Provide specific real estate investment recommendations
-- Reference actual data points from the workflow
-- Be actionable and professional
-- If user asks for recommendations, give REAL ESTATE recommendations based on the workflow data
-
-Current conversation:`
+              content: 'You are a real estate investment expert AI assistant with access to detailed workflow execution results. IMPORTANT: You have access to REAL workflow data from a Real Estate Market Analysis workflow. Use this data to provide specific, actionable recommendations based on the actual market research, property data, and analysis results. ' + workflowContextText + ' INSTRUCTIONS: - Base ALL responses on the workflow results above - Provide specific real estate investment recommendations - Reference actual data points from the workflow - Be actionable and professional - If user asks for recommendations, give REAL ESTATE recommendations based on the workflow data Current conversation:'
             },
             ...messages.map(msg => ({
               role: msg.role,
