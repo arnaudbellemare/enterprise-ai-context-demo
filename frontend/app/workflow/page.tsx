@@ -520,6 +520,149 @@ const getComplexWorkflow = () => {
   return { nodes, edges, configs };
 };
 
+// DSPY-OPTIMIZED WORKFLOW: Self-improving AI with continuous learning
+const getDSPyOptimizedWorkflow = () => {
+  const timestamp = Date.now();
+  
+  const nodes: FlowNode[] = [
+    // Entry: Multi-source data gathering
+    {
+      id: `multiSourceRAG-${timestamp}`,
+      type: 'customizable',
+      position: { x: 50, y: 200 },
+      data: {
+        id: 'multiSourceRAG',
+        label: 'Multi-Source RAG',
+        description: 'Web + Memory + Context',
+        icon: '🔎',
+        iconColor: 'purple',
+        apiEndpoint: '/api/perplexity/chat',
+        nodeId: `multiSourceRAG-${timestamp}`,
+        status: 'ready',
+        config: {
+          query: 'Miami Beach luxury real estate market trends 2024 investment opportunities comprehensive analysis',
+          recencyFilter: 'month',
+          maxResults: 10,
+        }
+      },
+    },
+    // DSPy Market Analyzer (self-optimizing)
+    {
+      id: `dspyMarketAnalyzer-${timestamp}`,
+      type: 'customizable',
+      position: { x: 450, y: 200 },
+      data: {
+        id: 'dspyMarketAnalyzer',
+        label: 'DSPy Market Analyzer',
+        description: '🔧 Self-optimizing analysis',
+        icon: 'M',
+        iconColor: 'purple',
+        apiEndpoint: '/api/dspy/execute',
+        nodeId: `dspyMarketAnalyzer-${timestamp}`,
+        status: 'ready',
+        config: {
+          moduleName: 'market_research_analyzer',
+          optimize: true,
+        }
+      },
+    },
+    // DSPy Real Estate Agent (specialized self-optimizing)
+    {
+      id: `dspyRealEstateAgent-${timestamp}`,
+      type: 'customizable',
+      position: { x: 850, y: 200 },
+      data: {
+        id: 'dspyRealEstateAgent',
+        label: 'DSPy Real Estate Agent',
+        description: '🔧 Self-optimizing RE expert',
+        icon: 'R',
+        iconColor: 'blue',
+        apiEndpoint: '/api/dspy/execute',
+        nodeId: `dspyRealEstateAgent-${timestamp}`,
+        status: 'ready',
+        config: {
+          moduleName: 'real_estate_agent',
+          optimize: true,
+        }
+      },
+    },
+    // DSPy Investment Report (self-optimizing reports)
+    {
+      id: `dspyInvestmentReport-${timestamp}`,
+      type: 'customizable',
+      position: { x: 1250, y: 200 },
+      data: {
+        id: 'dspyInvestmentReport',
+        label: 'DSPy Investment Report',
+        description: '🔧 Self-optimizing reports',
+        icon: 'I',
+        iconColor: 'indigo',
+        apiEndpoint: '/api/dspy/execute',
+        nodeId: `dspyInvestmentReport-${timestamp}`,
+        status: 'ready',
+        config: {
+          moduleName: 'investment_report_generator',
+          optimize: true,
+        }
+      },
+    },
+    // Continuous Learning Tracker
+    {
+      id: `learningTracker-${timestamp}`,
+      type: 'customizable',
+      position: { x: 1250, y: 400 },
+      data: {
+        id: 'learningTracker',
+        label: 'Learning Tracker',
+        description: 'Track optimization metrics',
+        icon: '📊',
+        iconColor: 'green',
+        apiEndpoint: '/api/answer',
+        nodeId: `learningTracker-${timestamp}`,
+        status: 'ready',
+        config: {
+          query: 'Summarize workflow performance, optimization metrics, and learning improvements',
+          preferredModel: 'phi-3',
+        }
+      },
+    },
+  ];
+
+  const edges: FlowEdge[] = [
+    {
+      id: `edge-${timestamp}-1`,
+      source: `multiSourceRAG-${timestamp}`,
+      target: `dspyMarketAnalyzer-${timestamp}`,
+      type: 'animated',
+    },
+    {
+      id: `edge-${timestamp}-2`,
+      source: `dspyMarketAnalyzer-${timestamp}`,
+      target: `dspyRealEstateAgent-${timestamp}`,
+      type: 'animated',
+    },
+    {
+      id: `edge-${timestamp}-3`,
+      source: `dspyRealEstateAgent-${timestamp}`,
+      target: `dspyInvestmentReport-${timestamp}`,
+      type: 'animated',
+    },
+    {
+      id: `edge-${timestamp}-4`,
+      source: `dspyRealEstateAgent-${timestamp}`,
+      target: `learningTracker-${timestamp}`,
+      type: 'animated',
+    },
+  ];
+
+  const configs: Record<string, any> = {};
+  nodes.forEach(node => {
+    configs[node.id] = node.data.config;
+  });
+
+  return { nodes, edges, configs };
+};
+
 export default function WorkflowPage() {
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowEdge[]>([]);
@@ -1097,6 +1240,115 @@ export default function WorkflowPage() {
                   };
                 }
                 break;
+
+              case 'Multi-Source RAG':
+                // Entry point that combines web search with memory
+                const ragQuery = nodeConfigs[nodeId]?.query || 'Comprehensive market research';
+                const ragResponse = await fetch('/api/perplexity/chat', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    query: ragQuery,
+                    useRealAI: true 
+                  })
+                });
+                
+                if (!ragResponse.ok) {
+                  const errorText = await ragResponse.text();
+                  apiResponse = {
+                    data: [`RAG search failed: ${errorText}`],
+                    result: '❌ Multi-source RAG failed'
+                  };
+                } else {
+                  const ragData = await ragResponse.json();
+                  apiResponse = {
+                    data: ragData.response ? [ragData.response] : ['No results'],
+                    result: '✅ Multi-source RAG completed',
+                    fullResponse: ragData
+                  };
+                }
+                break;
+
+              case 'DSPy Market Analyzer':
+              case 'DSPy Real Estate Agent':
+              case 'DSPy Financial Analyst':
+              case 'DSPy Investment Report':
+              case 'DSPy Data Synthesizer':
+                // Execute DSPy modules with self-optimization
+                const dspyModuleName = nodeConfigs[nodeId]?.moduleName || 'market_research_analyzer';
+                
+                // Prepare inputs based on previous node data
+                const dspyInputs: any = {};
+                if (dspyModuleName === 'market_research_analyzer') {
+                  dspyInputs.marketData = previousNodeData || 'No market data available';
+                  dspyInputs.industry = 'Real Estate';
+                } else if (dspyModuleName === 'real_estate_agent') {
+                  dspyInputs.propertyData = previousNodeData || 'No property data available';
+                  dspyInputs.location = 'Miami Beach';
+                  dspyInputs.investmentType = 'buy';
+                } else if (dspyModuleName === 'investment_report_generator') {
+                  dspyInputs.marketAnalysis = previousNodeData || 'No analysis available';
+                  dspyInputs.investmentGoals = 'Long-term appreciation and rental income';
+                } else {
+                  dspyInputs.data = previousNodeData || 'No data available';
+                }
+                
+                const dspyResponse = await fetch('/api/dspy/execute', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    moduleName: dspyModuleName,
+                    inputs: dspyInputs,
+                    optimize: nodeConfigs[nodeId]?.optimize || true
+                  })
+                });
+                
+                if (!dspyResponse.ok) {
+                  const errorText = await dspyResponse.text();
+                  apiResponse = {
+                    data: [`DSPy module error: ${errorText}`],
+                    result: '❌ DSPy module failed'
+                  };
+                } else {
+                  const dspyData = await dspyResponse.json();
+                  const outputText = dspyData.outputs?.response || 
+                                    dspyData.outputs?.analysis || 
+                                    dspyData.outputs?.recommendation ||
+                                    JSON.stringify(dspyData.outputs, null, 2);
+                  apiResponse = {
+                    data: [outputText],
+                    result: `✅ DSPy ${dspyModuleName} completed (optimized!)`,
+                    fullResponse: dspyData
+                  };
+                }
+                break;
+
+              case 'Learning Tracker':
+                // Track optimization metrics and learning
+                const learningQuery = nodeConfigs[nodeId]?.query || 'Summarize learning metrics';
+                const learningResponse = await fetch('/api/answer', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    query: `${learningQuery}\n\nWorkflow execution data:\n${previousNodeData}`,
+                    preferredModel: 'phi-3'
+                  })
+                });
+                
+                if (!learningResponse.ok) {
+                  apiResponse = {
+                    data: ['Learning tracking unavailable'],
+                    result: '⚠️ Learning tracker skipped'
+                  };
+                } else {
+                  const learningData = await learningResponse.json();
+                  apiResponse = {
+                    data: [learningData.answer || 'Metrics tracked'],
+                    result: '✅ Learning metrics tracked',
+                    fullResponse: learningData
+                  };
+                }
+                break;
                 
               default:
                 // Fallback for unknown node types
@@ -1178,9 +1430,23 @@ export default function WorkflowPage() {
     setNodeConfigs(complex.configs);
     setWorkflowResults(null);
     setExecutionLog([]);
-    addLog('🚀 Complex Multi-Node Workflow loaded (8 nodes)');
-    addLog('📋 Advanced Flow: Web Search → Memory Search → Context Assembly → Multi-Model Analysis');
-    addLog('💡 Demonstrates full system capabilities with DSPy, RAG, and multi-model routing');
+    addLog('🚀 Self-Optimizing AI Workflow loaded (8 nodes)');
+    addLog('📋 Flow: Multi-Source RAG → DSPy Optimization → GEPA Evolution → Expert Analysis');
+    addLog('💡 Leverages: DSPy, Ax LLM, GEPA, RAG, Vector Memory, Continuous Learning');
+    addLog('🔧 Features: Automatic prompt optimization, self-improvement, metric tracking');
+  };
+
+  const loadDSPyWorkflow = () => {
+    const dspy = getDSPyOptimizedWorkflow();
+    setNodes(dspy.nodes);
+    setEdges(dspy.edges);
+    setNodeConfigs(dspy.configs);
+    setWorkflowResults(null);
+    setExecutionLog([]);
+    addLog('🔥 DSPy-Optimized Workflow loaded (5 nodes)');
+    addLog('📋 Flow: RAG → DSPy Market Analyzer → DSPy Real Estate Agent → DSPy Report');
+    addLog('💡 Uses ONLY self-optimizing DSPy modules with continuous learning');
+    addLog('🎯 Best for: Maximum quality, automatic improvement, production deployments');
   };
 
   const exportWorkflow = () => {
@@ -1484,6 +1750,14 @@ export default function WorkflowPage() {
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
               >
                 Load Complex (8 nodes)
+              </Button>
+              <Button 
+                size="sm" 
+                variant="default" 
+                onClick={loadDSPyWorkflow}
+                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+              >
+                🔥 Load DSPy (5 nodes)
               </Button>
               <Button size="sm" variant="outline" onClick={exportWorkflow}>
                 Export
