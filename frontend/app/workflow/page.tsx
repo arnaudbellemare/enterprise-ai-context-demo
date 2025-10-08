@@ -481,11 +481,20 @@ export default function WorkflowPage() {
                     messages: [{ role: 'user', content: searchQuery }]
                   })
                 });
-                const perplexityData = await perplexityResponse.json();
-                apiResponse = {
-                  data: perplexityData.response ? [perplexityData.response] : ['No search results found'],
-                  result: '✅ Web search completed'
-                };
+                
+                if (!perplexityResponse.ok) {
+                  const errorText = await perplexityResponse.text();
+                  apiResponse = {
+                    data: [`API Error: ${perplexityResponse.status} - ${errorText}`],
+                    result: '❌ Web search failed'
+                  };
+                } else {
+                  const perplexityData = await perplexityResponse.json();
+                  apiResponse = {
+                    data: perplexityData.response ? [perplexityData.response] : ['No search results found'],
+                    result: '✅ Web search completed'
+                  };
+                }
                 break;
                 
               case 'Custom Agent':
@@ -498,36 +507,66 @@ export default function WorkflowPage() {
                     messages: [{ role: 'user', content: agentQuery }]
                   })
                 });
-                const agentData = await agentResponse.json();
-                apiResponse = {
-                  data: agentData.response ? [agentData.response] : ['No analysis generated'],
-                  result: '✅ Agent analysis completed'
-                };
+                
+                if (!agentResponse.ok) {
+                  const errorText = await agentResponse.text();
+                  apiResponse = {
+                    data: [`API Error: ${agentResponse.status} - ${errorText}`],
+                    result: '❌ Agent analysis failed'
+                  };
+                } else {
+                  const agentData = await agentResponse.json();
+                  apiResponse = {
+                    data: agentData.response ? [agentData.response] : ['No analysis generated'],
+                    result: '✅ Agent analysis completed'
+                  };
+                }
                 break;
                 
               case 'Generate Answer':
                 // Use context assembly + answer generation
                 const answerQuery = nodeConfigs[nodeId]?.query || 'Generate a comprehensive answer';
-                const contextResponse = await fetch('/api/context/assemble', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ query: answerQuery })
-                });
-                const contextData = await contextResponse.json();
                 
+                // Try context assembly first
+                let context = 'No context available';
+                try {
+                  const contextResponse = await fetch('/api/context/assemble', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: answerQuery })
+                  });
+                  
+                  if (contextResponse.ok) {
+                    const contextData = await contextResponse.json();
+                    context = contextData.context || 'No context available';
+                  }
+                } catch (contextError) {
+                  addLog(`   ⚠️ Context assembly failed: ${contextError}`);
+                }
+                
+                // Try answer generation
                 const answerResponse = await fetch('/api/answer', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
                     query: answerQuery,
-                    context: contextData.context || 'No context available'
+                    context: context
                   })
                 });
-                const answerData = await answerResponse.json();
-                apiResponse = {
-                  data: answerData.answer ? [answerData.answer] : ['No answer generated'],
-                  result: '✅ Answer generated successfully'
-                };
+                
+                if (!answerResponse.ok) {
+                  const errorText = await answerResponse.text();
+                  apiResponse = {
+                    data: [`API Error: ${answerResponse.status} - ${errorText}`],
+                    result: '❌ Answer generation failed'
+                  };
+                } else {
+                  const answerData = await answerResponse.json();
+                  apiResponse = {
+                    data: answerData.answer ? [answerData.answer] : ['No answer generated'],
+                    result: '✅ Answer generated successfully'
+                  };
+                }
                 break;
                 
               default:

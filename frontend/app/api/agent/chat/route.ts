@@ -119,10 +119,12 @@ async function applyGEPAOptimization(userQuery: string, conversationContext: str
 // ============================================================
 
 export async function POST(req: Request) {
+  // Parse request body once at the beginning
+  const { messages } = await req.json();
+  const lastMessage = messages[messages.length - 1];
+  const userQuery = lastMessage.content;
+  
   try {
-    const { messages } = await req.json();
-    const lastMessage = messages[messages.length - 1];
-    const userQuery = lastMessage.content;
 
     // Extract conversation context from previous messages
     const conversationContext = messages.slice(-3).map((msg: any) => msg.content).join(' ');
@@ -397,9 +399,7 @@ Respond with technical depth, specific examples, and production-grade insights. 
     console.error('❌ Real Ax + GEPA agent error:', error);
     console.log('🔄 Falling back to Perplexity...');
     
-    const { messages } = await req.json();
-    const lastMessage = messages[messages.length - 1];
-    return fallbackToPerplexity(lastMessage.content);
+    return fallbackToPerplexity(userQuery);
   }
 }
 
