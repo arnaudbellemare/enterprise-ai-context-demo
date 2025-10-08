@@ -720,8 +720,16 @@ export default function WorkflowPage() {
           )
         );
 
-        // Get previous node data for context
-        const previousNodeData = Object.values(workflowData).join('\n');
+        // Get previous node data for context - properly extract text from objects
+        const previousNodeData = Object.entries(workflowData).map(([nodeId, data]) => {
+          if (typeof data === 'string') return data;
+          if (Array.isArray(data)) return data.join('\n');
+          if (data && typeof data === 'object') {
+            // Extract text from response objects
+            return data.response || data.content || data.answer || data.context || JSON.stringify(data, null, 2);
+          }
+          return String(data);
+        }).join('\n\n---\n\n');
 
         // DEMO MODE: Generate realistic mock responses
         if (demoMode) {
@@ -916,12 +924,12 @@ export default function WorkflowPage() {
                 
               case 'Web Search':
                 // Same as Market Research - use Perplexity
-                const webSearchQuery = nodeConfigs[nodeId]?.query || 'Market research';
+                const webSearchQuery = nodeConfigs[nodeId]?.query || 'Miami Beach luxury real estate market trends 2024';
                 const webSearchResponse = await fetch('/api/perplexity/chat', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
-                    messages: [{ role: 'user', content: webSearchQuery }],
+                    query: webSearchQuery, // Use 'query' not 'messages'
                     useRealAI: true 
                   })
                 });
