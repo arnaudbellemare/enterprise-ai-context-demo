@@ -1,35 +1,52 @@
 import { NextResponse } from 'next/server';
-import { ai, AxAI } from '@ax-llm/ax';
+import { ai, ax } from '@ax-llm/ax';
 
 export const runtime = 'nodejs';
 
 // ============================================================
-// REAL AX FRAMEWORK IMPLEMENTATION (Simplified & Working)
-// Using actual Ax from https://axllm.dev/
+// PROPER AX FRAMEWORK IMPLEMENTATION (Following Official Docs)
+// Using actual Ax from https://github.com/ax-llm/ax
 // ============================================================
 
-// Initialize Ax with OpenRouter (using ACTUALLY FREE models!)
-function initializeAxAI(): AxAI | null {
+// Initialize Ax LLM using official ai() function
+function initializeAxLLM() {
+  // Try Ollama first
+  const ollamaKey = process.env.OLLAMA_API_KEY;
+  const ollamaEnabled = process.env.OLLAMA_ENABLED === 'true';
   const openrouterKey = process.env.OPENROUTER_API_KEY;
   
-  if (!openrouterKey) {
-    console.log('⚠️ OpenRouter API key not found');
-    return null;
+  if (ollamaEnabled && ollamaKey) {
+    try {
+      console.log('✅ Initializing Ax with Ollama Cloud');
+      return ai({ 
+        name: 'openai', // Ollama is OpenAI-compatible
+        apiKey: ollamaKey,
+        config: {
+          baseURL: process.env.OLLAMA_BASE_URL || 'https://api.ollama.com',
+        }
+      });
+    } catch (error) {
+      console.warn('⚠️ Ollama initialization failed, trying OpenRouter');
+    }
   }
-
-  try {
-    // Real Ax AI initialization with OpenRouter (FREE model)
-    return new AxAI({
-      name: 'openai' as any,
-      apiKey: openrouterKey,
-      config: {
-        model: 'meta-llama/llama-3.2-3b-instruct:free', // Use FREE model (no credits needed!)
-      },
-    });
-  } catch (error) {
-    console.error('❌ Failed to initialize Ax:', error);
-    return null;
+  
+  if (openrouterKey) {
+    try {
+      console.log('✅ Initializing Ax with OpenRouter');
+      return ai({ 
+        name: 'openai', // OpenRouter is OpenAI-compatible
+        apiKey: openrouterKey,
+        config: {
+          baseURL: 'https://openrouter.ai/api/v1',
+        }
+      });
+    } catch (error) {
+      console.error('❌ Failed to initialize Ax:', error);
+    }
   }
+  
+  console.warn('⚠️ No LLM provider configured for Ax');
+  return null;
 }
 
 // ============================================================
