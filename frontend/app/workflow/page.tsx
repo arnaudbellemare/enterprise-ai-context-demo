@@ -473,6 +473,9 @@ export default function WorkflowPage() {
           )
         );
 
+        // Get previous node data for context
+        const previousNodeData = Object.values(workflowData).join('\n');
+
         // DEMO MODE: Generate realistic mock responses
         if (demoMode) {
           await new Promise((resolve) => setTimeout(resolve, 1200));
@@ -593,13 +596,18 @@ export default function WorkflowPage() {
                 break;
                 
               case 'Custom Agent':
-                // Use the agent chat API
+              case 'Market Analyst':
+                // Use the agent chat API with previous data as context
                 const agentQuery = nodeConfigs[nodeId]?.prompt || 'Analyze the provided data and provide insights';
+                const agentMessages = [
+                  { role: 'system', content: 'You are a specialized real estate market analyst. Analyze the provided data and give professional insights.' },
+                  { role: 'user', content: `Context from previous steps:\n${previousNodeData}\n\nTask: ${agentQuery}` }
+                ];
                 const agentResponse = await fetch('/api/agent/chat', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
-                    messages: [{ role: 'user', content: agentQuery }]
+                    messages: agentMessages
                   })
                 });
                 
@@ -619,33 +627,39 @@ export default function WorkflowPage() {
                 break;
                 
               case 'Generate Answer':
-                // Use context assembly + answer generation
+              case 'Investment Report':
+                // Use context assembly + answer generation with previous data
                 const answerQuery = nodeConfigs[nodeId]?.query || 'Generate a comprehensive answer';
                 
-                // Try context assembly first
-                let context = 'No context available';
+                // Combine previous workflow data with context assembly
+                let context = previousNodeData || 'No context available';
                 try {
                   const contextResponse = await fetch('/api/context/assemble', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: answerQuery })
+                    body: JSON.stringify({ 
+                      user_query: answerQuery,
+                      conversation_history: [],
+                      user_preferences: {}
+                    })
                   });
                   
                   if (contextResponse.ok) {
                     const contextData = await contextResponse.json();
-                    context = contextData.context || 'No context available';
+                    context = `${previousNodeData}\n\n${contextData.context || ''}`;
                   }
                 } catch (contextError) {
                   addLog(`   ⚠️ Context assembly failed: ${contextError}`);
                 }
                 
-                // Try answer generation
+                // Try answer generation with combined context
                 const answerResponse = await fetch('/api/answer', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
                     query: answerQuery,
-                    context: context
+                    context: context,
+                    documents: previousNodeData ? [{ content: previousNodeData }] : []
                   })
                 });
                 
@@ -660,6 +674,62 @@ export default function WorkflowPage() {
                   apiResponse = {
                     data: answerData.answer ? [answerData.answer] : ['No answer generated'],
                     result: '✅ Answer generated successfully'
+                  };
+                }
+                break;
+                
+              case 'Property Database':
+                // Use indexed search for property data
+                const propertyQuery = nodeConfigs[nodeId]?.query || 'luxury condos Miami Beach recent sales prices comps';
+                const propertyResponse = await fetch('/api/search/indexed', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    query: propertyQuery,
+                    collection: 'properties',
+                    limit: 10
+                  })
+                });
+                
+                if (!propertyResponse.ok) {
+                  const errorText = await propertyResponse.text();
+                  apiResponse = {
+                    data: [`Property search failed: ${errorText}`],
+                    result: '❌ Property database search failed'
+                  };
+                } else {
+                  const propertyData = await propertyResponse.json();
+                  apiResponse = {
+                    data: propertyData.results ? propertyData.results.map((r: any) => r.content) : ['No property records found'],
+                    result: `✅ Found ${propertyData.results?.length || 0} property records`
+                  };
+                }
+                break;
+                
+              case 'Data Consolidation':
+                // Use context assembly to merge data from previous steps
+                const consolidationQuery = nodeConfigs[nodeId]?.query || 'Combine market research with property database insights';
+                const consolidationResponse = await fetch('/api/context/assemble', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    user_query: `${consolidationQuery}\n\nPrevious workflow data:\n${previousNodeData}`,
+                    conversation_history: [],
+                    user_preferences: {}
+                  })
+                });
+                
+                if (!consolidationResponse.ok) {
+                  const errorText = await consolidationResponse.text();
+                  apiResponse = {
+                    data: [`Context assembly failed: ${errorText}`],
+                    result: '❌ Data consolidation failed'
+                  };
+                } else {
+                  const consolidationData = await consolidationResponse.json();
+                  apiResponse = {
+                    data: consolidationData.context ? [consolidationData.context] : ['No context assembled'],
+                    result: '✅ Data consolidated successfully'
                   };
                 }
                 break;
