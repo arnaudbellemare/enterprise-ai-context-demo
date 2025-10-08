@@ -22,9 +22,11 @@ function getSupabaseClient() {
 }
 
 export async function POST(req: NextRequest) {
+  let query = 'unknown query'; // Initialize query variable
+  
   try {
     const { 
-      query,
+      query: requestQuery,
       userId,
       collection,
       source,
@@ -32,6 +34,8 @@ export async function POST(req: NextRequest) {
       matchCount = 10,
       includeMetadata = true
     } = await req.json();
+    
+    query = requestQuery || 'unknown query'; // Use the request query
 
     if (!query) {
       return NextResponse.json(
