@@ -38,7 +38,7 @@ export default function WorkflowChatPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [workflowContext, setWorkflowContext] = useState<WorkflowContext | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Get workflow data from localStorage
   useEffect(() => {
@@ -50,32 +50,29 @@ export default function WorkflowChatPage() {
         // Clear the data after reading to avoid stale data
         localStorage.removeItem('workflowChatData');
         
-        // Initialize chat with detailed workflow summary
-        let summaryContent = 'I\'ve analyzed your **' + parsed.workflowName + '** workflow execution and have access to all the real data. Here\'s what was processed:\n\n';
-        summaryContent += '📊 **Workflow Summary:**\n';
-        summaryContent += '- Execution completed in ' + parsed.executionTime + '\n';
-        summaryContent += '- ' + parsed.nodes.length + ' nodes processed successfully\n\n';
-        summaryContent += '🔍 **Real Data Available:**\n';
-        
-        Object.entries(parsed.results).forEach(([nodeId, result]) => {
-          const node = parsed.nodes.find((n: any) => n.id === nodeId);
-          const resultText = Array.isArray(result) ? result.join(' ') : String(result);
-          const truncated = resultText.length > 150 ? resultText.substring(0, 150) + '...' : resultText;
-          summaryContent += '- **' + (node?.label || nodeId) + '**: ' + truncated + '\n';
-        });
-        
-        summaryContent += '\n💬 **I can help you with:**\n';
-        summaryContent += '- **Investment recommendations** based on the market analysis\n';
-        summaryContent += '- **Property insights** from the database search\n';
-        summaryContent += '- **Market trends** and pricing analysis\n';
-        summaryContent += '- **Risk assessment** and opportunities\n';
-        summaryContent += '- **Detailed reports** and summaries\n\n';
-        summaryContent += '**What specific aspect would you like me to focus on?** I have all the workflow data ready to provide detailed, actionable insights.';
-        
+        // Initialize chat with workflow summary
         const initialMessage: Message = {
           id: '1',
           role: 'assistant',
-          content: summaryContent,
+          content: `I've analyzed the **${parsed.workflowName}** workflow execution. Here's what I found:
+
+📊 **Workflow Summary:**
+- Execution completed in ${parsed.executionTime}
+- ${parsed.nodes.length} nodes processed successfully
+
+🔍 **Key Results:**
+${Object.entries(parsed.results).map(([node, result]) => 
+  `- **${node}**: ${typeof result === 'string' ? result.substring(0, 100) + '...' : 'Analysis completed'}`
+).join('\n')}
+
+💬 **How can I help you explore these results further?** I can:
+- Dive deeper into specific findings
+- Generate additional analysis
+- Create reports or summaries
+- Answer questions about the data
+- Suggest next steps or recommendations
+
+What would you like to know more about?`,
           timestamp: new Date(),
           metadata: { type: 'workflow_summary' }
         };
@@ -87,10 +84,15 @@ export default function WorkflowChatPage() {
     }
   }, []); // Empty dependency array since we only run once on mount
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages are added
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+    if (scrollAreaRef.current) {
+      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
+    }
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -107,22 +109,13 @@ export default function WorkflowChatPage() {
     setIsLoading(true);
 
     try {
-      // Prepare detailed workflow context
-      let workflowContextText = '';
-      if (workflowContext) {
-        workflowContextText = '=== WORKFLOW EXECUTION RESULTS ===\n';
-        workflowContextText += 'Workflow: ' + workflowContext.workflowName + '\n';
-        workflowContextText += 'Execution Time: ' + workflowContext.executionTime + '\n\n';
-        workflowContextText += 'DETAILED RESULTS FROM EACH NODE:\n';
-        
-        Object.entries(workflowContext.results).forEach(([nodeId, result]) => {
-          const node = workflowContext.nodes.find((n: any) => n.id === nodeId);
-          const resultText = Array.isArray(result) ? result.join('\n') : String(result);
-          workflowContextText += '\n**' + (node?.label || nodeId) + '**:\n' + resultText + '\n';
-        });
-        
-        workflowContextText += '\n=== END WORKFLOW CONTEXT ===\n';
-      }
+      // Prepare context with workflow results
+      const workflowContextText = workflowContext ? `
+WORKFLOW CONTEXT:
+- Workflow: ${workflowContext.workflowName}
+- Execution Time: ${workflowContext.executionTime}
+- Results: ${JSON.stringify(workflowContext.results, null, 2)}
+` : '';
 
       const response = await fetch('/api/agent/chat', {
         method: 'POST',
@@ -133,7 +126,11 @@ export default function WorkflowChatPage() {
           messages: [
             {
               role: 'system',
-              content: 'You are a real estate investment expert AI assistant with access to detailed workflow execution results. IMPORTANT: You have access to REAL workflow data from a Real Estate Market Analysis workflow. Use this data to provide specific, actionable recommendations based on the actual market research, property data, and analysis results. ' + workflowContextText + ' INSTRUCTIONS: - Base ALL responses on the workflow results above - Provide specific real estate investment recommendations - Reference actual data points from the workflow - Be actionable and professional - If user asks for recommendations, give REAL ESTATE recommendations based on the workflow data Current conversation:'
+              content: `You are an expert AI assistant with access to workflow execution results. Use the provided workflow context to give informed, detailed responses. Be conversational and helpful.
+
+${workflowContextText}
+
+Current conversation:`
             },
             ...messages.map(msg => ({
               role: msg.role,
@@ -224,16 +221,16 @@ export default function WorkflowChatPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Chat Messages */}
           <div className="lg:col-span-3">
-            <Card className="h-[600px] flex flex-col overflow-hidden">
+            <Card className="h-[700px] flex flex-col overflow-hidden">
               <CardHeader className="pb-3 border-b flex-shrink-0">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <MessageSquare className="w-5 h-5" />
                   Chat with AI Assistant
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-                <ScrollArea className="flex-1 px-6 py-4 min-h-0">
-                  <div className="space-y-6 pb-6">
+              <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+                <ScrollArea ref={scrollAreaRef} className="flex-1 px-6 py-4">
+                  <div className="space-y-6 pb-6 min-h-full">
                     {messages.map((message) => (
                       <div
                         key={message.id}
@@ -286,14 +283,12 @@ export default function WorkflowChatPage() {
                           </div>
                         </div>
                       </div>
-                    ))}
-                    {/* Scroll target for auto-scroll */}
-                    <div ref={messagesEndRef} />
+                    )}
                   </div>
                 </ScrollArea>
                 
-                {/* Input Area - Fixed at bottom */}
-                <div className="border-t bg-gray-50/50 p-4 flex-shrink-0">
+                {/* Input Area */}
+                <div className="border-t bg-gray-50/50 p-6 flex-shrink-0">
                   <div className="flex gap-3">
                     <Input
                       value={input}
@@ -318,14 +313,14 @@ export default function WorkflowChatPage() {
 
           {/* Workflow Context Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="h-[600px]">
+            <Card className="h-[700px] flex flex-col overflow-hidden">
               <CardHeader className="pb-3 border-b flex-shrink-0">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                   <FileText className="w-4 h-4" />
                   Workflow Context
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6 p-6 overflow-y-auto">
+              <CardContent className="space-y-6 p-6 flex-1 overflow-y-auto">
                 {workflowContext ? (
                   <>
                     <div className="space-y-2">
