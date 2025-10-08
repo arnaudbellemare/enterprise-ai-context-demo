@@ -4,15 +4,15 @@ import { NextRequest, NextResponse } from 'next/server';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 // Model configurations using OpenRouter FREE models only
-// Using VERIFIED working free models
+// Using ACTUALLY AVAILABLE free models (no :free suffix needed for these)
 const MODEL_CONFIGS = {
-  'llama-3.1': {
-    model: 'meta-llama/llama-3.1-8b-instruct:free',
+  'llama-3.2': {
+    model: 'meta-llama/llama-3.2-3b-instruct:free',
     useCase: 'General-purpose, fast, high-accuracy model',
     speed: 'fast',
   },
-  'mistral-7b': {
-    model: 'mistralai/mistral-7b-instruct:free',
+  'qwen': {
+    model: 'qwen/qwen-2-7b-instruct:free',
     useCase: 'Fast model for quick responses',
     speed: 'very-fast',
   },
@@ -73,17 +73,17 @@ function selectModel(queryType: string, preferredModel?: string): string {
   }
 
   const modelSelection: Record<string, string> = {
-    'math': 'llama-3.1',
-    'code': 'llama-3.1',
-    'scientific': 'llama-3.1',
-    'reasoning': 'llama-3.1',
-    'general': 'llama-3.1',
-    'analysis': 'llama-3.1',
-    'investment': 'llama-3.1',
-    'report': 'llama-3.1'
+    'math': 'qwen',
+    'code': 'phi-3',
+    'scientific': 'gemma-2',
+    'reasoning': 'gemma-2',
+    'general': 'llama-3.2',
+    'analysis': 'gemma-2',
+    'investment': 'gemma-2',
+    'report': 'gemma-2'
   };
 
-  return modelSelection[queryType] || 'llama-3.1';
+  return modelSelection[queryType] || 'llama-3.2';
 }
 
 export async function POST(req: NextRequest) {
