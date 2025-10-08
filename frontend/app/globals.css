@@ -184,24 +184,30 @@ body {
   color: #ffffff;
 }
 
-/* React Flow Styles for Workflow Builder */
+/* React Flow Styles for Workflow Builder - Sleek & Minimal */
 .react-flow__edge-path {
-  stroke: #3b82f6 !important;
-  stroke-width: 3px !important;
+  stroke: #9ca3af !important; /* Gray for default */
+  stroke-width: 1.5px !important;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #6b7280 !important;
+  stroke-width: 2px !important;
 }
 
 .react-flow__edge.animated .react-flow__edge-path {
-  stroke-dasharray: 5;
-  animation: dashdraw 0.5s linear infinite;
+  stroke-dasharray: 8, 4;
+  animation: dashdraw 0.6s linear infinite;
 }
 
 .react-flow__edge.animate-dash-error {
-  animation: dashdraw-error 0.3s linear infinite;
+  animation: dashdraw-error 0.4s linear infinite;
 }
 
 @keyframes dashdraw {
   to {
-    stroke-dashoffset: -10;
+    stroke-dashoffset: -12;
   }
 }
 
@@ -211,31 +217,36 @@ body {
   }
 }
 
+/* Smaller, cleaner connection handles */
 .react-flow__handle {
-  width: 16px !important;
-  height: 16px !important;
-  border: 3px solid white !important;
+  width: 8px !important;
+  height: 8px !important;
+  border: 2px solid white !important;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .react-flow__handle-left {
-  left: -8px !important;
-  background: #3b82f6 !important;
+  left: -4px !important;
+  background: #60a5fa !important; /* Lighter blue for target */
 }
 
 .react-flow__handle-right {
-  right: -8px !important;
-  background: #10b981 !important;
+  right: -4px !important;
+  background: #34d399 !important; /* Lighter green for source */
 }
 
 .react-flow__handle:hover {
-  width: 20px !important;
-  height: 20px !important;
+  width: 10px !important;
+  height: 10px !important;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
+  transform: scale(1.15);
 }
 
 .react-flow__connection-path {
-  stroke: #8b5cf6 !important;
-  stroke-width: 3px !important;
-  stroke-dasharray: 5, 5 !important;
+  stroke: #a78bfa !important; /* Lighter purple for connection line */
+  stroke-width: 2px !important;
+  stroke-dasharray: 6, 3 !important;
 }
 
 /* Tailwind layer additions */
