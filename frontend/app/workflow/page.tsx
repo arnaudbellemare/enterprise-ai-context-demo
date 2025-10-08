@@ -437,25 +437,7 @@ export default function WorkflowPage() {
               ],
               result: '✅ Retrieved 5 market research results'
             },
-            'Property Database': {
-              data: [
-                'Found 47 luxury condos sold in Q4 2024',
-                'Average sale price: $2.3M',
-                'Price range: $1.8M - $8.5M',
-                'Days on market: 45 average',
-                'Comp properties: 23 similar units'
-              ],
-              result: '✅ Found 47 matching properties'
-            },
-            'Data Consolidation': {
-              data: [
-                'Merged market research with property database',
-                'Identified 8 key market trends',
-                'Consolidated pricing data from 52 sources',
-                'Ranked opportunities by ROI potential'
-              ],
-              result: '✅ Consolidated data from 52 sources'
-            },
+            // Property Database and Data Consolidation removed from streamlined workflow
             'Market Analyst': {
               data: [
                 'Market Analysis: Strong growth trajectory (+15% YoY)',

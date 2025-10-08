@@ -10,30 +10,20 @@ const MODEL_CONFIGS = {
     useCase: 'General-purpose, fast, high-accuracy model',
     speed: 'fast',
   },
-  'llama-3.1-70b': {
-    model: 'meta-llama/llama-3.1-70b-instruct:free',
-    useCase: 'Large model for complex analysis',
-    speed: 'medium',
-  },
-  'qwen-2.5': {
-    model: 'qwen/qwen-2.5-72b-instruct:free',
-    useCase: 'Advanced reasoning and analysis',
-    speed: 'medium',
-  },
-  'gemma-2': {
-    model: 'google/gemma-2-9b-it:free',
-    useCase: 'Fast, efficient model for general tasks',
-    speed: 'fast',
-  },
-  'phi-3': {
-    model: 'microsoft/phi-3-medium-128k-instruct:free',
-    useCase: 'Medium model for balanced performance',
-    speed: 'medium',
-  },
   'mistral-7b': {
     model: 'mistralai/mistral-7b-instruct:free',
     useCase: 'Fast model for quick responses',
     speed: 'very-fast',
+  },
+  'gemma-7b': {
+    model: 'google/gemma-7b-it:free',
+    useCase: 'Efficient model for general tasks',
+    speed: 'fast',
+  },
+  'qwen-2.5': {
+    model: 'qwen/qwen-2.5-7b-instruct:free',
+    useCase: 'Advanced reasoning and analysis',
+    speed: 'medium',
   }
 };
 
