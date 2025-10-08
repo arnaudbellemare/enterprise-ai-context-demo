@@ -25,13 +25,14 @@ import {
   type Connection as FlowConnection
 } from '@xyflow/react';
 
-// Available node types
+// Available node types - keeping original functionality but with clean icons
 const AVAILABLE_NODE_TYPES = [
   { 
     id: 'memorySearch', 
-    label: '🧠 Memory Search',
+    label: 'Memory Search',
     description: 'Vector similarity search',
-    icon: '🧠',
+    icon: '🔍',
+    iconColor: 'yellow',
     apiEndpoint: '/api/search/indexed',
     config: {
       matchThreshold: 0.8,
@@ -41,9 +42,10 @@ const AVAILABLE_NODE_TYPES = [
   },
   { 
     id: 'webSearch', 
-    label: '🌐 Web Search',
+    label: 'Web Search',
     description: 'Live Perplexity search',
     icon: '🌐',
+    iconColor: 'yellow',
     apiEndpoint: '/api/perplexity/chat',
     config: {
       recencyFilter: 'month',
@@ -52,9 +54,10 @@ const AVAILABLE_NODE_TYPES = [
   },
   { 
     id: 'contextAssembly', 
-    label: '📦 Context Assembly',
+    label: 'Context Assembly',
     description: 'Merge results',
     icon: '📦',
+    iconColor: 'purple',
     apiEndpoint: '/api/context/assemble',
     config: {
       mergeStrategy: 'hybrid',
@@ -63,9 +66,10 @@ const AVAILABLE_NODE_TYPES = [
   },
   { 
     id: 'modelRouter', 
-    label: '🤖 Model Router',
+    label: 'Model Router',
     description: 'Select best AI model',
     icon: '🤖',
+    iconColor: 'blue',
     apiEndpoint: '/api/answer',
     config: {
       autoSelect: true,
@@ -74,9 +78,10 @@ const AVAILABLE_NODE_TYPES = [
   },
   { 
     id: 'gepaOptimize', 
-    label: '⚡ GEPA Optimize',
+    label: 'GEPA Optimize',
     description: 'Prompt evolution',
     icon: '⚡',
+    iconColor: 'purple',
     apiEndpoint: '/api/gepa/optimize',
     config: {
       iterations: 3,
@@ -85,9 +90,10 @@ const AVAILABLE_NODE_TYPES = [
   },
   { 
     id: 'langstruct', 
-    label: '🔍 LangStruct',
+    label: 'LangStruct',
     description: 'Extract structured data',
     icon: '🔍',
+    iconColor: 'gray',
     apiEndpoint: '/api/langstruct/process',
     config: {
       useRealLangStruct: true,
@@ -96,9 +102,10 @@ const AVAILABLE_NODE_TYPES = [
   },
   { 
     id: 'customAgent', 
-    label: '🎯 Custom Agent',
+    label: 'Custom Agent',
     description: 'Customizable task agent',
-    icon: '🎯',
+    icon: '▶',
+    iconColor: 'blue',
     apiEndpoint: '/api/agent/chat',
     config: {
       taskDescription: 'Analyze customer sentiment',
@@ -110,9 +117,10 @@ const AVAILABLE_NODE_TYPES = [
   },
   { 
     id: 'answer', 
-    label: '✅ Generate Answer',
+    label: 'Generate Answer',
     description: 'Final AI response',
     icon: '✅',
+    iconColor: 'green',
     apiEndpoint: '/api/answer',
     config: {
       temperature: 0.7,
@@ -132,9 +140,10 @@ const getExampleWorkflow = () => {
       position: { x: 100, y: 200 },
       data: {
         id: 'memorySearch',
-        label: '🧠 Memory Search',
+        label: 'Memory Search',
         description: 'Vector similarity search',
-        icon: '🧠',
+        icon: '🔍',
+        iconColor: 'yellow',
         apiEndpoint: '/api/search/indexed',
         nodeId: `memorySearch-${timestamp}`,
         status: 'ready',
@@ -151,9 +160,10 @@ const getExampleWorkflow = () => {
       position: { x: 100, y: 400 },
       data: {
         id: 'webSearch',
-        label: '🌐 Web Search',
+        label: 'Web Search',
         description: 'Live Perplexity search',
         icon: '🌐',
+        iconColor: 'yellow',
         apiEndpoint: '/api/perplexity/chat',
         nodeId: `webSearch-${timestamp}`,
         status: 'ready',
@@ -169,9 +179,10 @@ const getExampleWorkflow = () => {
       position: { x: 500, y: 300 },
       data: {
         id: 'contextAssembly',
-        label: '📦 Context Assembly',
+        label: 'Context Assembly',
         description: 'Merge & deduplicate',
         icon: '📦',
+        iconColor: 'purple',
         apiEndpoint: '/api/context/assemble',
         nodeId: `contextAssembly-${timestamp}`,
         status: 'ready',
@@ -187,9 +198,10 @@ const getExampleWorkflow = () => {
       position: { x: 900, y: 300 },
       data: {
         id: 'customAgent',
-        label: '🎯 Custom Agent',
+        label: 'Custom Agent',
         description: 'Sentiment Analysis',
-        icon: '🎯',
+        icon: '▶',
+        iconColor: 'blue',
         apiEndpoint: '/api/agent/chat',
         nodeId: `customAgent-${timestamp}`,
         status: 'ready',
@@ -208,9 +220,10 @@ const getExampleWorkflow = () => {
       position: { x: 1300, y: 300 },
       data: {
         id: 'answer',
-        label: '✅ Generate Answer',
+        label: 'Generate Answer',
         description: 'Final AI response',
         icon: '✅',
+        iconColor: 'green',
         apiEndpoint: '/api/answer',
         nodeId: `answer-${timestamp}`,
         status: 'ready',
@@ -219,30 +232,30 @@ const getExampleWorkflow = () => {
           maxTokens: 2048,
         }
       },
-    },
+    }
   ];
 
   const edges: FlowEdge[] = [
     {
-      id: `edge-1-${timestamp}`,
+      id: `edge-${timestamp}-1`,
       source: `memorySearch-${timestamp}`,
       target: `contextAssembly-${timestamp}`,
       type: 'animated',
     },
     {
-      id: `edge-2-${timestamp}`,
+      id: `edge-${timestamp}-2`,
       source: `webSearch-${timestamp}`,
       target: `contextAssembly-${timestamp}`,
       type: 'animated',
     },
     {
-      id: `edge-3-${timestamp}`,
+      id: `edge-${timestamp}-3`,
       source: `contextAssembly-${timestamp}`,
       target: `customAgent-${timestamp}`,
       type: 'animated',
     },
     {
-      id: `edge-4-${timestamp}`,
+      id: `edge-${timestamp}-4`,
       source: `customAgent-${timestamp}`,
       target: `answer-${timestamp}`,
       type: 'animated',
@@ -250,8 +263,8 @@ const getExampleWorkflow = () => {
   ];
 
   const configs: Record<string, any> = {};
-  nodes.forEach((node) => {
-    configs[node.id] = { ...node.data.config };
+  nodes.forEach(node => {
+    configs[node.id] = node.data.config;
   });
 
   return { nodes, edges, configs };
@@ -465,12 +478,22 @@ export default function WorkflowPage() {
         error: 'border-red-500',
       };
 
+      const colorClasses = {
+        blue: 'bg-blue-50 border-blue-200 text-blue-700',
+        green: 'bg-green-50 border-green-200 text-green-700',
+        gray: 'bg-gray-50 border-gray-200 text-gray-700',
+        yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+        purple: 'bg-purple-50 border-purple-200 text-purple-700',
+      };
+
       return (
         <div className="group">
           <Node handles={{ target: true, source: true }} className={`${statusColors[data.status]} border-2`}>
             <NodeHeader>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{data.icon}</span>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center flex-shrink-0 ${colorClasses[data.iconColor as keyof typeof colorClasses] || 'bg-gray-50 border-gray-200 text-gray-700'}`}>
+                  <span className="text-lg font-bold">{data.icon}</span>
+                </div>
                 <div className="flex-1">
                   <NodeTitle>{data.label}</NodeTitle>
                   <NodeDescription>{data.description}</NodeDescription>
@@ -499,7 +522,7 @@ export default function WorkflowPage() {
             </NodeContent>
             <NodeFooter>
               <p className="text-xs text-muted-foreground">
-                💡 Drag from ● to ● to connect
+                Drag from handles to connect
               </p>
             </NodeFooter>
             <Toolbar>
@@ -508,14 +531,14 @@ export default function WorkflowPage() {
                 variant="ghost"
                 onClick={() => setSelectedNode(data.nodeId === selectedNode?.nodeId ? null : data)}
               >
-                ⚙️ Config
+                Config
               </Button>
               <Button 
                 size="sm" 
                 variant="ghost"
                 onClick={() => deleteNode(data.nodeId)}
               >
-                🗑️
+                Delete
               </Button>
             </Toolbar>
           </Node>
@@ -539,25 +562,37 @@ export default function WorkflowPage() {
         </p>
 
         <div className="space-y-2">
-          {AVAILABLE_NODE_TYPES.map((nodeType) => (
-            <button
-              key={nodeType.id}
-              onClick={() => addNode(nodeType)}
-              className="w-full p-3 text-left bg-background hover:bg-accent border border-border rounded-lg transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{nodeType.icon}</span>
-                <div className="flex-1">
-                  <div className="font-semibold text-sm">{nodeType.label}</div>
-                  <div className="text-xs text-muted-foreground">{nodeType.description}</div>
+          {AVAILABLE_NODE_TYPES.map((nodeType) => {
+            const colorClasses = {
+              blue: 'bg-blue-50 border-blue-200 text-blue-700',
+              green: 'bg-green-50 border-green-200 text-green-700',
+              gray: 'bg-gray-50 border-gray-200 text-gray-700',
+              yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+              purple: 'bg-purple-50 border-purple-200 text-purple-700',
+            };
+            
+            return (
+              <button
+                key={nodeType.id}
+                onClick={() => addNode(nodeType)}
+                className="w-full p-3 text-left bg-background hover:bg-accent border border-border rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center flex-shrink-0 ${colorClasses[nodeType.iconColor as keyof typeof colorClasses]}`}>
+                    <span className="text-sm font-bold">{nodeType.icon}</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm">{nodeType.label}</div>
+                    <div className="text-xs text-muted-foreground">{nodeType.description}</div>
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
 
         <div className="mt-6 pt-6 border-t border-border">
-          <h3 className="text-sm font-semibold mb-2">📋 Execution Log</h3>
+          <h3 className="text-sm font-semibold mb-2">Execution Log</h3>
           <div className="bg-background border border-border rounded-lg p-2 max-h-60 overflow-y-auto">
             {executionLog.length === 0 ? (
               <p className="text-xs text-muted-foreground">No activity yet</p>
@@ -592,21 +627,21 @@ export default function WorkflowPage() {
                 onClick={executeWorkflow}
                 disabled={isExecuting || nodes.length === 0}
               >
-                {isExecuting ? '⏳ Running...' : '▶️ Execute'}
+                {isExecuting ? 'Running...' : 'Execute'}
               </Button>
               <Button 
                 size="sm" 
                 variant="secondary" 
                 onClick={loadExampleWorkflow}
               >
-                📋 Load Example
+                Load Example
               </Button>
               <Button size="sm" variant="outline" onClick={exportWorkflow}>
-                💾 Export
+                Export
               </Button>
               <label className="cursor-pointer">
                 <Button size="sm" variant="outline" asChild>
-                  <span>📥 Import</span>
+                  <span>Import</span>
                 </Button>
                 <input
                   type="file"
@@ -616,14 +651,14 @@ export default function WorkflowPage() {
                 />
               </label>
               <Button size="sm" variant="destructive" onClick={clearWorkflow}>
-                🧹 Clear
+                Clear
               </Button>
             </div>
           </Panel>
 
           <Panel position="top-right">
             <div className="bg-card border rounded-lg shadow-lg p-4 max-w-sm">
-              <h3 className="font-semibold mb-2">📊 Workflow Stats</h3>
+              <h3 className="font-semibold mb-2">Workflow Stats</h3>
               <div className="text-xs space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Nodes:</span>
@@ -636,7 +671,7 @@ export default function WorkflowPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status:</span>
                   <span className={`font-semibold ${isExecuting ? 'text-yellow-600' : 'text-green-600'}`}>
-                    {isExecuting ? '⏳ Running' : '● Ready'}
+                    {isExecuting ? 'Running' : 'Ready'}
                   </span>
                 </div>
               </div>
@@ -646,11 +681,11 @@ export default function WorkflowPage() {
           {nodes.length === 0 && (
             <Panel position="bottom-right">
               <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg shadow-xl p-4 max-w-md">
-                <h3 className="font-bold text-lg mb-3">🚀 Quick Start</h3>
+                <h3 className="font-bold text-lg mb-3">Quick Start</h3>
                 <ol className="text-sm space-y-2 mb-4">
                   <li className="flex gap-2">
                     <span className="font-bold">1.</span>
-                    <span>Click <strong>"📋 Load Example"</strong> to see a pre-built workflow</span>
+                    <span>Click <strong>"Load Example"</strong> to see a pre-built workflow</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold">2.</span>
@@ -658,20 +693,20 @@ export default function WorkflowPage() {
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold">3.</span>
-                    <span><strong>Drag from ● to ●</strong> to connect nodes</span>
+                    <span><strong>Drag from green handle to blue handle</strong> to connect</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold">4.</span>
-                    <span>Click <strong>⚙️</strong> to configure each node</span>
+                    <span>Click <strong>Config</strong> to configure each node</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold">5.</span>
-                    <span>Click <strong>"▶️ Execute"</strong> to run!</span>
+                    <span>Click <strong>"Execute"</strong> to run!</span>
                   </li>
                 </ol>
                 <div className="border-t border-white/30 pt-3">
                   <p className="text-xs">
-                    💡 <strong>Tip:</strong> The circles (●) on nodes are connection points. Drag from right ● to left ●!
+                    <strong>Tip:</strong> Green handles (right) send data. Blue handles (left) receive data.
                   </p>
                 </div>
               </div>
@@ -684,7 +719,16 @@ export default function WorkflowPage() {
           <div className="absolute top-4 right-4 w-96 bg-card border-2 border-primary/50 rounded-lg shadow-2xl p-4 max-h-[80vh] overflow-y-auto z-50">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <span className="text-2xl">{selectedNode.icon}</span>
+                <div className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center ${
+                  selectedNode.iconColor === 'blue' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                  selectedNode.iconColor === 'green' ? 'bg-green-50 border-green-200 text-green-700' :
+                  selectedNode.iconColor === 'gray' ? 'bg-gray-50 border-gray-200 text-gray-700' :
+                  selectedNode.iconColor === 'yellow' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
+                  selectedNode.iconColor === 'purple' ? 'bg-purple-50 border-purple-200 text-purple-700' :
+                  'bg-gray-50 border-gray-200 text-gray-700'
+                }`}>
+                  <span className="text-sm font-bold">{selectedNode.icon}</span>
+                </div>
                 <span>{selectedNode.label}</span>
               </h3>
               <Button size="sm" variant="ghost" onClick={() => setSelectedNode(null)}>
