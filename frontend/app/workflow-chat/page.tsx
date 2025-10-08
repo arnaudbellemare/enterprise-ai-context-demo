@@ -38,6 +38,7 @@ export default function WorkflowChatPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [workflowContext, setWorkflowContext] = useState<WorkflowContext | null>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   // Get workflow data from localStorage
   useEffect(() => {
@@ -49,29 +50,31 @@ export default function WorkflowChatPage() {
         // Clear the data after reading to avoid stale data
         localStorage.removeItem('workflowChatData');
         
-        // Initialize chat with workflow summary
+        // Initialize chat with detailed workflow summary
         const initialMessage: Message = {
           id: '1',
           role: 'assistant',
-          content: `I've analyzed the **${parsed.workflowName}** workflow execution. Here's what I found:
+          content: `I've analyzed your **${parsed.workflowName}** workflow execution and have access to all the real data. Here's what was processed:
 
 📊 **Workflow Summary:**
 - Execution completed in ${parsed.executionTime}
 - ${parsed.nodes.length} nodes processed successfully
 
-🔍 **Key Results:**
-${Object.entries(parsed.results).map(([node, result]) => 
-  `- **${node}**: ${typeof result === 'string' ? result.substring(0, 100) + '...' : 'Analysis completed'}`
-).join('\n')}
+🔍 **Real Data Available:**
+${Object.entries(parsed.results).map(([nodeId, result]) => {
+  const node = parsed.nodes.find(n => n.id === nodeId);
+  const resultText = Array.isArray(result) ? result.join(' ') : result.toString();
+  return `- **${node?.label || nodeId}**: ${resultText.substring(0, 150)}${resultText.length > 150 ? '...' : ''}`;
+}).join('\n')}
 
-💬 **How can I help you explore these results further?** I can:
-- Dive deeper into specific findings
-- Generate additional analysis
-- Create reports or summaries
-- Answer questions about the data
-- Suggest next steps or recommendations
+💬 **I can help you with:**
+- **Investment recommendations** based on the market analysis
+- **Property insights** from the database search
+- **Market trends** and pricing analysis
+- **Risk assessment** and opportunities
+- **Detailed reports** and summaries
 
-What would you like to know more about?`,
+**What specific aspect would you like me to focus on?** I have all the workflow data ready to provide detailed, actionable insights.`,
           timestamp: new Date(),
           metadata: { type: 'workflow_summary' }
         };
@@ -82,6 +85,11 @@ What would you like to know more about?`,
       }
     }
   }, []); // Empty dependency array since we only run once on mount
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -98,12 +106,19 @@ What would you like to know more about?`,
     setIsLoading(true);
 
     try {
-      // Prepare context with workflow results
+      // Prepare detailed workflow context
       const workflowContextText = workflowContext ? `
-WORKFLOW CONTEXT:
-- Workflow: ${workflowContext.workflowName}
-- Execution Time: ${workflowContext.executionTime}
-- Results: ${JSON.stringify(workflowContext.results, null, 2)}
+=== WORKFLOW EXECUTION RESULTS ===
+Workflow: ${workflowContext.workflowName}
+Execution Time: ${workflowContext.executionTime}
+
+DETAILED RESULTS FROM EACH NODE:
+${Object.entries(workflowContext.results).map(([nodeId, result]) => {
+  const node = workflowContext.nodes.find(n => n.id === nodeId);
+  return `\n**${node?.label || nodeId}**:\n${Array.isArray(result) ? result.join('\n') : result}`;
+}).join('\n')}
+
+=== END WORKFLOW CONTEXT ===
 ` : '';
 
       const response = await fetch('/api/agent/chat', {
@@ -115,9 +130,18 @@ WORKFLOW CONTEXT:
           messages: [
             {
               role: 'system',
-              content: `You are an expert AI assistant with access to workflow execution results. Use the provided workflow context to give informed, detailed responses. Be conversational and helpful.
+              content: `You are a real estate investment expert AI assistant with access to detailed workflow execution results. 
+
+IMPORTANT: You have access to REAL workflow data from a Real Estate Market Analysis workflow. Use this data to provide specific, actionable recommendations based on the actual market research, property data, and analysis results.
 
 ${workflowContextText}
+
+INSTRUCTIONS:
+- Base ALL responses on the workflow results above
+- Provide specific real estate investment recommendations
+- Reference actual data points from the workflow
+- Be actionable and professional
+- If user asks for recommendations, give REAL ESTATE recommendations based on the workflow data
 
 Current conversation:`
             },
@@ -210,15 +234,15 @@ Current conversation:`
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Chat Messages */}
           <div className="lg:col-span-3">
-            <Card className="h-[700px] flex flex-col">
-              <CardHeader className="pb-3 border-b">
+            <Card className="h-[600px] flex flex-col overflow-hidden">
+              <CardHeader className="pb-3 border-b flex-shrink-0">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <MessageSquare className="w-5 h-5" />
                   Chat with AI Assistant
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 flex flex-col p-0">
-                <ScrollArea className="flex-1 px-6 py-4">
+              <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
+                <ScrollArea className="flex-1 px-6 py-4 min-h-0">
                   <div className="space-y-6 pb-6">
                     {messages.map((message) => (
                       <div
@@ -272,12 +296,14 @@ Current conversation:`
                           </div>
                         </div>
                       </div>
-                    )}
+                    ))}
+                    {/* Scroll target for auto-scroll */}
+                    <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
                 
-                {/* Input Area */}
-                <div className="border-t bg-gray-50/50 p-6">
+                {/* Input Area - Fixed at bottom */}
+                <div className="border-t bg-gray-50/50 p-4 flex-shrink-0">
                   <div className="flex gap-3">
                     <Input
                       value={input}
@@ -302,14 +328,14 @@ Current conversation:`
 
           {/* Workflow Context Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="h-[700px]">
-              <CardHeader className="pb-3 border-b">
+            <Card className="h-[600px]">
+              <CardHeader className="pb-3 border-b flex-shrink-0">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                   <FileText className="w-4 h-4" />
                   Workflow Context
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6 p-6">
+              <CardContent className="space-y-6 p-6 overflow-y-auto">
                 {workflowContext ? (
                   <>
                     <div className="space-y-2">
