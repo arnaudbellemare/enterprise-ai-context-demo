@@ -174,30 +174,102 @@ ALTER TABLE vector_embeddings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
-CREATE POLICY IF NOT EXISTS "Users can view their own data" ON users FOR SELECT USING (auth.uid() = id);
-CREATE POLICY IF NOT EXISTS "Users can update their own data" ON users FOR UPDATE USING (auth.uid() = id);
+DO $$ 
+BEGIN
+    -- Users policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'users' AND policyname = 'Users can view their own data') THEN
+        CREATE POLICY "Users can view their own data" ON users FOR SELECT USING (auth.uid() = id);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'users' AND policyname = 'Users can update their own data') THEN
+        CREATE POLICY "Users can update their own data" ON users FOR UPDATE USING (auth.uid() = id);
+    END IF;
 
-CREATE POLICY IF NOT EXISTS "Users can manage their own collections" ON collections FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can manage their own memories" ON memories FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can manage their own documents" ON documents FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can manage their own document chunks" ON document_chunks FOR ALL USING (
-    EXISTS (SELECT 1 FROM documents WHERE documents.id = document_chunks.document_id AND documents.user_id = auth.uid())
-);
-CREATE POLICY IF NOT EXISTS "Users can view their own query history" ON query_history FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert their own query history" ON query_history FOR INSERT WITH CHECK (auth.uid() = user_id);
+    -- Collections policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'collections' AND policyname = 'Users can manage their own collections') THEN
+        CREATE POLICY "Users can manage their own collections" ON collections FOR ALL USING (auth.uid() = user_id);
+    END IF;
 
-CREATE POLICY IF NOT EXISTS "Users can view their own context items" ON context_items FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert their own context items" ON context_items FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can view their own sessions" ON ai_sessions FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert their own sessions" ON ai_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Public metrics are viewable" ON metrics FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can insert metrics" ON metrics FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY IF NOT EXISTS "Public knowledge base is viewable" ON knowledge_base FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can insert knowledge" ON knowledge_base FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY IF NOT EXISTS "Public embeddings are viewable" ON vector_embeddings FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Authenticated users can insert embeddings" ON vector_embeddings FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY IF NOT EXISTS "Users can view their own audit logs" ON audit_logs FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "System can insert audit logs" ON audit_logs FOR INSERT WITH CHECK (true);
+    -- Memories policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'memories' AND policyname = 'Users can manage their own memories') THEN
+        CREATE POLICY "Users can manage their own memories" ON memories FOR ALL USING (auth.uid() = user_id);
+    END IF;
+
+    -- Documents policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'documents' AND policyname = 'Users can manage their own documents') THEN
+        CREATE POLICY "Users can manage their own documents" ON documents FOR ALL USING (auth.uid() = user_id);
+    END IF;
+
+    -- Document chunks policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'document_chunks' AND policyname = 'Users can manage their own document chunks') THEN
+        CREATE POLICY "Users can manage their own document chunks" ON document_chunks FOR ALL USING (
+            EXISTS (SELECT 1 FROM documents WHERE documents.id = document_chunks.document_id AND documents.user_id = auth.uid())
+        );
+    END IF;
+
+    -- Query history policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'query_history' AND policyname = 'Users can view their own query history') THEN
+        CREATE POLICY "Users can view their own query history" ON query_history FOR SELECT USING (auth.uid() = user_id);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'query_history' AND policyname = 'Users can insert their own query history') THEN
+        CREATE POLICY "Users can insert their own query history" ON query_history FOR INSERT WITH CHECK (auth.uid() = user_id);
+    END IF;
+
+    -- Context items policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'context_items' AND policyname = 'Users can view their own context items') THEN
+        CREATE POLICY "Users can view their own context items" ON context_items FOR SELECT USING (auth.uid() = user_id);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'context_items' AND policyname = 'Users can insert their own context items') THEN
+        CREATE POLICY "Users can insert their own context items" ON context_items FOR INSERT WITH CHECK (auth.uid() = user_id);
+    END IF;
+
+    -- AI sessions policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'ai_sessions' AND policyname = 'Users can view their own sessions') THEN
+        CREATE POLICY "Users can view their own sessions" ON ai_sessions FOR SELECT USING (auth.uid() = user_id);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'ai_sessions' AND policyname = 'Users can insert their own sessions') THEN
+        CREATE POLICY "Users can insert their own sessions" ON ai_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
+    END IF;
+
+    -- Metrics policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'metrics' AND policyname = 'Public metrics are viewable') THEN
+        CREATE POLICY "Public metrics are viewable" ON metrics FOR SELECT USING (true);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'metrics' AND policyname = 'Authenticated users can insert metrics') THEN
+        CREATE POLICY "Authenticated users can insert metrics" ON metrics FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+    END IF;
+
+    -- Knowledge base policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'knowledge_base' AND policyname = 'Public knowledge base is viewable') THEN
+        CREATE POLICY "Public knowledge base is viewable" ON knowledge_base FOR SELECT USING (true);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'knowledge_base' AND policyname = 'Authenticated users can insert knowledge') THEN
+        CREATE POLICY "Authenticated users can insert knowledge" ON knowledge_base FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+    END IF;
+
+    -- Vector embeddings policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'vector_embeddings' AND policyname = 'Public embeddings are viewable') THEN
+        CREATE POLICY "Public embeddings are viewable" ON vector_embeddings FOR SELECT USING (true);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'vector_embeddings' AND policyname = 'Authenticated users can insert embeddings') THEN
+        CREATE POLICY "Authenticated users can insert embeddings" ON vector_embeddings FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+    END IF;
+
+    -- Audit logs policies
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'audit_logs' AND policyname = 'Users can view their own audit logs') THEN
+        CREATE POLICY "Users can view their own audit logs" ON audit_logs FOR SELECT USING (auth.uid() = user_id);
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'audit_logs' AND policyname = 'System can insert audit logs') THEN
+        CREATE POLICY "System can insert audit logs" ON audit_logs FOR INSERT WITH CHECK (true);
+    END IF;
+END $$;
 
 -- Create the match_memories function that the workflow API expects
 CREATE OR REPLACE FUNCTION match_memories(
@@ -285,17 +357,57 @@ AS $$
     LIMIT match_count;
 $$;
 
--- Insert some sample data for testing
+-- Insert sample data for testing (UNIVERSAL SYSTEM - Works for ANY Industry)
 INSERT INTO users (id, email, username) VALUES 
 ('550e8400-e29b-41d4-a716-446655440000', 'test@example.com', 'testuser')
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO collections (id, user_id, name, description) VALUES 
-('550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440000', 'properties', 'Real estate property database')
+-- Create UNIVERSAL collections that work for ANY industry workflow
+INSERT INTO collections (id, user_id, name, description, metadata) VALUES 
+('550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440000', 'Web Research', 'Live data from internet search (any topic)', '{"type": "research", "source": "perplexity", "flexibility": "universal", "industries": ["real_estate", "healthcare", "finance", "tech", "legal", "retail", "any"]}'),
+('550e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440000', 'Internal Database', 'Your proprietary data and records (any format)', '{"type": "database", "source": "internal", "flexibility": "universal", "data_types": ["structured", "unstructured", "documents", "metrics", "any"]}'),
+('550e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440000', 'Analysis & Insights', 'Consolidated analysis from multiple sources', '{"type": "analysis", "source": "ai_consolidated", "flexibility": "universal", "methods": ["statistical", "qualitative", "predictive", "descriptive", "any"]}'),
+('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440000', 'Final Reports', 'Generated reports and recommendations', '{"type": "reports", "source": "ai_generated", "flexibility": "universal", "formats": ["executive_summary", "technical", "presentation", "dashboard", "any"]}'),
+('550e8400-e29b-41d4-a716-446655440019', '550e8400-e29b-41d4-a716-446655440000', 'Industry Templates', 'Pre-built templates for common industries', '{"type": "templates", "source": "system", "available": ["real_estate", "healthcare", "legal", "finance", "tech", "retail", "custom"]}')
 ON CONFLICT (user_id, name) DO NOTHING;
 
+-- Insert MULTI-INDUSTRY sample data (demonstrates universal flexibility)
 INSERT INTO memories (id, user_id, collection_id, content, source, metadata) VALUES 
-('550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', 'Luxury condo in Miami Beach - 2BR/2BA, 1,200 sq ft, ocean view, $1.2M', 'manual', '{"type": "property", "location": "Miami Beach", "price": 1200000}'),
-('550e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', 'Penthouse in Brickell - 3BR/3BA, 2,000 sq ft, city view, $2.5M', 'manual', '{"type": "property", "location": "Brickell", "price": 2500000}'),
-('550e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', 'Market trend: Miami luxury real estate up 15% year-over-year', 'market_research', '{"type": "trend", "market": "Miami", "change": "+15%"}')
+
+-- REAL ESTATE EXAMPLE (Industry 1)
+('550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', 'Miami luxury condo market shows 15.2% YoY growth in Q4 2024, driven by international buyers and limited inventory', 'perplexity', '{"industry": "real_estate", "type": "market_data", "location": "miami", "metric": "growth_rate", "value": "15.2%", "source": "web_search"}'),
+
+-- HEALTHCARE EXAMPLE (Industry 2)
+('550e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', 'AI-powered diagnostic tools show 23% improvement in early cancer detection, FDA approval pending Q1 2025', 'perplexity', '{"industry": "healthcare", "type": "medical_tech", "improvement": "23%", "regulatory_status": "pending_approval", "source": "web_search"}'),
+
+-- FINANCE/FINTECH EXAMPLE (Industry 3)
+('550e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', 'Global cryptocurrency adoption reaches 420M users, institutional investment up 68% year-over-year', 'perplexity', '{"industry": "finance", "type": "crypto_trends", "user_base": "420M", "institutional_growth": "68%", "source": "web_search"}'),
+
+-- TECHNOLOGY/AI EXAMPLE (Industry 4)
+('550e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', 'Enterprise AI adoption accelerates: 73% of Fortune 500 companies now using LLMs for operations, productivity gains average 31%', 'perplexity', '{"industry": "technology", "type": "ai_adoption", "adoption_rate": "73%", "productivity_gain": "31%", "target": "fortune_500", "source": "web_search"}'),
+
+-- LEGAL/COMPLIANCE EXAMPLE (Industry 5)
+('550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', 'New EU AI Act regulations require compliance by Aug 2025, affecting 15K+ companies, legal tech solutions in high demand', 'perplexity', '{"industry": "legal", "type": "regulatory_compliance", "deadline": "2025-08", "affected_companies": "15000+", "demand": "high", "source": "web_search"}'),
+
+-- RETAIL/E-COMMERCE EXAMPLE (Industry 6)
+('550e8400-e29b-41d4-a716-446655440010', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440005', 'Holiday e-commerce sales surge 19% globally, AI personalization drives 42% of conversions, mobile commerce dominates', 'perplexity', '{"industry": "retail", "type": "ecommerce_trends", "sales_growth": "19%", "ai_conversion": "42%", "channel": "mobile", "source": "web_search"}'),
+
+-- MANUFACTURING/SUPPLY CHAIN EXAMPLE (Industry 7)
+('550e8400-e29b-41d4-a716-446655440011', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440005', 'AI-driven supply chain optimization reduces costs 27%, predictive maintenance prevents 89% of critical failures', 'perplexity', '{"industry": "manufacturing", "type": "supply_chain", "cost_reduction": "27%", "failure_prevention": "89%", "technology": "predictive_ai", "source": "web_search"}'),
+
+-- EDUCATION/EDTECH EXAMPLE (Industry 8)
+('550e8400-e29b-41d4-a716-446655440012', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440005', 'AI tutoring platforms show 34% better learning outcomes, personalized education reaches 12M students globally', 'perplexity', '{"industry": "education", "type": "edtech", "improvement": "34%", "student_reach": "12M", "method": "personalized_ai", "source": "web_search"}'),
+
+-- CONSOLIDATED ANALYSIS EXAMPLES (Multi-Industry)
+('550e8400-e29b-41d4-a716-446655440013', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440006', 'Cross-industry AI adoption analysis: Average ROI of 156%, implementation time reduced from 18 to 6 months with modern tools', 'ai_analysis', '{"type": "cross_industry_analysis", "avg_roi": "156%", "implementation_reduction": "67%", "trend": "accelerating", "source": "consolidated"}'),
+
+-- UNIVERSAL REPORT TEMPLATE (Works for ANY industry)
+('550e8400-e29b-41d4-a716-446655440016', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440007', 'EXECUTIVE SUMMARY TEMPLATE: [Industry] shows [metric]% growth driven by [key_factors]. Recommended actions: [recommendations]. Projected ROI: [roi]% over [timeframe] months', 'system_template', '{"type": "executive_summary_template", "flexibility": "universal", "customizable_fields": ["industry", "metric", "key_factors", "recommendations", "roi", "timeframe"], "source": "ai_generated"}'),
+
+-- INDUSTRY TEMPLATE CATALOG
+('550e8400-e29b-41d4-a716-446655440020', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440019', 'Real Estate Analysis Template: Market Research → Property Database → Competitive Analysis → Investment Recommendations', 'system_template', '{"template": "real_estate", "nodes": ["market_research", "property_db", "comp_analysis", "recommendations"], "customizable": true}'),
+('550e8400-e29b-41d4-a716-446655440021', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440019', 'Healthcare Workflow Template: Medical Research → Patient Data → Clinical Analysis → Treatment Recommendations', 'system_template', '{"template": "healthcare", "nodes": ["medical_research", "patient_db", "clinical_analysis", "treatment_plan"], "customizable": true, "compliance": ["HIPAA", "GDPR"]}'),
+('550e8400-e29b-41d4-a716-446655440022', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440019', 'Financial Analysis Template: Market Data → Portfolio Analysis → Risk Assessment → Investment Strategy', 'system_template', '{"template": "finance", "nodes": ["market_data", "portfolio_analysis", "risk_assessment", "strategy"], "customizable": true, "compliance": ["SEC", "FINRA"]}'),
+('550e8400-e29b-41d4-a716-446655440023', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440019', 'Legal Research Template: Case Law Search → Document Analysis → Compliance Check → Legal Brief Generation', 'system_template', '{"template": "legal", "nodes": ["case_law", "doc_analysis", "compliance", "brief_gen"], "customizable": true, "jurisdictions": ["US", "EU", "UK", "custom"]}'),
+('550e8400-e29b-41d4-a716-446655440024', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440019', 'Custom Industry Template: [Web Research] → [Your Database] → [Analysis] → [Final Report] - Fully adaptable to ANY use case', 'system_template', '{"template": "custom", "nodes": ["web_search", "internal_db", "analysis", "report"], "customizable": true, "industries": ["any"], "note": "Start here for any industry not listed"}')
 ON CONFLICT (id) DO NOTHING;
