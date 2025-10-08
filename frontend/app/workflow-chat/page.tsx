@@ -64,7 +64,27 @@ export default function WorkflowChatPage() {
 ${Object.entries(parsed.results).map(([nodeId, result]) => {
   const node = parsed.nodes.find((n: any) => n.id === nodeId);
   const nodeLabel = node?.label || nodeId;
-  const resultPreview = typeof result === 'string' ? result.substring(0, 150) + '...' : 'Analysis completed';
+  
+  // Extract actual content from different response formats
+  let resultPreview = 'Analysis completed';
+  if (typeof result === 'string') {
+    resultPreview = result.substring(0, 150) + '...';
+  } else if (result && typeof result === 'object') {
+    if (result.response) {
+      resultPreview = result.response.substring(0, 150) + '...';
+    } else if (result.content) {
+      resultPreview = result.content.substring(0, 150) + '...';
+    } else if (result.answer) {
+      resultPreview = result.answer.substring(0, 150) + '...';
+    } else if (result.context) {
+      resultPreview = result.context.substring(0, 150) + '...';
+    } else if (result.documents && result.documents.length > 0) {
+      const firstDoc = result.documents[0];
+      const docContent = firstDoc.content || firstDoc.llm_summary || 'Property data';
+      resultPreview = docContent.substring(0, 150) + '...';
+    }
+  }
+  
   return `- **${nodeLabel}**: ${resultPreview}`;
 }).join('\n')}
 
@@ -122,7 +142,32 @@ WORKFLOW CONTEXT:
 DETAILED WORKFLOW RESULTS:
 ${Object.entries(workflowContext.results).map(([nodeId, result]) => {
   const node = workflowContext.nodes.find(n => n.id === nodeId);
-  return `\n**${node?.label || nodeId}**:\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}`;
+  const nodeLabel = node?.label || nodeId;
+  
+  // Handle different response formats
+  let resultText = '';
+  if (typeof result === 'string') {
+    resultText = result;
+  } else if (result && typeof result === 'object') {
+    // If it's a full response object, extract the relevant content
+    if (result.response) {
+      resultText = result.response;
+    } else if (result.content) {
+      resultText = result.content;
+    } else if (result.answer) {
+      resultText = result.answer;
+    } else if (result.context) {
+      resultText = result.context;
+    } else if (result.documents) {
+      resultText = result.documents.map((doc: any) => doc.content || doc.llm_summary || 'Data').join('\n\n');
+    } else {
+      resultText = JSON.stringify(result, null, 2);
+    }
+  } else {
+    resultText = 'Analysis completed';
+  }
+  
+  return `\n**${nodeLabel}**:\n${resultText}`;
 }).join('\n\n')}
 ` : '';
 

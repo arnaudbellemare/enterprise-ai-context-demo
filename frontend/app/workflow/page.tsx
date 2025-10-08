@@ -590,7 +590,8 @@ export default function WorkflowPage() {
                   const perplexityData = await perplexityResponse.json();
                   apiResponse = {
                     data: perplexityData.response ? [perplexityData.response] : ['No search results found'],
-                    result: '✅ Web search completed'
+                    result: '✅ Web search completed',
+                    fullResponse: perplexityData // Store full response for chat context
                   };
                 }
                 break;
@@ -621,7 +622,8 @@ export default function WorkflowPage() {
                   const agentData = await agentResponse.json();
                   apiResponse = {
                     data: agentData.response ? [agentData.response] : ['No analysis generated'],
-                    result: '✅ Agent analysis completed'
+                    result: '✅ Agent analysis completed',
+                    fullResponse: agentData // Store full response for chat context
                   };
                 }
                 break;
@@ -675,7 +677,8 @@ export default function WorkflowPage() {
                   const answerData = await answerResponse.json();
                   apiResponse = {
                     data: answerData.answer ? [answerData.answer] : ['No answer generated'],
-                    result: '✅ Answer generated successfully'
+                    result: '✅ Answer generated successfully',
+                    fullResponse: answerData // Store full response for chat context
                   };
                 }
                 break;
@@ -706,7 +709,8 @@ export default function WorkflowPage() {
                   if (propertyData.documents && propertyData.documents.length > 0) {
                     apiResponse = {
                       data: propertyData.documents.map((doc: any) => doc.content || doc.llm_summary || 'Property data'),
-                      result: `✅ Found ${propertyData.documents.length} property records`
+                      result: `✅ Found ${propertyData.documents.length} property records`,
+                      fullResponse: propertyData // Store full response for chat context
                     };
                   } else {
                     apiResponse = {
@@ -740,7 +744,8 @@ export default function WorkflowPage() {
                   const consolidationData = await consolidationResponse.json();
                   apiResponse = {
                     data: consolidationData.context ? [consolidationData.context] : ['No context assembled'],
-                    result: '✅ Data consolidated successfully'
+                    result: '✅ Data consolidated successfully',
+                    fullResponse: consolidationData // Store full response for chat context
                   };
                 }
                 break;
@@ -753,7 +758,7 @@ export default function WorkflowPage() {
                 };
             }
             
-            workflowData[nodeId] = apiResponse.data;
+            workflowData[nodeId] = apiResponse.fullResponse || apiResponse.data;
             addLog(`   ${apiResponse.result}`);
             
           } catch (error: any) {
