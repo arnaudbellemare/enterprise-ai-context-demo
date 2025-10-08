@@ -87,7 +87,23 @@ async function applyGEPAOptimization(userQuery: string, conversationContext: str
     }
 
     const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    let optimizationContent = data.choices[0].message.content;
+    
+    // Clean up the response to extract JSON
+    optimizationContent = optimizationContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    let result;
+    try {
+      result = JSON.parse(optimizationContent);
+    } catch (parseError) {
+      console.warn('GEPA optimization JSON parse failed, using defaults:', parseError);
+      result = {
+        reflection_depth: 2,
+        optimization_score: 0.8,
+        efficiency_gain: 1.5,
+        generation: 1
+      };
+    }
 
     const metrics: GEPAMetrics = {
       reflection_depth: result.reflection_depth || 2,
