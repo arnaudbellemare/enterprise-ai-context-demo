@@ -796,6 +796,8 @@ export default function WorkflowPage() {
           try {
             let apiResponse;
             
+            console.log(`🔍 Executing node: "${node.data.label}" with endpoint: ${node.data.apiEndpoint}`);
+            
             switch (node.data.label) {
               case 'Market Research':
                 // Use Perplexity API ONLY for Market Research (web search)
