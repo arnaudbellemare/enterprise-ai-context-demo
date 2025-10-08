@@ -700,10 +700,18 @@ export default function WorkflowPage() {
                   };
                 } else {
                   const propertyData = await propertyResponse.json();
-                  apiResponse = {
-                    data: propertyData.results ? propertyData.results.map((r: any) => r.content) : ['No property records found'],
-                    result: `✅ Found ${propertyData.results?.length || 0} property records`
-                  };
+                  // Handle both real and mock data properly
+                  if (propertyData.documents && propertyData.documents.length > 0) {
+                    apiResponse = {
+                      data: propertyData.documents.map((doc: any) => doc.content || doc.llm_summary || 'Property data'),
+                      result: `✅ Found ${propertyData.documents.length} property records`
+                    };
+                  } else {
+                    apiResponse = {
+                      data: ['No property records found in database'],
+                      result: '⚠️ No property records found'
+                    };
+                  }
                 }
                 break;
                 
