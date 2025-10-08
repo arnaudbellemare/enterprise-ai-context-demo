@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 // Model configurations using OpenRouter FREE models only
+// Using VERIFIED working free models
 const MODEL_CONFIGS = {
   'llama-3.1': {
     model: 'meta-llama/llama-3.1-8b-instruct:free',
@@ -15,13 +16,13 @@ const MODEL_CONFIGS = {
     useCase: 'Fast model for quick responses',
     speed: 'very-fast',
   },
-  'gemma-7b': {
-    model: 'google/gemma-7b-it:free',
+  'phi-3': {
+    model: 'microsoft/phi-3-mini-128k-instruct:free',
     useCase: 'Efficient model for general tasks',
     speed: 'fast',
   },
-  'qwen-2.5': {
-    model: 'qwen/qwen-2.5-7b-instruct:free',
+  'gemma-2': {
+    model: 'google/gemma-2-9b-it:free',
     useCase: 'Advanced reasoning and analysis',
     speed: 'medium',
   }
@@ -144,6 +145,8 @@ export async function POST(req: NextRequest) {
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'Enterprise AI Context Demo',
       },
       body: JSON.stringify({
         model: modelConfig.model,
@@ -159,7 +162,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      throw new Error(`OpenRouter API failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ OpenRouter error:', response.status, errorText);
+      console.error('❌ Model used:', modelConfig.model);
+      console.error('❌ Selected model key:', selectedModelKey);
+      throw new Error(`OpenRouter API failed: ${response.status} - ${errorText}`);
     }
 
     const responseData = await response.json();
