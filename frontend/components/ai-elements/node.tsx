@@ -20,7 +20,8 @@ export function Node({ children, handles = { target: true, source: true }, class
         <Handle
           type="target"
           position={Position.Left}
-          className="w-3 h-3 !bg-primary"
+          className="w-4 h-4 !bg-blue-500 !border-2 !border-white hover:!w-5 hover:!h-5 transition-all cursor-pointer"
+          style={{ left: -8 }}
         />
       )}
       {children}
@@ -28,7 +29,8 @@ export function Node({ children, handles = { target: true, source: true }, class
         <Handle
           type="source"
           position={Position.Right}
-          className="w-3 h-3 !bg-primary"
+          className="w-4 h-4 !bg-green-500 !border-2 !border-white hover:!w-5 hover:!h-5 transition-all cursor-pointer"
+          style={{ right: -8 }}
         />
       )}
     </div>
