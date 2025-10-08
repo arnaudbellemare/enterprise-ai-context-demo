@@ -283,7 +283,7 @@ export default function WorkflowPage() {
   const [executionLog, setExecutionLog] = useState<string[]>([]);
   const [nodeConfigs, setNodeConfigs] = useState<Record<string, any>>({});
   const [workflowErrors, setWorkflowErrors] = useState<string[]>([]);
-  const [demoMode, setDemoMode] = useState(true); // Demo mode enabled by default
+  const [demoMode, setDemoMode] = useState(false); // Use real APIs by default
   const [workflowResults, setWorkflowResults] = useState<any>(null); // Store final results
 
   const onNodesChange = useCallback(
