@@ -81,7 +81,7 @@ What would you like to know more about?`,
         console.error('Error parsing workflow data:', error);
       }
     }
-  }, [searchParams]);
+  }, []); // Empty dependency array since we only run once on mount
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
