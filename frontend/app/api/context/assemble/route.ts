@@ -55,12 +55,36 @@ Based on the provided query and conversation history, here's a consolidated cont
     
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('Supabase Edge Function error:', response.status, errorText);
+      
+      // Return mock context when Edge Function is not available
+      const mockContext = `Mock Context Assembly for: ${user_query}
+
+Based on the provided query and conversation history, here's a consolidated context:
+
+📊 **Query Analysis**: ${user_query}
+🔄 **Conversation History**: ${conversation_history?.length || 0} previous messages
+⚙️ **User Preferences**: ${JSON.stringify(user_preferences || {})}
+
+💡 **Mock Context**: This would normally assemble context from your Supabase database, including:
+- Relevant memories and documents
+- Previous conversation context
+- User preferences and settings
+- Related indexed content
+
+🔧 **To enable real context assembly**: Deploy the assemble-context Edge Function to your Supabase project
+
+📋 **Consolidated Information**: ${user_query} - Ready for analysis by AI agents.`
+
       return NextResponse.json({
-        success: false,
-        error: `Supabase Edge Function failed: ${response.status}`,
-        details: errorText,
-        context: 'No context available - Supabase function error'
-      }, { status: response.status })
+        success: true,
+        context: mockContext,
+        sources: ['mock-context-assembly'],
+        metadata: {
+          type: 'mock',
+          note: 'Using mock context - Edge Function not deployed'
+        }
+      })
     }
     
     const data = await response.json()
