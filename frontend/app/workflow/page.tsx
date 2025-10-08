@@ -675,8 +675,9 @@ export default function WorkflowPage() {
     edges.forEach(edge => incomingCount[edge.target]++);
 
     const entryPoints = nodes.filter(node => incomingCount[node.id] === 0);
-    if (entryPoints.length > 1 && nodes.length > 1) {
-      errors.push(`Multiple entry points detected. Workflow should have only one starting node.`);
+    // Allow up to 3 entry points for parallel data gathering (e.g., Web + Memory + Database)
+    if (entryPoints.length > 3 && nodes.length > 1) {
+      errors.push(`${entryPoints.length} entry points detected. Consider if this many parallel starts is intentional.`);
     }
 
     // Check for dead ends (nodes with no outgoing edges)
@@ -685,8 +686,9 @@ export default function WorkflowPage() {
     edges.forEach(edge => outgoingCount[edge.source]++);
 
     const deadEnds = nodes.filter(node => outgoingCount[node.id] === 0);
-    if (deadEnds.length > 1 && nodes.length > 1) {
-      errors.push(`Multiple end points detected. Consider connecting all paths to a final node.`);
+    // Allow up to 3 exit points for parallel outputs (e.g., Report + Risk + Summary)
+    if (deadEnds.length > 3 && nodes.length > 1) {
+      errors.push(`${deadEnds.length} end points detected. Consider if this many parallel outputs is intentional.`);
     }
 
     setWorkflowErrors(errors);
