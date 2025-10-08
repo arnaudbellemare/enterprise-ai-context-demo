@@ -4,13 +4,39 @@ export async function POST(request: NextRequest) {
   try {
     const { user_query, conversation_history, user_preferences } = await request.json()
     
-    // Check if Supabase credentials are available
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    // Check if Supabase credentials are available and not placeholder
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
+        !process.env.SUPABASE_SERVICE_ROLE_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+      
+      // Return mock context when Supabase is not available
+      const mockContext = `Mock Context Assembly for: ${user_query}
+
+Based on the provided query and conversation history, here's a consolidated context:
+
+📊 **Query Analysis**: ${user_query}
+🔄 **Conversation History**: ${conversation_history?.length || 0} previous messages
+⚙️ **User Preferences**: ${JSON.stringify(user_preferences || {})}
+
+💡 **Mock Context**: This would normally assemble context from your Supabase database, including:
+- Relevant memories and documents
+- Previous conversation context
+- User preferences and settings
+- Related indexed content
+
+🔧 **To enable real context assembly**: Configure your Supabase credentials in .env.local
+
+📋 **Consolidated Information**: ${user_query} - Ready for analysis by AI agents.`
+
       return NextResponse.json({
-        success: false,
-        error: 'Supabase credentials not configured',
-        context: 'No context available - Supabase not configured'
-      }, { status: 400 })
+        success: true,
+        context: mockContext,
+        sources: ['mock-context-assembly'],
+        metadata: {
+          type: 'mock',
+          note: 'Using mock context - configure Supabase for real assembly'
+        }
+      })
     }
     
     // Call Supabase Edge Function

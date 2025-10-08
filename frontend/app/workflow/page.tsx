@@ -568,9 +568,9 @@ export default function WorkflowPage() {
             let apiResponse;
             
             switch (node.data.label) {
-              case 'Web Search':
-                // Use Perplexity API for web search
-                const searchQuery = nodeConfigs[nodeId]?.query || 'AI trends 2024';
+              case 'Market Research':
+                // Use Perplexity API for real estate market research
+                const searchQuery = nodeConfigs[nodeId]?.query || 'Real estate market trends 2024 luxury properties Miami Beach condo prices investment opportunities';
                 const perplexityResponse = await fetch('/api/perplexity/chat', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },

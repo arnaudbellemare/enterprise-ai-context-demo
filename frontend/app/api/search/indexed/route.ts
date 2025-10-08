@@ -4,10 +4,22 @@ import { createClient } from '@supabase/supabase-js';
 // Use OpenRouter for embeddings
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Initialize Supabase client only if credentials are available
+function getSupabaseClient() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return null;
+  }
+  
+  // Check if it's a placeholder URL
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')) {
+    return null;
+  }
+  
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,11 +40,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
+    // Check if Supabase is available
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      // Return mock data when Supabase is not available
+      return NextResponse.json({
+        documents: [
+          {
+            id: 'mock-1',
+            content: `Mock property data for: ${query}. This would normally search your indexed property database.`,
+            similarity: 0.95,
+            metadata: { source: 'mock', collection: 'properties' },
+            source: 'indexed',
+            llm_summary: `Mock property search results for: ${query}`
+          },
+          {
+            id: 'mock-2', 
+            content: `Additional mock property information related to: ${query}. Configure Supabase for real data.`,
+            similarity: 0.87,
+            metadata: { source: 'mock', collection: 'properties' },
+            source: 'indexed',
+            llm_summary: `More mock property data for: ${query}`
+          }
+        ],
+        errors: [],
+        query: query,
+        source: 'indexed',
+        totalResults: 2,
+        processingTime: 50,
+        searchMetadata: {
+          model: 'mock-data',
+          matchThreshold,
+          collection: collection || 'all',
+          note: 'Using mock data - configure Supabase for real search'
+        }
+      });
     }
 
     const startTime = Date.now();
