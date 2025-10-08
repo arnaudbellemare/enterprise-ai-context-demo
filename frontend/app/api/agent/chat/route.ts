@@ -23,7 +23,7 @@ function initializeAxAI(): AxAI | null {
       name: 'openai' as any,
       apiKey: openrouterKey,
       config: {
-        model: 'openai/gpt-4o-mini',
+        model: 'meta-llama/llama-3.1-8b-instruct:free', // Use FREE model
       },
     });
   } catch (error) {
@@ -66,7 +66,7 @@ async function applyGEPAOptimization(userQuery: string, conversationContext: str
         'X-Title': 'GEPA Optimization'
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o-mini',
+        model: 'meta-llama/llama-3.1-8b-instruct:free', // Use FREE model
         messages: [
           {
             role: 'system',
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
           'X-Title': 'Context Analysis'
         },
         body: JSON.stringify({
-          model: 'openai/gpt-4o-mini',
+          model: 'meta-llama/llama-3.1-8b-instruct:free', // Use FREE model
           messages: [
             {
               role: 'system',
@@ -351,7 +351,7 @@ Respond with technical depth, specific examples, and production-grade insights. 
         'X-Title': 'Enterprise AI Context Demo - Real Ax + GEPA'
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o-mini',
+        model: 'meta-llama/llama-3.1-8b-instruct:free', // Use FREE model
         messages: [
           { role: 'system', content: systemPrompt },
           ...messages.slice(0, -1), // Include conversation history

@@ -743,9 +743,12 @@ export default function WorkflowPage() {
     setNodes(example.nodes);
     setEdges(example.edges);
     setNodeConfigs(example.configs);
-    addLog('🏢 Real Estate Market Analysis workflow loaded');
-    addLog('📋 Linear Flow: Market Research → Property DB → Data Consolidation → Analysis → Report');
-    addLog('💡 This workflow analyzes luxury Miami real estate market trends and generates investment recommendations');
+    setWorkflowResults(null); // Clear previous results
+    setExecutionLog([]); // Clear previous logs
+    addLog('🏢 Streamlined Real Estate Market Analysis workflow loaded');
+    addLog('📋 Linear Flow (3 nodes): Market Research → Market Analyst → Investment Report');
+    addLog('💡 This streamlined workflow uses real Perplexity data and OpenRouter free models');
+    addLog('✅ No Property Database or Data Consolidation (removed to fix errors)');
   };
 
   const exportWorkflow = () => {
