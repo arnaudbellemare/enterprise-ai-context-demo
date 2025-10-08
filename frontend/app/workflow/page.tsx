@@ -133,12 +133,12 @@ const AVAILABLE_NODE_TYPES = [
 const getExampleWorkflow = () => {
   const timestamp = Date.now();
   
-  // Real Estate Market Analysis Workflow
+  // Real Estate Market Analysis Workflow (Linear Flow)
   const nodes: FlowNode[] = [
     {
       id: `marketResearch-${timestamp}`,
       type: 'customizable',
-      position: { x: 100, y: 150 },
+      position: { x: 100, y: 250 },
       data: {
         id: 'marketResearch',
         label: 'Market Research',
@@ -158,7 +158,7 @@ const getExampleWorkflow = () => {
     {
       id: `propertyDatabase-${timestamp}`,
       type: 'customizable',
-      position: { x: 100, y: 300 },
+      position: { x: 400, y: 250 },
       data: {
         id: 'propertyDatabase',
         label: 'Property Database',
@@ -178,7 +178,7 @@ const getExampleWorkflow = () => {
     {
       id: `dataConsolidation-${timestamp}`,
       type: 'customizable',
-      position: { x: 400, y: 225 },
+      position: { x: 700, y: 250 },
       data: {
         id: 'dataConsolidation',
         label: 'Data Consolidation',
@@ -198,7 +198,7 @@ const getExampleWorkflow = () => {
     {
       id: `marketAnalyst-${timestamp}`,
       type: 'customizable',
-      position: { x: 700, y: 225 },
+      position: { x: 1000, y: 250 },
       data: {
         id: 'marketAnalyst',
         label: 'Market Analyst',
@@ -220,7 +220,7 @@ const getExampleWorkflow = () => {
     {
       id: `investmentReport-${timestamp}`,
       type: 'customizable',
-      position: { x: 1000, y: 225 },
+      position: { x: 1300, y: 250 },
       data: {
         id: 'investmentReport',
         label: 'Investment Report',
@@ -244,7 +244,7 @@ const getExampleWorkflow = () => {
     {
       id: `edge-${timestamp}-1`,
       source: `marketResearch-${timestamp}`,
-      target: `dataConsolidation-${timestamp}`,
+      target: `propertyDatabase-${timestamp}`,
       type: 'animated',
     },
     {
@@ -731,7 +731,7 @@ export default function WorkflowPage() {
     setEdges(example.edges);
     setNodeConfigs(example.configs);
     addLog('🏢 Real Estate Market Analysis workflow loaded');
-    addLog('📋 Flow: Market Research → Property DB → Data Consolidation → Analysis → Report');
+    addLog('📋 Linear Flow: Market Research → Property DB → Data Consolidation → Analysis → Report');
     addLog('💡 This workflow analyzes luxury Miami real estate market trends and generates investment recommendations');
   };
 
