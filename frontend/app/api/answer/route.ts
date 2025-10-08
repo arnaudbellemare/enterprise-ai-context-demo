@@ -82,14 +82,14 @@ function selectModel(queryType: string, preferredModel?: string): string {
   }
 
   const modelSelection: Record<string, string> = {
-    'math': 'qwen-2.5',
-    'code': 'gemma-2',
-    'scientific': 'llama-3.1-70b',
-    'reasoning': 'llama-3.1-70b',
+    'math': 'llama-3.1',
+    'code': 'llama-3.1',
+    'scientific': 'llama-3.1',
+    'reasoning': 'llama-3.1',
     'general': 'llama-3.1',
-    'analysis': 'llama-3.1-70b',
-    'investment': 'llama-3.1-70b',
-    'report': 'llama-3.1-70b'
+    'analysis': 'llama-3.1',
+    'investment': 'llama-3.1',
+    'report': 'llama-3.1'
   };
 
   return modelSelection[queryType] || 'llama-3.1';

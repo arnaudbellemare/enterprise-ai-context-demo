@@ -133,12 +133,12 @@ const AVAILABLE_NODE_TYPES = [
 const getExampleWorkflow = () => {
   const timestamp = Date.now();
   
-  // Real Estate Market Analysis Workflow (Linear Flow)
+  // Streamlined Real Estate Market Analysis Workflow (No Property Database)
   const nodes: FlowNode[] = [
     {
       id: `marketResearch-${timestamp}`,
       type: 'customizable',
-      position: { x: 50, y: 250 },
+      position: { x: 100, y: 250 },
       data: {
         id: 'marketResearch',
         label: 'Market Research',
@@ -156,71 +156,29 @@ const getExampleWorkflow = () => {
       },
     },
     {
-      id: `propertyDatabase-${timestamp}`,
-      type: 'customizable',
-      position: { x: 450, y: 250 },
-      data: {
-        id: 'propertyDatabase',
-        label: 'Property Database',
-        description: 'Internal property records',
-        icon: '🔍',
-        iconColor: 'orange',
-        apiEndpoint: '/api/search/indexed',
-        nodeId: `propertyDatabase-${timestamp}`,
-        status: 'ready',
-        config: {
-          query: 'luxury condos Miami Beach recent sales prices comps market analysis',
-          collection: 'properties',
-          limit: 10,
-        }
-      },
-    },
-    {
-      id: `dataConsolidation-${timestamp}`,
-      type: 'customizable',
-      position: { x: 850, y: 250 },
-      data: {
-        id: 'dataConsolidation',
-        label: 'Data Consolidation',
-        description: 'Merge & analyze data',
-        icon: '📊',
-        iconColor: 'indigo',
-        apiEndpoint: '/api/context/assemble',
-        nodeId: `dataConsolidation-${timestamp}`,
-        status: 'ready',
-        config: {
-          query: 'Combine market research with property database insights for comprehensive analysis',
-          contextType: 'real_estate_analysis',
-          mergeStrategy: 'comprehensive',
-        }
-      },
-    },
-    {
       id: `marketAnalyst-${timestamp}`,
       type: 'customizable',
-      position: { x: 1250, y: 250 },
+      position: { x: 500, y: 250 },
       data: {
         id: 'marketAnalyst',
         label: 'Market Analyst',
         description: 'AI market analysis',
-        icon: '▶',
-        iconColor: 'blue',
+        icon: '📈',
+        iconColor: 'green',
         apiEndpoint: '/api/agent/chat',
         nodeId: `marketAnalyst-${timestamp}`,
         status: 'ready',
         config: {
-          taskDescription: 'Analyze the consolidated real estate data to identify investment opportunities, market trends, and pricing insights',
-          systemPrompt: 'You are a senior real estate analyst with 15 years of experience in luxury Miami properties. Analyze the provided data to identify: 1) Market trends and patterns, 2) Pricing insights and opportunities, 3) Investment recommendations, 4) Risk factors, 5) Market outlook. Provide actionable insights with specific recommendations.',
-          temperature: 0.3,
-          model: 'claude-3-sonnet',
-          maxTokens: 2048,
+          prompt: 'Analyze the provided market research data and provide comprehensive insights on investment opportunities, market trends, pricing analysis, and strategic recommendations for real estate investors',
+          temperature: 0.7,
+          maxTokens: 2500,
         }
       },
     },
     {
       id: `investmentReport-${timestamp}`,
       type: 'customizable',
-      position: { x: 1650, y: 250 },
+      position: { x: 900, y: 250 },
       data: {
         id: 'investmentReport',
         label: 'Investment Report',
@@ -231,7 +189,7 @@ const getExampleWorkflow = () => {
         nodeId: `investmentReport-${timestamp}`,
         status: 'ready',
         config: {
-          query: 'Generate a comprehensive real estate investment report with market analysis, pricing trends, investment recommendations, and risk assessment',
+          query: 'Generate a comprehensive real estate investment report with executive summary, market analysis, pricing trends, investment recommendations, risk assessment, and actionable next steps',
           temperature: 0.7,
           maxTokens: 3000,
           format: 'professional_report',
@@ -244,27 +202,15 @@ const getExampleWorkflow = () => {
     {
       id: `edge-${timestamp}-1`,
       source: `marketResearch-${timestamp}`,
-      target: `propertyDatabase-${timestamp}`,
-      type: 'animated',
-    },
-    {
-      id: `edge-${timestamp}-2`,
-      source: `propertyDatabase-${timestamp}`,
-      target: `dataConsolidation-${timestamp}`,
-      type: 'animated',
-    },
-    {
-      id: `edge-${timestamp}-3`,
-      source: `dataConsolidation-${timestamp}`,
       target: `marketAnalyst-${timestamp}`,
       type: 'animated',
     },
     {
-      id: `edge-${timestamp}-4`,
+      id: `edge-${timestamp}-2`,
       source: `marketAnalyst-${timestamp}`,
       target: `investmentReport-${timestamp}`,
       type: 'animated',
-    },
+    }
   ];
 
   const configs: Record<string, any> = {};
@@ -663,7 +609,7 @@ export default function WorkflowPage() {
                     context: context,
                     documents: previousNodeData ? [{ content: previousNodeData }] : [],
                     autoSelectModel: true,
-                    preferredModel: 'llama-3.1-70b' // Use free large model for investment reports
+                    preferredModel: 'llama-3.1' // Use free model for investment reports
                   })
                 });
                 
@@ -683,72 +629,8 @@ export default function WorkflowPage() {
                 }
                 break;
                 
-              case 'Property Database':
-                // Use indexed search for property data
-                const propertyQuery = nodeConfigs[nodeId]?.query || 'luxury condos Miami Beach recent sales prices comps';
-                const propertyResponse = await fetch('/api/search/indexed', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    query: propertyQuery,
-                    userId: 'workflow-user', // Add required userId
-                    collection: 'properties',
-                    limit: 10
-                  })
-                });
-                
-                if (!propertyResponse.ok) {
-                  const errorText = await propertyResponse.text();
-                  apiResponse = {
-                    data: [`Property search failed: ${errorText}`],
-                    result: '❌ Property database search failed'
-                  };
-                } else {
-                  const propertyData = await propertyResponse.json();
-                  // Handle both real and mock data properly
-                  if (propertyData.documents && propertyData.documents.length > 0) {
-                    apiResponse = {
-                      data: propertyData.documents.map((doc: any) => doc.content || doc.llm_summary || 'Property data'),
-                      result: `✅ Found ${propertyData.documents.length} property records`,
-                      fullResponse: propertyData // Store full response for chat context
-                    };
-                  } else {
-                    apiResponse = {
-                      data: ['No property records found in database'],
-                      result: '⚠️ No property records found'
-                    };
-                  }
-                }
-                break;
-                
-              case 'Data Consolidation':
-                // Use context assembly to merge data from previous steps
-                const consolidationQuery = nodeConfigs[nodeId]?.query || 'Combine market research with property database insights';
-                const consolidationResponse = await fetch('/api/context/assemble', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    user_query: `${consolidationQuery}\n\nPrevious workflow data:\n${previousNodeData}`,
-                    conversation_history: [],
-                    user_preferences: {}
-                  })
-                });
-                
-                if (!consolidationResponse.ok) {
-                  const errorText = await consolidationResponse.text();
-                  apiResponse = {
-                    data: [`Context assembly failed: ${errorText}`],
-                    result: '❌ Data consolidation failed'
-                  };
-                } else {
-                  const consolidationData = await consolidationResponse.json();
-                  apiResponse = {
-                    data: consolidationData.context ? [consolidationData.context] : ['No context assembled'],
-                    result: '✅ Data consolidated successfully',
-                    fullResponse: consolidationData // Store full response for chat context
-                  };
-                }
-                break;
+              // Property Database and Data Consolidation removed from streamlined workflow
+              // These nodes are no longer part of the example workflow
                 
               default:
                 // For other nodes, use a generic API call
