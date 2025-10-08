@@ -478,7 +478,8 @@ export default function WorkflowPage() {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
-                    messages: [{ role: 'user', content: searchQuery }]
+                    query: searchQuery,
+                    useRealAI: true
                   })
                 });
                 
