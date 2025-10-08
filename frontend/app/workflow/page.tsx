@@ -133,65 +133,108 @@ const AVAILABLE_NODE_TYPES = [
 const getExampleWorkflow = () => {
   const timestamp = Date.now();
   
-  // Simple linear workflow: Web Search → Custom Agent → Generate Answer
+  // Real Estate Market Analysis Workflow
   const nodes: FlowNode[] = [
     {
-      id: `webSearch-${timestamp}`,
+      id: `marketResearch-${timestamp}`,
       type: 'customizable',
-      position: { x: 100, y: 250 },
+      position: { x: 100, y: 150 },
       data: {
-        id: 'webSearch',
-        label: 'Web Search',
-        description: 'Live Perplexity search',
+        id: 'marketResearch',
+        label: 'Market Research',
+        description: 'Live market data & trends',
         icon: '🌐',
         iconColor: 'yellow',
         apiEndpoint: '/api/perplexity/chat',
-        nodeId: `webSearch-${timestamp}`,
+        nodeId: `marketResearch-${timestamp}`,
         status: 'ready',
         config: {
-          recencyFilter: 'week',
-          maxResults: 5,
+          query: 'Real estate market trends 2024 luxury properties Miami Beach condo prices investment opportunities',
+          recencyFilter: 'month',
+          maxResults: 8,
         }
       },
     },
     {
-      id: `customAgent-${timestamp}`,
+      id: `propertyDatabase-${timestamp}`,
       type: 'customizable',
-      position: { x: 500, y: 250 },
+      position: { x: 100, y: 300 },
       data: {
-        id: 'customAgent',
-        label: 'Custom Agent',
-        description: 'Analyze & Summarize',
+        id: 'propertyDatabase',
+        label: 'Property Database',
+        description: 'Internal property records',
+        icon: '🔍',
+        iconColor: 'orange',
+        apiEndpoint: '/api/search/indexed',
+        nodeId: `propertyDatabase-${timestamp}`,
+        status: 'ready',
+        config: {
+          query: 'luxury condos Miami Beach recent sales prices comps market analysis',
+          collection: 'properties',
+          limit: 10,
+        }
+      },
+    },
+    {
+      id: `dataConsolidation-${timestamp}`,
+      type: 'customizable',
+      position: { x: 400, y: 225 },
+      data: {
+        id: 'dataConsolidation',
+        label: 'Data Consolidation',
+        description: 'Merge & analyze data',
+        icon: '📊',
+        iconColor: 'indigo',
+        apiEndpoint: '/api/context/assemble',
+        nodeId: `dataConsolidation-${timestamp}`,
+        status: 'ready',
+        config: {
+          query: 'Combine market research with property database insights for comprehensive analysis',
+          contextType: 'real_estate_analysis',
+          mergeStrategy: 'comprehensive',
+        }
+      },
+    },
+    {
+      id: `marketAnalyst-${timestamp}`,
+      type: 'customizable',
+      position: { x: 700, y: 225 },
+      data: {
+        id: 'marketAnalyst',
+        label: 'Market Analyst',
+        description: 'AI market analysis',
         icon: '▶',
         iconColor: 'blue',
         apiEndpoint: '/api/agent/chat',
-        nodeId: `customAgent-${timestamp}`,
+        nodeId: `marketAnalyst-${timestamp}`,
         status: 'ready',
         config: {
-          taskDescription: 'Analyze the web search results and identify key insights',
-          systemPrompt: 'You are an expert analyst. Summarize the key findings from the search results and highlight the most important information.',
-          temperature: 0.5,
-          model: 'claude-3-haiku',
-          maxTokens: 1024,
+          taskDescription: 'Analyze the consolidated real estate data to identify investment opportunities, market trends, and pricing insights',
+          systemPrompt: 'You are a senior real estate analyst with 15 years of experience in luxury Miami properties. Analyze the provided data to identify: 1) Market trends and patterns, 2) Pricing insights and opportunities, 3) Investment recommendations, 4) Risk factors, 5) Market outlook. Provide actionable insights with specific recommendations.',
+          temperature: 0.3,
+          model: 'claude-3-sonnet',
+          maxTokens: 2048,
         }
       },
     },
     {
-      id: `answer-${timestamp}`,
+      id: `investmentReport-${timestamp}`,
       type: 'customizable',
-      position: { x: 900, y: 250 },
+      position: { x: 1000, y: 225 },
       data: {
-        id: 'answer',
-        label: 'Generate Answer',
-        description: 'Final AI response',
+        id: 'investmentReport',
+        label: 'Investment Report',
+        description: 'Final analysis report',
         icon: '✅',
         iconColor: 'green',
         apiEndpoint: '/api/answer',
-        nodeId: `answer-${timestamp}`,
+        nodeId: `investmentReport-${timestamp}`,
         status: 'ready',
         config: {
+          query: 'Generate a comprehensive real estate investment report with market analysis, pricing trends, investment recommendations, and risk assessment',
           temperature: 0.7,
-          maxTokens: 2048,
+          maxTokens: 3000,
+          format: 'professional_report',
         }
       },
     }
@@ -200,14 +243,26 @@ const getExampleWorkflow = () => {
   const edges: FlowEdge[] = [
     {
       id: `edge-${timestamp}-1`,
-      source: `webSearch-${timestamp}`,
-      target: `customAgent-${timestamp}`,
+      source: `marketResearch-${timestamp}`,
+      target: `dataConsolidation-${timestamp}`,
       type: 'animated',
     },
     {
       id: `edge-${timestamp}-2`,
-      source: `customAgent-${timestamp}`,
-      target: `answer-${timestamp}`,
+      source: `propertyDatabase-${timestamp}`,
+      target: `dataConsolidation-${timestamp}`,
+      type: 'animated',
+    },
+    {
+      id: `edge-${timestamp}-3`,
+      source: `dataConsolidation-${timestamp}`,
+      target: `marketAnalyst-${timestamp}`,
+      type: 'animated',
+    },
+    {
+      id: `edge-${timestamp}-4`,
+      source: `marketAnalyst-${timestamp}`,
+      target: `investmentReport-${timestamp}`,
       type: 'animated',
     },
   ];
@@ -423,37 +478,76 @@ export default function WorkflowPage() {
           await new Promise((resolve) => setTimeout(resolve, 1200));
           
           const mockResponses: Record<string, any> = {
-            'Memory Search': {
-              data: ['Found 3 relevant documents about AI trends', 'Retrieved context from knowledge base'],
-              result: '✅ Found 3 matching documents'
+            'Market Research': {
+              data: [
+                'Miami luxury condo market up 15% YoY',
+                'Average price per sq ft: $1,200-1,800',
+                'New developments: 12 projects in pipeline',
+                'Foreign investment: 45% of purchases',
+                'Market inventory: 3.2 months supply'
+              ],
+              result: '✅ Retrieved 5 market research results'
             },
-            'Web Search': {
-              data: ['Latest AI breakthroughs in 2024', 'New LLM architectures emerging'],
-              result: '✅ Retrieved 5 web results'
+            'Property Database': {
+              data: [
+                'Found 47 luxury condos sold in Q4 2024',
+                'Average sale price: $2.3M',
+                'Price range: $1.8M - $8.5M',
+                'Days on market: 45 average',
+                'Comp properties: 23 similar units'
+              ],
+              result: '✅ Found 47 matching properties'
             },
-            'Context Assembly': {
-              data: ['Merged 8 sources', 'Deduplicated content', 'Ranked by relevance'],
-              result: '✅ Assembled context from 8 sources'
+            'Data Consolidation': {
+              data: [
+                'Merged market research with property database',
+                'Identified 8 key market trends',
+                'Consolidated pricing data from 52 sources',
+                'Ranked opportunities by ROI potential'
+              ],
+              result: '✅ Consolidated data from 52 sources'
             },
-            'Custom Agent': {
-              data: ['Analyzed sentiment: Positive', 'Key topics: Innovation, Growth, Future'],
-              result: '✅ Analysis complete: Positive sentiment detected'
+            'Market Analyst': {
+              data: [
+                'Market Analysis: Strong growth trajectory (+15% YoY)',
+                'Investment Opportunities: 3 high-potential areas identified',
+                'Risk Assessment: Moderate risk, high reward potential',
+                'Pricing Insights: Below-market opportunities found',
+                'Recommendation: Buy in Brickell and Edgewater districts'
+              ],
+              result: '✅ Market analysis complete: 3 opportunities identified'
+            },
+            'Investment Report': {
+              data: [
+                'EXECUTIVE SUMMARY: Miami luxury real estate shows strong fundamentals with 15% YoY growth. Recommended investment in Brickell and Edgewater districts with projected 12-18% returns over 24 months.',
+                '',
+                'KEY FINDINGS:',
+                '• Market inventory at 3.2 months (healthy)',
+                '• Foreign investment driving 45% of purchases',
+                '• Average price per sq ft: $1,200-1,800',
+                '• 12 new developments in pipeline',
+                '',
+                'INVESTMENT RECOMMENDATIONS:',
+                '1. Brickell District: Premium location, 18% projected ROI',
+                '2. Edgewater: Emerging market, 15% projected ROI',
+                '3. Avoid: Overpriced units above $2,000/sq ft',
+                '',
+                'RISK FACTORS: Interest rate sensitivity, hurricane season',
+                'MARKET OUTLOOK: Positive for next 18-24 months'
+              ],
+              result: '✅ Generated comprehensive investment report (487 words)'
             },
             'Generate Answer': {
-              data: ['AI is rapidly evolving with breakthrough innovations in 2024...'],
+              data: ['Real estate investment analysis completed with detailed recommendations'],
               result: '✅ Generated comprehensive answer (245 words)'
             },
-            'GEPA Optimize': {
-              data: ['Optimized prompt for clarity', 'Enhanced specificity'],
-              result: '✅ Prompt optimized (iteration 3/3)'
+            'Web Search': {
+              data: ['Market research data retrieved successfully'],
+              result: '✅ Retrieved web search results'
             },
-            'LangStruct': {
-              data: ['Extracted entities: 12', 'Structured data fields: 8'],
-              result: '✅ Structured extraction complete'
-            },
-            'Model Router': {
-              data: ['Selected model: Claude-3-Haiku', 'Reason: Best for general queries'],
-              result: '✅ Routed to Claude-3-Haiku'
+            'Custom Agent': {
+              data: ['Analysis completed with key insights'],
+              result: '✅ Analysis complete'
             }
           };
 
@@ -636,7 +730,9 @@ export default function WorkflowPage() {
     setNodes(example.nodes);
     setEdges(example.edges);
     setNodeConfigs(example.configs);
-    addLog('📋 Example workflow loaded');
+    addLog('🏢 Real Estate Market Analysis workflow loaded');
+    addLog('📋 Flow: Market Research → Property DB → Data Consolidation → Analysis → Report');
+    addLog('💡 This workflow analyzes luxury Miami real estate market trends and generates investment recommendations');
   };
 
   const exportWorkflow = () => {
