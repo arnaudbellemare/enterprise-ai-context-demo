@@ -133,31 +133,12 @@ const AVAILABLE_NODE_TYPES = [
 const getExampleWorkflow = () => {
   const timestamp = Date.now();
   
+  // Simple linear workflow: Web Search → Custom Agent → Generate Answer
   const nodes: FlowNode[] = [
-    {
-      id: `memorySearch-${timestamp}`,
-      type: 'customizable',
-      position: { x: 100, y: 200 },
-      data: {
-        id: 'memorySearch',
-        label: 'Memory Search',
-        description: 'Vector similarity search',
-        icon: '🔍',
-        iconColor: 'yellow',
-        apiEndpoint: '/api/search/indexed',
-        nodeId: `memorySearch-${timestamp}`,
-        status: 'ready',
-        config: {
-          matchThreshold: 0.8,
-          matchCount: 10,
-          collection: 'my-docs',
-        }
-      },
-    },
     {
       id: `webSearch-${timestamp}`,
       type: 'customizable',
-      position: { x: 100, y: 400 },
+      position: { x: 100, y: 250 },
       data: {
         id: 'webSearch',
         label: 'Web Search',
@@ -169,47 +150,28 @@ const getExampleWorkflow = () => {
         status: 'ready',
         config: {
           recencyFilter: 'week',
-          maxResults: 10,
-        }
-      },
-    },
-    {
-      id: `contextAssembly-${timestamp}`,
-      type: 'customizable',
-      position: { x: 500, y: 300 },
-      data: {
-        id: 'contextAssembly',
-        label: 'Context Assembly',
-        description: 'Merge & deduplicate',
-        icon: '📦',
-        iconColor: 'purple',
-        apiEndpoint: '/api/context/assemble',
-        nodeId: `contextAssembly-${timestamp}`,
-        status: 'ready',
-        config: {
-          mergeStrategy: 'hybrid',
-          maxResults: 20,
+          maxResults: 5,
         }
       },
     },
     {
       id: `customAgent-${timestamp}`,
       type: 'customizable',
-      position: { x: 900, y: 300 },
+      position: { x: 500, y: 250 },
       data: {
         id: 'customAgent',
         label: 'Custom Agent',
-        description: 'Sentiment Analysis',
+        description: 'Analyze & Summarize',
         icon: '▶',
         iconColor: 'blue',
         apiEndpoint: '/api/agent/chat',
         nodeId: `customAgent-${timestamp}`,
         status: 'ready',
         config: {
-          taskDescription: 'Analyze customer sentiment and extract key topics',
-          systemPrompt: 'You are an expert sentiment analyzer. Analyze the provided text and return sentiment (positive/negative/neutral) and key topics.',
-          temperature: 0.3,
-          model: 'claude-3-sonnet',
+          taskDescription: 'Analyze the web search results and identify key insights',
+          systemPrompt: 'You are an expert analyst. Summarize the key findings from the search results and highlight the most important information.',
+          temperature: 0.5,
+          model: 'claude-3-haiku',
           maxTokens: 1024,
         }
       },
@@ -217,7 +179,7 @@ const getExampleWorkflow = () => {
     {
       id: `answer-${timestamp}`,
       type: 'customizable',
-      position: { x: 1300, y: 300 },
+      position: { x: 900, y: 250 },
       data: {
         id: 'answer',
         label: 'Generate Answer',
@@ -238,24 +200,12 @@ const getExampleWorkflow = () => {
   const edges: FlowEdge[] = [
     {
       id: `edge-${timestamp}-1`,
-      source: `memorySearch-${timestamp}`,
-      target: `contextAssembly-${timestamp}`,
-      type: 'animated',
-    },
-    {
-      id: `edge-${timestamp}-2`,
       source: `webSearch-${timestamp}`,
-      target: `contextAssembly-${timestamp}`,
-      type: 'animated',
-    },
-    {
-      id: `edge-${timestamp}-3`,
-      source: `contextAssembly-${timestamp}`,
       target: `customAgent-${timestamp}`,
       type: 'animated',
     },
     {
-      id: `edge-${timestamp}-4`,
+      id: `edge-${timestamp}-2`,
       source: `customAgent-${timestamp}`,
       target: `answer-${timestamp}`,
       type: 'animated',
