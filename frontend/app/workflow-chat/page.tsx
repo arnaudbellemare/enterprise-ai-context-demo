@@ -60,19 +60,22 @@ export default function WorkflowChatPage() {
 - Execution completed in ${parsed.executionTime}
 - ${parsed.nodes.length} nodes processed successfully
 
-🔍 **Key Results:**
-${Object.entries(parsed.results).map(([node, result]) => 
-  `- **${node}**: ${typeof result === 'string' ? result.substring(0, 100) + '...' : 'Analysis completed'}`
-).join('\n')}
+🔍 **Key Results Available:**
+${Object.entries(parsed.results).map(([nodeId, result]) => {
+  const node = parsed.nodes.find((n: any) => n.id === nodeId);
+  const nodeLabel = node?.label || nodeId;
+  const resultPreview = typeof result === 'string' ? result.substring(0, 150) + '...' : 'Analysis completed';
+  return `- **${nodeLabel}**: ${resultPreview}`;
+}).join('\n')}
 
-💬 **How can I help you explore these results further?** I can:
-- Dive deeper into specific findings
-- Generate additional analysis
-- Create reports or summaries
-- Answer questions about the data
-- Suggest next steps or recommendations
+💬 **I'm ready to help you explore these real estate market insights!** I can:
+- Analyze specific market trends from the research
+- Provide investment recommendations based on the data
+- Explain property market insights in detail
+- Create comprehensive investment reports
+- Answer questions about market conditions and opportunities
 
-What would you like to know more about?`,
+What specific aspect of the real estate market analysis would you like to explore?`,
           timestamp: new Date(),
           metadata: { type: 'workflow_summary' }
         };
@@ -114,7 +117,13 @@ What would you like to know more about?`,
 WORKFLOW CONTEXT:
 - Workflow: ${workflowContext.workflowName}
 - Execution Time: ${workflowContext.executionTime}
-- Results: ${JSON.stringify(workflowContext.results, null, 2)}
+- Nodes Processed: ${workflowContext.nodes.map(n => n.label).join(', ')}
+
+DETAILED WORKFLOW RESULTS:
+${Object.entries(workflowContext.results).map(([nodeId, result]) => {
+  const node = workflowContext.nodes.find(n => n.id === nodeId);
+  return `\n**${node?.label || nodeId}**:\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}`;
+}).join('\n\n')}
 ` : '';
 
       const response = await fetch('/api/agent/chat', {
@@ -126,11 +135,22 @@ WORKFLOW CONTEXT:
           messages: [
             {
               role: 'system',
-              content: `You are an expert AI assistant with access to workflow execution results. Use the provided workflow context to give informed, detailed responses. Be conversational and helpful.
+              content: `You are an expert AI assistant specializing in real estate market analysis and investment recommendations. You have access to detailed workflow execution results from a Real Estate Market Analysis workflow.
 
+IMPORTANT: You MUST use the provided workflow context and results to answer all questions. Do NOT provide generic recommendations about movies, books, or other topics. Focus ONLY on real estate investment insights based on the workflow data.
+
+WORKFLOW CONTEXT:
 ${workflowContextText}
 
-Current conversation:`
+INSTRUCTIONS:
+- Always reference the specific workflow results when answering
+- Provide real estate investment recommendations based on the market research
+- Use the property database insights for your analysis
+- Draw conclusions from the market analyst findings
+- Reference the investment report data in your responses
+- Stay focused on real estate and investment topics only
+
+Current conversation context:`
             },
             ...messages.map(msg => ({
               role: msg.role,
