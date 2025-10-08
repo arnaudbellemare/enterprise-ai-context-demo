@@ -208,6 +208,11 @@ END $$;
 -- FUNCTIONS (Production-optimized vector search)
 -- ================================================================================================
 
+-- Drop existing functions first to avoid signature conflicts
+DROP FUNCTION IF EXISTS match_memories(vector, double precision, integer, uuid, uuid, text);
+DROP FUNCTION IF EXISTS match_embeddings(vector, double precision, integer);
+DROP FUNCTION IF EXISTS match_knowledge(vector, double precision, integer);
+
 -- Main function for workflow API calls (match_memories)
 CREATE OR REPLACE FUNCTION match_memories(
     query_embedding VECTOR(1536),
