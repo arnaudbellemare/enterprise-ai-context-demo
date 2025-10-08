@@ -2,13 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+// Initialize clients conditionally to avoid errors on missing API keys
+function getAnthropicClient() {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return null;
+  }
+  return new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  });
+}
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    return null;
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 // Model configurations
 const MODEL_CONFIGS = {
@@ -130,6 +141,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check if we have the required API keys
+    const anthropic = getAnthropicClient();
+    const openai = getOpenAIClient();
+
+    if (modelConfig.provider === 'anthropic' && !anthropic) {
+      return NextResponse.json(
+        { 
+          error: 'Anthropic API key is required but not configured',
+          missingKey: 'ANTHROPIC_API_KEY'
+        },
+        { status: 400 }
+      );
+    }
+
+    if (modelConfig.provider === 'openai' && !openai) {
+      return NextResponse.json(
+        { 
+          error: 'OpenAI API key is required but not configured',
+          missingKey: 'OPENAI_API_KEY'
+        },
+        { status: 400 }
+      );
+    }
+
     // 3. Build context from documents
     const context = documents && documents.length > 0
       ? documents.map((doc: any, idx: number) => 
@@ -140,7 +175,7 @@ export async function POST(req: NextRequest) {
     // 4. Generate answer using selected model
     let answer = '';
     
-    if (modelConfig.provider === 'anthropic') {
+    if (modelConfig.provider === 'anthropic' && anthropic) {
       const response = await anthropic.messages.create({
         model: modelConfig.model,
         max_tokens: 2048,
@@ -155,7 +190,7 @@ export async function POST(req: NextRequest) {
       answer = response.content[0].type === 'text' 
         ? response.content[0].text 
         : '';
-    } else if (modelConfig.provider === 'openai') {
+    } else if (modelConfig.provider === 'openai' && openai) {
       const response = await openai.chat.completions.create({
         model: modelConfig.model,
         messages: [{
@@ -168,6 +203,15 @@ export async function POST(req: NextRequest) {
       });
 
       answer = response.choices[0].message.content || '';
+    } else {
+      return NextResponse.json(
+        { 
+          error: `API client not available for provider: ${modelConfig.provider}`,
+          selectedModel: selectedModelKey,
+          provider: modelConfig.provider
+        },
+        { status: 500 }
+      );
     }
 
     const processingTime = Date.now() - startTime;
