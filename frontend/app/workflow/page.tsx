@@ -25,7 +25,7 @@ import {
   type Connection as FlowConnection
 } from '@xyflow/react';
 
-// Same node library
+// Available node types
 const AVAILABLE_NODE_TYPES = [
   { 
     id: 'memorySearch', 
@@ -95,6 +95,20 @@ const AVAILABLE_NODE_TYPES = [
     }
   },
   { 
+    id: 'customAgent', 
+    label: '🎯 Custom Agent',
+    description: 'Customizable task agent',
+    icon: '🎯',
+    apiEndpoint: '/api/agent/chat',
+    config: {
+      taskDescription: 'Analyze customer sentiment',
+      systemPrompt: 'You are a helpful AI assistant',
+      temperature: 0.7,
+      model: 'claude-3-haiku',
+      maxTokens: 2048,
+    }
+  },
+  { 
     id: 'answer', 
     label: '✅ Generate Answer',
     description: 'Final AI response',
@@ -106,6 +120,142 @@ const AVAILABLE_NODE_TYPES = [
     }
   }
 ];
+
+// EXAMPLE: Pre-built workflow with connections
+const getExampleWorkflow = () => {
+  const timestamp = Date.now();
+  
+  const nodes: FlowNode[] = [
+    {
+      id: `memorySearch-${timestamp}`,
+      type: 'customizable',
+      position: { x: 100, y: 200 },
+      data: {
+        id: 'memorySearch',
+        label: '🧠 Memory Search',
+        description: 'Vector similarity search',
+        icon: '🧠',
+        apiEndpoint: '/api/search/indexed',
+        nodeId: `memorySearch-${timestamp}`,
+        status: 'ready',
+        config: {
+          matchThreshold: 0.8,
+          matchCount: 10,
+          collection: 'my-docs',
+        }
+      },
+    },
+    {
+      id: `webSearch-${timestamp}`,
+      type: 'customizable',
+      position: { x: 100, y: 400 },
+      data: {
+        id: 'webSearch',
+        label: '🌐 Web Search',
+        description: 'Live Perplexity search',
+        icon: '🌐',
+        apiEndpoint: '/api/perplexity/chat',
+        nodeId: `webSearch-${timestamp}`,
+        status: 'ready',
+        config: {
+          recencyFilter: 'week',
+          maxResults: 10,
+        }
+      },
+    },
+    {
+      id: `contextAssembly-${timestamp}`,
+      type: 'customizable',
+      position: { x: 500, y: 300 },
+      data: {
+        id: 'contextAssembly',
+        label: '📦 Context Assembly',
+        description: 'Merge & deduplicate',
+        icon: '📦',
+        apiEndpoint: '/api/context/assemble',
+        nodeId: `contextAssembly-${timestamp}`,
+        status: 'ready',
+        config: {
+          mergeStrategy: 'hybrid',
+          maxResults: 20,
+        }
+      },
+    },
+    {
+      id: `customAgent-${timestamp}`,
+      type: 'customizable',
+      position: { x: 900, y: 300 },
+      data: {
+        id: 'customAgent',
+        label: '🎯 Custom Agent',
+        description: 'Sentiment Analysis',
+        icon: '🎯',
+        apiEndpoint: '/api/agent/chat',
+        nodeId: `customAgent-${timestamp}`,
+        status: 'ready',
+        config: {
+          taskDescription: 'Analyze customer sentiment and extract key topics',
+          systemPrompt: 'You are an expert sentiment analyzer. Analyze the provided text and return sentiment (positive/negative/neutral) and key topics.',
+          temperature: 0.3,
+          model: 'claude-3-sonnet',
+          maxTokens: 1024,
+        }
+      },
+    },
+    {
+      id: `answer-${timestamp}`,
+      type: 'customizable',
+      position: { x: 1300, y: 300 },
+      data: {
+        id: 'answer',
+        label: '✅ Generate Answer',
+        description: 'Final AI response',
+        icon: '✅',
+        apiEndpoint: '/api/answer',
+        nodeId: `answer-${timestamp}`,
+        status: 'ready',
+        config: {
+          temperature: 0.7,
+          maxTokens: 2048,
+        }
+      },
+    },
+  ];
+
+  const edges: FlowEdge[] = [
+    {
+      id: `edge-1-${timestamp}`,
+      source: `memorySearch-${timestamp}`,
+      target: `contextAssembly-${timestamp}`,
+      type: 'animated',
+    },
+    {
+      id: `edge-2-${timestamp}`,
+      source: `webSearch-${timestamp}`,
+      target: `contextAssembly-${timestamp}`,
+      type: 'animated',
+    },
+    {
+      id: `edge-3-${timestamp}`,
+      source: `contextAssembly-${timestamp}`,
+      target: `customAgent-${timestamp}`,
+      type: 'animated',
+    },
+    {
+      id: `edge-4-${timestamp}`,
+      source: `customAgent-${timestamp}`,
+      target: `answer-${timestamp}`,
+      type: 'animated',
+    },
+  ];
+
+  const configs: Record<string, any> = {};
+  nodes.forEach((node) => {
+    configs[node.id] = { ...node.data.config };
+  });
+
+  return { nodes, edges, configs };
+};
 
 export default function WorkflowPage() {
   const [nodes, setNodes] = useState<FlowNode[]>([]);
@@ -125,6 +275,7 @@ export default function WorkflowPage() {
     []
   );
 
+  // Handle drag connections between nodes
   const onConnect = useCallback(
     (connection: FlowConnection) => {
       const newEdge = {
@@ -166,7 +317,9 @@ export default function WorkflowPage() {
   const deleteNode = (nodeId: string) => {
     setNodes((nds) => nds.filter((n) => n.id !== nodeId));
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
-    delete nodeConfigs[nodeId];
+    const newConfigs = { ...nodeConfigs };
+    delete newConfigs[nodeId];
+    setNodeConfigs(newConfigs);
     if (selectedNode?.nodeId === nodeId) setSelectedNode(null);
     addLog(`🗑️ Deleted: ${nodeId}`);
   };
@@ -196,21 +349,16 @@ export default function WorkflowPage() {
     }
 
     setIsExecuting(true);
-    addLog('🚀 Workflow started');
+    addLog('🚀 Workflow execution started');
 
     try {
-      let workflowData: any = {
-        query: 'Sample query',
-        userId: 'user-' + Date.now(),
-      };
-
       const executionOrder = getExecutionOrder(nodes, edges);
       
       for (const nodeId of executionOrder) {
         const node = nodes.find((n) => n.id === nodeId);
         if (!node) continue;
 
-        addLog(`▶️ ${node.data.label}...`);
+        addLog(`▶️ Executing: ${node.data.label}`);
         
         setNodes((nds) =>
           nds.map((n) =>
@@ -218,8 +366,8 @@ export default function WorkflowPage() {
           )
         );
 
-        // Execute node (simplified for demo - can be configured to call real APIs)
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Simulate API call
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         
         setNodes((nds) =>
           nds.map((n) =>
@@ -227,13 +375,14 @@ export default function WorkflowPage() {
           )
         );
         
-        addLog(`✅ ${node.data.label} done`);
+        addLog(`✅ Completed: ${node.data.label}`);
       }
 
-      addLog('🎉 Workflow complete!');
-      alert('✅ Workflow completed!');
+      addLog('🎉 Workflow completed successfully!');
+      alert('✅ Workflow completed! Check the execution log.');
     } catch (error: any) {
       addLog(`❌ Error: ${error.message}`);
+      alert('❌ Workflow failed. Check the log for details.');
     } finally {
       setIsExecuting(false);
     }
@@ -259,6 +408,14 @@ export default function WorkflowPage() {
     return order;
   };
 
+  const loadExampleWorkflow = () => {
+    const example = getExampleWorkflow();
+    setNodes(example.nodes);
+    setEdges(example.edges);
+    setNodeConfigs(example.configs);
+    addLog('📋 Example workflow loaded');
+  };
+
   const exportWorkflow = () => {
     const workflow = { nodes, edges, configs: nodeConfigs };
     const blob = new Blob([JSON.stringify(workflow, null, 2)], { type: 'application/json' });
@@ -267,7 +424,7 @@ export default function WorkflowPage() {
     a.href = url;
     a.download = `workflow-${Date.now()}.json`;
     a.click();
-    addLog('💾 Exported');
+    addLog('💾 Workflow exported');
   };
 
   const importWorkflow = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -281,28 +438,28 @@ export default function WorkflowPage() {
         setNodes(workflow.nodes || []);
         setEdges(workflow.edges || []);
         setNodeConfigs(workflow.configs || {});
-        addLog('📥 Imported');
+        addLog('📥 Workflow imported');
       } catch (error) {
-        alert('Import failed');
+        alert('Failed to import workflow');
       }
     };
     reader.readAsText(file);
   };
 
   const clearWorkflow = () => {
-    if (confirm('Clear all?')) {
+    if (confirm('Clear all nodes and connections?')) {
       setNodes([]);
       setEdges([]);
       setNodeConfigs({});
       setSelectedNode(null);
-      addLog('🧹 Cleared');
+      addLog('🧹 Workflow cleared');
     }
   };
 
   const nodeTypes = {
     customizable: ({ data }: any) => {
       const statusColors = {
-        ready: 'border-gray-300',
+        ready: 'border-gray-300 dark:border-gray-600',
         executing: 'border-yellow-500 animate-pulse',
         complete: 'border-green-500',
         error: 'border-red-500',
@@ -318,35 +475,40 @@ export default function WorkflowPage() {
                   <NodeTitle>{data.label}</NodeTitle>
                   <NodeDescription>{data.description}</NodeDescription>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  data.status === 'executing' ? 'bg-yellow-100 text-yellow-800' :
-                  data.status === 'complete' ? 'bg-green-100 text-green-800' :
-                  data.status === 'error' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
+                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                  data.status === 'executing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                  data.status === 'complete' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                  data.status === 'error' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                 }`}>
                   {data.status}
                 </span>
               </div>
             </NodeHeader>
             <NodeContent>
-              <div className="text-xs space-y-1">
-                <div className="font-mono text-muted-foreground">
+              <div className="text-xs space-y-2">
+                <div className="font-mono text-muted-foreground bg-muted/30 p-2 rounded">
                   {data.apiEndpoint}
                 </div>
+                {data.id === 'customAgent' && data.config.taskDescription && (
+                  <div className="text-sm">
+                    <strong>Task:</strong> {data.config.taskDescription}
+                  </div>
+                )}
               </div>
             </NodeContent>
             <NodeFooter>
               <p className="text-xs text-muted-foreground">
-                Drag handles to connect
+                💡 Drag from ● to ● to connect
               </p>
             </NodeFooter>
             <Toolbar>
               <Button 
                 size="sm" 
                 variant="ghost"
-                onClick={() => setSelectedNode(data)}
+                onClick={() => setSelectedNode(data.nodeId === selectedNode?.nodeId ? null : data)}
               >
-                ⚙️
+                ⚙️ Config
               </Button>
               <Button 
                 size="sm" 
@@ -371,17 +533,21 @@ export default function WorkflowPage() {
     <div className="w-full h-screen flex">
       {/* Sidebar */}
       <div className="w-80 bg-card border-r border-border p-4 overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-4">🎯 Add Nodes</h2>
+        <h2 className="text-lg font-semibold mb-2">🎯 Node Library</h2>
+        <p className="text-xs text-muted-foreground mb-4">
+          Click to add • Drag ● to ● to connect
+        </p>
+
         <div className="space-y-2">
           {AVAILABLE_NODE_TYPES.map((nodeType) => (
             <button
               key={nodeType.id}
               onClick={() => addNode(nodeType)}
-              className="w-full p-3 text-left bg-background hover:bg-accent border border-border rounded-lg"
+              className="w-full p-3 text-left bg-background hover:bg-accent border border-border rounded-lg transition-colors"
             >
               <div className="flex items-center gap-2">
                 <span className="text-xl">{nodeType.icon}</span>
-                <div>
+                <div className="flex-1">
                   <div className="font-semibold text-sm">{nodeType.label}</div>
                   <div className="text-xs text-muted-foreground">{nodeType.description}</div>
                 </div>
@@ -390,11 +556,11 @@ export default function WorkflowPage() {
           ))}
         </div>
 
-        <div className="mt-6 pt-6 border-t">
-          <h3 className="text-sm font-semibold mb-2">📋 Log</h3>
-          <div className="bg-background border rounded-lg p-2 max-h-60 overflow-y-auto">
+        <div className="mt-6 pt-6 border-t border-border">
+          <h3 className="text-sm font-semibold mb-2">📋 Execution Log</h3>
+          <div className="bg-background border border-border rounded-lg p-2 max-h-60 overflow-y-auto">
             {executionLog.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No activity</p>
+              <p className="text-xs text-muted-foreground">No activity yet</p>
             ) : (
               executionLog.map((log, idx) => (
                 <div key={idx} className="text-xs font-mono">{log}</div>
@@ -420,7 +586,7 @@ export default function WorkflowPage() {
           <Controls />
           
           <Panel position="top-left">
-            <div className="bg-card border rounded-lg shadow-lg p-3 flex gap-2">
+            <div className="bg-card border rounded-lg shadow-lg p-3 flex gap-2 flex-wrap">
               <Button 
                 size="sm" 
                 onClick={executeWorkflow}
@@ -428,7 +594,14 @@ export default function WorkflowPage() {
               >
                 {isExecuting ? '⏳ Running...' : '▶️ Execute'}
               </Button>
-              <Button size="sm" variant="secondary" onClick={exportWorkflow}>
+              <Button 
+                size="sm" 
+                variant="secondary" 
+                onClick={loadExampleWorkflow}
+              >
+                📋 Load Example
+              </Button>
+              <Button size="sm" variant="outline" onClick={exportWorkflow}>
                 💾 Export
               </Button>
               <label className="cursor-pointer">
@@ -449,20 +622,20 @@ export default function WorkflowPage() {
           </Panel>
 
           <Panel position="top-right">
-            <div className="bg-card border rounded-lg shadow-lg p-4">
-              <h3 className="font-semibold mb-2">📊 Workflow</h3>
+            <div className="bg-card border rounded-lg shadow-lg p-4 max-w-sm">
+              <h3 className="font-semibold mb-2">📊 Workflow Stats</h3>
               <div className="text-xs space-y-1">
                 <div className="flex justify-between">
-                  <span>Nodes:</span>
-                  <span className="font-mono">{nodes.length}</span>
+                  <span className="text-muted-foreground">Nodes:</span>
+                  <span className="font-mono font-bold">{nodes.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Connections:</span>
-                  <span className="font-mono">{edges.length}</span>
+                  <span className="text-muted-foreground">Connections:</span>
+                  <span className="font-mono font-bold">{edges.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Status:</span>
-                  <span className={isExecuting ? 'text-yellow-600' : 'text-green-600'}>
+                  <span className="text-muted-foreground">Status:</span>
+                  <span className={`font-semibold ${isExecuting ? 'text-yellow-600' : 'text-green-600'}`}>
                     {isExecuting ? '⏳ Running' : '● Ready'}
                   </span>
                 </div>
@@ -472,26 +645,47 @@ export default function WorkflowPage() {
 
           {nodes.length === 0 && (
             <Panel position="bottom-right">
-              <div className="bg-blue-500 text-white rounded-lg p-4">
-                <h3 className="font-bold mb-2">🚀 Quick Start</h3>
-                <ol className="text-sm space-y-1">
-                  <li>1. Click nodes from sidebar</li>
-                  <li>2. Drag ● to ● to connect</li>
-                  <li>3. Click ⚙️ to configure</li>
-                  <li>4. Click ▶️ to execute</li>
+              <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg shadow-xl p-4 max-w-md">
+                <h3 className="font-bold text-lg mb-3">🚀 Quick Start</h3>
+                <ol className="text-sm space-y-2 mb-4">
+                  <li className="flex gap-2">
+                    <span className="font-bold">1.</span>
+                    <span>Click <strong>"📋 Load Example"</strong> to see a pre-built workflow</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold">2.</span>
+                    <span>Or click nodes from sidebar to add them</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold">3.</span>
+                    <span><strong>Drag from ● to ●</strong> to connect nodes</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold">4.</span>
+                    <span>Click <strong>⚙️</strong> to configure each node</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-bold">5.</span>
+                    <span>Click <strong>"▶️ Execute"</strong> to run!</span>
+                  </li>
                 </ol>
+                <div className="border-t border-white/30 pt-3">
+                  <p className="text-xs">
+                    💡 <strong>Tip:</strong> The circles (●) on nodes are connection points. Drag from right ● to left ●!
+                  </p>
+                </div>
               </div>
             </Panel>
           )}
         </Canvas>
 
-        {/* Config Panel */}
+        {/* Configuration Panel */}
         {selectedNode && (
-          <div className="absolute top-4 right-4 w-96 bg-card border rounded-lg shadow-2xl p-4 max-h-[80vh] overflow-y-auto z-50">
+          <div className="absolute top-4 right-4 w-96 bg-card border-2 border-primary/50 rounded-lg shadow-2xl p-4 max-h-[80vh] overflow-y-auto z-50">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <span>{selectedNode.icon}</span>
-                {selectedNode.label}
+                <span className="text-2xl">{selectedNode.icon}</span>
+                <span>{selectedNode.label}</span>
               </h3>
               <Button size="sm" variant="ghost" onClick={() => setSelectedNode(null)}>
                 ✕
@@ -501,45 +695,68 @@ export default function WorkflowPage() {
             <div className="space-y-4">
               {Object.entries(nodeConfigs[selectedNode.nodeId] || {}).map(([key, value]) => (
                 <div key={key}>
-                  <label className="text-sm font-medium block mb-1">
-                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  <label className="text-sm font-medium block mb-2 flex items-center gap-2">
+                    <span className="capitalize">
+                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({typeof value})
+                    </span>
                   </label>
                   {typeof value === 'boolean' ? (
-                    <input
-                      type="checkbox"
-                      checked={value}
-                      onChange={(e) =>
-                        updateNodeConfig(selectedNode.nodeId, { [key]: e.target.checked })
-                      }
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={value}
+                        onChange={(e) =>
+                          updateNodeConfig(selectedNode.nodeId, { [key]: e.target.checked })
+                        }
+                        className="w-4 h-4 rounded"
+                      />
+                      <span className="text-sm">{value ? 'Enabled' : 'Disabled'}</span>
+                    </div>
                   ) : typeof value === 'number' ? (
                     <input
                       type="number"
                       value={value}
                       onChange={(e) =>
-                        updateNodeConfig(selectedNode.nodeId, { [key]: parseFloat(e.target.value) })
+                        updateNodeConfig(selectedNode.nodeId, { [key]: parseFloat(e.target.value) || 0 })
                       }
-                      className="w-full px-3 py-2 border rounded-lg bg-background"
-                      step="0.1"
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+                      step={key === 'temperature' ? '0.1' : '1'}
                     />
                   ) : (
-                    <input
-                      type="text"
+                    <textarea
                       value={value}
                       onChange={(e) =>
                         updateNodeConfig(selectedNode.nodeId, { [key]: e.target.value })
                       }
-                      className="w-full px-3 py-2 border rounded-lg bg-background"
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary min-h-[60px]"
+                      placeholder={`Enter ${key}...`}
                     />
                   )}
                 </div>
               ))}
             </div>
 
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-xs text-muted-foreground">
-                <strong>API:</strong> {selectedNode.apiEndpoint}
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">
+                <strong>API Endpoint:</strong>
               </p>
+              <code className="text-xs bg-muted p-2 rounded block font-mono">
+                {selectedNode.apiEndpoint}
+              </code>
+            </div>
+
+            <div className="mt-4">
+              <Button 
+                size="sm" 
+                variant="default" 
+                onClick={() => setSelectedNode(null)}
+                className="w-full"
+              >
+                ✓ Save Configuration
+              </Button>
             </div>
           </div>
         )}
