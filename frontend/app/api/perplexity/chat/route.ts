@@ -3,14 +3,20 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { query, industry, context, useRealAI } = body;
+    const { query, industry, context, useRealAI, messages } = body;
+    
+    // Extract query from messages if provided (for backward compatibility)
+    let finalQuery = query;
+    if (!finalQuery && messages && messages.length > 0) {
+      finalQuery = messages[messages.length - 1]?.content || messages[0]?.content;
+    }
 
-    console.log('Perplexity Chat request:', { query, industry, context, useRealAI });
+    console.log('Perplexity Chat request:', { query: finalQuery, industry, context, useRealAI });
     console.log('Conversation context length:', context?.length || 0);
     console.log('Conversation context preview:', context?.substring(0, 300) + '...');
 
     // Use REAL AI API if useRealAI is true
-    if (useRealAI) {
+    if (useRealAI && finalQuery) {
       console.log('🚀 Calling REAL Perplexity AI directly (skipping Python backend mock)...');
       
       try {
@@ -30,7 +36,7 @@ export async function POST(request: Request) {
               },
               {
                 role: 'user',
-                content: query
+                content: finalQuery || 'Please provide market research on real estate trends.'
               }
             ],
             max_tokens: 1000,
@@ -44,7 +50,7 @@ export async function POST(request: Request) {
           console.error('❌ Perplexity API error:', aiResponse.status, errorText);
           
           // Return mock data when Perplexity API fails (invalid key, etc.)
-          const mockResponse = `Mock Market Research for: ${query}
+          const mockResponse = `Mock Market Research for: ${finalQuery}
 
 Based on current real estate market analysis:
 
