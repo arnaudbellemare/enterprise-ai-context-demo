@@ -1,28 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 
-// Use OpenAI API key
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+// Use OpenRouter API key (provides access to GPT-4o-mini!)
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-// Initialize OpenAI client
-const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
-
-// Model configurations using OpenAI models (affordable and high quality)
+// Model configurations using OpenRouter with GPT-4o-mini and other models
 const MODEL_CONFIGS = {
   'gpt-4o-mini': {
-    model: 'gpt-4o-mini',
+    model: 'openai/gpt-4o-mini',
     useCase: 'Best for general tasks, analysis, and reports',
     speed: 'fast',
     cost: 'very low',
   },
   'gpt-4o': {
-    model: 'gpt-4o',
+    model: 'openai/gpt-4o',
     useCase: 'Best for complex reasoning and detailed analysis',
     speed: 'medium',
     cost: 'low',
   },
   'gpt-3.5-turbo': {
-    model: 'gpt-3.5-turbo',
+    model: 'openai/gpt-3.5-turbo',
     useCase: 'Fast and efficient for simple tasks',
     speed: 'very-fast',
     cost: 'very low',
@@ -122,12 +118,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if we have the OpenAI API key
-    if (!OPENAI_API_KEY || !openai) {
+    // Check if we have the OpenRouter API key
+    if (!OPENROUTER_API_KEY) {
       return NextResponse.json(
         { 
-          error: 'OpenAI API key is required but not configured',
-          missingKey: 'OPENAI_API_KEY'
+          error: 'OpenRouter API key is required but not configured',
+          missingKey: 'OPENROUTER_API_KEY'
         },
         { status: 400 }
       );
@@ -140,20 +136,38 @@ export async function POST(req: NextRequest) {
         ).join('\n\n')
       : '';
 
-    // 4. Generate answer using OpenAI
-    const completion = await openai.chat.completions.create({
-      model: modelConfig.model,
-      messages: [{
-        role: 'user',
-        content: context 
-          ? `Based on the following documents, answer this question: ${query}\n\nDocuments:\n${context}\n\nProvide a clear, accurate answer based on the information provided.`
-          : query
-      }],
-      max_tokens: 2048,
-      temperature: 0.7,
+    // 4. Generate answer using OpenRouter (with GPT-4o-mini access!)
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'Enterprise AI Context Demo',
+      },
+      body: JSON.stringify({
+        model: modelConfig.model,
+        messages: [{
+          role: 'user',
+          content: context 
+            ? `Based on the following documents, answer this question: ${query}\n\nDocuments:\n${context}\n\nProvide a clear, accurate answer based on the information provided.`
+            : query
+        }],
+        max_tokens: 2048,
+        temperature: 0.7,
+      }),
     });
 
-    const answer = completion.choices[0]?.message?.content || '';
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ OpenRouter error:', response.status, errorText);
+      console.error('❌ Model used:', modelConfig.model);
+      console.error('❌ Selected model key:', selectedModelKey);
+      throw new Error(`OpenRouter API failed: ${response.status} - ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    const answer = responseData.choices[0]?.message?.content || '';
 
     const processingTime = Date.now() - startTime;
 

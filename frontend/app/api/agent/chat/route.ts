@@ -1,33 +1,29 @@
 import { NextResponse } from 'next/server';
 import { ai, AxAI } from '@ax-llm/ax';
-import OpenAI from 'openai';
 
 export const runtime = 'nodejs';
-
-// Initialize OpenAI client
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 // ============================================================
 // REAL AX FRAMEWORK IMPLEMENTATION (Simplified & Working)
 // Using actual Ax from https://axllm.dev/
 // ============================================================
 
-// Initialize Ax with OpenAI
+// Initialize Ax with OpenRouter (provides access to GPT-4o-mini!)
 function initializeAxAI(): AxAI | null {
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
   
-  if (!openaiKey) {
-    console.log('⚠️ OpenAI API key not found');
+  if (!openrouterKey) {
+    console.log('⚠️ OpenRouter API key not found');
     return null;
   }
 
   try {
-    // Real Ax AI initialization with OpenAI
+    // Real Ax AI initialization with OpenRouter
     return new AxAI({
-      name: 'openai',
-      apiKey: openaiKey,
+      name: 'openai' as any,
+      apiKey: openrouterKey,
       config: {
-        model: 'gpt-4o-mini', // Use GPT-4o-mini (affordable and high quality)
+        model: 'openai/gpt-4o-mini', // Use GPT-4o-mini via OpenRouter
       },
     });
   } catch (error) {
@@ -70,7 +66,7 @@ async function applyGEPAOptimization(userQuery: string, conversationContext: str
         'X-Title': 'GEPA Optimization'
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.2-3b-instruct:free', // Use FREE model
+        model: 'openai/gpt-4o-mini', // Use GPT-4o-mini via OpenRouter
         messages: [
           {
             role: 'system',
@@ -164,7 +160,7 @@ export async function POST(req: Request) {
           'X-Title': 'Context Analysis'
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-3.2-3b-instruct:free', // Use FREE model
+          model: 'openai/gpt-4o-mini', // Use GPT-4o-mini via OpenRouter
           messages: [
             {
               role: 'system',
@@ -355,7 +351,7 @@ Respond with technical depth, specific examples, and production-grade insights. 
         'X-Title': 'Enterprise AI Context Demo - Real Ax + GEPA'
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.2-3b-instruct:free', // Use FREE model
+        model: 'openai/gpt-4o-mini', // Use GPT-4o-mini via OpenRouter
         messages: [
           { role: 'system', content: systemPrompt },
           ...messages.slice(0, -1), // Include conversation history
