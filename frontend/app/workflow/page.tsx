@@ -158,7 +158,7 @@ const getExampleWorkflow = () => {
     {
       id: `propertyDatabase-${timestamp}`,
       type: 'customizable',
-      position: { x: 350, y: 250 },
+      position: { x: 450, y: 250 },
       data: {
         id: 'propertyDatabase',
         label: 'Property Database',
@@ -178,7 +178,7 @@ const getExampleWorkflow = () => {
     {
       id: `dataConsolidation-${timestamp}`,
       type: 'customizable',
-      position: { x: 650, y: 250 },
+      position: { x: 850, y: 250 },
       data: {
         id: 'dataConsolidation',
         label: 'Data Consolidation',
@@ -198,7 +198,7 @@ const getExampleWorkflow = () => {
     {
       id: `marketAnalyst-${timestamp}`,
       type: 'customizable',
-      position: { x: 950, y: 250 },
+      position: { x: 1250, y: 250 },
       data: {
         id: 'marketAnalyst',
         label: 'Market Analyst',
@@ -220,7 +220,7 @@ const getExampleWorkflow = () => {
     {
       id: `investmentReport-${timestamp}`,
       type: 'customizable',
-      position: { x: 1250, y: 250 },
+      position: { x: 1650, y: 250 },
       data: {
         id: 'investmentReport',
         label: 'Investment Report',
