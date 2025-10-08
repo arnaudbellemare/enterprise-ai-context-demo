@@ -319,7 +319,7 @@ INSERT INTO collections (id, user_id, name, description, metadata) VALUES
 ('550e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440000', 'Analysis & Insights', 'Consolidated analysis from multiple sources', '{"type": "analysis", "source": "ai_consolidated", "flexibility": "universal", "methods": ["statistical", "qualitative", "predictive", "descriptive", "any"]}'),
 ('550e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440000', 'Final Reports', 'Generated reports and recommendations', '{"type": "reports", "source": "ai_generated", "flexibility": "universal", "formats": ["executive_summary", "technical", "presentation", "dashboard", "any"]}'),
 ('550e8400-e29b-41d4-a716-446655440019', '550e8400-e29b-41d4-a716-446655440000', 'Industry Templates', 'Pre-built templates for common industries', '{"type": "templates", "source": "system", "available": ["real_estate", "healthcare", "legal", "finance", "tech", "retail", "custom"]}')
-ON CONFLICT (user_id, name) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
 
 -- Insert MULTI-INDUSTRY sample data (demonstrates universal flexibility)
 INSERT INTO memories (id, user_id, collection_id, content, source, metadata) VALUES 
