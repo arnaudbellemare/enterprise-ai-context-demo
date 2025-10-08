@@ -42,7 +42,7 @@ const initialNodes: FlowNode[] = [
     type: 'aiWorkflow',
     position: { x: 0, y: 200 },
     data: {
-      label: '🎯 User Query',
+      label: 'User Query',
       description: 'Workflow trigger',
       handles: { target: false, source: true },
       content: 'User asks: "What are the latest AI developments?"',
@@ -55,11 +55,11 @@ const initialNodes: FlowNode[] = [
     type: 'aiWorkflow',
     position: { x: 400, y: 0 },
     data: {
-      label: '🧠 Memory Search',
+      label: 'Memory Search',
       description: 'Vector similarity search',
       handles: { target: true, source: true },
-      content: 'Searching indexed memories with embeddings...\nFound 12 relevant memories (threshold: 0.8)',
-      footer: 'API: /api/search/indexed | ~150ms',
+      content: 'Searching indexed memories with embeddings. Found 12 relevant memories with similarity > 0.8',
+      footer: 'Duration: ~150ms',
       icon: '🧠',
     },
   },
@@ -68,11 +68,11 @@ const initialNodes: FlowNode[] = [
     type: 'aiWorkflow',
     position: { x: 400, y: 400 },
     data: {
-      label: '🌐 Live Web Search',
+      label: 'Live Web Search',
       description: 'Perplexity search',
       handles: { target: true, source: true },
-      content: 'Querying Perplexity API for latest info...\nFound 8 recent articles',
-      footer: 'API: /api/perplexity/chat | ~800ms',
+      content: 'Querying Perplexity API for latest information. Found 8 recent articles',
+      footer: 'Duration: ~800ms',
       icon: '🌐',
     },
   },
@@ -81,11 +81,11 @@ const initialNodes: FlowNode[] = [
     type: 'aiWorkflow',
     position: { x: 800, y: 200 },
     data: {
-      label: '📦 Context Assembly',
-      description: 'Merge & deduplicate',
+      label: 'Context Assembly',
+      description: 'Merge and deduplicate',
       handles: { target: true, source: true },
-      content: 'Merging 20 documents from all sources\nDeduplicating and ranking by relevance...',
-      footer: 'API: /api/context/assemble | ~200ms',
+      content: 'Merging 20 documents from all sources. Deduplicating and ranking by relevance',
+      footer: 'Duration: ~200ms',
       icon: '📦',
     },
   },
@@ -94,11 +94,11 @@ const initialNodes: FlowNode[] = [
     type: 'aiWorkflow',
     position: { x: 1200, y: 200 },
     data: {
-      label: '🤖 Model Router',
+      label: 'Model Router',
       description: 'Smart model selection',
       handles: { target: true, source: true },
-      content: 'Query type: General → Selected: claude-3-haiku\nReason: Fast, accurate for general queries',
-      footer: 'API: /api/answer | Auto-select',
+      content: 'Query type detected: General. Selected model: claude-3-haiku for fast, accurate responses',
+      footer: 'Confidence: 94%',
       icon: '🤖',
     },
   },
@@ -107,11 +107,11 @@ const initialNodes: FlowNode[] = [
     type: 'aiWorkflow',
     position: { x: 1600, y: 200 },
     data: {
-      label: '⚡ GEPA Optimize',
+      label: 'GEPA Optimize',
       description: 'Prompt evolution',
       handles: { target: true, source: true },
-      content: 'Optimizing prompt with context...\nIteration: 3 | Performance: +12%',
-      footer: 'API: /api/gepa/optimize | ~1.2s',
+      content: 'Optimizing prompt with assembled context. Iteration 3 shows +12% performance improvement',
+      footer: 'Duration: ~1.2s',
       icon: '⚡',
     },
   },
@@ -120,11 +120,11 @@ const initialNodes: FlowNode[] = [
     type: 'aiWorkflow',
     position: { x: 2000, y: 200 },
     data: {
-      label: '✅ AI Response',
+      label: 'AI Response',
       description: 'Final answer',
       handles: { target: true, source: false },
-      content: 'Generated comprehensive answer using Claude Haiku\nQuality score: 94% | User satisfaction: High',
-      footer: 'Total workflow time: 2.5s',
+      content: 'Generated comprehensive answer using Claude Haiku with optimized prompt',
+      footer: 'Total time: 2.5s',
       icon: '✅',
     },
   },
@@ -176,7 +176,7 @@ const initialEdges: FlowEdge[] = [
   },
 ];
 
-// Custom node type with your branding
+// Clean node type matching AI Elements design
 const nodeTypes = {
   aiWorkflow: ({
     data,
@@ -190,36 +190,26 @@ const nodeTypes = {
       icon: string;
     };
   }) => (
-    <div className="group">
-      <Node handles={data.handles}>
-        <NodeHeader>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{data.icon}</span>
-            <div>
-              <NodeTitle>{data.label}</NodeTitle>
-              <NodeDescription>{data.description}</NodeDescription>
-            </div>
-          </div>
-        </NodeHeader>
-        <NodeContent>
-          <p className="text-sm whitespace-pre-line">{data.content}</p>
-        </NodeContent>
-        <NodeFooter>
-          <p className="text-muted-foreground text-xs">{data.footer}</p>
-        </NodeFooter>
-        <Toolbar>
-          <Button size="sm" variant="ghost">
-            ⚙️ Configure
-          </Button>
-          <Button size="sm" variant="ghost">
-            🔍 Inspect
-          </Button>
-          <Button size="sm" variant="ghost" className="text-destructive">
-            🗑️
-          </Button>
-        </Toolbar>
-      </Node>
-    </div>
+    <Node handles={data.handles}>
+      <NodeHeader>
+        <NodeTitle>{data.label}</NodeTitle>
+        <NodeDescription>{data.description}</NodeDescription>
+      </NodeHeader>
+      <NodeContent>
+        <p className="text-sm whitespace-pre-line">{data.content}</p>
+      </NodeContent>
+      <NodeFooter>
+        <p className="text-muted-foreground text-xs">{data.footer}</p>
+      </NodeFooter>
+      <Toolbar>
+        <Button size="sm" variant="ghost">
+          Edit
+        </Button>
+        <Button size="sm" variant="ghost">
+          Delete
+        </Button>
+      </Toolbar>
+    </Node>
   ),
 };
 
@@ -285,66 +275,10 @@ export default function WorkflowPage() {
         fitView
       >
         <Controls />
-        
-        {/* Top toolbar */}
         <Panel position="top-left">
-          <div className="bg-card border border-border rounded-lg shadow-lg p-3 flex gap-2">
-            <Button 
-              size="sm" 
-              variant="default"
-              onClick={executeWorkflow}
-              disabled={isExecuting}
-            >
-              {isExecuting ? '⏳ Executing...' : '▶️ Run Workflow'}
-            </Button>
-            <Button size="sm" variant="secondary" onClick={exportWorkflow}>
-              💾 Export
-            </Button>
-            <Button size="sm" variant="outline">
-              ➕ Add Node
-            </Button>
-          </div>
-        </Panel>
-
-        {/* Info panel */}
-        <Panel position="top-right">
-          <div className="bg-card border border-border rounded-lg shadow-lg p-4 max-w-sm">
-            <h3 className="font-semibold mb-2">🎯 AI Workflow Builder</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              Visual workflow combining your memory system, GEPA optimization, and multi-model routing.
-            </p>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Nodes:</span>
-                <span className="font-mono">{nodes.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Connections:</span>
-                <span className="font-mono">{edges.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Status:</span>
-                <span className="text-green-600">● Ready</span>
-              </div>
-            </div>
-          </div>
-        </Panel>
-
-        {/* Legend */}
-        <Panel position="bottom-left">
-          <div className="bg-card border border-border rounded-lg shadow-lg p-3">
-            <h4 className="font-semibold text-sm mb-2">Legend</h4>
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-primary"></div>
-                <span className="text-muted-foreground">Active Flow</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 border-t-2 border-dashed border-muted-foreground"></div>
-                <span className="text-muted-foreground">Conditional</span>
-              </div>
-            </div>
-          </div>
+          <Button size="sm" variant="secondary" onClick={exportWorkflow}>
+            Export
+          </Button>
         </Panel>
       </Canvas>
     </div>

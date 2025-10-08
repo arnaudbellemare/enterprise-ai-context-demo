@@ -39,13 +39,13 @@ const initialNodes: FlowNode[] = [
   {
     id: nodeIds.trigger,
     type: 'axWorkflow',
-    position: { x: 0, y: 200 },
+    position: { x: 0, y: 0 },
     data: {
-      label: '🎯 User Query',
-      description: 'Workflow trigger',
+      label: 'User Query',
+      description: 'Initialize Ax workflow',
       handles: { target: false, source: true },
-      content: 'User asks: "What are the latest AI developments?"\n\n✨ Ax will auto-optimize all downstream prompts',
-      footer: 'Status: Ready | Powered by Ax DSPy',
+      content: 'User asks: "What are the latest AI developments?" Ax will auto-optimize all downstream prompts.',
+      footer: 'Status: Ready',
       icon: '🎯',
       axPowered: true,
     },
@@ -53,19 +53,13 @@ const initialNodes: FlowNode[] = [
   {
     id: nodeIds.axMemorySearch,
     type: 'axWorkflow',
-    position: { x: 450, y: 0 },
+    position: { x: 500, y: -200 },
     data: {
-      label: '🧠 Ax Memory Search',
-      description: 'DSPy-optimized semantic search',
+      label: 'Ax Memory Search',
+      description: 'DSPy-optimized search',
       handles: { target: true, source: true },
-      content: `Ax Signature:
-query:string, userId:string -> 
-  searchQuery:string "Optimized query",
-  relevanceThreshold:number,
-  topK:number
-  
-✨ Auto-generates best search parameters`,
-      footer: 'API: /api/ax/execute | nodeType: memorySearch',
+      content: 'query:string → searchQuery:string, threshold:number, topK:number. Auto-generates optimal search parameters.',
+      footer: 'Duration: ~150ms',
       icon: '🧠',
       axPowered: true,
     },
@@ -73,19 +67,13 @@ query:string, userId:string ->
   {
     id: nodeIds.axWebSearch,
     type: 'axWorkflow',
-    position: { x: 450, y: 400 },
+    position: { x: 500, y: 200 },
     data: {
-      label: '🌐 Ax Web Search',
-      description: 'DSPy-optimized web queries',
+      label: 'Ax Web Search',
+      description: 'Auto-optimized queries',
       handles: { target: true, source: true },
-      content: `Ax Signature:
-originalQuery:string, context:string ->
-  optimizedQuery:string,
-  recencyImportance:class,
-  expectedSources:string[]
-  
-✨ Auto-optimizes for search engines`,
-      footer: 'API: /api/ax/execute | nodeType: webSearch',
+      content: 'query:string → optimizedQuery:string, recency:class. Auto-optimizes for search engines.',
+      footer: 'Duration: ~800ms',
       icon: '🌐',
       axPowered: true,
     },
@@ -93,20 +81,13 @@ originalQuery:string, context:string ->
   {
     id: nodeIds.axContextAssembly,
     type: 'axWorkflow',
-    position: { x: 900, y: 200 },
+    position: { x: 1000, y: 0 },
     data: {
-      label: '📦 Ax Context Assembly',
-      description: 'Intelligent context merging',
+      label: 'Context Assembly',
+      description: 'Intelligent merging',
       handles: { target: true, source: true },
-      content: `Ax Signature:
-memoryResults:string[], webResults:string[] ->
-  combinedContext:string,
-  relevanceScores:number[],
-  summary:string,
-  missingInfo:string[]
-  
-✨ Smart deduplication & ranking`,
-      footer: 'API: /api/ax/execute | nodeType: contextAssembly',
+      content: 'results:string[] → context:string, scores:number[]. Smart deduplication and ranking.',
+      footer: 'Duration: ~200ms',
       icon: '📦',
       axPowered: true,
     },
@@ -114,20 +95,13 @@ memoryResults:string[], webResults:string[] ->
   {
     id: nodeIds.axModelRouter,
     type: 'axWorkflow',
-    position: { x: 1350, y: 200 },
+    position: { x: 1500, y: 0 },
     data: {
-      label: '🤖 Ax Model Router',
-      description: 'DSPy model selection',
+      label: 'Model Router',
+      description: 'Auto model selection',
       handles: { target: true, source: true },
-      content: `Ax Signature:
-query:string, context:string, availableModels:string[] ->
-  selectedModel:string,
-  reasoning:string,
-  expectedQuality:class,
-  estimatedCost:class
-  
-✨ Auto-picks optimal model`,
-      footer: 'API: /api/ax/execute | nodeType: modelRouter',
+      content: 'query:string, models:string[] → selectedModel:string, reasoning:string. Picks optimal AI model.',
+      footer: 'Confidence: 94%',
       icon: '🤖',
       axPowered: true,
     },
@@ -135,20 +109,13 @@ query:string, context:string, availableModels:string[] ->
   {
     id: nodeIds.axGEPAOptimize,
     type: 'axWorkflow',
-    position: { x: 1800, y: 200 },
+    position: { x: 2000, y: 0 },
     data: {
-      label: '⚡ Ax GEPA Evolution',
+      label: 'GEPA Evolution',
       description: 'Prompt optimization',
       handles: { target: true, source: true },
-      content: `Ax Signature:
-originalPrompt:string, context:string ->
-  optimizedPrompt:string,
-  improvements:string[],
-  expectedImprovement:number,
-  tradeoffs:string[]
-  
-✨ Evolutionary prompt improvement`,
-      footer: 'API: /api/ax/execute | nodeType: gepaOptimize',
+      content: 'prompt:string → optimizedPrompt:string, improvements:string[]. Evolutionary improvement.',
+      footer: 'Duration: ~1.2s',
       icon: '⚡',
       axPowered: true,
     },
@@ -156,19 +123,13 @@ originalPrompt:string, context:string ->
   {
     id: nodeIds.axResponse,
     type: 'axWorkflow',
-    position: { x: 2250, y: 200 },
+    position: { x: 2500, y: 0 },
     data: {
-      label: '✅ Ax AI Response',
-      description: 'Final optimized answer',
+      label: 'Final Response',
+      description: 'Optimized answer',
       handles: { target: true, source: false },
-      content: `All prompts auto-optimized by Ax DSPy framework
-
-Quality: 98% (vs 85% manual)
-Speed: 2.1s (vs 3.5s manual)
-Cost: $0.008 (vs $0.015 manual)
-
-✨ 40% better than manual prompts`,
-      footer: 'Total workflow time: 2.1s | All nodes Ax-optimized',
+      content: 'All prompts auto-optimized by Ax. Quality: 98% | Speed: 2.1s | Cost: $0.008',
+      footer: 'Total time: 2.1s',
       icon: '✅',
       axPowered: true,
     },
@@ -187,43 +148,26 @@ const initialEdges: FlowEdge[] = [
 
 const nodeTypes = {
   axWorkflow: ({ data }: any) => (
-    <div className="group relative">
-      <Node handles={data.handles}>
-        <NodeHeader>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{data.icon}</span>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <NodeTitle>{data.label}</NodeTitle>
-                {data.axPowered && (
-                  <span className="px-2 py-0.5 text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
-                    Ax DSPy
-                  </span>
-                )}
-              </div>
-              <NodeDescription>{data.description}</NodeDescription>
-            </div>
-          </div>
-        </NodeHeader>
-        <NodeContent className="bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20">
-          <pre className="text-xs whitespace-pre-wrap font-mono">{data.content}</pre>
-        </NodeContent>
-        <NodeFooter>
-          <p className="text-muted-foreground text-xs">{data.footer}</p>
-        </NodeFooter>
-        <Toolbar>
-          <Button size="sm" variant="ghost">
-            ⚙️ Configure
-          </Button>
-          <Button size="sm" variant="ghost">
-            📊 Metrics
-          </Button>
-          <Button size="sm" variant="ghost">
-            🎯 Optimize
-          </Button>
-        </Toolbar>
-      </Node>
-    </div>
+    <Node handles={data.handles}>
+      <NodeHeader>
+        <NodeTitle>{data.label}</NodeTitle>
+        <NodeDescription>{data.description}</NodeDescription>
+      </NodeHeader>
+      <NodeContent>
+        <p className="text-sm whitespace-pre-line">{data.content}</p>
+      </NodeContent>
+      <NodeFooter>
+        <p className="text-muted-foreground text-xs">{data.footer}</p>
+      </NodeFooter>
+      <Toolbar>
+        <Button size="sm" variant="ghost">
+          Edit
+        </Button>
+        <Button size="sm" variant="ghost">
+          Delete
+        </Button>
+      </Toolbar>
+    </Node>
   ),
 };
 
@@ -358,102 +302,10 @@ export default function AxWorkflowPage() {
         fitView
       >
         <Controls />
-        
         <Panel position="top-left">
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-xl p-4 text-white">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-3xl">✨</span>
-              <div>
-                <h2 className="font-bold text-lg">Ax DSPy Workflow</h2>
-                <p className="text-sm opacity-90">Auto-optimized prompts</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                size="sm" 
-                variant="secondary"
-                onClick={executeAxWorkflow}
-                disabled={isExecuting}
-                className="bg-white text-purple-600 hover:bg-purple-50"
-              >
-                {isExecuting ? '⏳ Executing...' : '▶️ Run Ax Workflow'}
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="border-white text-white hover:bg-white/20"
-              >
-                💾 Export
-              </Button>
-            </div>
-          </div>
-        </Panel>
-
-        <Panel position="top-right">
-          <div className="bg-card border-2 border-purple-500/50 rounded-lg shadow-lg p-4 max-w-md">
-            <h3 className="font-semibold mb-2 flex items-center gap-2">
-              <span>📊</span>
-              Ax DSPy Benefits
-            </h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-start gap-2">
-                <span className="text-green-500">✓</span>
-                <div>
-                  <strong>Auto-Optimization:</strong> Prompts evolve automatically
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-green-500">✓</span>
-                <div>
-                  <strong>Type-Safe:</strong> Full TypeScript signatures
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-green-500">✓</span>
-                <div>
-                  <strong>40% Better:</strong> Than manual prompt engineering
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-green-500">✓</span>
-                <div>
-                  <strong>Cost Efficient:</strong> Reduces API costs by ~50%
-                </div>
-              </div>
-            </div>
-          </div>
-        </Panel>
-
-        <Panel position="bottom-left">
-          <div className="bg-card border border-border rounded-lg shadow-lg p-3 max-w-lg">
-            <h4 className="font-semibold text-sm mb-2">🎯 Ax Signatures</h4>
-            <div className="space-y-2 text-xs font-mono">
-              <div className="bg-purple-50 dark:bg-purple-950/20 p-2 rounded">
-                <strong>Memory:</strong> query:string → searchQuery:string, threshold:number
-              </div>
-              <div className="bg-pink-50 dark:bg-pink-950/20 p-2 rounded">
-                <strong>Web:</strong> query:string → optimizedQuery:string, recency:class
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-950/20 p-2 rounded">
-                <strong>Context:</strong> results:string[] → context:string, scores:number[]
-              </div>
-            </div>
-          </div>
-        </Panel>
-
-        <Panel position="bottom-right">
-          <div className="bg-card border border-border rounded-lg shadow-lg p-3">
-            <div className="text-xs space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                <span className="text-muted-foreground">Ax-Optimized Node</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-primary animate-pulse"></div>
-                <span className="text-muted-foreground">Active Flow</span>
-              </div>
-            </div>
-          </div>
+          <Button size="sm" variant="secondary">
+            Export
+          </Button>
         </Panel>
       </Canvas>
     </div>
