@@ -229,6 +229,7 @@ export default function WorkflowPage() {
   const [nodeConfigs, setNodeConfigs] = useState<Record<string, any>>({});
   const [workflowErrors, setWorkflowErrors] = useState<string[]>([]);
   const [demoMode, setDemoMode] = useState(true); // Demo mode enabled by default
+  const [workflowResults, setWorkflowResults] = useState<any>(null); // Store final results
 
   const onNodesChange = useCallback(
     (changes: any) => {
@@ -481,7 +482,11 @@ export default function WorkflowPage() {
 
       addLog('🎉 Workflow completed successfully!');
       addLog('📊 Results: ' + Object.keys(workflowData).length + ' nodes executed');
-      alert('✅ Workflow completed! Check the execution log for results.');
+      
+      // Store results for display
+      setWorkflowResults(workflowData);
+      
+      alert('✅ Workflow completed! Check the Results panel for output.');
     } catch (error: any) {
       addLog(`❌ Error: ${error.message}`);
       alert('❌ Workflow failed. Check the log for details.');
@@ -695,8 +700,49 @@ export default function WorkflowPage() {
           </div>
         )}
 
+        {/* Results Panel */}
+        {workflowResults && (
+          <div className="mt-6 pt-6 border-t border-border">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold">📊 Workflow Results</h3>
+              <button 
+                onClick={() => setWorkflowResults(null)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950 border-2 border-green-200 dark:border-green-800 rounded-lg p-3 max-h-80 overflow-y-auto">
+              {Object.entries(workflowResults).map(([nodeId, data]: [string, any]) => {
+                const node = nodes.find(n => n.id === nodeId);
+                return (
+                  <div key={nodeId} className="mb-3 last:mb-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">{node?.data.icon}</span>
+                      <span className="text-xs font-semibold">{node?.data.label}</span>
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 rounded p-2 ml-6">
+                      {Array.isArray(data) ? (
+                        data.map((item, idx) => (
+                          <div key={idx} className="text-xs text-gray-700 dark:text-gray-300 mb-1">
+                            • {item}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-xs text-gray-700 dark:text-gray-300">
+                          {typeof data === 'object' ? JSON.stringify(data, null, 2) : data}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 pt-6 border-t border-border">
-          <h3 className="text-sm font-semibold mb-2">Execution Log</h3>
+          <h3 className="text-sm font-semibold mb-2">📋 Execution Log</h3>
           <div className="bg-background border border-border rounded-lg p-2 max-h-60 overflow-y-auto">
             {executionLog.length === 0 ? (
               <p className="text-xs text-muted-foreground">No activity yet</p>
