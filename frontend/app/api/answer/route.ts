@@ -1,33 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Use OpenRouter API key
+// LLM Provider Configuration (Ollama Cloud/Local + OpenRouter fallback)
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const OLLAMA_ENABLED = process.env.OLLAMA_ENABLED === 'true';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-// Model configurations using ACTUALLY FREE OpenRouter models (no credits required!)
+// Model configurations with Ollama + OpenRouter fallback
 const MODEL_CONFIGS = {
   'llama-3.2': {
-    model: 'meta-llama/llama-3.2-3b-instruct:free',
+    ollama: 'llama3.2:3b',
+    openrouter: 'meta-llama/llama-3.2-3b-instruct:free',
     useCase: 'Best for general tasks and analysis',
     speed: 'fast',
-    cost: 'FREE',
+  },
+  'llama-3.1': {
+    ollama: 'llama3.1:8b',
+    openrouter: 'meta-llama/llama-3.2-3b-instruct:free',
+    useCase: 'Better quality for complex analysis',
+    speed: 'medium',
   },
   'phi-3': {
-    model: 'microsoft/phi-3-mini-128k-instruct:free',
+    ollama: 'phi3:mini',
+    openrouter: 'microsoft/phi-3-mini-128k-instruct:free',
     useCase: 'Good for code and technical tasks',
     speed: 'fast',
-    cost: 'FREE',
   },
   'gemma-2': {
-    model: 'google/gemma-2-9b-it:free',
+    ollama: 'gemma2:9b',
+    openrouter: 'google/gemma-2-9b-it:free',
     useCase: 'Best for reasoning and reports',
     speed: 'medium',
-    cost: 'FREE',
   },
   'qwen': {
-    model: 'qwen/qwen-2-7b-instruct:free',
+    ollama: 'qwen2.5:3b',
+    openrouter: 'qwen/qwen-2-7b-instruct:free',
     useCase: 'Fast for simple tasks',
     speed: 'very-fast',
-    cost: 'FREE',
   }
 };
 
@@ -78,11 +87,11 @@ function selectModel(queryType: string, preferredModel?: string): string {
   const modelSelection: Record<string, string> = {
     'math': 'qwen',
     'code': 'phi-3',
-    'scientific': 'gemma-2',
-    'reasoning': 'gemma-2',
+    'scientific': 'llama-3.1',
+    'reasoning': 'llama-3.1',
     'general': 'llama-3.2',
-    'analysis': 'gemma-2',
-    'investment': 'gemma-2',
+    'analysis': 'llama-3.1',
+    'investment': 'llama-3.1',
     'report': 'gemma-2'
   };
 
@@ -124,12 +133,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if we have the OpenRouter API key
-    if (!OPENROUTER_API_KEY) {
+    // Check if we have at least one LLM provider configured
+    const hasOllama = OLLAMA_ENABLED && (OLLAMA_API_KEY || OLLAMA_BASE_URL);
+    const hasOpenRouter = !!OPENROUTER_API_KEY;
+    
+    if (!hasOllama && !hasOpenRouter) {
       return NextResponse.json(
         { 
-          error: 'OpenRouter API key is required but not configured',
-          missingKey: 'OPENROUTER_API_KEY'
+          error: 'No LLM provider configured. Set OLLAMA_API_KEY or OPENROUTER_API_KEY',
+          missingKeys: ['OLLAMA_API_KEY', 'OPENROUTER_API_KEY']
         },
         { status: 400 }
       );
@@ -142,38 +154,91 @@ export async function POST(req: NextRequest) {
         ).join('\n\n')
       : '';
 
-    // 4. Generate answer using OpenRouter (with GPT-4o-mini access!)
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'Enterprise AI Context Demo',
-      },
-      body: JSON.stringify({
-        model: modelConfig.model,
-        messages: [{
-          role: 'user',
-          content: context 
-            ? `Based on the following documents, answer this question: ${query}\n\nDocuments:\n${context}\n\nProvide a clear, accurate answer based on the information provided.`
-            : query
-        }],
-        max_tokens: 2048,
-        temperature: 0.7,
-      }),
-    });
+    // 4. Generate answer using Ollama (primary) or OpenRouter (fallback)
+    let answer = '';
+    let usedProvider = 'unknown';
+    let usedModel = '';
+    
+    // Try Ollama first if enabled
+    if (hasOllama) {
+      try {
+        console.log(`🦙 Trying Ollama: ${modelConfig.ollama}`);
+        const ollamaUrl = OLLAMA_API_KEY 
+          ? `${OLLAMA_BASE_URL}/v1/chat/completions`  // Ollama Cloud
+          : `${OLLAMA_BASE_URL}/v1/chat/completions`; // Local Ollama
+        
+        const ollamaHeaders: any = { 'Content-Type': 'application/json' };
+        if (OLLAMA_API_KEY) {
+          ollamaHeaders['Authorization'] = `Bearer ${OLLAMA_API_KEY}`;
+        }
+        
+        const ollamaResponse = await fetch(ollamaUrl, {
+          method: 'POST',
+          headers: ollamaHeaders,
+          body: JSON.stringify({
+            model: modelConfig.ollama,
+            messages: [{
+              role: 'user',
+              content: context 
+                ? `Based on the following documents, answer this question: ${query}\n\nDocuments:\n${context}\n\nProvide a clear, accurate answer based on the information provided.`
+                : query
+            }],
+            max_tokens: 2048,
+            temperature: 0.7,
+          }),
+        });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ OpenRouter error:', response.status, errorText);
-      console.error('❌ Model used:', modelConfig.model);
-      console.error('❌ Selected model key:', selectedModelKey);
-      throw new Error(`OpenRouter API failed: ${response.status} - ${errorText}`);
+        if (ollamaResponse.ok) {
+          const data = await ollamaResponse.json();
+          answer = data.choices[0]?.message?.content || '';
+          usedProvider = OLLAMA_API_KEY ? 'Ollama Cloud' : 'Ollama Local';
+          usedModel = modelConfig.ollama;
+          console.log(`✅ Ollama success: ${usedModel}`);
+        } else {
+          throw new Error(`Ollama failed: ${ollamaResponse.status}`);
+        }
+      } catch (ollamaError) {
+        console.warn(`⚠️ Ollama failed, falling back to OpenRouter:`, ollamaError);
+        // Fall through to OpenRouter
+      }
     }
+    
+    // Fallback to OpenRouter if Ollama failed or not enabled
+    if (!answer && hasOpenRouter) {
+      console.log(`🔄 Using OpenRouter: ${modelConfig.openrouter}`);
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'http://localhost:3000',
+          'X-Title': 'Enterprise AI Context Demo',
+        },
+        body: JSON.stringify({
+          model: modelConfig.openrouter,
+          messages: [{
+            role: 'user',
+            content: context 
+              ? `Based on the following documents, answer this question: ${query}\n\nDocuments:\n${context}\n\nProvide a clear, accurate answer based on the information provided.`
+              : query
+          }],
+          max_tokens: 2048,
+          temperature: 0.7,
+        }),
+      });
 
-    const responseData = await response.json();
-    const answer = responseData.choices[0]?.message?.content || '';
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ OpenRouter error:', response.status, errorText);
+        throw new Error(`OpenRouter API failed: ${response.status} - ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      answer = responseData.choices[0]?.message?.content || '';
+      usedProvider = 'OpenRouter';
+      usedModel = modelConfig.openrouter;
+      console.log(`✅ OpenRouter success: ${usedModel}`);
+    }
 
     const processingTime = Date.now() - startTime;
 
@@ -181,10 +246,13 @@ export async function POST(req: NextRequest) {
       answer,
       model: selectedModelKey,
       modelConfig: {
-        model: modelConfig.model,
+        ollamaModel: modelConfig.ollama,
+        openrouterModel: modelConfig.openrouter,
         useCase: modelConfig.useCase,
         speed: modelConfig.speed,
       },
+      provider: usedProvider,
+      actualModel: usedModel,
       queryType,
       documentsUsed: documents?.length || 0,
       processingTime,
