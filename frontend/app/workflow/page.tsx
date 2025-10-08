@@ -126,7 +126,70 @@ const AVAILABLE_NODE_TYPES = [
       temperature: 0.7,
       maxTokens: 2048,
     }
-  }
+  },
+  // ============================================================================
+  // DSPY-POWERED MODULES (Self-Optimizing AI)
+  // ============================================================================
+  { 
+    id: 'dspyMarketAnalyzer', 
+    label: 'DSPy Market Analyzer',
+    description: '🔧 Self-optimizing market analysis',
+    icon: 'M',
+    iconColor: 'purple',
+    apiEndpoint: '/api/dspy/execute',
+    config: {
+      moduleName: 'market_research_analyzer',
+      optimize: true,
+    }
+  },
+  { 
+    id: 'dspyRealEstateAgent', 
+    label: 'DSPy Real Estate Agent',
+    description: '🔧 Self-optimizing RE analysis',
+    icon: 'R',
+    iconColor: 'blue',
+    apiEndpoint: '/api/dspy/execute',
+    config: {
+      moduleName: 'real_estate_agent',
+      optimize: true,
+    }
+  },
+  { 
+    id: 'dspyFinancialAnalyst', 
+    label: 'DSPy Financial Analyst',
+    description: '🔧 Self-optimizing financial analysis',
+    icon: 'F',
+    iconColor: 'green',
+    apiEndpoint: '/api/dspy/execute',
+    config: {
+      moduleName: 'financial_analyst',
+      optimize: true,
+    }
+  },
+  { 
+    id: 'dspyInvestmentReport', 
+    label: 'DSPy Investment Report',
+    description: '🔧 Self-optimizing reports',
+    icon: 'I',
+    iconColor: 'indigo',
+    apiEndpoint: '/api/dspy/execute',
+    config: {
+      moduleName: 'investment_report_generator',
+      optimize: true,
+    }
+  },
+  { 
+    id: 'dspyDataSynthesizer', 
+    label: 'DSPy Data Synthesizer',
+    description: '🔧 Self-optimizing data merge',
+    icon: 'D',
+    iconColor: 'orange',
+    apiEndpoint: '/api/dspy/execute',
+    config: {
+      moduleName: 'data_synthesizer',
+      optimize: true,
+    }
+  },
 ];
 
 // EXAMPLE: Pre-built workflow with connections
