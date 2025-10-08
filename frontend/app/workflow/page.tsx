@@ -686,6 +686,7 @@ export default function WorkflowPage() {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
                     query: propertyQuery,
+                    userId: 'workflow-user', // Add required userId
                     collection: 'properties',
                     limit: 10
                   })

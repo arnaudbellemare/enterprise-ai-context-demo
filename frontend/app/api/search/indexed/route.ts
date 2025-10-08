@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Use OpenRouter for embeddings
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,14 +37,38 @@ export async function POST(req: NextRequest) {
 
     const startTime = Date.now();
 
-    // 1. Generate embedding for the query
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: query,
-      encoding_format: 'float',
+    // 1. Generate embedding for the query using OpenRouter
+    if (!OPENROUTER_API_KEY) {
+      return NextResponse.json({
+        documents: [],
+        errors: [{
+          error: 'OpenRouterAPIKeyMissing',
+          message: 'OpenRouter API key is required but not configured'
+        }],
+        query: query,
+        source: 'indexed'
+      }, { status: 400 });
+    }
+
+    const embeddingResponse = await fetch('https://openrouter.ai/api/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: query,
+        encoding_format: 'float',
+      }),
     });
 
-    const queryEmbedding = embeddingResponse.data[0].embedding;
+    if (!embeddingResponse.ok) {
+      throw new Error(`OpenRouter embedding failed: ${embeddingResponse.status}`);
+    }
+
+    const embeddingData = await embeddingResponse.json();
+    const queryEmbedding = embeddingData.data[0].embedding;
 
     // 2. Get collection ID if specified
     let collectionId = null;

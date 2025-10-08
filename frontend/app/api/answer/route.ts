@@ -1,61 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Anthropic } from '@anthropic-ai/sdk';
-import OpenAI from 'openai';
 
-// Initialize clients conditionally to avoid errors on missing API keys
-function getAnthropicClient() {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return null;
-  }
-  return new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  });
-}
+// Use OpenRouter API key
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-function getOpenAIClient() {
-  if (!process.env.OPENAI_API_KEY) {
-    return null;
-  }
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-}
-
-// Model configurations
+// Model configurations using OpenRouter
 const MODEL_CONFIGS = {
   'llama-3.1': {
-    provider: 'openai',
-    model: 'meta-llama/Llama-3.1-8B-Instruct',
+    model: 'meta-llama/llama-3.1-8b-instruct:free',
     useCase: 'General-purpose, fast, high-accuracy model',
     speed: 'fast',
   },
   'claude-3-haiku': {
-    provider: 'anthropic',
-    model: 'claude-3-haiku-20240307',
+    model: 'anthropic/claude-3-haiku',
     useCase: 'Lightweight, fast model for quick responses',
     speed: 'very-fast',
   },
   'claude-3-sonnet': {
-    provider: 'anthropic',
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'anthropic/claude-3.5-sonnet',
     useCase: 'Balanced performance for complex queries',
     speed: 'medium',
   },
   'gpt-4o-mini': {
-    provider: 'openai',
-    model: 'gpt-4o-mini',
+    model: 'openai/gpt-4o-mini',
     useCase: 'Fast, efficient model for general tasks',
     speed: 'fast',
   },
   'gpt-4o': {
-    provider: 'openai',
-    model: 'gpt-4o',
+    model: 'openai/gpt-4o',
     useCase: 'Advanced reasoning for complex queries',
     speed: 'medium',
   },
   'o1-mini': {
-    provider: 'openai',
-    model: 'o1-mini',
+    model: 'openai/o1-mini',
     useCase: 'Reasoning model for math, code, science',
     speed: 'slow',
   }
@@ -141,25 +117,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if we have the required API keys
-    const anthropic = getAnthropicClient();
-    const openai = getOpenAIClient();
-
-    if (modelConfig.provider === 'anthropic' && !anthropic) {
+    // Check if we have the OpenRouter API key
+    if (!OPENROUTER_API_KEY) {
       return NextResponse.json(
         { 
-          error: 'Anthropic API key is required but not configured',
-          missingKey: 'ANTHROPIC_API_KEY'
-        },
-        { status: 400 }
-      );
-    }
-
-    if (modelConfig.provider === 'openai' && !openai) {
-      return NextResponse.json(
-        { 
-          error: 'OpenAI API key is required but not configured',
-          missingKey: 'OPENAI_API_KEY'
+          error: 'OpenRouter API key is required but not configured',
+          missingKey: 'OPENROUTER_API_KEY'
         },
         { status: 400 }
       );
@@ -172,26 +135,14 @@ export async function POST(req: NextRequest) {
         ).join('\n\n')
       : '';
 
-    // 4. Generate answer using selected model
-    let answer = '';
-    
-    if (modelConfig.provider === 'anthropic' && anthropic) {
-      const response = await anthropic.messages.create({
-        model: modelConfig.model,
-        max_tokens: 2048,
-        messages: [{
-          role: 'user',
-          content: context 
-            ? `Based on the following documents, answer this question: ${query}\n\nDocuments:\n${context}\n\nProvide a clear, accurate answer based on the information provided.`
-            : query
-        }]
-      });
-
-      answer = response.content[0].type === 'text' 
-        ? response.content[0].text 
-        : '';
-    } else if (modelConfig.provider === 'openai' && openai) {
-      const response = await openai.chat.completions.create({
+    // 4. Generate answer using OpenRouter
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         model: modelConfig.model,
         messages: [{
           role: 'user',
@@ -200,19 +151,16 @@ export async function POST(req: NextRequest) {
             : query
         }],
         max_tokens: 2048,
-      });
+        temperature: 0.7,
+      }),
+    });
 
-      answer = response.choices[0].message.content || '';
-    } else {
-      return NextResponse.json(
-        { 
-          error: `API client not available for provider: ${modelConfig.provider}`,
-          selectedModel: selectedModelKey,
-          provider: modelConfig.provider
-        },
-        { status: 500 }
-      );
+    if (!response.ok) {
+      throw new Error(`OpenRouter API failed: ${response.status}`);
     }
+
+    const responseData = await response.json();
+    const answer = responseData.choices[0]?.message?.content || '';
 
     const processingTime = Date.now() - startTime;
 
@@ -220,7 +168,6 @@ export async function POST(req: NextRequest) {
       answer,
       model: selectedModelKey,
       modelConfig: {
-        provider: modelConfig.provider,
         model: modelConfig.model,
         useCase: modelConfig.useCase,
         speed: modelConfig.speed,
@@ -243,7 +190,6 @@ export async function GET() {
   return NextResponse.json({
     models: Object.entries(MODEL_CONFIGS).map(([key, config]) => ({
       name: key,
-      provider: config.provider,
       model: config.model,
       useCase: config.useCase,
       speed: config.speed,
