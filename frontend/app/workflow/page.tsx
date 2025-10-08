@@ -654,7 +654,7 @@ export default function WorkflowPage() {
                     context: context,
                     documents: previousNodeData ? [{ content: previousNodeData }] : [],
                     autoSelectModel: true,
-                    preferredModel: 'gpt-4o' // Use GPT-4o for investment reports
+                    preferredModel: 'gemma-2' // Use Gemma-2 (FREE) for investment reports
                   })
                 });
                 

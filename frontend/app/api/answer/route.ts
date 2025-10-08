@@ -1,27 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Use OpenRouter API key (provides access to GPT-4o-mini!)
+// Use OpenRouter API key
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-// Model configurations using OpenRouter with GPT-4o-mini and other models
+// Model configurations using ACTUALLY FREE OpenRouter models (no credits required!)
 const MODEL_CONFIGS = {
-  'gpt-4o-mini': {
-    model: 'openai/gpt-4o-mini',
-    useCase: 'Best for general tasks, analysis, and reports',
+  'llama-3.2': {
+    model: 'meta-llama/llama-3.2-3b-instruct:free',
+    useCase: 'Best for general tasks and analysis',
     speed: 'fast',
-    cost: 'very low',
+    cost: 'FREE',
   },
-  'gpt-4o': {
-    model: 'openai/gpt-4o',
-    useCase: 'Best for complex reasoning and detailed analysis',
+  'phi-3': {
+    model: 'microsoft/phi-3-mini-128k-instruct:free',
+    useCase: 'Good for code and technical tasks',
+    speed: 'fast',
+    cost: 'FREE',
+  },
+  'gemma-2': {
+    model: 'google/gemma-2-9b-it:free',
+    useCase: 'Best for reasoning and reports',
     speed: 'medium',
-    cost: 'low',
+    cost: 'FREE',
   },
-  'gpt-3.5-turbo': {
-    model: 'openai/gpt-3.5-turbo',
-    useCase: 'Fast and efficient for simple tasks',
+  'qwen': {
+    model: 'qwen/qwen-2-7b-instruct:free',
+    useCase: 'Fast for simple tasks',
     speed: 'very-fast',
-    cost: 'very low',
+    cost: 'FREE',
   }
 };
 
@@ -70,17 +76,17 @@ function selectModel(queryType: string, preferredModel?: string): string {
   }
 
   const modelSelection: Record<string, string> = {
-    'math': 'gpt-4o-mini',
-    'code': 'gpt-4o-mini',
-    'scientific': 'gpt-4o',
-    'reasoning': 'gpt-4o',
-    'general': 'gpt-4o-mini',
-    'analysis': 'gpt-4o-mini',
-    'investment': 'gpt-4o',
-    'report': 'gpt-4o'
+    'math': 'qwen',
+    'code': 'phi-3',
+    'scientific': 'gemma-2',
+    'reasoning': 'gemma-2',
+    'general': 'llama-3.2',
+    'analysis': 'gemma-2',
+    'investment': 'gemma-2',
+    'report': 'gemma-2'
   };
 
-  return modelSelection[queryType] || 'gpt-4o-mini';
+  return modelSelection[queryType] || 'llama-3.2';
 }
 
 export async function POST(req: NextRequest) {
