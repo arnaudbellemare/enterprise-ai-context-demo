@@ -210,42 +210,42 @@ Current conversation:`
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Chat Messages */}
           <div className="lg:col-span-3">
-            <Card className="h-[600px] flex flex-col">
-              <CardHeader className="pb-3">
+            <Card className="h-[700px] flex flex-col">
+              <CardHeader className="pb-3 border-b">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <MessageSquare className="w-5 h-5" />
                   Chat with AI Assistant
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col p-0">
-                <ScrollArea className="flex-1 px-6">
-                  <div className="space-y-4 pb-4">
+                <ScrollArea className="flex-1 px-6 py-4">
+                  <div className="space-y-6 pb-6">
                     {messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex gap-3 ${
+                        className={`flex gap-4 ${
                           message.role === 'user' ? 'justify-end' : 'justify-start'
                         }`}
                       >
                         {message.role === 'assistant' && (
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                            {getMessageIcon(message.role)}
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                            <Bot className="w-5 h-5 text-white" />
                           </div>
                         )}
                         
                         <div
-                          className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                          className={`max-w-[85%] rounded-2xl px-5 py-4 shadow-sm ${
                             message.role === 'user'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-900'
+                              ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white'
+                              : 'bg-white border border-gray-200 text-gray-900'
                           }`}
                         >
-                          <div className="whitespace-pre-wrap text-sm">
+                          <div className="whitespace-pre-wrap text-sm leading-relaxed">
                             {message.content}
                           </div>
                           <div
-                            className={`text-xs mt-2 ${
-                              message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
+                            className={`text-xs mt-3 ${
+                              message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
                             }`}
                           >
                             {formatTimestamp(message.timestamp)}
@@ -253,20 +253,20 @@ Current conversation:`
                         </div>
                         
                         {message.role === 'user' && (
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                            {getMessageIcon(message.role)}
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-lg">
+                            <User className="w-5 h-5 text-gray-600" />
                           </div>
                         )}
                       </div>
                     ))}
                     
                     {isLoading && (
-                      <div className="flex gap-3 justify-start">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <Bot className="w-4 h-4" />
+                      <div className="flex gap-4 justify-start">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                          <Bot className="w-5 h-5 text-white" />
                         </div>
-                        <div className="bg-gray-100 rounded-lg px-4 py-3">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="bg-white border border-gray-200 rounded-2xl px-5 py-4 shadow-sm">
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
                             <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full" />
                             AI is thinking...
                           </div>
@@ -277,20 +277,20 @@ Current conversation:`
                 </ScrollArea>
                 
                 {/* Input Area */}
-                <div className="border-t p-4">
-                  <div className="flex gap-2">
+                <div className="border-t bg-gray-50/50 p-6">
+                  <div className="flex gap-3">
                     <Input
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Ask about the workflow results..."
                       disabled={isLoading}
-                      className="flex-1"
+                      className="flex-1 border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                     />
                     <Button
                       onClick={sendMessage}
                       disabled={!input.trim() || isLoading}
-                      className="px-4"
+                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-lg transition-all"
                     >
                       <Send className="w-4 h-4" />
                     </Button>
@@ -302,14 +302,14 @@ Current conversation:`
 
           {/* Workflow Context Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="h-[600px]">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm">
+            <Card className="h-[700px]">
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                   <FileText className="w-4 h-4" />
                   Workflow Context
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6 p-6">
                 {workflowContext ? (
                   <>
                     <div className="space-y-2">

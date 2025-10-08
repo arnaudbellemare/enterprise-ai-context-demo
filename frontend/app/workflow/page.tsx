@@ -569,7 +569,7 @@ export default function WorkflowPage() {
             
             switch (node.data.label) {
               case 'Market Research':
-                // Use Perplexity API for real estate market research
+                // Use Perplexity API ONLY for Market Research (web search)
                 const searchQuery = nodeConfigs[nodeId]?.query || 'Real estate market trends 2024 luxury properties Miami Beach condo prices investment opportunities';
                 const perplexityResponse = await fetch('/api/perplexity/chat', {
                   method: 'POST',
@@ -628,8 +628,8 @@ export default function WorkflowPage() {
                 
               case 'Generate Answer':
               case 'Investment Report':
-                // Use context assembly + answer generation with previous data
-                const answerQuery = nodeConfigs[nodeId]?.query || 'Generate a comprehensive answer';
+                // Use FREE OpenRouter models for investment analysis
+                const answerQuery = nodeConfigs[nodeId]?.query || 'Generate a comprehensive investment report';
                 
                 // Combine previous workflow data with context assembly
                 let context = previousNodeData || 'No context available';
@@ -652,14 +652,16 @@ export default function WorkflowPage() {
                   addLog(`   ⚠️ Context assembly failed: ${contextError}`);
                 }
                 
-                // Try answer generation with combined context
+                // Try answer generation with FREE OpenRouter models
                 const answerResponse = await fetch('/api/answer', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
                     query: answerQuery,
                     context: context,
-                    documents: previousNodeData ? [{ content: previousNodeData }] : []
+                    documents: previousNodeData ? [{ content: previousNodeData }] : [],
+                    autoSelectModel: true,
+                    preferredModel: 'llama-3.1-70b' // Use free large model for investment reports
                   })
                 });
                 

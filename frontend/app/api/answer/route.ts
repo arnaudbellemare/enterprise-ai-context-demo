@@ -3,37 +3,37 @@ import { NextRequest, NextResponse } from 'next/server';
 // Use OpenRouter API key
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-// Model configurations using OpenRouter
+// Model configurations using OpenRouter FREE models only
 const MODEL_CONFIGS = {
   'llama-3.1': {
     model: 'meta-llama/llama-3.1-8b-instruct:free',
     useCase: 'General-purpose, fast, high-accuracy model',
     speed: 'fast',
   },
-  'claude-3-haiku': {
-    model: 'anthropic/claude-3-haiku',
-    useCase: 'Lightweight, fast model for quick responses',
-    speed: 'very-fast',
-  },
-  'claude-3-sonnet': {
-    model: 'anthropic/claude-3.5-sonnet',
-    useCase: 'Balanced performance for complex queries',
+  'llama-3.1-70b': {
+    model: 'meta-llama/llama-3.1-70b-instruct:free',
+    useCase: 'Large model for complex analysis',
     speed: 'medium',
   },
-  'gpt-4o-mini': {
-    model: 'openai/gpt-4o-mini',
+  'qwen-2.5': {
+    model: 'qwen/qwen-2.5-72b-instruct:free',
+    useCase: 'Advanced reasoning and analysis',
+    speed: 'medium',
+  },
+  'gemma-2': {
+    model: 'google/gemma-2-9b-it:free',
     useCase: 'Fast, efficient model for general tasks',
     speed: 'fast',
   },
-  'gpt-4o': {
-    model: 'openai/gpt-4o',
-    useCase: 'Advanced reasoning for complex queries',
+  'phi-3': {
+    model: 'microsoft/phi-3-medium-128k-instruct:free',
+    useCase: 'Medium model for balanced performance',
     speed: 'medium',
   },
-  'o1-mini': {
-    model: 'openai/o1-mini',
-    useCase: 'Reasoning model for math, code, science',
-    speed: 'slow',
+  'mistral-7b': {
+    model: 'mistralai/mistral-7b-instruct:free',
+    useCase: 'Fast model for quick responses',
+    speed: 'very-fast',
   }
 };
 
@@ -51,8 +51,18 @@ function detectQueryType(query: string): string {
     return 'code';
   }
   
+  // Investment/financial
+  if (/investment|financial|market|portfolio|risk|return|profit|loss|budget|revenue|earnings|stocks|bonds|real estate/.test(lowerQuery)) {
+    return 'investment';
+  }
+  
+  // Reports/summaries
+  if (/report|summary|conclusion|recommendation|insight|findings|results|analysis/.test(lowerQuery)) {
+    return 'report';
+  }
+  
   // Scientific/technical
-  if (/scientific|research|analysis|hypothesis|experiment|theory/.test(lowerQuery)) {
+  if (/scientific|research|hypothesis|experiment|theory/.test(lowerQuery)) {
     return 'scientific';
   }
   
@@ -72,14 +82,17 @@ function selectModel(queryType: string, preferredModel?: string): string {
   }
 
   const modelSelection: Record<string, string> = {
-    'math': 'o1-mini',
-    'code': 'gpt-4o',
-    'scientific': 'claude-3-sonnet',
-    'reasoning': 'claude-3-sonnet',
-    'general': 'claude-3-haiku',
+    'math': 'qwen-2.5',
+    'code': 'gemma-2',
+    'scientific': 'llama-3.1-70b',
+    'reasoning': 'llama-3.1-70b',
+    'general': 'llama-3.1',
+    'analysis': 'llama-3.1-70b',
+    'investment': 'llama-3.1-70b',
+    'report': 'llama-3.1-70b'
   };
 
-  return modelSelection[queryType] || 'claude-3-haiku';
+  return modelSelection[queryType] || 'llama-3.1';
 }
 
 export async function POST(req: NextRequest) {
@@ -106,7 +119,7 @@ export async function POST(req: NextRequest) {
     // 2. Select best model
     const selectedModelKey = autoSelectModel 
       ? selectModel(queryType, preferredModel)
-      : (preferredModel || 'claude-3-haiku');
+      : (preferredModel || 'llama-3.1');
 
     const modelConfig = MODEL_CONFIGS[selectedModelKey as keyof typeof MODEL_CONFIGS];
 
