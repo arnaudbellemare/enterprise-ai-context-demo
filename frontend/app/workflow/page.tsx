@@ -278,6 +278,7 @@ export default function WorkflowPage() {
   const [executionLog, setExecutionLog] = useState<string[]>([]);
   const [nodeConfigs, setNodeConfigs] = useState<Record<string, any>>({});
   const [workflowErrors, setWorkflowErrors] = useState<string[]>([]);
+  const [demoMode, setDemoMode] = useState(true); // Demo mode enabled by default
 
   const onNodesChange = useCallback(
     (changes: any) => {
@@ -448,10 +449,11 @@ export default function WorkflowPage() {
     }
 
     setIsExecuting(true);
-    addLog('🚀 Workflow execution started');
+    addLog('🚀 Workflow execution started' + (demoMode ? ' (DEMO MODE)' : ''));
 
     try {
       const executionOrder = getExecutionOrder(nodes, edges);
+      let workflowData: any = {};
       
       for (const nodeId of executionOrder) {
         const node = nodes.find((n) => n.id === nodeId);
@@ -465,8 +467,58 @@ export default function WorkflowPage() {
           )
         );
 
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        // DEMO MODE: Generate realistic mock responses
+        if (demoMode) {
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+          
+          const mockResponses: Record<string, any> = {
+            'Memory Search': {
+              data: ['Found 3 relevant documents about AI trends', 'Retrieved context from knowledge base'],
+              result: '✅ Found 3 matching documents'
+            },
+            'Web Search': {
+              data: ['Latest AI breakthroughs in 2024', 'New LLM architectures emerging'],
+              result: '✅ Retrieved 5 web results'
+            },
+            'Context Assembly': {
+              data: ['Merged 8 sources', 'Deduplicated content', 'Ranked by relevance'],
+              result: '✅ Assembled context from 8 sources'
+            },
+            'Custom Agent': {
+              data: ['Analyzed sentiment: Positive', 'Key topics: Innovation, Growth, Future'],
+              result: '✅ Analysis complete: Positive sentiment detected'
+            },
+            'Generate Answer': {
+              data: ['AI is rapidly evolving with breakthrough innovations in 2024...'],
+              result: '✅ Generated comprehensive answer (245 words)'
+            },
+            'GEPA Optimize': {
+              data: ['Optimized prompt for clarity', 'Enhanced specificity'],
+              result: '✅ Prompt optimized (iteration 3/3)'
+            },
+            'LangStruct': {
+              data: ['Extracted entities: 12', 'Structured data fields: 8'],
+              result: '✅ Structured extraction complete'
+            },
+            'Model Router': {
+              data: ['Selected model: Claude-3-Haiku', 'Reason: Best for general queries'],
+              result: '✅ Routed to Claude-3-Haiku'
+            }
+          };
+
+          const response = mockResponses[node.data.label] || {
+            data: ['Processing complete'],
+            result: '✅ Completed successfully'
+          };
+          
+          workflowData[nodeId] = response.data;
+          addLog(`   ${response.result}`);
+          
+        } else {
+          // REAL API MODE: Make actual API calls
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          addLog(`   ⚠️ API call would happen here (configure API keys)`);
+        }
         
         setNodes((nds) =>
           nds.map((n) =>
@@ -478,7 +530,8 @@ export default function WorkflowPage() {
       }
 
       addLog('🎉 Workflow completed successfully!');
-      alert('✅ Workflow completed! Check the execution log.');
+      addLog('📊 Results: ' + Object.keys(workflowData).length + ' nodes executed');
+      alert('✅ Workflow completed! Check the execution log for results.');
     } catch (error: any) {
       addLog(`❌ Error: ${error.message}`);
       alert('❌ Workflow failed. Check the log for details.');
@@ -728,8 +781,20 @@ export default function WorkflowPage() {
                 onClick={executeWorkflow}
                 disabled={isExecuting || nodes.length === 0 || workflowErrors.length > 0}
                 variant={workflowErrors.length > 0 ? "destructive" : "default"}
+                className="relative"
               >
-                {isExecuting ? 'Running...' : workflowErrors.length > 0 ? 'Fix Issues First' : 'Execute'}
+                {isExecuting ? 'Running...' : workflowErrors.length > 0 ? 'Fix Issues First' : demoMode ? '▶️ Execute Demo' : '▶️ Execute'}
+              </Button>
+              <Button 
+                size="sm" 
+                variant={demoMode ? "secondary" : "outline"}
+                onClick={() => {
+                  setDemoMode(!demoMode);
+                  addLog(demoMode ? '🔧 Switched to REAL API mode' : '🎮 Switched to DEMO mode');
+                }}
+                className="flex items-center gap-1"
+              >
+                {demoMode ? '🎮 Demo Mode' : '🔧 Real API'}
               </Button>
               <Button 
                 size="sm" 
@@ -769,6 +834,12 @@ export default function WorkflowPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Connections:</span>
                   <span className="font-mono font-bold">{edges.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Mode:</span>
+                  <span className={`font-semibold ${demoMode ? 'text-blue-600' : 'text-purple-600'}`}>
+                    {demoMode ? '🎮 Demo' : '🔧 Real'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status:</span>
