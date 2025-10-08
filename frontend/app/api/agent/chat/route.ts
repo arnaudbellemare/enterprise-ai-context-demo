@@ -1,29 +1,33 @@
 import { NextResponse } from 'next/server';
 import { ai, AxAI } from '@ax-llm/ax';
+import OpenAI from 'openai';
 
 export const runtime = 'nodejs';
+
+// Initialize OpenAI client
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 // ============================================================
 // REAL AX FRAMEWORK IMPLEMENTATION (Simplified & Working)
 // Using actual Ax from https://axllm.dev/
 // ============================================================
 
-// Initialize Ax with OpenRouter
+// Initialize Ax with OpenAI
 function initializeAxAI(): AxAI | null {
-  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
   
-  if (!openrouterKey) {
-    console.log('⚠️ OpenRouter API key not found');
+  if (!openaiKey) {
+    console.log('⚠️ OpenAI API key not found');
     return null;
   }
 
   try {
-    // Real Ax AI initialization with OpenRouter
+    // Real Ax AI initialization with OpenAI
     return new AxAI({
-      name: 'openai' as any,
-      apiKey: openrouterKey,
+      name: 'openai',
+      apiKey: openaiKey,
       config: {
-        model: 'meta-llama/llama-3.2-3b-instruct:free', // Use FREE model
+        model: 'gpt-4o-mini', // Use GPT-4o-mini (affordable and high quality)
       },
     });
   } catch (error) {

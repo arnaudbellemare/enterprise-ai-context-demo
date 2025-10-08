@@ -1,30 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
-// Use OpenRouter API key
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+// Use OpenAI API key
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// Model configurations using OpenRouter FREE models only
-// Using ACTUALLY AVAILABLE free models (no :free suffix needed for these)
+// Initialize OpenAI client
+const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
+
+// Model configurations using OpenAI models (affordable and high quality)
 const MODEL_CONFIGS = {
-  'llama-3.2': {
-    model: 'meta-llama/llama-3.2-3b-instruct:free',
-    useCase: 'General-purpose, fast, high-accuracy model',
+  'gpt-4o-mini': {
+    model: 'gpt-4o-mini',
+    useCase: 'Best for general tasks, analysis, and reports',
     speed: 'fast',
+    cost: 'very low',
   },
-  'qwen': {
-    model: 'qwen/qwen-2-7b-instruct:free',
-    useCase: 'Fast model for quick responses',
-    speed: 'very-fast',
-  },
-  'phi-3': {
-    model: 'microsoft/phi-3-mini-128k-instruct:free',
-    useCase: 'Efficient model for general tasks',
-    speed: 'fast',
-  },
-  'gemma-2': {
-    model: 'google/gemma-2-9b-it:free',
-    useCase: 'Advanced reasoning and analysis',
+  'gpt-4o': {
+    model: 'gpt-4o',
+    useCase: 'Best for complex reasoning and detailed analysis',
     speed: 'medium',
+    cost: 'low',
+  },
+  'gpt-3.5-turbo': {
+    model: 'gpt-3.5-turbo',
+    useCase: 'Fast and efficient for simple tasks',
+    speed: 'very-fast',
+    cost: 'very low',
   }
 };
 
@@ -73,17 +74,17 @@ function selectModel(queryType: string, preferredModel?: string): string {
   }
 
   const modelSelection: Record<string, string> = {
-    'math': 'qwen',
-    'code': 'phi-3',
-    'scientific': 'gemma-2',
-    'reasoning': 'gemma-2',
-    'general': 'llama-3.2',
-    'analysis': 'gemma-2',
-    'investment': 'gemma-2',
-    'report': 'gemma-2'
+    'math': 'gpt-4o-mini',
+    'code': 'gpt-4o-mini',
+    'scientific': 'gpt-4o',
+    'reasoning': 'gpt-4o',
+    'general': 'gpt-4o-mini',
+    'analysis': 'gpt-4o-mini',
+    'investment': 'gpt-4o',
+    'report': 'gpt-4o'
   };
 
-  return modelSelection[queryType] || 'llama-3.2';
+  return modelSelection[queryType] || 'gpt-4o-mini';
 }
 
 export async function POST(req: NextRequest) {
@@ -121,12 +122,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if we have the OpenRouter API key
-    if (!OPENROUTER_API_KEY) {
+    // Check if we have the OpenAI API key
+    if (!OPENAI_API_KEY || !openai) {
       return NextResponse.json(
         { 
-          error: 'OpenRouter API key is required but not configured',
-          missingKey: 'OPENROUTER_API_KEY'
+          error: 'OpenAI API key is required but not configured',
+          missingKey: 'OPENAI_API_KEY'
         },
         { status: 400 }
       );
@@ -139,38 +140,20 @@ export async function POST(req: NextRequest) {
         ).join('\n\n')
       : '';
 
-    // 4. Generate answer using OpenRouter
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'Enterprise AI Context Demo',
-      },
-      body: JSON.stringify({
-        model: modelConfig.model,
-        messages: [{
-          role: 'user',
-          content: context 
-            ? `Based on the following documents, answer this question: ${query}\n\nDocuments:\n${context}\n\nProvide a clear, accurate answer based on the information provided.`
-            : query
-        }],
-        max_tokens: 2048,
-        temperature: 0.7,
-      }),
+    // 4. Generate answer using OpenAI
+    const completion = await openai.chat.completions.create({
+      model: modelConfig.model,
+      messages: [{
+        role: 'user',
+        content: context 
+          ? `Based on the following documents, answer this question: ${query}\n\nDocuments:\n${context}\n\nProvide a clear, accurate answer based on the information provided.`
+          : query
+      }],
+      max_tokens: 2048,
+      temperature: 0.7,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ OpenRouter error:', response.status, errorText);
-      console.error('❌ Model used:', modelConfig.model);
-      console.error('❌ Selected model key:', selectedModelKey);
-      throw new Error(`OpenRouter API failed: ${response.status} - ${errorText}`);
-    }
-
-    const responseData = await response.json();
-    const answer = responseData.choices[0]?.message?.content || '';
+    const answer = completion.choices[0]?.message?.content || '';
 
     const processingTime = Date.now() - startTime;
 
