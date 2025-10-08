@@ -284,6 +284,242 @@ const getExampleWorkflow = () => {
   return { nodes, edges, configs };
 };
 
+// COMPLEX WORKFLOW: Full system capabilities demonstration
+const getComplexWorkflow = () => {
+  const timestamp = Date.now();
+  
+  const nodes: FlowNode[] = [
+    // Entry point: Web Search
+    {
+      id: `webSearch-${timestamp}`,
+      type: 'customizable',
+      position: { x: 50, y: 100 },
+      data: {
+        id: 'webSearch',
+        label: 'Web Search',
+        description: 'Live market data',
+        icon: '🌐',
+        iconColor: 'yellow',
+        apiEndpoint: '/api/perplexity/chat',
+        nodeId: `webSearch-${timestamp}`,
+        status: 'ready',
+        config: {
+          query: 'Miami Beach luxury real estate market trends 2024 investment opportunities',
+          recencyFilter: 'month',
+          maxResults: 8,
+        }
+      },
+    },
+    // Memory Search (parallel to web search)
+    {
+      id: `memorySearch-${timestamp}`,
+      type: 'customizable',
+      position: { x: 50, y: 300 },
+      data: {
+        id: 'memorySearch',
+        label: 'Memory Search',
+        description: 'Vector similarity search',
+        icon: '🔍',
+        iconColor: 'purple',
+        apiEndpoint: '/api/search/indexed',
+        nodeId: `memorySearch-${timestamp}`,
+        status: 'ready',
+        config: {
+          query: 'luxury real estate Miami Beach historical data',
+          matchThreshold: 0.7,
+          matchCount: 5,
+        }
+      },
+    },
+    // Context Assembly: Merge web + memory
+    {
+      id: `contextAssembly-${timestamp}`,
+      type: 'customizable',
+      position: { x: 400, y: 200 },
+      data: {
+        id: 'contextAssembly',
+        label: 'Context Assembly',
+        description: 'Merge data sources',
+        icon: '📦',
+        iconColor: 'blue',
+        apiEndpoint: '/api/context/assemble',
+        nodeId: `contextAssembly-${timestamp}`,
+        status: 'ready',
+        config: {
+          query: 'Combine web search and memory data for comprehensive real estate analysis',
+          mergeStrategy: 'hybrid',
+        }
+      },
+    },
+    // Model Router: Select best model
+    {
+      id: `modelRouter-${timestamp}`,
+      type: 'customizable',
+      position: { x: 750, y: 100 },
+      data: {
+        id: 'modelRouter',
+        label: 'Model Router',
+        description: 'Smart model selection',
+        icon: '🔀',
+        iconColor: 'orange',
+        apiEndpoint: '/api/answer',
+        nodeId: `modelRouter-${timestamp}`,
+        status: 'ready',
+        config: {
+          query: 'Analyze real estate investment opportunities',
+          autoSelectModel: true,
+        }
+      },
+    },
+    // GEPA Optimizer: Optimize prompts
+    {
+      id: `gepaOptimize-${timestamp}`,
+      type: 'customizable',
+      position: { x: 750, y: 300 },
+      data: {
+        id: 'gepaOptimize',
+        label: 'GEPA Optimize',
+        description: 'Prompt optimization',
+        icon: '⚡',
+        iconColor: 'red',
+        apiEndpoint: '/api/agent/chat',
+        nodeId: `gepaOptimize-${timestamp}`,
+        status: 'ready',
+        config: {
+          prompt: 'Optimize investment analysis with GEPA framework',
+          temperature: 0.3,
+        }
+      },
+    },
+    // Market Analyst: Deep analysis
+    {
+      id: `marketAnalyst-${timestamp}`,
+      type: 'customizable',
+      position: { x: 1100, y: 200 },
+      data: {
+        id: 'marketAnalyst',
+        label: 'Market Analyst',
+        description: 'Expert analysis',
+        icon: '📈',
+        iconColor: 'green',
+        apiEndpoint: '/api/agent/chat',
+        nodeId: `marketAnalyst-${timestamp}`,
+        status: 'ready',
+        config: {
+          prompt: 'Provide expert real estate market analysis with specific recommendations',
+          temperature: 0.7,
+        }
+      },
+    },
+    // Investment Report: Final output
+    {
+      id: `investmentReport-${timestamp}`,
+      type: 'customizable',
+      position: { x: 1450, y: 100 },
+      data: {
+        id: 'investmentReport',
+        label: 'Investment Report',
+        description: 'Professional report',
+        icon: '✅',
+        iconColor: 'green',
+        apiEndpoint: '/api/answer',
+        nodeId: `investmentReport-${timestamp}`,
+        status: 'ready',
+        config: {
+          query: 'Generate comprehensive investment report with executive summary, analysis, and recommendations',
+          preferredModel: 'gemma-2',
+        }
+      },
+    },
+    // Risk Assessment (parallel final node)
+    {
+      id: `riskAssessment-${timestamp}`,
+      type: 'customizable',
+      position: { x: 1450, y: 300 },
+      data: {
+        id: 'riskAssessment',
+        label: 'Risk Assessment',
+        description: 'Risk analysis',
+        icon: '⚠️',
+        iconColor: 'red',
+        apiEndpoint: '/api/answer',
+        nodeId: `riskAssessment-${timestamp}`,
+        status: 'ready',
+        config: {
+          query: 'Analyze investment risks, market volatility, and mitigation strategies',
+          preferredModel: 'gemma-2',
+        }
+      },
+    },
+  ];
+
+  const edges: FlowEdge[] = [
+    // Web Search → Context Assembly
+    {
+      id: `edge-${timestamp}-1`,
+      source: `webSearch-${timestamp}`,
+      target: `contextAssembly-${timestamp}`,
+      type: 'animated',
+    },
+    // Memory Search → Context Assembly
+    {
+      id: `edge-${timestamp}-2`,
+      source: `memorySearch-${timestamp}`,
+      target: `contextAssembly-${timestamp}`,
+      type: 'animated',
+    },
+    // Context Assembly → Model Router
+    {
+      id: `edge-${timestamp}-3`,
+      source: `contextAssembly-${timestamp}`,
+      target: `modelRouter-${timestamp}`,
+      type: 'animated',
+    },
+    // Context Assembly → GEPA Optimize
+    {
+      id: `edge-${timestamp}-4`,
+      source: `contextAssembly-${timestamp}`,
+      target: `gepaOptimize-${timestamp}`,
+      type: 'animated',
+    },
+    // Model Router → Market Analyst
+    {
+      id: `edge-${timestamp}-5`,
+      source: `modelRouter-${timestamp}`,
+      target: `marketAnalyst-${timestamp}`,
+      type: 'animated',
+    },
+    // GEPA Optimize → Market Analyst
+    {
+      id: `edge-${timestamp}-6`,
+      source: `gepaOptimize-${timestamp}`,
+      target: `marketAnalyst-${timestamp}`,
+      type: 'animated',
+    },
+    // Market Analyst → Investment Report
+    {
+      id: `edge-${timestamp}-7`,
+      source: `marketAnalyst-${timestamp}`,
+      target: `investmentReport-${timestamp}`,
+      type: 'animated',
+    },
+    // Market Analyst → Risk Assessment
+    {
+      id: `edge-${timestamp}-8`,
+      source: `marketAnalyst-${timestamp}`,
+      target: `riskAssessment-${timestamp}`,
+      type: 'animated',
+    },
+  ];
+
+  const configs: Record<string, any> = {};
+  nodes.forEach(node => {
+    configs[node.id] = node.data.config;
+  });
+
+  return { nodes, edges, configs };
+};
+
 export default function WorkflowPage() {
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowEdge[]>([]);
@@ -745,10 +981,21 @@ export default function WorkflowPage() {
     setNodeConfigs(example.configs);
     setWorkflowResults(null); // Clear previous results
     setExecutionLog([]); // Clear previous logs
-    addLog('🏢 Streamlined Real Estate Market Analysis workflow loaded');
-    addLog('📋 Linear Flow (3 nodes): Market Research → Market Analyst → Investment Report');
-    addLog('💡 This streamlined workflow uses real Perplexity data and OpenRouter free models');
-    addLog('✅ No Property Database or Data Consolidation (removed to fix errors)');
+    addLog('🏢 Streamlined Real Estate Market Analysis workflow loaded (3 nodes)');
+    addLog('📋 Linear Flow: Market Research → Market Analyst → Investment Report');
+    addLog('💡 Fast and reliable with free models');
+  };
+
+  const loadComplexWorkflow = () => {
+    const complex = getComplexWorkflow();
+    setNodes(complex.nodes);
+    setEdges(complex.edges);
+    setNodeConfigs(complex.configs);
+    setWorkflowResults(null);
+    setExecutionLog([]);
+    addLog('🚀 Complex Multi-Node Workflow loaded (8 nodes)');
+    addLog('📋 Advanced Flow: Web Search → Memory Search → Context Assembly → Multi-Model Analysis');
+    addLog('💡 Demonstrates full system capabilities with DSPy, RAG, and multi-model routing');
   };
 
   const exportWorkflow = () => {
@@ -1043,7 +1290,15 @@ export default function WorkflowPage() {
                 variant="secondary" 
                 onClick={loadExampleWorkflow}
               >
-                Load Example
+                Load Simple (3 nodes)
+              </Button>
+              <Button 
+                size="sm" 
+                variant="default" 
+                onClick={loadComplexWorkflow}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              >
+                Load Complex (8 nodes)
               </Button>
               <Button size="sm" variant="outline" onClick={exportWorkflow}>
                 Export
