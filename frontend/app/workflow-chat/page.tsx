@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +38,7 @@ export default function WorkflowChatPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [workflowContext, setWorkflowContext] = useState<WorkflowContext | null>(null);
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get workflow data from localStorage
   useEffect(() => {
@@ -62,8 +62,8 @@ export default function WorkflowChatPage() {
 
 🔍 **Real Data Available:**
 ${Object.entries(parsed.results).map(([nodeId, result]) => {
-  const node = parsed.nodes.find(n => n.id === nodeId);
-  const resultText = Array.isArray(result) ? result.join(' ') : result.toString();
+  const node = parsed.nodes.find((n: any) => n.id === nodeId);
+  const resultText = Array.isArray(result) ? result.join(' ') : String(result);
   return `- **${node?.label || nodeId}**: ${resultText.substring(0, 150)}${resultText.length > 150 ? '...' : ''}`;
 }).join('\n')}
 
@@ -114,8 +114,9 @@ Execution Time: ${workflowContext.executionTime}
 
 DETAILED RESULTS FROM EACH NODE:
 ${Object.entries(workflowContext.results).map(([nodeId, result]) => {
-  const node = workflowContext.nodes.find(n => n.id === nodeId);
-  return `\n**${node?.label || nodeId}**:\n${Array.isArray(result) ? result.join('\n') : result}`;
+  const node = workflowContext.nodes.find((n: any) => n.id === nodeId);
+  const resultText = Array.isArray(result) ? result.join('\n') : String(result);
+  return `\n**${node?.label || nodeId}**:\n${resultText}`;
 }).join('\n')}
 
 === END WORKFLOW CONTEXT ===
