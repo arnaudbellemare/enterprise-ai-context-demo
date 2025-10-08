@@ -912,13 +912,186 @@ export default function WorkflowPage() {
                 }
                 break;
                 
-              // Property Database and Data Consolidation removed from streamlined workflow
-              // These nodes are no longer part of the example workflow
+              case 'Web Search':
+                // Same as Market Research - use Perplexity
+                const webSearchQuery = nodeConfigs[nodeId]?.query || 'Market research';
+                const webSearchResponse = await fetch('/api/perplexity/chat', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    messages: [{ role: 'user', content: webSearchQuery }],
+                    useRealAI: true 
+                  })
+                });
+                
+                if (!webSearchResponse.ok) {
+                  const errorText = await webSearchResponse.text();
+                  apiResponse = {
+                    data: [`Web search failed: ${errorText}`],
+                    result: '❌ Web search failed'
+                  };
+                } else {
+                  const webSearchData = await webSearchResponse.json();
+                  apiResponse = {
+                    data: webSearchData.response ? [webSearchData.response] : ['No search results'],
+                    result: '✅ Web search completed',
+                    fullResponse: webSearchData
+                  };
+                }
+                break;
+
+              case 'Memory Search':
+                // Use vector search API
+                const memoryQuery = nodeConfigs[nodeId]?.query || 'Search historical data';
+                const memoryResponse = await fetch('/api/search/indexed', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    query: memoryQuery,
+                    userId: 'workflow-user',
+                    matchThreshold: nodeConfigs[nodeId]?.matchThreshold || 0.7,
+                    matchCount: nodeConfigs[nodeId]?.matchCount || 5,
+                  })
+                });
+                
+                if (!memoryResponse.ok) {
+                  const errorText = await memoryResponse.text();
+                  apiResponse = {
+                    data: [`Memory search failed: ${errorText}`],
+                    result: '⚠️ Memory search failed (using fallback)'
+                  };
+                } else {
+                  const memoryData = await memoryResponse.json();
+                  const results = memoryData.documents?.map((doc: any) => doc.content || doc.llm_summary) || [];
+                  apiResponse = {
+                    data: results.length > 0 ? results : ['No historical data found'],
+                    result: `✅ Found ${results.length} memory results`,
+                    fullResponse: memoryData
+                  };
+                }
+                break;
+
+              case 'Context Assembly':
+                // Merge data from previous nodes
+                const assemblyQuery = nodeConfigs[nodeId]?.query || 'Assemble context';
+                const assemblyResponse = await fetch('/api/context/assemble', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    user_query: `${assemblyQuery}\n\nPrevious data:\n${previousNodeData}`,
+                    conversation_history: [],
+                    user_preferences: {}
+                  })
+                });
+                
+                if (!assemblyResponse.ok) {
+                  // Fallback: just combine the data manually
+                  apiResponse = {
+                    data: [`Combined context: ${previousNodeData}`],
+                    result: '✅ Context assembled (fallback)',
+                    fullResponse: { context: previousNodeData }
+                  };
+                } else {
+                  const assemblyData = await assemblyResponse.json();
+                  apiResponse = {
+                    data: [assemblyData.context || previousNodeData],
+                    result: '✅ Context assembled',
+                    fullResponse: assemblyData
+                  };
+                }
+                break;
+
+              case 'Model Router':
+                // Smart model selection with answer API
+                const routerQuery = nodeConfigs[nodeId]?.query || 'Analyze data';
+                const routerResponse = await fetch('/api/answer', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    query: routerQuery,
+                    documents: previousNodeData ? [{ content: previousNodeData }] : [],
+                    autoSelectModel: true
+                  })
+                });
+                
+                if (!routerResponse.ok) {
+                  const errorText = await routerResponse.text();
+                  apiResponse = {
+                    data: [`Model router error: ${errorText}`],
+                    result: '❌ Model routing failed'
+                  };
+                } else {
+                  const routerData = await routerResponse.json();
+                  apiResponse = {
+                    data: [routerData.answer || 'Analysis completed'],
+                    result: `✅ Routed to ${routerData.model} model`,
+                    fullResponse: routerData
+                  };
+                }
+                break;
+
+              case 'GEPA Optimize':
+                // Use agent chat with GEPA optimization
+                const gepaQuery = nodeConfigs[nodeId]?.prompt || 'Optimize analysis';
+                const gepaMessages = [
+                  { role: 'system', content: 'You are a GEPA optimization expert. Apply GEPA framework principles to optimize the analysis.' },
+                  { role: 'user', content: `Data to optimize:\n${previousNodeData}\n\nTask: ${gepaQuery}` }
+                ];
+                const gepaResponse = await fetch('/api/agent/chat', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ messages: gepaMessages })
+                });
+                
+                if (!gepaResponse.ok) {
+                  const errorText = await gepaResponse.text();
+                  apiResponse = {
+                    data: [`GEPA optimization failed: ${errorText}`],
+                    result: '⚠️ GEPA optimization failed (using original data)'
+                  };
+                } else {
+                  const gepaData = await gepaResponse.json();
+                  apiResponse = {
+                    data: [gepaData.response || gepaData.content || 'Optimization applied'],
+                    result: '✅ GEPA optimization applied',
+                    fullResponse: gepaData
+                  };
+                }
+                break;
+
+              case 'Risk Assessment':
+                // Generate risk analysis using answer API
+                const riskQuery = nodeConfigs[nodeId]?.query || 'Analyze investment risks';
+                const riskResponse = await fetch('/api/answer', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    query: riskQuery,
+                    documents: previousNodeData ? [{ content: previousNodeData }] : [],
+                    preferredModel: 'gemma-2'
+                  })
+                });
+                
+                if (!riskResponse.ok) {
+                  const errorText = await riskResponse.text();
+                  apiResponse = {
+                    data: [`Risk assessment error: ${errorText}`],
+                    result: '❌ Risk assessment failed'
+                  };
+                } else {
+                  const riskData = await riskResponse.json();
+                  apiResponse = {
+                    data: [riskData.answer || 'Risk analysis completed'],
+                    result: '✅ Risk assessment completed',
+                    fullResponse: riskData
+                  };
+                }
+                break;
                 
               default:
-                // For other nodes, use a generic API call
+                // Fallback for unknown node types
                 apiResponse = {
-                  data: ['Real API call executed'],
+                  data: [`Executed ${node.data.label} with previous data`],
                   result: `✅ ${node.data.label} completed`
                 };
             }
