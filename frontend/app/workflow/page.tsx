@@ -1005,8 +1005,9 @@ export default function WorkflowPage() {
                       results: workflowResults,
                       nodes: nodes.map(n => ({ id: n.id, label: n.data.label }))
                     };
-                    const url = `/workflow-chat?data=${encodeURIComponent(JSON.stringify(workflowData))}`;
-                    window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+                    // Store data in localStorage to avoid URL length limits
+                    localStorage.setItem('workflowChatData', JSON.stringify(workflowData));
+                    window.open('/workflow-chat', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
                   }}
                   className="text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1 rounded-full hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-1"
                 >

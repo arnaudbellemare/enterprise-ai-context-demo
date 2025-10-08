@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,19 +34,20 @@ interface WorkflowContext {
 }
 
 export default function WorkflowChatPage() {
-  const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [workflowContext, setWorkflowContext] = useState<WorkflowContext | null>(null);
 
-  // Get workflow data from URL params
+  // Get workflow data from localStorage
   useEffect(() => {
-    const workflowData = searchParams.get('data');
+    const workflowData = localStorage.getItem('workflowChatData');
     if (workflowData) {
       try {
-        const parsed = JSON.parse(decodeURIComponent(workflowData));
+        const parsed = JSON.parse(workflowData);
         setWorkflowContext(parsed);
+        // Clear the data after reading to avoid stale data
+        localStorage.removeItem('workflowChatData');
         
         // Initialize chat with workflow summary
         const initialMessage: Message = {
