@@ -1910,11 +1910,11 @@ ${recommendations.map((rec: any) => `• ${rec}`).join('\n')}
         const [gepaResponse, langstructResponse] = await Promise.allSettled([
           // GEPA Optimization
           fetch('/api/gepa/optimize', {
-            method: 'POST',
+        method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
+        body: JSON.stringify({
               query: testQuery,
               context: industryContext?.prompt || 'General business context',
               useRealGEPA: true
@@ -2032,8 +2032,8 @@ Use this enhanced context to provide a more accurate and specialized response.
           const errorText = await aiResponse.text();
           console.error('AI API call failed:', aiResponse.status, errorText);
           throw new Error(`AI API call failed: ${aiResponse.status} - ${errorText}`);
-        }
-      } catch (error) {
+      }
+    } catch (error) {
         console.error('GEPA-LangStruct processing failed, falling back to mock:', error);
         
         // Fallback to mock responses if processing fails
@@ -3785,14 +3785,14 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             >
             ◄ DASHBOARD
             </button>
-          <button
+            <button
             className={`text-lg ${
               activeTab === 'agent_builder' ? 'text-green-500 border-b-2 border-green-500' : 'text-gray-500'
             } pb-2`}
             onClick={() => setActiveTab('agent_builder')}
           >
             ◄ AGENT.BUILDER
-          </button>
+            </button>
       </nav>
 
         {activeTab === 'dashboard' && (
@@ -3802,7 +3802,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
               <div className="text-green-400 text-sm font-mono mb-4">◄ SYS.RESPONSE</div>
               <h2 className="text-xl text-white mb-2">GEPA-DSPy // NEURAL OPTIMIZATION INTERFACE v2.0</h2>
               <p className="text-gray-400">RAG SYSTEM ONLINE | KB:CONNECTED | ENGINE:ACTIVE</p>
-            </div>
+          </div>
 
             {/* What We Can Offer */}
             <div className="border border-green-500 p-4">
@@ -3810,7 +3810,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                 <div className="bg-gray-900 border border-gray-600 p-2 rounded">
                   <span className="text-green-400">AI-powered business processes</span>
-                </div>
+        </div>
                 <div className="bg-gray-900 border border-gray-600 p-2 rounded">
                   <span className="text-green-400">Automated decision systems</span>
                 </div>
@@ -3881,36 +3881,36 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 <div className="bg-gray-900 p-4 border border-gray-700">
                   <h4 className="text-md text-gray-400">TOTAL.QUERIES</h4>
                   <p className="text-3xl text-white mb-2">1.2M</p>
-                  <div className="flex items-center">
+                    <div className="flex items-center">
                     <span className="text-sm text-green-500">+12%</span>
                     <span className="ml-1 text-sm text-gray-500">SINCE.LAST.MONTH</span>
+                    </div>
                   </div>
-                </div>
                 <div className="bg-gray-900 p-4 border border-gray-700">
                   <h4 className="text-md text-gray-400">AVG.RESPONSE.TIME</h4>
                   <p className="text-3xl text-white mb-2">250ms</p>
-                  <div className="flex items-center">
+                    <div className="flex items-center">
                     <span className="text-sm text-red-500">-5%</span>
                     <span className="ml-1 text-sm text-gray-500">SINCE.LAST.MONTH</span>
+                    </div>
                   </div>
-                </div>
                 <div className="bg-gray-900 p-4 border border-gray-700">
                   <h4 className="text-md text-gray-400">GEPA.OPTIMIZATIONS</h4>
                   <p className="text-3xl text-white mb-2">500</p>
-                  <div className="flex items-center">
+                    <div className="flex items-center">
                     <span className="text-sm text-green-500">+20%</span>
                     <span className="ml-1 text-sm text-gray-500">SINCE.LAST.MONTH</span>
+                    </div>
                   </div>
-                </div>
                 <div className="bg-gray-900 p-4 border border-gray-700">
                   <h4 className="text-md text-gray-400">RAG.HIT.RATE</h4>
                   <p className="text-3xl text-white mb-2">92%</p>
                   <div className="flex items-center">
                     <span className="text-sm text-green-500">+3%</span>
                     <span className="ml-1 text-sm text-gray-500">SINCE.LAST.MONTH</span>
-                  </div>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         )}
@@ -3923,7 +3923,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                     <div className="text-white text-3xl font-mono mb-2">ENTERPRISE AI AGENT WORKFLOW BUILDER</div>
                     <div className="text-gray-400 text-sm font-mono">
                       Connect your data sources, build intelligent workflows, and deploy specialized AI agents
-              </div>
+                  </div>
 
                     {/* Data Connections Status */}
                     <div className="mt-4 bg-gray-800 border border-gray-600 p-4 rounded">
@@ -3943,11 +3943,11 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 </div>
                             <div className="text-xs text-gray-400">
                               {connection.type.toUpperCase()} • {connection.lastSync}
-                    </div>
                   </div>
+                </div>
                                 ))}
-              </div>
-            </div>
+                  </div>
+                </div>
 
                     {/* Industry Examples - Two-Step Selection */}
                     <div className="mt-4">
@@ -3972,8 +3972,8 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                   </div>
                     </button>
                                 ))}
-                            </div>
-                        </div>
+                </div>
+              </div>
                         ) : (
                           /* Step 2: Select Specific Workflow */
                           <div>
@@ -3981,19 +3981,19 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                               <div>
                                 <div className="text-blue-400 text-sm font-mono">
                                   {industryCategories[selectedCategory as keyof typeof industryCategories].name}
-                    </div>
+            </div>
                                 <div className="text-gray-400 text-xs">
                                   {industryCategories[selectedCategory as keyof typeof industryCategories].description}
-                                </div>
-                              </div>
+          </div>
+            </div>
                 <button
                                 onClick={() => setSelectedCategory(null)}
                                 className="text-gray-400 hover:text-white text-xs font-mono"
                 >
                                 ← Back to Categories
                 </button>
-                            </div>
-                            
+              </div>
+
                             <div className="text-green-400 text-sm font-mono mb-3">Available Workflows:</div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               {Object.entries(industryCategories[selectedCategory as keyof typeof industryCategories].industries).map(([industryKey, industry]) => (
@@ -4015,15 +4015,15 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                     ))}
                                     {industry.agents.length > 3 && (
                                       <span className="text-xs text-gray-500">+{industry.agents.length - 3} more</span>
-                                    )}
-                                  </div>
+                  )}
+                </div>
                                 </button>
                                 ))}
                             </div>
-                        </div>
-                      )}
-                      </div>
-                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
                     {/* Real Data Integration Toggle */}
                     <div className="mt-4 bg-gray-800 border border-gray-600 rounded">
@@ -4060,7 +4060,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
 
                           {/* Connection Forms */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
+                  <div>
                               <label className="text-gray-400 text-xs font-mono mb-2 block">DATABASE CONNECTION</label>
                               <div className="space-y-2">
                                 <input
@@ -4072,18 +4072,18 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                   type="text"
                                   placeholder="Table/Collection Name"
                                   className="w-full p-2 bg-black border border-gray-600 text-green-400 font-mono text-sm focus:ring-green-500 focus:border-green-500"
-                                />
-                      <button
+                    />
+                    <button
                                   onClick={() => connectDataSource('database', 'postgresql://demo:demo@localhost:5432/enterprise', ['inventory', 'orders'], {})}
                                   disabled={dataProcessing}
                                   className="bg-blue-500 text-white px-3 py-2 text-sm font-mono hover:bg-blue-400 disabled:opacity-50"
                       >
                                   {dataProcessing ? 'CONNECTING...' : 'CONNECT DATABASE'}
-                      </button>
+                    </button>
                               </div>
-                            </div>
-                            
-                            <div>
+                  </div>
+                  
+                  <div>
                               <label className="text-gray-400 text-xs font-mono mb-2 block">API INTEGRATION</label>
                               <div className="space-y-2">
                                 <input
@@ -4115,7 +4115,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                 {realDataConnections.map((conn: any, index: number) => (
                                   <div key={index} className="bg-gray-900 border border-green-500 p-3 rounded">
                                     <div className="flex items-center justify-between">
-                                      <div>
+                        <div>
                                         <div className="text-green-400 text-sm font-mono">{conn.name}</div>
                                         <div className="text-gray-400 text-xs">Type: {conn.type} | Status: {conn.status}</div>
                                       </div>
@@ -4141,7 +4141,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                   <div>
                                     <div className="text-gray-400">Completeness</div>
                                     <div className="text-green-400">{Math.round((dataQuality as any).completeness * 100)}%</div>
-                                  </div>
+                        </div>
                                   <div>
                                     <div className="text-gray-400">Accuracy</div>
                                     <div className="text-green-400">{Math.round((dataQuality as any).accuracy * 100)}%</div>
@@ -4157,10 +4157,10 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                 </div>
                               </div>
                             </div>
-                          )}
-                        </div>
                       )}
                     </div>
+                      )}
+                  </div>
                     
                     {/* Custom Agent Creation */}
                     <div className="mt-4 bg-gray-800 border border-gray-600 p-4 rounded">
@@ -4175,7 +4175,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                             value={customAgentPrompt}
                             onChange={(e) => setCustomAgentPrompt(e.target.value)}
                           />
-                        </div>
+                </div>
                         
                         <div>
                           <label className="text-gray-400 text-xs font-mono mb-2 block">DATA SOURCES</label>
@@ -4212,20 +4212,20 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                   </button>
                                 </span>
                               ))}
-                            </div>
-                          )}
+              </div>
+            )}
                         </div>
                         
-                        <button
+                  <button
                           onClick={createCustomAgent}
                           className="bg-gray-600 text-green-400 px-4 py-2 text-sm font-mono hover:bg-gray-500"
-                        >
+                  >
                           CREATE CUSTOM AGENT
-                        </button>
+                  </button>
                       </div>
                     </div>
-                  </div>
-
+                </div>
+                
             {/* Agent Workflow Builder Interface */}
             <div className="bg-black text-white font-mono border border-gray-700 rounded">
               <div className="flex" style={{height: 'calc(100vh - 250px)', maxHeight: '700px'}}>
@@ -4512,7 +4512,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                             {node.capabilities.length > 1 && (
                               <span className="text-xs text-gray-500">+{node.capabilities.length - 1}</span>
                             )}
-                          </div>
+              </div>
                         )}
                         <div className="mt-1 flex items-center space-x-1">
                           <div className={`w-1.5 h-1.5 rounded-full ${
@@ -4521,8 +4521,8 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                             node.status === 'completed' ? 'bg-green-500' : 'bg-gray-500'
                           }`}></div>
                           <span className="text-xs text-gray-500">{node.status.toUpperCase()}</span>
-                        </div>
-                      </div>
+            </div>
+          </div>
                     ))}
 
                     {/* Default Start Node */}
@@ -4531,7 +4531,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         <div className="flex items-center space-x-2 mb-2">
                           <span className="text-sm">🚀</span>
                           <span className="text-white text-sm font-mono">START WORKFLOW</span>
-                        </div>
+            </div>
                         <p className="text-gray-400 text-xs">Drag components here to build your agent</p>
                       </div>
                     )}
@@ -4584,12 +4584,12 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                              workflowStatus === 'completed' ? 'COMPLETED' :
                              workflowStatus === 'error' ? 'ERROR' : 'IDLE'}
                           </span>
-            </div>
-          </div>
+                </div>
+              </div>
         )}
 
-    </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>
@@ -4625,7 +4625,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                   >
                     LOAD SCENARIO
                   </button>
-    </div>
+                </div>
               </div>
 
               {/* Agent Response */}
@@ -4645,19 +4645,19 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                             animation: 'loading 2s ease-in-out infinite'
                           }}
                         ></div>
-                      </div>
-                      
+            </div>
+
                       {/* Loading text with gradual progress */}
                       <div className="text-green-400 text-xs font-mono text-center">
                         Processing AI response... ████████████████████ {loadingProgress}%
-                      </div>
-                      
+              </div>
+
                       {/* Terminal dots animation */}
                       <div className="flex justify-center space-x-1">
                         <div className="w-1 h-1 bg-green-500 rounded-full animate-bounce"></div>
                         <div className="w-1 h-1 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                         <div className="w-1 h-1 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                      </div>
+                    </div>
                     </div>
                   ) : agentResponse ? (
                     <div className="flex-1 overflow-auto">
@@ -4722,7 +4722,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                   <div className="text-green-400 text-xs font-mono mb-2">◄ NEXT STEPS</div>
                   <div className="bg-black border border-gray-600 p-4 rounded">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      <button 
+                      <button
                         onClick={() => {
                           setTestQuery('');
                           setAgentResponse('');
@@ -4735,7 +4735,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       >
                         🔄 TEST NEW QUERY
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           navigator.clipboard.writeText(agentResponse);
                           alert('Agent response copied to clipboard!');
@@ -4744,7 +4744,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       >
                         📋 COPY RESPONSE
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           const element = document.createElement('a');
                           const file = new Blob([agentResponse], {type: 'text/plain'});
@@ -4758,7 +4758,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       >
                         💾 SAVE RESPONSE
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           setTestQuery(testQuery + '\n\nFollow-up: Can you provide more specific implementation details?');
                         }}
@@ -4782,10 +4782,10 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       >
                         📊 VIEW ANALYTICS
                       </button>
-            </div>
+                    </div>
                     <div className="mt-3 text-xs text-gray-400 font-mono">
                       💡 <strong>Pro Tip:</strong> Use these actions to implement the agent's recommendations and track your progress!
-                    </div>
+                  </div>
                   </div>
                 </div>
               )}
@@ -4903,7 +4903,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                             <span className="text-gray-400 text-sm font-mono">SWARM IDLE</span>
                           </>
                         )}
-                      </div>
+                            </div>
                       <div className="text-gray-400 text-xs font-mono">
                         {workflowNodes.filter(node => node.status === 'completed').length} / {workflowNodes.length} AGENTS COMPLETED
                       </div>
@@ -4955,11 +4955,11 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                       {workflowSteps.length > 4 && (
                         <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
                           ← scroll →
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                      </div>
 
                 {/* Agent Communication Log */}
                 <div>
@@ -4973,7 +4973,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                             <span className="text-gray-500">→</span>
                             <span className="text-blue-400">{comm.to}</span>
                             <span className="text-gray-500">[{comm.timestamp}]</span>
-                          </div>
+                    </div>
                           <div className="text-gray-400 mt-1">{comm.message}</div>
                         </div>
                       ))}
@@ -5188,7 +5188,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                         </div>
                         
                         {/* Agent Response */}
-                        <div className="flex justify-start">
+                  <div className="flex justify-start">
                           <div className="max-w-[80%] bg-gray-800 border border-green-500 rounded px-3 py-2">
                             <div className="flex items-center justify-between mb-2">
                               <div className="text-green-400 text-xs font-mono">◄ AGENT.RESPONSE</div>
@@ -5197,8 +5197,8 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                                 <span className="text-blue-400">●</span>
                                 <span className="text-green-400">●</span>
                                 <span className="text-orange-400">●</span>
-                              </div>
-                            </div>
+                        </div>
+                        </div>
                             <div className="text-gray-200 text-sm font-mono whitespace-pre-wrap">{item.response}</div>
                             <div className="mt-2 pt-2 border-t border-gray-700 flex items-center space-x-3 text-xs font-mono">
                               <span className="text-purple-400">GEPA</span>
@@ -5208,15 +5208,15 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                               <span className="text-green-400">LANGSTRUCT</span>
                               <span className="text-gray-600">•</span>
                               <span className="text-orange-400">CONTEXT.ENGINE</span>
-                            </div>
-                          </div>
-                        </div>
+                      </div>
+                    </div>
+                  </div>
                       </div>
                     ))
-                  )}
-                </div>
+                )}
+              </div>
 
-                {/* Input Area */}
+              {/* Input Area */}
                 <div className="border-t border-gray-600 bg-gray-800 p-4">
                   <form
                     onSubmit={async (e) => {
@@ -5265,59 +5265,59 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                     }}
                     className="flex space-x-3"
                   >
-                    <input
-                      type="text"
+                  <input
+                    type="text"
                       value={followUpQuestion}
                       onChange={(e) => setFollowUpQuestion(e.target.value)}
-                      placeholder="Ask about workflow optimization, GEPA, Graph RAG, or any enterprise AI topic..."
+                    placeholder="Ask about workflow optimization, GEPA, Graph RAG, or any enterprise AI topic..."
                       className="flex-1 px-4 py-2 bg-black border border-gray-600 text-green-400 font-mono text-sm rounded focus:border-green-500 focus:outline-none placeholder-gray-600"
-                    />
-                    <button
-                      type="submit"
+                  />
+                  <button
+                    type="submit"
                       disabled={!followUpQuestion.trim()}
                       className="px-6 py-2 bg-green-700 hover:bg-green-600 disabled:bg-gray-700 disabled:text-gray-500 text-white font-mono text-sm rounded transition-colors"
-                    >
+                  >
                       SEND ▶
-                    </button>
-                  </form>
+                  </button>
+                </form>
                   <div className="mt-2 text-xs text-gray-500 font-mono">
                     POWERED.BY: GEPA.OPTIMIZER • GRAPH.RAG • LANGSTRUCT • CONTEXT.ENGINE
                   </div>
-                </div>
               </div>
+            </div>
 
-              {/* Learning Metrics */}
+            {/* Learning Metrics */}
               <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gray-800 border border-gray-600 p-3 rounded">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2">
                     <div className="text-green-400 text-xs font-mono">CONVERSATION.QUALITY</div>
                     <span className="text-green-400 text-xs font-mono">+12%</span>
-                  </div>
+                </div>
                   <div className="w-full bg-gray-700 rounded-full h-1.5">
                     <div className="bg-green-500 h-full rounded-full" style={{ width: '88%' }}></div>
-                  </div>
-                  <div className="text-gray-500 text-xs font-mono mt-1">IMPROVING.WITH.EACH.INTERACTION</div>
                 </div>
+                  <div className="text-gray-500 text-xs font-mono mt-1">IMPROVING.WITH.EACH.INTERACTION</div>
+              </div>
 
                 <div className="bg-gray-800 border border-gray-600 p-3 rounded">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2">
                     <div className="text-blue-400 text-xs font-mono">CONTEXT.RELEVANCE</div>
                     <span className="text-blue-400 text-xs font-mono">92%</span>
-                  </div>
+                </div>
                   <div className="w-full bg-gray-700 rounded-full h-1.5">
                     <div className="bg-blue-500 h-full rounded-full" style={{ width: '92%' }}></div>
-                  </div>
-                  <div className="text-gray-500 text-xs font-mono mt-1">GRAPH.RAG.PRECISION</div>
                 </div>
+                  <div className="text-gray-500 text-xs font-mono mt-1">GRAPH.RAG.PRECISION</div>
+              </div>
 
                 <div className="bg-gray-800 border border-gray-600 p-3 rounded">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2">
                     <div className="text-purple-400 text-xs font-mono">GEPA.OPTIMIZATIONS</div>
                     <span className="text-purple-400 text-xs font-mono">{conversationHistory.length * 3}</span>
-                  </div>
+                </div>
                   <div className="w-full bg-gray-700 rounded-full h-1.5">
                     <div className="bg-purple-500 h-full rounded-full" style={{ width: '75%' }}></div>
-                  </div>
+                </div>
                   <div className="text-gray-500 text-xs font-mono mt-1">CONTINUOUS.LEARNING.CYCLES</div>
                 </div>
               </div>
@@ -5337,7 +5337,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                 >
                   ✕
                 </button>
-              </div>
+    </div>
               
               {(() => {
                 const node = workflowNodes.find(n => n.id === selectedNode);
