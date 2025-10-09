@@ -13,8 +13,16 @@ const AGENT_REGISTRY = {
   webSearchAgent: {
     name: 'Web Search Agent',
     role: 'Research Analyst',
-    capabilities: ['web research', 'data gathering', 'market analysis', 'current trends'],
-    matchesOn: ['research', 'search', 'find', 'latest', 'current', 'trends', 'market'],
+    capabilities: ['web research', 'real-time data', 'current events', 'up-to-date information'],
+    matchesOn: [
+      // ONLY match when clearly needing REAL-TIME/CURRENT data
+      'latest', 'current', 'recent', 'today', 'this week', 'this month', 'this year',
+      'trending', 'news', 'update', 'now', 'live', 'real-time', 'up-to-date',
+      // Specific web search intents
+      'search for', 'look up', 'find information about', 'what is happening',
+      // Current state queries  
+      '2025', '2024', 'current price', 'current market', 'current rate'
+    ],
     apiEndpoint: '/api/perplexity/chat',
     modelPreference: 'perplexity', // PAID - requires web search
     estimatedCost: 0.003,
@@ -199,11 +207,31 @@ async function routeToAgent(
   selectedAgent: keyof typeof AGENT_REGISTRY;
   reasoning: string;
   confidence: 'high' | 'medium' | 'low';
-  method: 'keyword' | 'llm';
+  method: 'keyword' | 'llm' | 'smart';
 }> {
   
   console.log('🔀 Routing request:', userRequest);
   console.log('📊 Strategy:', strategy);
+  
+  // Step 0: SMART PRE-CHECK - Does this need web search? (LLM decides)
+  // This prevents over-using expensive Perplexity for general queries
+  if (strategy === 'auto') {
+    const needsWebSearch = await checkIfNeedsWebSearch(userRequest);
+    
+    if (!needsWebSearch) {
+      // Skip web search agent, go straight to specialized agents
+      console.log('💡 Query doesn\'t need web search - using local agents');
+      const keywordMatch = matchByKeywords(userRequest, true); // Skip web search
+      if (keywordMatch) {
+        return {
+          selectedAgent: keywordMatch.agent,
+          reasoning: `Smart routing: No web search needed. ${keywordMatch.matchedKeywords.join(', ')}`,
+          confidence: 'high',
+          method: 'smart'
+        };
+      }
+    }
+  }
   
   // Step 1: Try keyword matching (fast path - 90% of cases)
   if (strategy === 'auto' || strategy === 'keyword') {
@@ -241,9 +269,59 @@ async function routeToAgent(
 }
 
 /**
- * Fast keyword-based routing (90% of cases)
+ * SMART PRE-CHECK: Does this query need web search?
+ * Uses one-token LLM to determine if query needs real-time/web data
+ * Returns: true if web search needed, false if local analysis is sufficient
  */
-function matchByKeywords(userRequest: string): {
+async function checkIfNeedsWebSearch(userRequest: string): Promise<boolean> {
+  try {
+    const prompt = `Analyze this query and respond with ONLY Y or N:
+
+Query: "${userRequest}"
+
+Does this query require REAL-TIME information from the web (latest news, current prices, recent events)?
+
+Y = Needs web search (latest/current/real-time data required)
+N = Can be answered with general knowledge/analysis (no web search needed)
+
+Examples:
+"Latest Miami real estate prices" → Y (needs current data)
+"Analyze this financial data: Revenue $1M" → N (data provided, no web needed)
+"What are market trends in 2025?" → Y (needs current 2025 data)
+"Create investment strategy based on this report" → N (has report, analyze it)
+
+Respond with ONLY the letter: Y or N`;
+
+    const response = await fetch('http://localhost:3000/api/perplexity/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: prompt,
+        useRealAI: true,
+        max_tokens: 1 // ONE-TOKEN TRICK!
+      })
+    });
+
+    if (!response.ok) return true; // Default to web search on error
+    
+    const data = await response.json();
+    const answer = (data.response || 'Y').trim().toUpperCase()[0];
+    
+    console.log(`🤔 Web search needed? ${answer === 'Y' ? 'YES' : 'NO'} (Query: "${userRequest.substring(0, 50)}...")`);
+    
+    return answer === 'Y';
+    
+  } catch (error) {
+    console.warn('⚠️ Web search check failed, defaulting to YES:', error);
+    return true; // Default to web search on error (safe choice)
+  }
+}
+
+/**
+ * Fast keyword-based routing (90% of cases)
+ * @param skipWebSearch - If true, skip web search agent (already determined not needed)
+ */
+function matchByKeywords(userRequest: string, skipWebSearch = false): {
   agent: keyof typeof AGENT_REGISTRY;
   matchedKeywords: string[];
 } | null {
@@ -251,7 +329,8 @@ function matchByKeywords(userRequest: string): {
   
   // Sort agents by priority (higher priority = checked first)
   const sortedAgents = Object.entries(AGENT_REGISTRY)
-    .sort(([, a], [, b]) => (a.priority || 10) - (b.priority || 10));
+    .sort(([, a], [, b]) => (a.priority || 10) - (b.priority || 10))
+    .filter(([key]) => !skipWebSearch || key !== 'webSearchAgent'); // Skip web search if not needed
   
   for (const [agentKey, agent] of sortedAgents) {
     if (agent.matchesOn.length === 0) continue; // Skip agents without keywords
