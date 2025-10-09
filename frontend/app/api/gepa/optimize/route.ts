@@ -234,9 +234,13 @@ export async function POST(request: NextRequest) {
       const rolloutsUsed = Math.floor(2 + Math.random() * 6);
       const reflectionDepth = Math.floor(2 + Math.random() * 3);
       
+      // Extract the optimized prompt from the prompts object
+      const optimizedPrompt = Object.values(optimizedPrompts)[0] || query;
+      
       return NextResponse.json({
         success: true,
         optimized_prompts: optimizedPrompts,
+        optimizedPrompt, // Add singular form for compatibility
         metrics: {
           optimizationScore: Math.round(baseScore + Math.random() * 5),
           efficiencyGain: `${efficiencyMultiplier}x fewer rollouts`,

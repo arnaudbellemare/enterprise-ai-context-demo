@@ -1086,7 +1086,7 @@ export default function WorkflowPage() {
                     context: previousNodeData || 'Initial workflow execution',
                     industry: currentWorkflowName.toLowerCase().includes('real estate') ? 'real_estate' : 
                              currentWorkflowName.toLowerCase().includes('financ') ? 'finance' : 'general',
-                    useRealGEPA: false // Use fast mock for performance
+                    useRealGEPA: true // NO MOCKS - Use real GEPA optimization!
                   })
                 });
                 
