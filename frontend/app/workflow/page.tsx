@@ -1751,6 +1751,119 @@ Format as a professional risk assessment report with specific data points, risk 
         }
         
         addLog(`✅ Completed: ${node.data.label}`);
+        
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // DYNAMIC ROUTING: Let agents decide next steps based on results
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        try {
+          addLog(`🤔 Checking if agent handoff needed...`);
+          
+          // Get the result of this node
+          const nodeResult = workflowData[nodeId];
+          const resultSummary = typeof nodeResult === 'string' 
+            ? nodeResult.substring(0, 500)
+            : JSON.stringify(nodeResult).substring(0, 500);
+          
+          // Ask the hybrid router if we should handoff to another agent
+          const routingResponse = await fetch('/api/agents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userRequest: `Based on this result from ${node.data.label}: "${resultSummary}", determine if we need additional agents to handle complexity, verify data, or address gaps. Original goal: ${currentWorkflowName}`,
+              strategy: 'auto',
+              currentContext: {
+                executedNodes: executionOrder.slice(0, executionOrder.indexOf(nodeId) + 1),
+                remainingNodes: executionOrder.slice(executionOrder.indexOf(nodeId) + 1),
+                currentResult: resultSummary
+              }
+            })
+          });
+          
+          if (routingResponse.ok) {
+            const routingData = await routingResponse.json();
+            console.log('🔀 Dynamic routing decision:', routingData);
+            
+            // Check if router suggests handoff
+            if (routingData.routing && routingData.routing.reasoning) {
+              const reasoning = routingData.routing.reasoning.toLowerCase();
+              
+              // Look for handoff indicators
+              const shouldHandoff = reasoning.includes('need') || 
+                                    reasoning.includes('should') ||
+                                    reasoning.includes('recommend') ||
+                                    reasoning.includes('additional');
+              
+              if (shouldHandoff && routingData.workflow && routingData.workflow.nodes) {
+                // Agent suggests additional nodes!
+                const suggestedNodes = routingData.workflow.nodes.filter((n: any) => 
+                  !executionOrder.includes(n.id) // Only new nodes
+                );
+                
+                if (suggestedNodes.length > 0) {
+                  addLog(`🔀 HANDOFF: Adding ${suggestedNodes.length} dynamic agent(s) based on complexity`);
+                  addLog(`💡 Reason: ${routingData.routing.reasoning.substring(0, 100)}...`);
+                  
+                  // Insert new nodes into the workflow
+                  const currentIndex = executionOrder.indexOf(nodeId);
+                  for (let i = 0; i < suggestedNodes.length; i++) {
+                    const newNode = suggestedNodes[i];
+                    const newNodeId = `dynamic-${Date.now()}-${i}`;
+                    
+                    // Add to execution order (after current node)
+                    executionOrder.splice(currentIndex + 1 + i, 0, newNodeId);
+                    
+                    // Add to nodes array
+                    setNodes((nds) => [
+                      ...nds,
+                      {
+                        id: newNodeId,
+                        type: 'customizable',
+                        position: { x: 100 + (i * 250), y: 400 },
+                        data: {
+                          label: newNode.label || 'Dynamic Agent',
+                          role: newNode.role || newNode.label,
+                          description: newNode.description || 'Dynamically added agent',
+                          apiEndpoint: newNode.apiEndpoint || '/api/agent/chat',
+                          icon: newNode.icon || '🤖',
+                          iconColor: newNode.iconColor || 'blue',
+                          status: 'pending',
+                          config: newNode.config || {}
+                        }
+                      }
+                    ]);
+                    
+                    // Add to nodes for execution
+                    nodes.push({
+                      id: newNodeId,
+                      type: 'customizable',
+                      position: { x: 100 + (i * 250), y: 400 },
+                      data: {
+                        label: newNode.label || 'Dynamic Agent',
+                        role: newNode.role || newNode.label,
+                        description: newNode.description || 'Dynamically added agent',
+                        apiEndpoint: newNode.apiEndpoint || '/api/agent/chat',
+                        icon: newNode.icon || '🤖',
+                        iconColor: newNode.iconColor || 'blue',
+                        status: 'pending',
+                        config: newNode.config || {}
+                      }
+                    } as any);
+                    
+                    addLog(`  → Added: ${newNode.label} (${newNode.description})`);
+                  }
+                  
+                  // Log the adaptive workflow change
+                  addLog(`📈 Workflow adapted: ${suggestedNodes.map((n: any) => n.label).join(' → ')}`);
+                }
+              } else {
+                addLog(`✓ No handoff needed - proceeding with planned workflow`);
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Dynamic routing check failed (non-critical):', error);
+          addLog(`⚠️ Handoff check skipped (non-critical)`);
+        }
       }
 
       addLog('🎉 Workflow completed successfully!');
@@ -2210,9 +2323,30 @@ Format as a professional risk assessment report with specific data points, risk 
             {executionLog.length === 0 ? (
               <p className="text-xs text-muted-foreground">No activity yet</p>
             ) : (
-              executionLog.map((log, idx) => (
-                <div key={idx} className="text-xs font-mono">{log}</div>
-              ))
+              executionLog.map((log, idx) => {
+                // Highlight dynamic routing events
+                const isDynamicRouting = log.includes('🔀') || log.includes('HANDOFF') || log.includes('Workflow adapted');
+                const isHandoffCheck = log.includes('🤔') || log.includes('Checking if agent handoff');
+                const isArcMemo = log.includes('🧠') || log.includes('ArcMemo') || log.includes('💡');
+                const isGEPA = log.includes('⚡') || log.includes('GEPA');
+                const isCost = log.includes('💰') || log.includes('💸');
+                
+                return (
+                  <div 
+                    key={idx} 
+                    className={`text-xs font-mono py-0.5 ${
+                      isDynamicRouting ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 font-semibold border-l-2 border-blue-500 pl-1' :
+                      isHandoffCheck ? 'text-purple-600 dark:text-purple-400' :
+                      isArcMemo ? 'text-green-600 dark:text-green-400' :
+                      isGEPA ? 'text-yellow-600 dark:text-yellow-400' :
+                      isCost ? 'text-orange-600 dark:text-orange-400' :
+                      ''
+                    }`}
+                  >
+                    {log}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
