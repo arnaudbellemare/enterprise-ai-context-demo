@@ -65,30 +65,31 @@ const TOOL_LIBRARY = {
     limitations: ['Only searches pre-indexed data', 'Requires existing knowledge base setup']
   },
   
-  // === SELF-OPTIMIZING AI AGENTS (DSPy) ===
+  // === SELF-OPTIMIZING AI AGENTS (Ax DSPy + Ollama - FREE!) ===
   dspy_market_analyzer: {
     id: 'dspyMarketAnalyzer',
     label: 'DSPy Market Analyzer',
-    description: 'Self-optimizing market analysis with continuous learning',
-    apiEndpoint: '/api/dspy/execute',
+    description: 'Self-optimizing market analysis with Ax framework + Ollama (FREE)',
+    apiEndpoint: '/api/ax-dspy',
     icon: 'M',
     iconColor: 'bg-purple-600',
     capabilities: [
       'Analyze market trends and competitive landscapes',
       'Identify market opportunities and threats',
       'Assess industry dynamics and growth potential',
-      'Self-optimizes analysis quality over time'
+      'Self-optimizes analysis quality over time',
+      'FREE local execution with Ollama'
     ],
     bestFor: ['market research', 'competitive analysis', 'industry trends', 'market sizing', 'SWOT analysis'],
-    limitations: ['Requires quality training data for optimization'],
-    config: { moduleName: 'market_research_analyzer', optimize: true }
+    limitations: ['Requires Ollama installed locally'],
+    config: { moduleName: 'market_research_analyzer', provider: 'ollama', optimize: true }
   },
   
   dspy_real_estate: {
     id: 'dspyRealEstateAgent',
     label: 'DSPy Real Estate Agent',
-    description: 'Self-optimizing real estate and property analysis',
-    apiEndpoint: '/api/dspy/execute',
+    description: 'Self-optimizing real estate analysis with Ax framework + Ollama (FREE)',
+    apiEndpoint: '/api/ax-dspy',
     icon: 'R',
     iconColor: 'bg-blue-600',
     capabilities: [
@@ -96,18 +97,19 @@ const TOOL_LIBRARY = {
       'Analyze real estate investment opportunities',
       'Assess rental yields and appreciation potential',
       'Compare properties and neighborhoods',
-      'Self-improves accuracy with each analysis'
+      'Self-improves accuracy with each analysis',
+      'FREE local execution with Ollama'
     ],
     bestFor: ['property evaluation', 'real estate investment analysis', 'market condition assessment'],
-    limitations: ['Focused on real estate domain'],
-    config: { moduleName: 'real_estate_agent', optimize: true }
+    limitations: ['Requires Ollama installed locally'],
+    config: { moduleName: 'real_estate_agent', provider: 'ollama', optimize: true }
   },
   
   dspy_financial: {
     id: 'dspyFinancialAnalyst',
     label: 'DSPy Financial Analyst',
-    description: 'Self-optimizing financial modeling and analysis',
-    apiEndpoint: '/api/dspy/execute',
+    description: 'Self-optimizing financial modeling with Ax framework + Ollama (FREE)',
+    apiEndpoint: '/api/ax-dspy',
     icon: 'F',
     iconColor: 'bg-green-600',
     capabilities: [
@@ -115,18 +117,19 @@ const TOOL_LIBRARY = {
       'Calculate ROI, NPV, IRR, and other metrics',
       'Assess investment risks and returns',
       'Analyze cash flows and profitability',
-      'Self-optimizes financial accuracy'
+      'Self-optimizes financial accuracy',
+      'FREE local execution with Ollama'
     ],
     bestFor: ['financial modeling', 'ROI calculation', 'investment analysis', 'risk assessment'],
-    limitations: ['Requires numerical/financial data'],
-    config: { moduleName: 'financial_analyst', optimize: true }
+    limitations: ['Requires Ollama installed locally'],
+    config: { moduleName: 'financial_analyst', provider: 'ollama', optimize: true }
   },
   
   dspy_investment_report: {
     id: 'dspyInvestmentReport',
     label: 'DSPy Investment Report Generator',
-    description: 'Self-optimizing comprehensive report generation',
-    apiEndpoint: '/api/dspy/execute',
+    description: 'Self-optimizing report generation with Ax framework + Ollama (FREE)',
+    apiEndpoint: '/api/ax-dspy',
     icon: 'I',
     iconColor: 'bg-indigo-600',
     capabilities: [
@@ -134,18 +137,19 @@ const TOOL_LIBRARY = {
       'Synthesize multiple data sources into coherent narratives',
       'Provide actionable recommendations',
       'Create executive summaries',
-      'Self-improves report quality and relevance'
+      'Self-improves report quality and relevance',
+      'FREE local execution with Ollama'
     ],
     bestFor: ['report generation', 'investment recommendations', 'executive summaries', 'decision support'],
-    limitations: ['Works best with structured input data'],
-    config: { moduleName: 'investment_report_generator', optimize: true }
+    limitations: ['Requires Ollama installed locally'],
+    config: { moduleName: 'investment_report_generator', provider: 'ollama', optimize: true }
   },
   
   dspy_data_synthesizer: {
     id: 'dspyDataSynthesizer',
     label: 'DSPy Data Synthesizer',
-    description: 'Self-optimizing multi-source data fusion and synthesis',
-    apiEndpoint: '/api/dspy/execute',
+    description: 'Self-optimizing data fusion with Ax framework + Ollama (FREE)',
+    apiEndpoint: '/api/ax-dspy',
     icon: 'D',
     iconColor: 'bg-orange-600',
     capabilities: [
@@ -153,11 +157,12 @@ const TOOL_LIBRARY = {
       'Resolve conflicts and inconsistencies',
       'Create unified comprehensive views',
       'Extract key insights from diverse data',
-      'Self-optimizes synthesis logic'
+      'Self-optimizes synthesis logic',
+      'FREE local execution with Ollama'
     ],
     bestFor: ['data fusion', 'multi-source synthesis', 'comprehensive analysis', 'insight extraction'],
-    limitations: ['Requires multiple input sources to be effective'],
-    config: { moduleName: 'data_synthesizer', optimize: true }
+    limitations: ['Requires Ollama installed locally'],
+    config: { moduleName: 'data_synthesizer', provider: 'ollama', optimize: true }
   },
   
   // === DATA PROCESSING & TRANSFORMATION ===

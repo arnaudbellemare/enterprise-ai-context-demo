@@ -749,7 +749,7 @@ const getDSPyOptimizedWorkflow = () => {
 export default function WorkflowPage() {
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowEdge[]>([]);
-  const [selectedNode, setSelectedNode] = useState<{ nodeId: string; label: string; apiEndpoint: string } | null>(null);
+  const [selectedNode, setSelectedNode] = useState<{ nodeId: string; label: string; apiEndpoint: string; icon?: string; iconColor?: string } | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionLog, setExecutionLog] = useState<string[]>([]);
   const [nodeConfigs, setNodeConfigs] = useState<Record<string, any>>({});
@@ -2012,8 +2012,8 @@ Format as a professional risk assessment report with specific data points, risk 
                 return (
                   <div key={nodeId} className="mb-3 last:mb-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{node?.data.icon}</span>
-                      <span className="text-xs font-semibold">{node?.data.label}</span>
+                      <span className="text-lg">{String(node?.data.icon || '')}</span>
+                      <span className="text-xs font-semibold">{String(node?.data.label || '')}</span>
                     </div>
                     <div className="bg-white dark:bg-gray-900 rounded p-2 ml-6">
                       {Array.isArray(data) ? (
@@ -2271,7 +2271,7 @@ Format as a professional risk assessment report with specific data points, risk 
                     />
                   ) : (
                     <textarea
-                      value={value}
+                      value={String(value || '')}
                       onChange={(e) =>
                         updateNodeConfig(selectedNode.nodeId, { [key]: e.target.value })
                       }
