@@ -19,6 +19,7 @@ export const Edge = {
 
     return (
       <>
+        {/* Main edge path */}
         <BaseEdge
           id={props.id}
           path={edgePath}
@@ -27,14 +28,37 @@ export const Edge = {
             strokeWidth: strokeWidth,
           }}
         />
+        
+        {/* Animated dashed path */}
         <path
           d={edgePath}
           fill="none"
           stroke={edgeColor}
           strokeWidth={strokeWidth}
           strokeDasharray={props.isValid === false ? "8,4" : "5,5"}
-          className={props.isValid === false ? "animate-dash-error" : "animate-dash"}
+          strokeDashoffset="0"
+          style={{
+            animation: props.isValid === false 
+              ? 'dash-flow-error 2s linear infinite' 
+              : 'dash-flow 2s linear infinite'
+          }}
         />
+        
+        {/* Moving dot animation */}
+        <circle
+          r="3"
+          fill={edgeColor}
+          style={{
+            animation: `dot-flow-${props.id} 3s linear infinite`
+          }}
+        >
+          <animateMotion
+            dur="3s"
+            repeatCount="indefinite"
+            path={edgePath}
+          />
+        </circle>
+
         {/* Arrow marker */}
         <defs>
           <marker
@@ -52,6 +76,19 @@ export const Edge = {
             />
           </marker>
         </defs>
+        
+        {/* CSS animations */}
+        <style jsx>{`
+          @keyframes dash-flow {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -20; }
+          }
+          @keyframes dash-flow-error {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -24; }
+          }
+        `}</style>
+        
         {/* Error indicator for invalid edges */}
         {props.isValid === false && (
           <g>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Canvas } from '@/components/ai-elements/canvas';
 import { Connection } from '@/components/ai-elements/connection';
 import { Controls } from '@/components/ai-elements/controls';
@@ -31,7 +31,7 @@ const AVAILABLE_NODE_TYPES = [
     id: 'memorySearch', 
     label: 'Memory Search',
     description: 'Vector similarity search',
-    icon: 'SEARCH',
+    icon: 'S',
     iconColor: 'yellow',
     apiEndpoint: '/api/search/indexed',
     config: {
@@ -92,7 +92,7 @@ const AVAILABLE_NODE_TYPES = [
     id: 'langstruct', 
     label: 'LangStruct',
     description: 'Extract structured data',
-    icon: 'SEARCH',
+    icon: 'S',
     iconColor: 'gray',
     apiEndpoint: '/api/langstruct/process',
     config: {
@@ -252,9 +252,9 @@ const getAxLLMWorkflow = () => {
       },
     ],
     edges: [
-      { id: 'e-ax-1-2', source: 'ax-1', target: 'ax-2', type: 'default', animated: true },
-      { id: 'e-ax-2-3', source: 'ax-2', target: 'ax-3', type: 'default', animated: true },
-      { id: 'e-ax-3-4', source: 'ax-3', target: 'ax-4', type: 'default', animated: true },
+      { id: 'e-ax-1-2', source: 'ax-1', target: 'ax-2', type: 'animated' },
+      { id: 'e-ax-2-3', source: 'ax-2', target: 'ax-3', type: 'animated' },
+      { id: 'e-ax-3-4', source: 'ax-3', target: 'ax-4', type: 'animated' },
     ],
     configs: {
       'ax-1': {
@@ -407,7 +407,7 @@ const getComplexWorkflow = () => {
         id: 'memorySearch',
         label: 'Memory Search',
         description: 'Vector similarity search',
-        icon: 'SEARCH',
+        icon: 'S',
         iconColor: 'purple',
         apiEndpoint: '/api/search/indexed',
         nodeId: `memorySearch-${timestamp}`,
@@ -528,7 +528,7 @@ const getComplexWorkflow = () => {
         id: 'riskAssessment',
         label: 'Risk Assessment',
         description: 'Risk analysis',
-        icon: 'WARNING',
+        icon: '⚠️',
         iconColor: 'red',
         apiEndpoint: '/api/answer',
         nodeId: `riskAssessment-${timestamp}`,
@@ -703,7 +703,7 @@ const getDSPyOptimizedWorkflow = () => {
         id: 'learningTracker',
         label: 'Learning Tracker',
         description: 'Track optimization metrics',
-        icon: 'CHART',
+        icon: 'C',
         iconColor: 'green',
         apiEndpoint: '/api/answer',
         nodeId: `learningTracker-${timestamp}`,
@@ -761,6 +761,85 @@ export default function WorkflowPage() {
   const [workflowErrors, setWorkflowErrors] = useState<string[]>([]);
   const [workflowResults, setWorkflowResults] = useState<any>(null); // Store final results
   const [currentWorkflowName, setCurrentWorkflowName] = useState<string>('Real Estate Market Analysis');
+  const [showExamplesDropdown, setShowExamplesDropdown] = useState(false);
+  const reactFlowInstance = useRef<any>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showExamplesDropdown) {
+        const target = event.target as Element;
+        if (!target.closest('.examples-dropdown')) {
+          setShowExamplesDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExamplesDropdown]);
+
+  // Check for deployed workflow from Agent Builder
+  useEffect(() => {
+    const deployedWorkflow = localStorage.getItem('deployedWorkflow');
+    if (deployedWorkflow) {
+      try {
+        const workflow = JSON.parse(deployedWorkflow);
+        console.log('Loading deployed workflow:', workflow);
+        
+        // Convert workflow recommendation to nodes and edges with better spacing
+        const workflowNodes: FlowNode[] = workflow.nodes.map((node: any, index: number) => ({
+          id: node.id || `node-${index}`,
+          type: 'custom',
+          position: { x: index * 800, y: 400 }, // Excellent spacing: 800px apart, much more vertical space
+          data: {
+            label: node.label,
+            description: node.description,
+            apiEndpoint: node.apiEndpoint,
+            config: workflow.configs?.[node.id] || node.config || {},
+            icon: node.icon || '🔧',
+            iconColor: node.iconColor || 'blue',
+            role: node.role
+          }
+        }));
+
+        const workflowEdges: FlowEdge[] = workflow.edges.map((edge: any, index: number) => ({
+          id: edge.id || `edge-${index}`,
+          source: edge.source,
+          target: edge.target,
+          type: 'animated'
+        }));
+
+        console.log('Setting workflow nodes:', workflowNodes);
+        console.log('Setting workflow edges:', workflowEdges);
+        
+        setNodes(workflowNodes);
+        setEdges(workflowEdges);
+        setCurrentWorkflowName(workflow.name);
+        
+        // Clear the deployed workflow from localStorage
+        localStorage.removeItem('deployedWorkflow');
+        
+        // Fit view to show all nodes with proper spacing after a short delay
+        setTimeout(() => {
+          if (reactFlowInstance.current) {
+            reactFlowInstance.current.fitView({ 
+              padding: 0.3, 
+              includeHiddenNodes: false,
+              minZoom: 0.05,
+              maxZoom: 2.0
+            });
+          }
+        }, 500);
+        
+        // Show success message
+        alert(`Deployed workflow "${workflow.name}" successfully!\n\nComponents: ${workflow.nodes.length}\nEdges: ${workflow.edges.length}\n\nNodes: ${workflowNodes.map(n => n.data.label).join(', ')}`);
+        
+      } catch (error) {
+        console.error('Error loading deployed workflow:', error);
+      }
+    }
+  }, [setNodes, setEdges]);
 
   const onNodesChange = useCallback(
     (changes: any) => {
@@ -2068,11 +2147,11 @@ Format as a professional risk assessment report with specific data points, risk 
   const loadGeneratedWorkflow = (workflow: any) => {
     console.log('🔧 loadGeneratedWorkflow called with:', workflow);
     
-    // Convert generated workflow format to our internal format
+    // Convert generated workflow format to our internal format with better spacing
     const nodes = workflow.nodes.map((node: any, index: number) => ({
       id: node.id,
       type: node.type || 'customizable',
-      position: { x: 100 + (index * 300), y: 200 },
+      position: { x: 100 + (index * 800), y: 400 }, // Excellent spacing: 800px apart, much more vertical space
       data: {
         label: node.label,
         role: node.role,
@@ -2098,6 +2177,18 @@ Format as a professional risk assessment report with specific data points, risk 
     addLog(`📋 Flow: ${workflow.nodes.map((n: any) => n.label).join(' → ')}`);
     addLog(`💡 ${workflow.description}`);
     addLog('🚀 Ready to execute your custom workflow!');
+    
+    // Fit view to show all nodes with proper spacing after a short delay
+    setTimeout(() => {
+      if (reactFlowInstance.current) {
+        reactFlowInstance.current.fitView({ 
+          padding: 0.3, 
+          includeHiddenNodes: false,
+          minZoom: 0.05,
+          maxZoom: 2.0
+        });
+      }
+    }, 500);
   };
 
   const exportWorkflow = () => {
@@ -2147,15 +2238,14 @@ Format as a professional risk assessment report with specific data points, risk 
       fetch(`/api/workflows/temp?session_id=${sessionId}`)
         .then(response => response.json())
         .then(result => {
-          if (result.success && result.workflow) {
+          if (result.success && result.workflowData) {
             console.log('✅ Workflow loaded from Supabase:');
-            console.log('   Workflow Name:', result.workflow.name);
-            console.log('   Nodes Count:', result.workflow.nodes?.length);
-            console.log('   Node Labels:', result.workflow.nodes?.map((n: any) => n.label));
-            console.log('   Created At:', result.createdAt);
+            console.log('   Workflow Name:', result.workflowData.name);
+            console.log('   Nodes Count:', result.workflowData.nodes?.length);
+            console.log('   Node Labels:', result.workflowData.nodes?.map((n: any) => n.label));
             console.log('   Expires At:', result.expiresAt);
             
-            loadGeneratedWorkflow(result.workflow);
+            loadGeneratedWorkflow(result.workflowData);
             
             // Clean up the session after loading
             fetch(`/api/workflows/temp?session_id=${sessionId}`, { method: 'DELETE' })
@@ -2187,6 +2277,126 @@ Format as a professional risk assessment report with specific data points, risk 
       setSelectedNode(null);
       addLog('🧹 Workflow cleared');
     }
+  };
+
+  const reorganizeNodes = () => {
+    if (nodes.length === 0) return;
+
+    console.log('Reorganizing workflow with current state:', { 
+      nodeCount: nodes.length, 
+      edgeCount: edges.length,
+      nodes: nodes.map(n => n.id),
+      edges: edges.map(e => `${e.source}->${e.target}`)
+    });
+
+    // Hierarchical layout algorithm - organizes nodes by tiers/levels
+    const horizontalSpacing = 400;
+    const verticalSpacing = 300;
+    
+    // Find root nodes (nodes with no incoming edges)
+    const nodeIds = nodes.map(n => n.id);
+    const rootNodes = nodes.filter(node => 
+      !edges.some(edge => edge.target === node.id)
+    );
+    
+    // Handle orphaned nodes (nodes with no connections)
+    const orphanedNodes = nodes.filter(node => 
+      !edges.some(edge => edge.source === node.id || edge.target === node.id)
+    );
+
+    // Build hierarchical levels
+    const levels: string[][] = [];
+    const visited = new Set<string>();
+    
+    // Start with root nodes
+    let currentLevel = rootNodes.map(n => n.id);
+    
+    // If no root nodes found, use the first node as root
+    if (currentLevel.length === 0 && nodes.length > 0) {
+      currentLevel = [nodes[0].id];
+      console.log('No root nodes found, using first node as root:', nodes[0].id);
+    }
+    
+    while (currentLevel.length > 0) {
+      levels.push([...currentLevel]);
+      currentLevel.forEach(nodeId => visited.add(nodeId));
+      
+      // Find next level nodes
+      const nextLevel = new Set<string>();
+      currentLevel.forEach(nodeId => {
+        const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+        outgoingEdges.forEach(edge => {
+          if (!visited.has(edge.target)) {
+            nextLevel.add(edge.target);
+          }
+        });
+      });
+      
+      currentLevel = Array.from(nextLevel);
+    }
+
+    // Add orphaned nodes to the end
+    if (orphanedNodes.length > 0) {
+      levels.push(orphanedNodes.map(n => n.id));
+      console.log('Added orphaned nodes to final level:', orphanedNodes.map(n => n.id));
+    }
+
+    // Ensure all nodes are placed
+    const allPlacedNodes = new Set(levels.flat());
+    const unplacedNodes = nodes.filter(node => !allPlacedNodes.has(node.id));
+    if (unplacedNodes.length > 0) {
+      levels.push(unplacedNodes.map(n => n.id));
+      console.log('Added unplaced nodes to final level:', unplacedNodes.map(n => n.id));
+    }
+
+    // Position nodes by levels - horizontally (left to right)
+    const reorganizedNodes = nodes.map(node => {
+      const levelIndex = levels.findIndex(level => level.includes(node.id));
+      
+      if (levelIndex === -1) {
+        // Fallback: place unplaced nodes in a simple grid
+        console.warn(`Node ${node.id} not found in any level, using fallback positioning`);
+        const fallbackIndex = nodes.indexOf(node);
+        const cols = Math.ceil(Math.sqrt(nodes.length));
+        const row = Math.floor(fallbackIndex / cols);
+        const col = fallbackIndex % cols;
+        return {
+          ...node,
+          position: {
+            x: col * horizontalSpacing,
+            y: row * verticalSpacing
+          }
+        };
+      }
+      
+      const level = levels[levelIndex];
+      const nodeIndexInLevel = level.indexOf(node.id);
+      
+      // Calculate position within the level - horizontal flow
+      const levelHeight = (level.length - 1) * verticalSpacing;
+      const startY = -levelHeight / 2;
+      const x = levelIndex * horizontalSpacing; // Horizontal progression through levels
+      const y = startY + nodeIndexInLevel * verticalSpacing; // Vertical positioning within level
+      
+      return {
+        ...node,
+        position: { x, y }
+      };
+    });
+
+    console.log(`Successfully reorganized ${nodes.length} nodes into ${levels.length} hierarchical levels:`, levels);
+    setNodes(reorganizedNodes);
+
+    // Perfect zoom and centering after reorganization - same as Controls component
+    setTimeout(() => {
+      if (reactFlowInstance.current) {
+        reactFlowInstance.current.fitView({
+          padding: 0.1, // Same as default ReactFlow controls
+          includeHiddenNodes: false,
+          duration: 300 // Same as default ReactFlow controls
+        });
+      }
+    }, 100); // Quick delay to ensure nodes are positioned
   };
 
   const nodeTypes = {
@@ -2276,7 +2486,7 @@ Format as a professional risk assessment report with specific data points, risk 
     <div className="w-full h-screen flex">
       {/* Sidebar */}
       <div className="w-80 bg-card border-r border-border p-4 overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-2">🎯 Node Library</h2>
+        <h2 className="text-lg font-semibold mb-2 text-black" style={{ fontFamily: 'monospace' }}>Node Library</h2>
         <p className="text-xs text-muted-foreground mb-4">
           Click to add • Drag ● to ● to connect
         </p>
@@ -2314,11 +2524,11 @@ Format as a professional risk assessment report with specific data points, risk 
         {/* Workflow Validation Errors */}
         {workflowErrors.length > 0 && (
           <div className="mt-6 pt-6 border-t border-border">
-            <h3 className="text-sm font-semibold mb-2 text-red-600">⚠️ Workflow Issues</h3>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 max-h-40 overflow-y-auto">
+            <h3 className="text-sm font-semibold mb-2 text-black" style={{ fontFamily: 'monospace' }}>Workflow Issues</h3>
+            <div className="bg-white border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto">
               {workflowErrors.map((error, idx) => (
-                <div key={idx} className="text-xs text-red-700 mb-1 flex items-start gap-2">
-                  <span className="text-red-500 mt-0.5">•</span>
+                <div key={idx} className="text-xs text-black mb-1 flex items-start gap-2" style={{ fontFamily: 'monospace' }}>
+                  <span className="text-black mt-0.5">•</span>
                   <span>{error}</span>
                 </div>
               ))}
@@ -2330,7 +2540,7 @@ Format as a professional risk assessment report with specific data points, risk 
         {workflowResults && (
           <div className="mt-6 pt-6 border-t border-border">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold">📊 Workflow Results</h3>
+              <h3 className="text-sm font-semibold text-black" style={{ fontFamily: 'monospace' }}>Workflow Results</h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
@@ -2431,6 +2641,9 @@ Format as a professional risk assessment report with specific data points, risk 
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onInit={(instance) => {
+            reactFlowInstance.current = instance;
+          }}
           onNodeClick={(event, node) => {
             setSelectedNode({
               nodeId: node.id,
@@ -2445,54 +2658,88 @@ Format as a professional risk assessment report with specific data points, risk 
           <Controls />
           
           <Panel position="top-left">
-            <div className="bg-card border rounded-lg shadow-lg p-3 flex gap-2 flex-wrap">
-              <Button 
-                size="sm" 
+            <div className="bg-white border border-gray-200 rounded-lg p-3 flex gap-2 flex-wrap">
+              <button 
                 onClick={executeWorkflow}
                 disabled={isExecuting || nodes.length === 0 || workflowErrors.length > 0}
-                variant={workflowErrors.length > 0 ? "destructive" : "default"}
-                className="relative"
+                className="px-3 py-1 bg-black text-white rounded text-sm hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                style={{ fontFamily: 'monospace' }}
               >
-                {isExecuting ? 'Running...' : workflowErrors.length > 0 ? 'Fix Issues First' : '▶️ Execute Workflow'}
-              </Button>
-              <Button 
-                size="sm" 
-                variant="secondary" 
-                onClick={loadExampleWorkflow}
+                {isExecuting ? 'Running...' : workflowErrors.length > 0 ? 'Fix Issues First' : 'Execute Workflow'}
+              </button>
+              <div className="relative examples-dropdown">
+                <button 
+                  onClick={() => setShowExamplesDropdown(!showExamplesDropdown)}
+                  className="px-3 py-1 bg-gray-100 text-black rounded text-sm hover:bg-gray-200 transition-colors flex items-center gap-1"
+                  style={{ fontFamily: 'monospace' }}
+                >
+                  Load Examples
+                  <span className="text-xs">{showExamplesDropdown ? '▲' : '▼'}</span>
+                </button>
+                {showExamplesDropdown && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
+                    <button 
+                      onClick={() => {
+                        loadExampleWorkflow();
+                        setShowExamplesDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors"
+                      style={{ fontFamily: 'monospace' }}
+                    >
+                      Simple (3 nodes)
+                    </button>
+                    <button 
+                      onClick={() => {
+                        loadComplexWorkflow();
+                        setShowExamplesDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors"
+                      style={{ fontFamily: 'monospace' }}
+                    >
+                      Complex (8 nodes)
+                    </button>
+                    <button 
+                      onClick={() => {
+                        loadDSPyWorkflow();
+                        setShowExamplesDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors"
+                      style={{ fontFamily: 'monospace' }}
+                    >
+                      DSPy (5 nodes)
+                    </button>
+                    <button 
+                      onClick={() => {
+                        loadAxLLMWorkflow();
+                        setShowExamplesDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors"
+                      style={{ fontFamily: 'monospace' }}
+                    >
+                      Ax LLM (4 nodes)
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={reorganizeNodes}
+                disabled={nodes.length === 0}
+                className="px-3 py-1 bg-gray-100 text-black rounded text-sm hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                style={{ fontFamily: 'monospace' }}
               >
-                Load Simple (3 nodes)
-              </Button>
-              <Button 
-                size="sm" 
-                variant="default" 
-                onClick={loadComplexWorkflow}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                Reorganize Layout
+              </button>
+              <button 
+                onClick={exportWorkflow}
+                className="px-3 py-1 border border-gray-300 text-black rounded text-sm hover:bg-gray-50 transition-colors"
+                style={{ fontFamily: 'monospace' }}
               >
-                Load Complex (8 nodes)
-              </Button>
-              <Button 
-                size="sm" 
-                variant="default" 
-                onClick={loadDSPyWorkflow}
-                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-              >
-                🔥 Load DSPy (5 nodes)
-              </Button>
-              <Button 
-                size="sm" 
-                variant="default" 
-                onClick={loadAxLLMWorkflow}
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-              >
-                ⚡ Load Ax LLM (4 nodes)
-              </Button>
-              <Button size="sm" variant="outline" onClick={exportWorkflow}>
                 Export
-              </Button>
+              </button>
               <label className="cursor-pointer">
-                <Button size="sm" variant="outline" asChild>
-                  <span>Import</span>
-                </Button>
+                <button className="px-3 py-1 border border-gray-300 text-black rounded text-sm hover:bg-gray-50 transition-colors" style={{ fontFamily: 'monospace' }}>
+                  Import
+                </button>
                 <input
                   type="file"
                   accept=".json"
@@ -2500,37 +2747,41 @@ Format as a professional risk assessment report with specific data points, risk 
                   className="hidden"
                 />
               </label>
-              <Button size="sm" variant="destructive" onClick={clearWorkflow}>
+              <button 
+                onClick={clearWorkflow}
+                className="px-3 py-1 text-black hover:text-gray-700 transition-colors text-sm"
+                style={{ fontFamily: 'monospace' }}
+              >
                 Clear
-              </Button>
+              </button>
             </div>
           </Panel>
 
-          <Panel position="top-right">
-            <div className="bg-card border rounded-lg shadow-lg p-4 max-w-sm">
-              <h3 className="font-semibold mb-2">Workflow Stats</h3>
-              <div className="text-xs space-y-1">
+          <Panel position="bottom-right">
+            <div className="bg-white border border-gray-200 rounded-lg p-2 max-w-xs">
+              <h3 className="font-semibold mb-1 text-black text-sm" style={{ fontFamily: 'monospace' }}>Stats</h3>
+              <div className="text-xs space-y-0.5">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Nodes:</span>
-                  <span className="font-mono font-bold">{nodes.length}</span>
+                  <span className="text-gray-600" style={{ fontFamily: 'monospace' }}>Nodes:</span>
+                  <span className="font-mono font-bold text-black">{nodes.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Connections:</span>
-                  <span className="font-mono font-bold">{edges.length}</span>
+                  <span className="text-gray-600" style={{ fontFamily: 'monospace' }}>Connections:</span>
+                  <span className="font-mono font-bold text-black">{edges.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Mode:</span>
-                  <span className="font-semibold text-purple-600">
-                    🔧 Real APIs
+                  <span className="text-gray-600" style={{ fontFamily: 'monospace' }}>Mode:</span>
+                  <span className="font-semibold text-black" style={{ fontFamily: 'monospace' }}>
+                    Real APIs
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status:</span>
+                  <span className="text-gray-600" style={{ fontFamily: 'monospace' }}>Status:</span>
                   <span className={`font-semibold ${
-                    isExecuting ? 'text-yellow-600' : 
-                    workflowErrors.length > 0 ? 'text-red-600' : 
-                    'text-green-600'
-                  }`}>
+                    isExecuting ? 'text-gray-600' : 
+                    workflowErrors.length > 0 ? 'text-gray-600' : 
+                    'text-black'
+                  }`} style={{ fontFamily: 'monospace' }}>
                     {isExecuting ? 'Running' : 
                      workflowErrors.length > 0 ? 'Issues Found' : 
                      'Ready'}
@@ -2538,8 +2789,8 @@ Format as a professional risk assessment report with specific data points, risk 
                 </div>
                 {workflowErrors.length > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Errors:</span>
-                    <span className="font-semibold text-red-600">{workflowErrors.length}</span>
+                    <span className="text-gray-600" style={{ fontFamily: 'monospace' }}>Errors:</span>
+                    <span className="font-semibold text-black" style={{ fontFamily: 'monospace' }}>{workflowErrors.length}</span>
                   </div>
                 )}
               </div>

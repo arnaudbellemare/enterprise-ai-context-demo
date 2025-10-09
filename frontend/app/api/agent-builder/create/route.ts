@@ -65,6 +65,64 @@ const TOOL_LIBRARY = {
     limitations: ['Only searches pre-indexed data', 'Requires existing knowledge base setup']
   },
   
+  knowledge_graph: {
+    id: 'knowledgeGraph',
+    label: 'Knowledge Graph',
+    description: 'Extract entities and relationships for instant answers (FAST & FREE)',
+    apiEndpoint: '/api/entities/extract',
+    icon: '🧠',
+    iconColor: 'bg-indigo-600',
+    capabilities: [
+      'Extract people, projects, and concepts from text',
+      'Map relationships between entities',
+      'Build knowledge graph automatically',
+      'Get instant answers from entity network',
+      'Track team collaboration and project status',
+      'FREE - no API costs',
+      'FAST - 10-50ms response time'
+    ],
+    bestFor: ['entity extraction', 'relationship mapping', 'team tracking', 'project monitoring', 'instant answers'],
+    limitations: ['Pattern-based extraction (70-90% accuracy)', 'Best for structured domain-specific text']
+  },
+  
+  instant_answer: {
+    id: 'instantAnswer',
+    label: 'Instant Answer',
+    description: 'Get grounded answers from knowledge graph (<100ms)',
+    apiEndpoint: '/api/instant-answer',
+    icon: '⚡',
+    iconColor: 'bg-green-600',
+    capabilities: [
+      'Query knowledge graph for instant answers',
+      'Find who is working on what projects',
+      'Track concepts and their relationships',
+      'Get confidence-scored responses',
+      'Sub-100ms response time',
+      'Completely FREE'
+    ],
+    bestFor: ['instant Q&A', 'team queries', 'project status', 'relationship queries'],
+    limitations: ['Requires pre-built knowledge graph', 'Domain-specific to trained entities']
+  },
+  
+  smart_extract: {
+    id: 'smartExtract',
+    label: 'Smart Extract (Hybrid)',
+    description: 'Intelligent mix of Knowledge Graph + LangStruct (auto-routes based on complexity)',
+    apiEndpoint: '/api/smart-extract',
+    icon: '🧠',
+    iconColor: 'bg-purple-600',
+    capabilities: [
+      'Auto-detects text complexity',
+      'Routes to Knowledge Graph (fast, free) for simple text',
+      'Routes to LangStruct (accurate, $$) for complex text',
+      'Best of both worlds: speed + accuracy',
+      'Graceful fallback if LangStruct unavailable',
+      'Cost-optimized: only uses paid API when needed'
+    ],
+    bestFor: ['mixed complexity workloads', 'cost optimization', 'accuracy + speed balance', 'production systems'],
+    limitations: ['LangStruct requires Python 3.12+ and API keys (falls back to KG)']
+  },
+  
   // === SELF-OPTIMIZING AI AGENTS (Ax DSPy + Ollama - FREE!) ===
   dspy_market_analyzer: {
     id: 'dspyMarketAnalyzer',

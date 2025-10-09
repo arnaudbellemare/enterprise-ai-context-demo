@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Agent Builder - Clean Minimalist Interface
+ * Agent Builder V2 - Clean Minimalist Interface
  * Uses the real Agent Builder backend with clean UI
  */
 
@@ -41,14 +41,13 @@ interface WorkflowRecommendation {
   };
 }
 
-export default function AgentBuilderPage() {
+export default function AgentBuilderV2() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [recommendation, setRecommendation] = useState<WorkflowRecommendation | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Function to strip markdown formatting from text
   const stripMarkdown = (text: string): string => {
@@ -98,18 +97,6 @@ Try these examples:`,
     setInput(example);
   };
 
-  // Auto-resize textarea with proper constraints
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-    
-    // Auto-resize textarea
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      const newHeight = Math.min(textareaRef.current.scrollHeight, 120); // Max 120px
-      textareaRef.current.style.height = `${newHeight}px`;
-    }
-  };
-
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -153,7 +140,7 @@ Try these examples:`,
           role: 'assistant',
           content: stripMarkdown(data.response || 'Workflow generated successfully!'),
           timestamp: new Date(),
-          metadata: { 
+          metadata: {
             recommendation: data.recommendation,
             routing: data.routing
           }
@@ -188,15 +175,21 @@ Try these examples:`,
   };
 
   const examplePrompts = [
-    "Create a customer support workflow",
-    "Build a sales lead qualification system",
-    "Design a content marketing automation",
-    "Set up inventory management tracking",
-    "Develop a project status reporting agent"
+    "Create an agent that researches competitors and generates market analysis",
+    "Build a workflow to extract entities from documents and create knowledge graphs",
+    "Make an assistant that tracks my team's projects and provides status updates",
+    "Design an agent for financial analysis and investment recommendations",
+    "Create a customer support agent with context awareness"
   ];
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="flex items-center gap-4 p-6">
+        <div className="w-8 h-8 bg-black flex items-center justify-center">
+          <span className="text-white font-bold text-lg">A</span>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-6 py-12">
@@ -205,90 +198,73 @@ Try these examples:`,
           What would you like to know?
         </h1>
 
-        {/* Input Box - Horizontal Search Bar Layout */}
-        <div className="relative mb-12">
-          <div className="bg-white border border-gray-200 rounded-lg max-w-4xl mx-auto">
-            {/* Clean Input Bar */}
-            <div className="flex items-center px-4 py-4">
-              {/* Input Field */}
-              <div className="flex-1">
-                <textarea
-                  ref={textareaRef}
-                  placeholder="Ask about your workflows..."
-                  value={input}
-                  onChange={handleTextareaChange}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  className="w-full bg-transparent outline-none resize-none text-sm text-black placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-transparent"
-                  style={{ 
-                    fontFamily: 'monospace',
-                    minHeight: '20px',
-                    maxHeight: '100px'
-                  }}
-                  rows={1}
-                  aria-label="Message input"
-                />
-              </div>
-              
-              {/* Right: Send Button */}
+        {/* Input Area */}
+        <div className="relative mb-8">
+          <div className="bg-white border-2 border-gray-300 rounded-lg p-4 min-h-[80px] flex items-center">
+            <input
+              type="text"
+              placeholder="Ask me anything..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              className="flex-1 bg-transparent outline-none text-lg"
+              style={{ fontFamily: 'monospace' }}
+            />
+            
+            {/* Input Controls */}
+            <div className="flex items-center gap-3 ml-4">
+              <button className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200">
+                <span className="text-gray-600">+</span>
+              </button>
+              <button className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200">
+                <span className="text-gray-600 text-xs">Mic</span>
+              </button>
+              <button className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200">
+                <span className="text-gray-600 text-xs">Search</span>
+              </button>
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
-                className="w-10 h-10 bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg flex items-center justify-center transition-colors ml-4"
-                aria-label="Send message"
+                className="w-10 h-10 bg-black rounded flex items-center justify-center hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="text-white text-sm">✈</span>
+                <span className="text-white text-sm">Send</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Example Prompts */}
-        <div className="max-w-4xl mx-auto space-y-3 mb-12">
-          {/* First Row */}
-          <div className="flex flex-wrap gap-6 justify-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+          <div className="space-y-2">
             <button
               onClick={() => handleExampleClick(examplePrompts[0])}
-              className="text-black hover:text-gray-700 transition-colors"
+              className="w-full text-left text-gray-600 hover:text-black transition-colors"
               style={{ fontFamily: 'monospace' }}
             >
               {examplePrompts[0]}
             </button>
             <button
               onClick={() => handleExampleClick(examplePrompts[1])}
-              className="text-black hover:text-gray-700 transition-colors"
+              className="w-full text-left text-gray-600 hover:text-black transition-colors"
               style={{ fontFamily: 'monospace' }}
             >
               {examplePrompts[1]}
             </button>
           </div>
-          
-          {/* Second Row */}
-          <div className="flex flex-wrap gap-6 justify-center">
+          <div className="space-y-2">
             <button
               onClick={() => handleExampleClick(examplePrompts[2])}
-              className="text-black hover:text-gray-700 transition-colors"
+              className="w-full text-left text-gray-600 hover:text-black transition-colors"
               style={{ fontFamily: 'monospace' }}
             >
               {examplePrompts[2]}
             </button>
             <button
               onClick={() => handleExampleClick(examplePrompts[3])}
-              className="text-black hover:text-gray-700 transition-colors"
+              className="w-full text-left text-gray-600 hover:text-black transition-colors"
               style={{ fontFamily: 'monospace' }}
             >
               {examplePrompts[3]}
-            </button>
-            <button
-              onClick={() => handleExampleClick(examplePrompts[4])}
-              className="text-black hover:text-gray-700 transition-colors"
-              style={{ fontFamily: 'monospace' }}
-            >
-              {examplePrompts[4]}
             </button>
           </div>
         </div>
@@ -296,38 +272,9 @@ Try these examples:`,
         {/* Messages */}
         {messages.length > 1 && (
           <div className="space-y-4 mb-8">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-black" style={{ fontFamily: 'monospace' }}>
-                Conversation
-              </h3>
-              <button
-                onClick={() => {
-                  const welcomeMessage: Message = {
-                    id: '1',
-                    role: 'assistant',
-                    content: `Welcome to the AI Agent Builder!
-
-I can help you create custom AI workflows by simply describing what you want to build. Just tell me:
-
-What you want to achieve:
-• Research and analyze data
-• Generate reports or content
-• Process documents or files
-• Create automation workflows
-• Build custom AI assistants
-
-Try these examples:`,
-                    timestamp: new Date()
-                  };
-                  setMessages([welcomeMessage]);
-                  setRecommendation(null);
-                }}
-                className="px-3 py-1 bg-black text-white text-xs font-mono hover:bg-gray-800 rounded transition-colors"
-                title="Clear conversation history"
-              >
-                Clear
-              </button>
-            </div>
+            <h3 className="text-lg font-semibold text-black" style={{ fontFamily: 'monospace' }}>
+              Conversation
+            </h3>
             <div 
               ref={scrollAreaRef}
               className="space-y-3 max-h-96 overflow-y-auto"
@@ -407,51 +354,11 @@ Try these examples:`,
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Deploy to Workflow Builder */}
                 <button
-                  onClick={async () => {
-    if (!recommendation) return;
-
-    try {
-      // Prepare the workflow data
-      const workflowData = {
-        name: recommendation.name,
-        description: recommendation.description,
-        nodes: recommendation.nodes,
-        edges: recommendation.edges,
-        configs: recommendation.configs,
-        generatedBy: 'Agent Builder',
-        timestamp: new Date().toISOString()
-      };
-
-                      console.log('💾 Storing workflow:', workflowData.name);
-
-                      // Try Supabase first, fallback to localStorage
-                      try {
-      const response = await fetch('/api/workflows/temp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflowData })
-      });
-
-      const result = await response.json();
-
-                        if (response.ok && result.success) {
-                          console.log('✅ Workflow stored in Supabase:', result.sessionId);
-                          window.open(`/workflow?session_id=${result.sessionId}`, '_blank');
-                          return;
-                        }
-                      } catch (dbError) {
-                        console.warn('Supabase storage failed, using localStorage:', dbError);
-                      }
-
-                      // Fallback to localStorage
-                      localStorage.setItem('deployedWorkflow', JSON.stringify(workflowData));
-                      console.log('✅ Workflow stored in localStorage');
-                      window.open('/workflow', '_blank');
-                      
-                    } catch (error) {
-                      console.error('Error deploying workflow:', error);
-                      alert('Failed to deploy workflow. Please try again.');
-                    }
+                  onClick={() => {
+                    // Store workflow in localStorage and redirect to workflow page
+                    console.log('Deploying workflow:', recommendation);
+                    localStorage.setItem('deployedWorkflow', JSON.stringify(recommendation));
+                    window.open('/workflow', '_blank');
                   }}
                   className="px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm"
                   style={{ fontFamily: 'monospace' }}
@@ -494,7 +401,7 @@ Try these examples:`,
                 >
                   Copy Config
                 </button>
-                      </div>
+              </div>
 
               {/* Deployment Status */}
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
@@ -503,16 +410,16 @@ Try these examples:`,
                   <span className="text-sm font-medium text-blue-800" style={{ fontFamily: 'monospace' }}>
                     Deployment Options
                   </span>
-                        </div>
+                </div>
                 <div className="text-xs text-blue-700 space-y-1" style={{ fontFamily: 'monospace' }}>
                   <div>• <strong>Workflow Builder:</strong> Visual drag-and-drop interface</div>
                   <div>• <strong>Export JSON:</strong> Download workflow configuration</div>
                   <div>• <strong>Copy Config:</strong> Share or backup workflow</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Loading State */}
         {isGenerating && (
@@ -522,12 +429,12 @@ Try these examples:`,
               <h3 className="text-lg font-semibold text-black" style={{ fontFamily: 'monospace' }}>
                 Building your agent...
               </h3>
-                  </div>
+            </div>
             <p className="text-gray-600" style={{ fontFamily: 'monospace' }}>
               Analyzing requirements and creating workflow components
             </p>
-                  </div>
-                )}
+          </div>
+        )}
       </div>
     </div>
   );
