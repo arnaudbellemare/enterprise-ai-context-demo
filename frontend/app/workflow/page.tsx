@@ -945,11 +945,51 @@ export default function WorkflowPage() {
     }
 
     setIsExecuting(true);
-    addLog('Workflow execution started with REAL APIs');
+    addLog('🚀 Workflow execution started with REAL APIs');
 
     try {
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ARCMEMO: Retrieve learned concepts BEFORE execution
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      let learnedConcepts: any[] = [];
+      try {
+        addLog('🧠 Retrieving learned concepts from ArcMemo...');
+        const conceptsResponse = await fetch('/api/arcmemo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'retrieve',
+            query: { 
+              userRequest: currentWorkflowName, 
+              domain: currentWorkflowName.toLowerCase().includes('real estate') ? 'real_estate' : 
+                      currentWorkflowName.toLowerCase().includes('financ') ? 'finance' : 'general'
+            }
+          })
+        });
+        
+        if (conceptsResponse.ok) {
+          const conceptsData = await conceptsResponse.json();
+          learnedConcepts = conceptsData.concepts || [];
+          if (learnedConcepts.length > 0) {
+            addLog(`💡 Applied ${learnedConcepts.length} learned concepts to improve analysis`);
+          } else {
+            addLog('📝 No prior concepts found - will learn from this execution');
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ ArcMemo retrieval failed:', error);
+        addLog('⚠️ Concept retrieval skipped (not critical)');
+      }
+      
       const executionOrder = getExecutionOrder(nodes, edges);
       let workflowData: any = {};
+      
+      // Inject learned concepts as context (if any)
+      if (learnedConcepts.length > 0) {
+        workflowData['_arcmemo_concepts'] = learnedConcepts
+          .map(c => `💡 Learned: ${c.concept} (${c.domain}, success rate: ${(c.successRate * 100).toFixed(0)}%)`)
+          .join('\n');
+      }
       
       for (const nodeId of executionOrder) {
         const node = nodes.find((n) => n.id === nodeId);
@@ -1628,6 +1668,44 @@ Format as a professional risk assessment report with specific data points, risk 
       
       // Store results for display
       setWorkflowResults(workflowData);
+      
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ARCMEMO: Abstract new concepts AFTER successful execution
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      try {
+        addLog('🧠 Learning from this execution with ArcMemo...');
+        const abstractResponse = await fetch('/api/arcmemo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'abstract',
+            workflow: {
+              name: currentWorkflowName,
+              domain: currentWorkflowName.toLowerCase().includes('real estate') ? 'real_estate' : 
+                      currentWorkflowName.toLowerCase().includes('financ') ? 'finance' : 'general',
+              nodes: nodes.map(n => ({
+                id: n.id,
+                label: n.data.label,
+                role: n.data.role || n.data.label
+              })),
+              results: workflowData,
+              userQuery: currentWorkflowName,
+              success: true
+            }
+          })
+        });
+        
+        if (abstractResponse.ok) {
+          const abstractData = await abstractResponse.json();
+          if (abstractData.concepts && abstractData.concepts.length > 0) {
+            addLog(`✨ Learned ${abstractData.concepts.length} new concepts for future use`);
+            addLog(`📚 Memory updated: ${abstractData.concepts.map((c: any) => c.concept.substring(0, 50) + '...').join(', ')}`);
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ ArcMemo abstraction failed:', error);
+        addLog('⚠️ Concept learning skipped (not critical)');
+      }
       
       alert('✅ Workflow completed! Check the Results panel for output.');
     } catch (error: any) {
