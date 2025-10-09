@@ -224,10 +224,40 @@ function analyzeAgentTask(agentConfig: {
  */
 export async function POST(request: Request) {
   try {
-    const { agentConfig, budgetConstraint = 'balanced' } = await request.json();
+    const body = await request.json();
+    const { 
+      agentConfig, 
+      task, 
+      complexity, 
+      requiresWebSearch,
+      budgetConstraint = 'balanced' 
+    } = body;
     
-    // Analyze task
-    const taskAnalysis = analyzeAgentTask(agentConfig);
+    // Handle both formats: legacy (agentConfig) and direct (task, complexity)
+    let taskAnalysis;
+    
+    if (agentConfig) {
+      // Legacy format: analyze agent config
+      taskAnalysis = analyzeAgentTask(agentConfig);
+    } else if (task || complexity) {
+      // Direct format: use provided parameters
+      taskAnalysis = {
+        type: task || 'analysis',
+        complexity: complexity || 'medium',
+        requiresWebSearch: requiresWebSearch || false,
+        requiresCitations: false,
+        requiresRealTimeData: false
+      };
+    } else {
+      // Fallback: simple analysis task
+      taskAnalysis = {
+        type: 'analysis',
+        complexity: 'medium',
+        requiresWebSearch: false,
+        requiresCitations: false,
+        requiresRealTimeData: false
+      };
+    }
     
     // Select optimal model
     const modelSelection = selectOptimalModel({
@@ -239,18 +269,29 @@ export async function POST(request: Request) {
       success: true,
       taskAnalysis,
       modelSelection,
+      selectedModel: {
+        name: modelSelection.model,
+        tier: modelSelection.tier,
+        reasoning: modelSelection.reasoning,
+        estimatedCost: modelSelection.estimatedCost
+      },
       recommendation: {
         useModel: modelSelection.model,
         useTier: modelSelection.tier,
         reasoning: modelSelection.reasoning,
         estimatedCost: modelSelection.estimatedCost,
-        apiEndpoint: getAPIEndpoint(modelSelection.tier, agentConfig.apiEndpoint)
+        apiEndpoint: agentConfig?.apiEndpoint 
+          ? getAPIEndpoint(modelSelection.tier, agentConfig.apiEndpoint)
+          : getAPIEndpoint(modelSelection.tier, '/api/agent/chat')
       }
     });
     
   } catch (error) {
     console.error('Model router error:', error);
-    return NextResponse.json({ error: 'Model routing failed' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Model routing failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 

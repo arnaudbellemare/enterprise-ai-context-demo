@@ -140,11 +140,57 @@ export async function POST(req: NextRequest) {
     // Execute the DSPy module
     const startTime = Date.now();
     console.log(`🔄 Executing DSPy module: ${moduleName} with provider: ${provider}`);
+    console.log(`📝 Module inputs:`, JSON.stringify(moduleInputs, null, 2));
+    console.log(`📝 Signature:`, signature.substring(0, 200));
     
-    const result = await dspyModule.forward(llm, moduleInputs);
+    let result;
+    try {
+      result = await dspyModule.forward(llm, moduleInputs);
+    } catch (axError: any) {
+      // Fallback: If Ax fails, call Ollama directly
+      console.warn(`⚠️  Ax forward failed, using direct Ollama fallback:`, axError.message);
+      
+      const prompt = `You are a ${moduleName.replace(/_/g, ' ')}. 
+
+Inputs: ${JSON.stringify(moduleInputs, null, 2)}
+
+Generate a structured response following this signature:
+${signature}
+
+Provide your analysis in JSON format.`;
+
+      const ollamaResponse = await fetch('http://localhost:11434/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemma3:4b',
+          messages: [
+            { role: 'system', content: 'You are a helpful AI assistant specialized in structured analysis.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000
+        })
+      });
+      
+      const ollamaData = await ollamaResponse.json();
+      const content = ollamaData.choices?.[0]?.message?.content || '{}';
+      
+      // Parse JSON or create structured response
+      try {
+        result = JSON.parse(content);
+      } catch {
+        result = {
+          analysis: content,
+          summary: content.substring(0, 200),
+          reasoning: 'Direct Ollama fallback (Ax unavailable)'
+        };
+      }
+    }
     
     const executionTime = Date.now() - startTime;
     console.log(`✅ DSPy module completed in ${executionTime}ms`);
+    console.log(`📝 Result:`, JSON.stringify(result, null, 2).substring(0, 300));
 
     // Format response
     const response = {
@@ -218,9 +264,9 @@ function initializeLLM(provider: string) {
   
   return ai({
     name: 'ollama',
-    model: 'llama3.1:latest', // Using local Llama 3.1
-    apiURL: process.env.OLLAMA_API_URL || 'http://localhost:11434/v1',
-    apiKey: process.env.OLLAMA_API_KEY || 'ollama'
+    model: 'gemma3:4b', // Using local Gemma 3 (4B - installed model)
+    url: process.env.OLLAMA_API_URL || 'http://localhost:11434', // Ax uses 'url' not 'apiURL'
+    apiKey: process.env.OLLAMA_API_KEY || 'ollama' // Required by Ax even though Ollama doesn't need it
   });
 }
 

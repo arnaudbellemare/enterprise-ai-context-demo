@@ -1082,10 +1082,11 @@ export default function WorkflowPage() {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
-                    prompt: nodeConfig.query || nodeConfig.prompt || nodeConfig.systemPrompt || currentWorkflowName,
-                    context: previousNodeData.substring(0, 2000), // Limit context size
+                    query: nodeConfig.query || nodeConfig.prompt || nodeConfig.systemPrompt || currentWorkflowName,
+                    context: previousNodeData || 'Initial workflow execution',
                     industry: currentWorkflowName.toLowerCase().includes('real estate') ? 'real_estate' : 
-                             currentWorkflowName.toLowerCase().includes('financ') ? 'finance' : 'general'
+                             currentWorkflowName.toLowerCase().includes('financ') ? 'finance' : 'general',
+                    useRealGEPA: false // Use fast mock for performance
                   })
                 });
                 

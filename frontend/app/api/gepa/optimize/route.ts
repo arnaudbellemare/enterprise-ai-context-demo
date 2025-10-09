@@ -248,12 +248,16 @@ export async function POST(request: NextRequest) {
         realGEPA: true
       });
     } else {
-      // Simulated GEPA (existing logic)
+      // Simulated GEPA (fast mock for performance)
       const queryComplexity = (query?.length || 0) + (context?.length || 0);
       const baseScore = Math.min(95, 70 + Math.floor(queryComplexity / 100));
+      
+      // Generate optimized prompt (mock enhancement)
+      const optimizedPrompt = `[GEPA-Optimized] ${query}\n\nContext-aware enhancement: ${context ? 'Leverage provided context for deeper analysis.' : 'Conduct independent analysis.'}\n\nIndustry focus: ${body.industry || 'general'}\n\nApply systematic reasoning and cite sources.`;
 
-    return NextResponse.json({
-      success: true,
+      return NextResponse.json({
+        success: true,
+        optimizedPrompt,
         metrics: {
           optimizationScore: baseScore,
           efficiencyGain: '35x fewer rollouts',
