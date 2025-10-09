@@ -147,22 +147,36 @@ Respond in JSON:
         if (error) {
           console.error('Error storing concept in Supabase:', error);
           // Fallback to in-memory
-          conceptMemoryFallback.set(data?.id || Date.now().toString(), {
+          const fallbackConcept: ConceptMemory = {
             id: data?.id || Date.now().toString(),
-            ...conceptData,
+            concept: conceptData.concept,
+            domain: conceptData.domain,
+            abstractionLevel: conceptData.abstraction_level as 'specific' | 'general' | 'universal',
+            sourceWorkflows: conceptData.source_workflows,
+            applicationCount: conceptData.application_count,
+            successRate: conceptData.success_rate,
+            embedding: conceptData.embedding,
             createdAt: new Date(),
             lastUsed: new Date(),
             metadata: conceptData.metadata as any
-          });
+          };
+          conceptMemoryFallback.set(fallbackConcept.id, fallbackConcept);
         } else {
           console.log('✅ Stored concept in Supabase:', concept.concept);
-          newConcepts.push({
+          const storedConcept: ConceptMemory = {
             id: data.id,
-            ...conceptData,
+            concept: conceptData.concept,
+            domain: conceptData.domain,
+            abstractionLevel: conceptData.abstraction_level as 'specific' | 'general' | 'universal',
+            sourceWorkflows: conceptData.source_workflows,
+            applicationCount: conceptData.application_count,
+            successRate: conceptData.success_rate,
+            embedding: conceptData.embedding,
             createdAt: new Date(data.created_at),
             lastUsed: new Date(data.last_used),
             metadata: conceptData.metadata as any
-          });
+          };
+          newConcepts.push(storedConcept);
         }
       } else {
         // In-memory fallback
@@ -342,7 +356,7 @@ async function updateConceptFeedback(
   newExample?: string
 ) {
   
-  const concept = conceptMemory.get(conceptId);
+  const concept = conceptMemoryFallback.get(conceptId);
   if (!concept) return;
   
   // Update metrics
@@ -359,10 +373,10 @@ async function updateConceptFeedback(
   
   // Prune if consistently unsuccessful
   if (concept.applicationCount > 10 && concept.successRate < 0.3) {
-    conceptMemory.delete(conceptId);
+    conceptMemoryFallback.delete(conceptId);
     console.log('🗑️  Removed low-performing concept:', concept.concept);
   } else {
-    conceptMemory.set(conceptId, concept);
+    conceptMemoryFallback.set(conceptId, concept);
     console.log('✅ Updated concept:', concept.concept, `(${(concept.successRate * 100).toFixed(0)}% success)`);
   }
 }
@@ -371,7 +385,7 @@ async function updateConceptFeedback(
  * GET memory statistics
  */
 function getMemoryStats() {
-  const concepts = Array.from(conceptMemory.values());
+  const concepts = Array.from(conceptMemoryFallback.values());
   
   return {
     totalConcepts: concepts.length,
@@ -430,7 +444,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   // Get all concepts or memory stats
   const stats = getMemoryStats();
-  const recentConcepts = Array.from(conceptMemory.values())
+  const recentConcepts = Array.from(conceptMemoryFallback.values())
     .sort((a, b) => b.lastUsed.getTime() - a.lastUsed.getTime())
     .slice(0, 10);
   

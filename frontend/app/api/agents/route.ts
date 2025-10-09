@@ -265,6 +265,14 @@ function matchByKeywords(userRequest: string): {
 
 /**
  * LLM-powered routing (10% of complex cases)
+ * Uses "One-Token Trick" for ultra-fast, cost-effective routing
+ * Inspired by: https://blog.getzep.com/the-one-token-trick/
+ * 
+ * Each agent is assigned a unique letter prefix:
+ * W = webSearchAgent, D = dspyMarketAgent, etc.
+ * LLM responds with just ONE token (the letter), reducing:
+ * - Latency: ~90% faster (no multi-token generation)
+ * - Cost: ~95% cheaper (only 1 output token)
  */
 async function matchByLLM(userRequest: string, context: any): Promise<{
   agent: keyof typeof AGENT_REGISTRY;
@@ -272,57 +280,78 @@ async function matchByLLM(userRequest: string, context: any): Promise<{
   confidence: 'high' | 'medium' | 'low';
 }> {
   try {
-    // Build agent descriptions for LLM
-    const agentDescriptions = Object.entries(AGENT_REGISTRY)
-      .map(([key, agent]) => 
-        `- ${key}: ${agent.name} - ${agent.capabilities.join(', ')}`
-      )
+    // ONE-TOKEN TRICK: Assign unique letters to each agent
+    const agentLetterMap: Record<string, keyof typeof AGENT_REGISTRY> = {
+      'W': 'webSearchAgent',
+      'D': 'dspyMarketAgent', 
+      'R': 'dspyRealEstateAgent',
+      'F': 'dspyFinancialAgent',
+      'I': 'dspyInvestmentAgent',
+      'S': 'dspySynthesizer',
+      'G': 'gepaAgent',
+      'L': 'langstructAgent',
+      'M': 'memorySearchAgent',
+      'C': 'contextAssemblyAgent',
+      'E': 'celAgent',
+      'A': 'customAgent', // "Agent" - general purpose
+      'O': 'answerAgent'  // "Output" - final
+    };
+    
+    // Build compact agent descriptions for LLM
+    const agentDescriptions = Object.entries(agentLetterMap)
+      .map(([letter, agentKey]) => {
+        const agent = AGENT_REGISTRY[agentKey];
+        return `${letter} = ${agent.name}: ${agent.capabilities.slice(0, 3).join(', ')}`;
+      })
       .join('\n');
     
-    const systemPrompt = `You are an expert AI routing agent. Select the BEST agent for this request.
+    const systemPrompt = `You are an expert AI routing agent. Respond with ONLY ONE LETTER.
 
-AVAILABLE AGENTS:
+AVAILABLE AGENTS (respond with the letter):
 ${agentDescriptions}
 
-Respond with JSON:
-{
-  "agent": "agentKey",
-  "reasoning": "why this agent is best",
-  "confidence": "high|medium|low"
-}`;
+Analyze the user request and respond with the single letter of the BEST agent.
+Respond ONLY with the letter. Nothing else.`;
 
     const response = await fetch('http://localhost:3000/api/perplexity/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        query: `Select the best agent for: "${userRequest}"`,
+        query: `Request: "${userRequest}"\n\nBest agent letter:`,
         context: systemPrompt,
         useRealAI: true
       })
     });
     
     const data = await response.json();
-    const llmResponse = data.response || data.content || '';
+    const llmResponse = (data.response || data.content || '').trim().toUpperCase();
     
-    // Parse JSON from response
-    const jsonMatch = llmResponse.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const result = JSON.parse(jsonMatch[0]);
-      return {
-        agent: result.agent || 'customAgent',
-        reasoning: result.reasoning || 'LLM routing',
-        confidence: result.confidence || 'medium'
-      };
+    // ONE-TOKEN TRICK: Extract single letter from response
+    const letterMatch = llmResponse.match(/[A-Z]/);
+    if (letterMatch) {
+      const letter = letterMatch[0];
+      const selectedAgent = agentLetterMap[letter];
+      
+      if (selectedAgent) {
+        console.log(`⚡ One-Token Routing: ${letter} → ${selectedAgent}`);
+        return {
+          agent: selectedAgent,
+          reasoning: `LLM selected ${AGENT_REGISTRY[selectedAgent].name} via one-token routing`,
+          confidence: 'high' // High confidence since LLM chose this specific agent
+        };
+      }
     }
     
+    console.warn('⚠️  Could not parse one-token response:', llmResponse);
+    
   } catch (error) {
-    console.error('LLM routing failed:', error);
+    console.error('❌ LLM routing failed:', error);
   }
   
-  // Fallback
+  // Fallback to general agent
   return {
     agent: 'customAgent',
-    reasoning: 'LLM routing failed - using fallback',
+    reasoning: 'LLM routing failed - using general purpose fallback',
     confidence: 'low'
   };
 }

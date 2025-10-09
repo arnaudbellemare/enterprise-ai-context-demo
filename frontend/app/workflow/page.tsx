@@ -784,7 +784,7 @@ export default function WorkflowPage() {
   // Handle drag connections between nodes
   const onConnect = useCallback(
     (connection: FlowConnection) => {
-      const newEdge = {
+      const newEdge: any = {
         ...connection,
         type: 'animated',
         id: `edge-${Date.now()}`,
@@ -839,7 +839,7 @@ export default function WorkflowPage() {
     setNodes((nds) =>
       nds.map((n) =>
         n.id === nodeId
-          ? { ...n, data: { ...n.data, config: { ...n.data.config, ...config } } }
+          ? { ...n, data: { ...n.data, config: { ...(n.data.config || {}), ...config } } }
           : n
       )
     );
@@ -969,7 +969,8 @@ export default function WorkflowPage() {
           if (Array.isArray(data)) return data.join('\n');
           if (data && typeof data === 'object') {
             // Extract text from response objects
-            return data.response || data.content || data.answer || data.context || JSON.stringify(data, null, 2);
+            const dataObj = data as any;
+            return dataObj.response || dataObj.content || dataObj.answer || dataObj.context || JSON.stringify(data, null, 2);
           }
           return String(data);
         }).join('\n\n---\n\n');
@@ -1840,7 +1841,7 @@ Format as a professional risk assessment report with specific data points, risk 
 
   const nodeTypes = {
     customizable: ({ data }: any) => {
-      const statusColors = {
+      const statusColors: Record<string, string> = {
         ready: 'border-gray-300 dark:border-gray-600',
         executing: 'border-yellow-500 animate-pulse',
         complete: 'border-green-500',
@@ -1857,7 +1858,7 @@ Format as a professional risk assessment report with specific data points, risk 
 
       return (
         <div className="group">
-          <Node handles={{ target: true, source: true }} className={`${statusColors[data.status]} border-2`}>
+          <Node handles={{ target: true, source: true }} className={`${statusColors[data.status] || 'border-gray-300'} border-2`}>
             <NodeHeader>
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center flex-shrink-0 ${colorClasses[data.iconColor as keyof typeof colorClasses] || 'bg-gray-50 border-gray-200 text-gray-700'}`}>

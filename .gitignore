@@ -154,3 +154,14 @@ chroma_db/
 .supabase/
 YOUR_ACTUAL_CREDENTIALS.md
 enterprise-ai-context-demo-1/
+PERPLEXITY_API_KEY.txt
+*.txt
+.env.local
+frontend/.env.local
+# Credentials - NEVER COMMIT THESE
+CREDENTIALS.txt
+PERPLEXITY_API_KEY.txt
+*.env.local
+.env.local
+frontend/.env.local
+

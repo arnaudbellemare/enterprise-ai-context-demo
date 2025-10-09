@@ -272,7 +272,8 @@ export async function GET() {
   return NextResponse.json({
     models: Object.entries(MODEL_CONFIGS).map(([key, config]) => ({
       name: key,
-      model: config.model,
+      ollama: config.ollama,
+      openrouter: config.openrouter,
       useCase: config.useCase,
       speed: config.speed,
     }))

@@ -141,7 +141,7 @@ export default function AxWorkflowPage() {
   // Handle connections between nodes (drag from one handle to another)
   const onConnect = useCallback(
     (connection: FlowConnection) => {
-      const newEdge = {
+      const newEdge: any = {
         ...connection,
         type: 'animated',
         id: `edge-${Date.now()}`,
@@ -196,7 +196,7 @@ export default function AxWorkflowPage() {
     setNodes((nds) =>
       nds.map((n) =>
         n.id === nodeId
-          ? { ...n, data: { ...n.data, config: { ...n.data.config, ...config } } }
+          ? { ...n, data: { ...n.data, config: { ...(n.data.config || {}), ...config } } }
           : n
       )
     );
@@ -307,7 +307,7 @@ export default function AxWorkflowPage() {
 
     switch (nodeType) {
       case 'memorySearch':
-        const memoryRes = await fetch(apiEndpoint, {
+        const memoryRes = await fetch(apiEndpoint as string, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -320,7 +320,7 @@ export default function AxWorkflowPage() {
         return { memoryResults: memoryData.documents || [] };
 
       case 'webSearch':
-        const webRes = await fetch(apiEndpoint, {
+        const webRes = await fetch(apiEndpoint as string, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -337,7 +337,7 @@ export default function AxWorkflowPage() {
         };
 
       case 'modelRouter':
-        const routerRes = await fetch(apiEndpoint, {
+        const routerRes = await fetch(apiEndpoint as string, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -350,7 +350,7 @@ export default function AxWorkflowPage() {
         return { selectedModel: routerData.model };
 
       case 'gepaOptimize':
-        const gepaRes = await fetch(apiEndpoint, {
+        const gepaRes = await fetch(apiEndpoint as string, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -362,7 +362,7 @@ export default function AxWorkflowPage() {
         return { optimizedPrompt: gepaData.optimizedPrompt };
 
       case 'langstruct':
-        const langstructRes = await fetch(apiEndpoint, {
+        const langstructRes = await fetch(apiEndpoint as string, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -374,7 +374,7 @@ export default function AxWorkflowPage() {
         return { extractedData: langstructData.extracted_data };
 
       case 'answer':
-        const answerRes = await fetch(apiEndpoint, {
+        const answerRes = await fetch(apiEndpoint as string, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -437,7 +437,7 @@ export default function AxWorkflowPage() {
   // Custom node type renderer
   const nodeTypes = {
     customizable: ({ data }: any) => {
-      const statusColors = {
+      const statusColors: Record<string, string> = {
         ready: 'border-gray-300',
         executing: 'border-yellow-500 animate-pulse',
         complete: 'border-green-500',
@@ -446,7 +446,7 @@ export default function AxWorkflowPage() {
 
       return (
         <div className="group">
-          <Node handles={{ target: true, source: true }} className={`${statusColors[data.status]} border-2`}>
+          <Node handles={{ target: true, source: true }} className={`${statusColors[data.status] || 'border-gray-300'} border-2`}>
             <NodeHeader>
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{data.icon}</span>
@@ -648,8 +648,8 @@ export default function AxWorkflowPage() {
           <div className="absolute top-4 right-4 w-96 bg-card border border-border rounded-lg shadow-2xl p-4 max-h-[80vh] overflow-y-auto z-50">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <span>{selectedNode.icon}</span>
-                Configure {selectedNode.label}
+                <span>{String(selectedNode.data?.icon || '')}</span>
+                Configure {String(selectedNode.data?.label || selectedNode.id)}
               </h3>
               <Button size="sm" variant="ghost" onClick={() => setSelectedNode(null)}>
                 ✕
@@ -657,7 +657,7 @@ export default function AxWorkflowPage() {
             </div>
 
             <div className="space-y-4">
-              {Object.entries(nodeConfigs[selectedNode.nodeId] || {}).map(([key, value]) => (
+              {Object.entries(nodeConfigs[selectedNode.id] || {}).map(([key, value]) => (
                 <div key={key}>
                   <label className="text-sm font-medium block mb-1">
                     {key.replace(/([A-Z])/g, ' $1').trim()}
@@ -667,7 +667,7 @@ export default function AxWorkflowPage() {
                       type="checkbox"
                       checked={value}
                       onChange={(e) =>
-                        updateNodeConfig(selectedNode.nodeId, { [key]: e.target.checked })
+                        updateNodeConfig(selectedNode.id, { [key]: e.target.checked })
                       }
                       className="rounded"
                     />
@@ -676,7 +676,7 @@ export default function AxWorkflowPage() {
                       type="number"
                       value={value}
                       onChange={(e) =>
-                        updateNodeConfig(selectedNode.nodeId, { [key]: parseFloat(e.target.value) })
+                        updateNodeConfig(selectedNode.id, { [key]: parseFloat(e.target.value) })
                       }
                       className="w-full px-3 py-2 border border-border rounded-lg bg-background"
                       step="0.1"
@@ -684,9 +684,9 @@ export default function AxWorkflowPage() {
                   ) : (
                     <input
                       type="text"
-                      value={value}
+                      value={String(value)}
                       onChange={(e) =>
-                        updateNodeConfig(selectedNode.nodeId, { [key]: e.target.value })
+                        updateNodeConfig(selectedNode.id, { [key]: e.target.value })
                       }
                       className="w-full px-3 py-2 border border-border rounded-lg bg-background"
                     />
@@ -697,7 +697,7 @@ export default function AxWorkflowPage() {
 
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-xs text-muted-foreground">
-                <strong>API:</strong> {selectedNode.apiEndpoint}
+                <strong>API:</strong> {String(selectedNode.data?.apiEndpoint || '')}
               </p>
             </div>
           </div>

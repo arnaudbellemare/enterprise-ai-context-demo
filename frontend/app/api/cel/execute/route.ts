@@ -50,8 +50,8 @@ function evaluateCELExpression(expression: string, context: any): any {
       // Single expression
       return evaluateSingleExpression(expression, context);
     }
-  } catch (error) {
-    throw new Error(`CEL evaluation error: ${error.message}`);
+  } catch (error: any) {
+    throw new Error(`CEL evaluation error: ${error?.message || String(error)}`);
   }
 }
 

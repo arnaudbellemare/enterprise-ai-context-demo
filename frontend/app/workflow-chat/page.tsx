@@ -138,16 +138,17 @@ ${Object.entries(workflowContext.results).map(([nodeId, result]) => {
     resultText = result;
   } else if (result && typeof result === 'object') {
     // If it's a full response object, extract the relevant content
-    if (result.response) {
-      resultText = result.response;
-    } else if (result.content) {
-      resultText = result.content;
-    } else if (result.answer) {
-      resultText = result.answer;
-    } else if (result.context) {
-      resultText = result.context;
-    } else if (result.documents) {
-      resultText = result.documents.map((doc: any) => doc.content || doc.llm_summary || 'Data').join('\n\n');
+    const resultObj = result as any;
+    if (resultObj.response) {
+      resultText = resultObj.response;
+    } else if (resultObj.content) {
+      resultText = resultObj.content;
+    } else if (resultObj.answer) {
+      resultText = resultObj.answer;
+    } else if (resultObj.context) {
+      resultText = resultObj.context;
+    } else if (resultObj.documents) {
+      resultText = resultObj.documents.map((doc: any) => doc.content || doc.llm_summary || 'Data').join('\n\n');
     } else {
       resultText = JSON.stringify(result, null, 2);
     }
@@ -413,16 +414,17 @@ Current conversation context:`
                           if (typeof result === 'string') {
                             fullContent = result;
                           } else if (result && typeof result === 'object') {
-                            if (result.response) {
-                              fullContent = result.response;
-                            } else if (result.content) {
-                              fullContent = result.content;
-                            } else if (result.answer) {
-                              fullContent = result.answer;
-                            } else if (result.context) {
-                              fullContent = result.context;
-                            } else if (result.documents && result.documents.length > 0) {
-                              fullContent = result.documents.map((doc: any) => 
+                            const resultObj = result as any;
+                            if (resultObj.response) {
+                              fullContent = resultObj.response;
+                            } else if (resultObj.content) {
+                              fullContent = resultObj.content;
+                            } else if (resultObj.answer) {
+                              fullContent = resultObj.answer;
+                            } else if (resultObj.context) {
+                              fullContent = resultObj.context;
+                            } else if (resultObj.documents && resultObj.documents.length > 0) {
+                              fullContent = resultObj.documents.map((doc: any) => 
                                 doc.content || doc.llm_summary || 'Data'
                               ).join('\n\n');
                             } else {
