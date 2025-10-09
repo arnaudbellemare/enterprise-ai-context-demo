@@ -441,17 +441,18 @@ export async function POST(request: Request) {
         apiEndpoint: agent.apiEndpoint,
         icon: agent.icon,
         iconColor: agent.iconColor,
+        modelPreference: ('modelPreference' in agent) ? agent.modelPreference : 'local', // Default to FREE
+        estimatedCost: ('estimatedCost' in agent) ? agent.estimatedCost : 0, // Default to FREE
         config: ('config' in agent && agent.config) ? agent.config : {}
       };
     });
     
-    // Calculate cost estimation
+    // Calculate cost estimation using node data (already has modelPreference and estimatedCost)
     const costBreakdown = nodes.map(node => {
-      const agent = Object.values(AGENT_REGISTRY).find((a: any) => a.name === node.label) as any;
       return {
         role: node.role,
-        modelPreference: agent?.modelPreference || 'perplexity',
-        cost: agent?.estimatedCost || 0.003
+        modelPreference: node.modelPreference,
+        cost: node.estimatedCost
       };
     });
     
