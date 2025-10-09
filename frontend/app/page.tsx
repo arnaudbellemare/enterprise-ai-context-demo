@@ -3794,6 +3794,12 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             ◄ AGENT.BUILDER
             </button>
             <a
+              href="/agent-builder"
+              className="text-lg text-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-400 hover:to-blue-400 border-b-2 border-transparent hover:border-purple-400 pb-2 transition-colors"
+            >
+              AI.AGENT.BUILDER
+            </a>
+            <a
               href="/workflow"
               className="text-lg text-blue-500 hover:text-blue-400 border-b-2 border-transparent hover:border-blue-400 pb-2 transition-colors"
             >

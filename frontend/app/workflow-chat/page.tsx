@@ -40,6 +40,21 @@ export default function WorkflowChatPage() {
   const [workflowContext, setWorkflowContext] = useState<WorkflowContext | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Function to strip markdown formatting from text
+  const stripMarkdown = (text: string): string => {
+    if (typeof text !== 'string') return text;
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold **text**
+      .replace(/\*(.*?)\*/g, '$1')     // Remove italic *text*
+      .replace(/__(.*?)__/g, '$1')     // Remove bold __text__
+      .replace(/_(.*?)_/g, '$1')       // Remove italic _text_
+      .replace(/`(.*?)`/g, '$1')       // Remove code `text`
+      .replace(/#{1,6}\s/g, '')        // Remove headers # ## ### etc
+      .replace(/^\s*[-*+]\s/gm, '• ')  // Convert bullet points to simple bullets
+      .replace(/\n{3,}/g, '\n\n')      // Limit multiple newlines
+      .trim();
+  };
+
   // Get workflow data from localStorage
   useEffect(() => {
     const workflowData = localStorage.getItem('workflowChatData');
@@ -60,42 +75,15 @@ export default function WorkflowChatPage() {
 - Execution completed in ${parsed.executionTime}
 - ${parsed.nodes.length} nodes processed successfully
 
-🔍 **Key Results Available:**
-${Object.entries(parsed.results).map(([nodeId, result]) => {
-  const node = parsed.nodes.find((n: any) => n.id === nodeId);
-  const nodeLabel = node?.label || nodeId;
-  
-  // Extract actual content from different response formats
-  let resultPreview = 'Analysis completed';
-  if (typeof result === 'string') {
-    resultPreview = result.substring(0, 150) + '...';
-  } else if (result && typeof result === 'object') {
-    if (result.response) {
-      resultPreview = result.response.substring(0, 150) + '...';
-    } else if (result.content) {
-      resultPreview = result.content.substring(0, 150) + '...';
-    } else if (result.answer) {
-      resultPreview = result.answer.substring(0, 150) + '...';
-    } else if (result.context) {
-      resultPreview = result.context.substring(0, 150) + '...';
-    } else if (result.documents && result.documents.length > 0) {
-      const firstDoc = result.documents[0];
-      const docContent = firstDoc.content || firstDoc.llm_summary || 'Property data';
-      resultPreview = docContent.substring(0, 150) + '...';
-    }
-  }
-  
-  return `- **${nodeLabel}**: ${resultPreview}`;
-}).join('\n')}
+📋 **Full Details:** Check the sidebar on the right to see complete results from each workflow node. Click any node name to expand and view the full content.
 
-💬 **I'm ready to help you explore these real estate market insights!** I can:
-- Analyze specific market trends from the research
-- Provide investment recommendations based on the data
-- Explain property market insights in detail
-- Create comprehensive investment reports
-- Answer questions about market conditions and opportunities
+💬 **I'm ready to help you explore these insights!** I can:
+- Analyze specific trends from the research
+- Provide investment recommendations
+- Explain market insights in detail
+- Answer questions about the data
 
-What specific aspect of the real estate market analysis would you like to explore?`,
+What would you like to explore from the workflow results?`,
           timestamp: new Date(),
           metadata: { type: 'workflow_summary' }
         };
@@ -282,10 +270,10 @@ Current conversation context:`
       </div>
 
       {/* Main Chat Interface */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Chat Messages */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-1">
             <Card className="h-[700px] flex flex-col overflow-hidden">
               <CardHeader className="pb-3 border-b flex-shrink-0">
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -317,7 +305,7 @@ Current conversation context:`
                           }`}
                         >
                           <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                            {message.content}
+                            {stripMarkdown(message.content)}
                           </div>
                           <div
                             className={`text-xs mt-3 ${
@@ -410,15 +398,52 @@ Current conversation context:`
                       </div>
                     </div>
                     
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-sm">Results Available</h4>
-                      <div className="space-y-1">
-                        {Object.keys(workflowContext.results).map((key) => (
-                          <div key={key} className="flex items-center gap-2 text-xs">
-                            <Database className="w-3 h-3 text-blue-500" />
-                            <span>{key}</span>
-                          </div>
-                        ))}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm flex items-center gap-2">
+                        <Database className="w-4 h-4 text-blue-500" />
+                        Workflow Results
+                      </h4>
+                      <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                        {Object.entries(workflowContext.results).map(([nodeId, result]) => {
+                          const node = workflowContext.nodes.find((n: any) => n.id === nodeId);
+                          const nodeLabel = node?.label || nodeId;
+                          
+                          // Extract full content from different response formats
+                          let fullContent = 'Analysis completed';
+                          if (typeof result === 'string') {
+                            fullContent = result;
+                          } else if (result && typeof result === 'object') {
+                            if (result.response) {
+                              fullContent = result.response;
+                            } else if (result.content) {
+                              fullContent = result.content;
+                            } else if (result.answer) {
+                              fullContent = result.answer;
+                            } else if (result.context) {
+                              fullContent = result.context;
+                            } else if (result.documents && result.documents.length > 0) {
+                              fullContent = result.documents.map((doc: any) => 
+                                doc.content || doc.llm_summary || 'Data'
+                              ).join('\n\n');
+                            } else {
+                              fullContent = JSON.stringify(result, null, 2);
+                            }
+                          }
+                          
+                          return (
+                            <details key={nodeId} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+                              <summary className="cursor-pointer font-medium text-sm flex items-center gap-2 hover:text-blue-600 py-2">
+                                <span className="text-blue-500">▶</span>
+                                {nodeLabel}
+                              </summary>
+                              <div className="mt-3 pt-3 border-t border-gray-100">
+                                <pre className="text-sm whitespace-pre-wrap break-words text-gray-700 max-h-96 overflow-y-auto bg-gray-50 p-4 rounded-lg font-sans leading-relaxed">
+                                  {stripMarkdown(fullContent)}
+                                </pre>
+                              </div>
+                            </details>
+                          );
+                        })}
                       </div>
                     </div>
                   </>

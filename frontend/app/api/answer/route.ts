@@ -8,17 +8,17 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 // Model configurations with Ollama + OpenRouter fallback
 const MODEL_CONFIGS = {
+  'gemma-3': {
+    ollama: 'gemma3:4b',
+    openrouter: 'google/gemma-2-9b-it:free',
+    useCase: 'Best for analysis and reports (MacBook Air optimized)',
+    speed: 'fast',
+  },
   'llama-3.2': {
     ollama: 'llama3.2:3b',
     openrouter: 'meta-llama/llama-3.2-3b-instruct:free',
-    useCase: 'Best for general tasks and analysis',
+    useCase: 'Good for general tasks',
     speed: 'fast',
-  },
-  'llama-3.1': {
-    ollama: 'llama3.1:8b',
-    openrouter: 'meta-llama/llama-3.2-3b-instruct:free',
-    useCase: 'Better quality for complex analysis',
-    speed: 'medium',
   },
   'phi-3': {
     ollama: 'phi3:mini',
@@ -87,15 +87,15 @@ function selectModel(queryType: string, preferredModel?: string): string {
   const modelSelection: Record<string, string> = {
     'math': 'qwen',
     'code': 'phi-3',
-    'scientific': 'llama-3.1',
-    'reasoning': 'llama-3.1',
-    'general': 'llama-3.2',
-    'analysis': 'llama-3.1',
-    'investment': 'llama-3.1',
-    'report': 'gemma-2'
+    'scientific': 'gemma-3',
+    'reasoning': 'gemma-3',
+    'general': 'gemma-3',
+    'analysis': 'gemma-3',
+    'investment': 'gemma-3',
+    'report': 'gemma-3'
   };
 
-  return modelSelection[queryType] || 'llama-3.2';
+  return modelSelection[queryType] || 'gemma-3';
 }
 
 export async function POST(req: NextRequest) {
@@ -104,7 +104,8 @@ export async function POST(req: NextRequest) {
       query,
       documents,
       preferredModel,
-      autoSelectModel = true
+      autoSelectModel = true,
+      queryType: explicitQueryType // Allow explicit query type from request
     } = await req.json();
 
     if (!query) {
@@ -116,13 +117,13 @@ export async function POST(req: NextRequest) {
 
     const startTime = Date.now();
 
-    // 1. Detect query type
-    const queryType = detectQueryType(query);
+    // 1. Detect query type (use explicit if provided, otherwise detect)
+    const queryType = explicitQueryType || detectQueryType(query);
 
     // 2. Select best model
     const selectedModelKey = autoSelectModel 
       ? selectModel(queryType, preferredModel)
-      : (preferredModel || 'llama-3.1');
+      : (preferredModel || 'gemma-3');
 
     const modelConfig = MODEL_CONFIGS[selectedModelKey as keyof typeof MODEL_CONFIGS];
 

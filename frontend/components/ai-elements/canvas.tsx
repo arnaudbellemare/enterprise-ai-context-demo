@@ -14,6 +14,7 @@ interface CanvasProps {
   onNodesChange?: (changes: any) => void;
   onEdgesChange?: (changes: any) => void;
   onConnect?: (connection: any) => void;
+  onNodeClick?: (event: any, node: any) => void;
   children?: ReactNode;
 }
 
@@ -27,6 +28,7 @@ export function Canvas({
   onNodesChange,
   onEdgesChange,
   onConnect,
+  onNodeClick,
   children,
 }: CanvasProps) {
   return (
@@ -42,6 +44,7 @@ export function Canvas({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeClick={onNodeClick}
           className="bg-background"
         >
           <Background variant={BackgroundVariant.Dots} gap={12} size={1} />

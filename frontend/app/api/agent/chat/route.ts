@@ -15,15 +15,14 @@ function initializeAxLLM() {
   const ollamaEnabled = process.env.OLLAMA_ENABLED === 'true';
   const openrouterKey = process.env.OPENROUTER_API_KEY;
   
-  if (ollamaEnabled && ollamaKey) {
+  if (ollamaEnabled) {
     try {
-      console.log('✅ Initializing Ax with Ollama Cloud');
+      console.log('✅ Initializing Ax with local Ollama');
+      const baseURL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
       return ai({ 
-        name: 'openai', // Ollama is OpenAI-compatible
-        apiKey: ollamaKey,
-        config: {
-          baseURL: process.env.OLLAMA_BASE_URL || 'https://api.ollama.com',
-        }
+        name: 'openai',
+        apiKey: ollamaKey || 'ollama', // Ollama doesn't require API key for local
+        config: { baseURL } as any // Type assertion for custom baseURL
       });
     } catch (error) {
       console.warn('⚠️ Ollama initialization failed, trying OpenRouter');
@@ -34,11 +33,9 @@ function initializeAxLLM() {
     try {
       console.log('✅ Initializing Ax with OpenRouter');
       return ai({ 
-        name: 'openai', // OpenRouter is OpenAI-compatible
+        name: 'openai',
         apiKey: openrouterKey,
-        config: {
-          baseURL: 'https://openrouter.ai/api/v1',
-        }
+        config: { baseURL: 'https://openrouter.ai/api/v1' } as any // Type assertion for custom baseURL
       });
     } catch (error) {
       console.error('❌ Failed to initialize Ax:', error);
@@ -233,13 +230,13 @@ Return only the category name, nothing else.`
     // Initialize frameworks
     await initializeFrameworks();
 
-    // Try to initialize Ax AI
-    const axAI = initializeAxAI();
+    // Try to initialize Ax LLM (official framework)
+    const axLLM = initializeAxLLM();
     
-    if (!axAI) {
-      console.log('⚠️ Ax not available, using direct OpenRouter');
+    if (!axLLM) {
+      console.log('⚠️ Ax not available, using fallback');
     } else {
-      console.log('✅ Ax Framework initialized with OpenRouter');
+      console.log('✅ Ax Framework initialized (Official)');
     }
 
     // Step 1: Apply REAL GEPA Optimization using Ax

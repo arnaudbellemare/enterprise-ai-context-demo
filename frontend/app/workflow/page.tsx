@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Canvas } from '@/components/ai-elements/canvas';
 import { Connection } from '@/components/ai-elements/connection';
 import { Controls } from '@/components/ai-elements/controls';
@@ -31,7 +31,7 @@ const AVAILABLE_NODE_TYPES = [
     id: 'memorySearch', 
     label: 'Memory Search',
     description: 'Vector similarity search',
-    icon: '🔍',
+    icon: 'SEARCH',
     iconColor: 'yellow',
     apiEndpoint: '/api/search/indexed',
     config: {
@@ -92,7 +92,7 @@ const AVAILABLE_NODE_TYPES = [
     id: 'langstruct', 
     label: 'LangStruct',
     description: 'Extract structured data',
-    icon: '🔍',
+    icon: 'SEARCH',
     iconColor: 'gray',
     apiEndpoint: '/api/langstruct/process',
     config: {
@@ -119,7 +119,7 @@ const AVAILABLE_NODE_TYPES = [
     id: 'answer', 
     label: 'Generate Answer',
     description: 'Final AI response',
-    icon: '✅',
+    icon: 'OK',
     iconColor: 'green',
     apiEndpoint: '/api/answer',
     config: {
@@ -192,6 +192,89 @@ const AVAILABLE_NODE_TYPES = [
   },
 ];
 
+// AX LLM WORKFLOW: Official Ax Framework Integration
+const getAxLLMWorkflow = () => {
+  const spacing = 350;
+  return {
+    nodes: [
+      {
+        id: 'ax-1',
+        type: 'customizable',
+        position: { x: 100, y: 200 },
+        data: {
+          label: 'Web Search',
+          apiEndpoint: '/api/perplexity/chat',
+          icon: '🌐',
+          iconColor: 'bg-blue-500',
+          status: 'idle',
+        },
+      },
+      {
+        id: 'ax-2',
+        type: 'customizable',
+        position: { x: 100 + spacing, y: 200 },
+        data: {
+          label: 'Ax Agent',
+          apiEndpoint: '/api/agent/chat',
+          icon: '🤖',
+          iconColor: 'bg-purple-500',
+          status: 'idle',
+        },
+      },
+      {
+        id: 'ax-3',
+        type: 'customizable',
+        position: { x: 100 + spacing * 2, y: 200 },
+        data: {
+          label: 'Ax Optimizer',
+          apiEndpoint: '/api/agent/chat',
+          icon: '⚡',
+          iconColor: 'bg-yellow-500',
+          status: 'idle',
+        },
+      },
+      {
+        id: 'ax-4',
+        type: 'customizable',
+        position: { x: 100 + spacing * 3, y: 200 },
+        data: {
+          label: 'Ax Report Generator',
+          apiEndpoint: '/api/answer',
+          icon: 'CONFIG',
+          iconColor: 'bg-green-500',
+          status: 'idle',
+        },
+      },
+    ],
+    edges: [
+      { id: 'e-ax-1-2', source: 'ax-1', target: 'ax-2', type: 'default', animated: true },
+      { id: 'e-ax-2-3', source: 'ax-2', target: 'ax-3', type: 'default', animated: true },
+      { id: 'e-ax-3-4', source: 'ax-3', target: 'ax-4', type: 'default', animated: true },
+    ],
+    configs: {
+      'ax-1': {
+        query: 'Miami Beach luxury real estate market trends 2024-2025 investment opportunities prices',
+        industry: 'real estate',
+        useRealAI: true,
+      },
+      'ax-2': {
+        query: 'Analyze the Miami Beach luxury real estate market data and provide expert insights using Ax LLM framework',
+        useRealAI: true,
+      },
+      'ax-3': {
+        query: 'Optimize the market analysis using Ax LLM prompt optimization and provide enhanced recommendations',
+        useRealAI: true,
+      },
+      'ax-4': {
+        query: 'Generate a comprehensive investment report based on Ax-optimized market analysis',
+        preferredModel: 'gemma-3',
+        autoSelectModel: false,
+        queryType: 'investment',
+      },
+    },
+  };
+};
+
 // EXAMPLE: Pre-built workflow with connections
 const getExampleWorkflow = () => {
   const timestamp = Date.now();
@@ -246,7 +329,7 @@ const getExampleWorkflow = () => {
         id: 'investmentReport',
         label: 'Investment Report',
         description: 'Final analysis report',
-        icon: '✅',
+        icon: 'OK',
         iconColor: 'green',
         apiEndpoint: '/api/answer',
         nodeId: `investmentReport-${timestamp}`,
@@ -319,7 +402,7 @@ const getComplexWorkflow = () => {
         id: 'memorySearch',
         label: 'Memory Search',
         description: 'Vector similarity search',
-        icon: '🔍',
+        icon: 'SEARCH',
         iconColor: 'purple',
         apiEndpoint: '/api/search/indexed',
         nodeId: `memorySearch-${timestamp}`,
@@ -420,7 +503,7 @@ const getComplexWorkflow = () => {
         id: 'investmentReport',
         label: 'Investment Report',
         description: 'Professional report',
-        icon: '✅',
+        icon: 'OK',
         iconColor: 'green',
         apiEndpoint: '/api/answer',
         nodeId: `investmentReport-${timestamp}`,
@@ -440,7 +523,7 @@ const getComplexWorkflow = () => {
         id: 'riskAssessment',
         label: 'Risk Assessment',
         description: 'Risk analysis',
-        icon: '⚠️',
+        icon: 'WARNING',
         iconColor: 'red',
         apiEndpoint: '/api/answer',
         nodeId: `riskAssessment-${timestamp}`,
@@ -615,7 +698,7 @@ const getDSPyOptimizedWorkflow = () => {
         id: 'learningTracker',
         label: 'Learning Tracker',
         description: 'Track optimization metrics',
-        icon: '📊',
+        icon: 'CHART',
         iconColor: 'green',
         apiEndpoint: '/api/answer',
         nodeId: `learningTracker-${timestamp}`,
@@ -666,13 +749,13 @@ const getDSPyOptimizedWorkflow = () => {
 export default function WorkflowPage() {
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowEdge[]>([]);
-  const [selectedNode, setSelectedNode] = useState<any>(null);
+  const [selectedNode, setSelectedNode] = useState<{ nodeId: string; label: string; apiEndpoint: string } | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionLog, setExecutionLog] = useState<string[]>([]);
   const [nodeConfigs, setNodeConfigs] = useState<Record<string, any>>({});
   const [workflowErrors, setWorkflowErrors] = useState<string[]>([]);
-  const [demoMode, setDemoMode] = useState(false); // Use real APIs by default
   const [workflowResults, setWorkflowResults] = useState<any>(null); // Store final results
+  const [currentWorkflowName, setCurrentWorkflowName] = useState<string>('Real Estate Market Analysis');
 
   const onNodesChange = useCallback(
     (changes: any) => {
@@ -707,10 +790,11 @@ export default function WorkflowPage() {
         id: `edge-${Date.now()}`,
       };
       setEdges((eds) => addEdge(newEdge, eds));
-      addLog(`✅ Connected: ${connection.source} → ${connection.target}`);
+      addLog(`Connected: ${connection.source} → ${connection.target}`);
     },
     []
   );
+
 
   const addNode = (nodeType: typeof AVAILABLE_NODE_TYPES[0]) => {
     const nodeId = `${nodeType.id}-${Date.now()}`;
@@ -744,7 +828,7 @@ export default function WorkflowPage() {
     delete newConfigs[nodeId];
     setNodeConfigs(newConfigs);
     if (selectedNode?.nodeId === nodeId) setSelectedNode(null);
-    addLog(`🗑️ Deleted: ${nodeId}`);
+    addLog(`Deleted: ${nodeId}`);
   };
 
   const updateNodeConfig = (nodeId: string, config: any) => {
@@ -759,10 +843,26 @@ export default function WorkflowPage() {
           : n
       )
     );
+    addLog(`Updated configuration for ${nodeId}`);
   };
 
   const addLog = (message: string) => {
     setExecutionLog((logs) => [`[${new Date().toLocaleTimeString()}] ${message}`, ...logs.slice(0, 99)]);
+  };
+
+  // Function to strip markdown formatting from text
+  const stripMarkdown = (text: string): string => {
+    if (typeof text !== 'string') return text;
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold **text**
+      .replace(/\*(.*?)\*/g, '$1')     // Remove italic *text*
+      .replace(/__(.*?)__/g, '$1')     // Remove bold __text__
+      .replace(/_(.*?)_/g, '$1')       // Remove italic _text_
+      .replace(/`(.*?)`/g, '$1')       // Remove code `text`
+      .replace(/#{1,6}\s/g, '')        // Remove headers # ## ### etc
+      .replace(/^\s*[-*+]\s/gm, '• ')  // Convert bullet points to simple bullets
+      .replace(/\n{3,}/g, '\n\n')      // Limit multiple newlines
+      .trim();
   };
 
   // Workflow validation function
@@ -845,7 +945,7 @@ export default function WorkflowPage() {
     }
 
     setIsExecuting(true);
-    addLog('🚀 Workflow execution started' + (demoMode ? ' (DEMO MODE)' : ''));
+    addLog('Workflow execution started with REAL APIs');
 
     try {
       const executionOrder = getExecutionOrder(nodes, edges);
@@ -855,7 +955,7 @@ export default function WorkflowPage() {
         const node = nodes.find((n) => n.id === nodeId);
         if (!node) continue;
 
-        addLog(`▶️ Executing: ${node.data.label}`);
+        addLog(`Executing: ${node.data.label}`);
         
         setNodes((nds) =>
           nds.map((n) =>
@@ -874,75 +974,11 @@ export default function WorkflowPage() {
           return String(data);
         }).join('\n\n---\n\n');
 
-        // DEMO MODE: Generate realistic mock responses
-        if (demoMode) {
-          await new Promise((resolve) => setTimeout(resolve, 1200));
-          
-          const mockResponses: Record<string, any> = {
-            'Market Research': {
-              data: [
-                'Miami luxury condo market up 15% YoY',
-                'Average price per sq ft: $1,200-1,800',
-                'New developments: 12 projects in pipeline',
-                'Foreign investment: 45% of purchases',
-                'Market inventory: 3.2 months supply'
-              ],
-              result: '✅ Retrieved 5 market research results'
-            },
-            // Property Database and Data Consolidation removed from streamlined workflow
-            'Market Analyst': {
-              data: [
-                'Market Analysis: Strong growth trajectory (+15% YoY)',
-                'Investment Opportunities: 3 high-potential areas identified',
-                'Risk Assessment: Moderate risk, high reward potential',
-                'Pricing Insights: Below-market opportunities found',
-                'Recommendation: Buy in Brickell and Edgewater districts'
-              ],
-              result: '✅ Market analysis complete: 3 opportunities identified'
-            },
-            'Investment Report': {
-              data: [
-                'EXECUTIVE SUMMARY: Miami luxury real estate shows strong fundamentals with 15% YoY growth. Recommended investment in Brickell and Edgewater districts with projected 12-18% returns over 24 months.',
-                '',
-                'KEY FINDINGS:',
-                '• Market inventory at 3.2 months (healthy)',
-                '• Foreign investment driving 45% of purchases',
-                '• Average price per sq ft: $1,200-1,800',
-                '• 12 new developments in pipeline',
-                '',
-                'INVESTMENT RECOMMENDATIONS:',
-                '1. Brickell District: Premium location, 18% projected ROI',
-                '2. Edgewater: Emerging market, 15% projected ROI',
-                '3. Avoid: Overpriced units above $2,000/sq ft',
-                '',
-                'RISK FACTORS: Interest rate sensitivity, hurricane season',
-                'MARKET OUTLOOK: Positive for next 18-24 months'
-              ],
-              result: '✅ Generated comprehensive investment report (487 words)'
-            },
-            'Generate Answer': {
-              data: ['Real estate investment analysis completed with detailed recommendations'],
-              result: '✅ Generated comprehensive answer (245 words)'
-            },
-            'Web Search': {
-              data: ['Market research data retrieved successfully'],
-              result: '✅ Retrieved web search results'
-            },
-            'Custom Agent': {
-              data: ['Analysis completed with key insights'],
-              result: '✅ Analysis complete'
-            }
-          };
-
-          const response = mockResponses[node.data.label] || {
-            data: ['Processing complete'],
-            result: '✅ Completed successfully'
-          };
-          
-          workflowData[nodeId] = response.data;
-          addLog(`   ${response.result}`);
-          
-        } else {
+        // REAL API MODE: All workflows use real API calls
+        // - Perplexity for Market Research (web search)
+        // - Ollama (gemma3:4b) for all other AI tasks
+        // - OpenRouter as fallback if Ollama fails
+        {
           // REAL API MODE: Make actual API calls
           try {
             let apiResponse;
@@ -979,18 +1015,33 @@ export default function WorkflowPage() {
                 break;
                 
               case 'Custom Agent':
+              case 'Ax Agent':
+              case 'Ax Optimizer':
               case 'Market Analyst':
-                // Use the agent chat API with previous data as context
-                const agentQuery = nodeConfigs[nodeId]?.prompt || 'Analyze the provided data and provide insights';
+                // Use the Ax LLM agent chat API with previous data as context
+                const isAxNode = node.data.label.startsWith('Ax');
+                
+                // Use dynamic system prompt from node config if available
+                const defaultSystemPrompt = isAxNode 
+                  ? 'You are an Ax LLM-powered AI agent using the official Ax framework from https://github.com/ax-llm/ax. You use automatic prompt optimization and type-safe AI programs.'
+                  : 'You are a specialized real estate market analyst. Analyze the provided data and give professional insights.';
+                  
+                const systemPrompt = nodeConfigs[nodeId]?.systemPrompt || defaultSystemPrompt;
+                
+                const taskContext = isAxNode && node.data.label === 'Ax Optimizer'
+                  ? `Using Ax LLM framework optimization capabilities, enhance and optimize the following analysis:\n${previousNodeData}\n\nApply GEPA framework (Growth, Efficiency, Performance, Alignment) and provide optimized recommendations.`
+                  : `Context from previous steps:\n${previousNodeData}\n\nTask: ${nodeConfigs[nodeId]?.query || nodeConfigs[nodeId]?.prompt || 'Analyze the provided data and provide insights'}`;
+                
                 const agentMessages = [
-                  { role: 'system', content: 'You are a specialized real estate market analyst. Analyze the provided data and give professional insights.' },
-                  { role: 'user', content: `Context from previous steps:\n${previousNodeData}\n\nTask: ${agentQuery}` }
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: taskContext }
                 ];
                 const agentResponse = await fetch('/api/agent/chat', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
-                    messages: agentMessages
+                    messages: agentMessages,
+                    useAxFramework: isAxNode // Flag to use Ax LLM
                   })
                 });
                 
@@ -998,54 +1049,74 @@ export default function WorkflowPage() {
                   const errorText = await agentResponse.text();
                   apiResponse = {
                     data: [`API Error: ${agentResponse.status} - ${errorText}`],
-                    result: '❌ Agent analysis failed'
+                    result: `❌ ${node.data.label} failed`
                   };
                 } else {
                   const agentData = await agentResponse.json();
+                  const successMessage = isAxNode 
+                    ? `✅ ${node.data.label} completed (Ax Framework)`
+                    : '✅ Agent analysis completed';
                   apiResponse = {
                     data: agentData.response ? [agentData.response] : ['No analysis generated'],
-                    result: '✅ Agent analysis completed',
+                    result: successMessage,
                     fullResponse: agentData // Store full response for chat context
                   };
                 }
                 break;
                 
+              case 'Ax Report Generator':
               case 'Generate Answer':
               case 'Investment Report':
-                // Use FREE OpenRouter models for investment analysis
-                const answerQuery = nodeConfigs[nodeId]?.query || 'Generate a comprehensive investment report';
-                
-                // Combine previous workflow data with context assembly
-                let context = previousNodeData || 'No context available';
-                try {
-                  const contextResponse = await fetch('/api/context/assemble', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      user_query: answerQuery,
-                      conversation_history: [],
-                      user_preferences: {}
-                    })
-                  });
-                  
-                  if (contextResponse.ok) {
-                    const contextData = await contextResponse.json();
-                    context = `${previousNodeData}\n\n${contextData.context || ''}`;
-                  }
-                } catch (contextError) {
-                  addLog(`   ⚠️ Context assembly failed: ${contextError}`);
-                }
+                // Use FREE OpenRouter models for investment analysis with detailed prompt
+                const detailedInvestmentPrompt = `As a senior investment analyst with 15+ years of experience in luxury real estate, create a comprehensive investment report for Miami Beach luxury real estate based on this detailed market analysis:
+
+${previousNodeData}
+
+Please provide a professional investment report with the following sections:
+
+1. **EXECUTIVE SUMMARY** (3-4 paragraphs)
+   - Key market insights and trends
+   - Investment thesis and recommendation
+   - Expected returns and timeline
+
+2. **MARKET ANALYSIS** (detailed breakdown)
+   - Price trends and projections
+   - Inventory levels and supply/demand dynamics
+   - Buyer demographics and preferences
+
+3. **INVESTMENT OPPORTUNITIES** (top 5 ranked opportunities)
+   - Specific neighborhoods and property types
+   - Investment rationale for each
+   - Expected returns and risk levels
+
+4. **RISK ASSESSMENT** (comprehensive risk analysis)
+   - Market risks and mitigation strategies
+   - Economic factors and interest rate sensitivity
+   - Regulatory and environmental considerations
+
+5. **FINANCIAL PROJECTIONS** (if applicable)
+   - ROI calculations and projections
+   - Cash flow analysis for rental properties
+   - Capital appreciation forecasts
+
+6. **ACTION PLAN** (specific next steps)
+   - Immediate actions for investors
+   - Due diligence requirements
+   - Timeline and milestones
+
+Format as a professional investment report with clear sections, specific data points, and actionable recommendations.`;
                 
                 // Try answer generation with FREE OpenRouter models
                 const answerResponse = await fetch('/api/answer', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
-                    query: answerQuery,
-                    context: context,
+                    query: detailedInvestmentPrompt,
+                    context: previousNodeData || 'No context available',
                     documents: previousNodeData ? [{ content: previousNodeData }] : [],
-                    autoSelectModel: true,
-                    preferredModel: 'gemma-2' // Use Gemma-2 (FREE) for investment reports
+                    autoSelectModel: false, // Explicitly set model
+                    preferredModel: 'gemma-3', // Use Gemma-3 for better analysis
+                    queryType: 'investment' // Force investment query type
                   })
                 });
                 
@@ -1213,15 +1284,54 @@ export default function WorkflowPage() {
                 break;
 
               case 'Risk Assessment':
-                // Generate risk analysis using answer API
-                const riskQuery = nodeConfigs[nodeId]?.query || 'Analyze investment risks';
+                // Generate comprehensive risk analysis using answer API
+                const detailedRiskPrompt = `As a senior risk analyst specializing in luxury real estate investments, conduct a comprehensive risk assessment for Miami Beach luxury real estate based on this market analysis:
+
+${previousNodeData}
+
+Please provide a detailed risk analysis with the following sections:
+
+1. **MARKET RISKS** (primary concerns)
+   - Price volatility and market cycles
+   - Interest rate sensitivity and economic factors
+   - Supply/demand imbalances and inventory risks
+
+2. **LOCATION-SPECIFIC RISKS** (Miami Beach factors)
+   - Climate and environmental risks (hurricanes, flooding, sea level rise)
+   - Regulatory and zoning changes
+   - Infrastructure and development risks
+
+3. **INVESTMENT RISKS** (financial considerations)
+   - Liquidity risks and market timing
+   - Currency fluctuations for international investors
+   - Financing and leverage risks
+
+4. **OPERATIONAL RISKS** (property management)
+   - Insurance costs and availability
+   - Maintenance and repair expenses
+   - Rental market volatility
+
+5. **MITIGATION STRATEGIES** (risk management)
+   - Diversification recommendations
+   - Insurance and hedging strategies
+   - Due diligence requirements
+
+6. **RISK RATING** (overall assessment)
+   - Risk level: Low/Medium/High
+   - Risk-adjusted return expectations
+   - Recommended investment timeframe
+
+Format as a professional risk assessment report with specific data points, risk ratings, and actionable mitigation strategies.`;
+                
                 const riskResponse = await fetch('/api/answer', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
-                    query: riskQuery,
+                    query: detailedRiskPrompt,
+                    context: previousNodeData || 'No context available',
                     documents: previousNodeData ? [{ content: previousNodeData }] : [],
-                    preferredModel: 'gemma-2'
+                    autoSelectModel: true,
+                    preferredModel: 'gemma-3'
                   })
                 });
                 
@@ -1351,11 +1461,147 @@ export default function WorkflowPage() {
                 break;
                 
               default:
-                // Fallback for unknown node types
-                apiResponse = {
-                  data: [`Executed ${node.data.label} with previous data`],
-                  result: `✅ ${node.data.label} completed`
-                };
+                // Universal AI Agent Handler
+                // This handles ANY node type dynamically using the node's configuration
+                const nodeConfig = nodeConfigs[nodeId] || {};
+                const apiEndpoint = node.data.apiEndpoint || '/api/agent/chat';
+                
+                // Use dynamic system prompt from config or generate based on node label/role
+                const universalSystemPrompt = nodeConfig.systemPrompt || 
+                  `You are a ${node.data.label}. ${nodeConfig.role || node.data.role || node.data.description || 'Provide professional analysis and insights based on the given context.'}`;
+                
+                // Build context-aware task description
+                const universalTask = previousNodeData 
+                  ? `Context from previous workflow steps:\n${previousNodeData}\n\nTask: ${nodeConfig.query || nodeConfig.prompt || `Perform ${node.data.label} analysis`}`
+                  : nodeConfig.query || nodeConfig.prompt || `Perform ${node.data.label} analysis`;
+                
+                console.log(`🤖 Universal Node Handler: ${node.data.label}`);
+                console.log(`   Endpoint: ${apiEndpoint}`);
+                console.log(`   System Prompt: ${universalSystemPrompt.substring(0, 100)}...`);
+                
+                // Route to appropriate API based on endpoint
+                if (apiEndpoint === '/api/perplexity/chat') {
+                  // Web search node
+                  const searchQuery = nodeConfig.searchQuery || nodeConfig.query || universalTask;
+                  const searchResponse = await fetch('/api/perplexity/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      query: searchQuery,
+                      useRealAI: true
+                    })
+                  });
+                  
+                  if (!searchResponse.ok) {
+                    const errorText = await searchResponse.text();
+                    apiResponse = {
+                      data: [`Search error: ${errorText}`],
+                      result: `❌ ${node.data.label} failed`
+                    };
+                  } else {
+                    const searchData = await searchResponse.json();
+                    apiResponse = {
+                      data: searchData.response ? [searchData.response] : ['No results'],
+                      result: `✅ ${node.data.label} completed`,
+                      fullResponse: searchData
+                    };
+                  }
+                } else if (apiEndpoint === '/api/cel/execute') {
+                  // CEL Expression node
+                  const celExpression = nodeConfig.expression || nodeConfig.query || universalTask;
+                  const celResponse = await fetch('/api/cel/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      expression: celExpression,
+                      previousData: previousNodeData,
+                      variables: nodeConfig.variables || {},
+                      state: nodeConfig.state || {},
+                      workflowContext: {
+                        nodeId: nodeId,
+                        nodeLabel: node.data.label,
+                        workflowName: currentWorkflowName
+                      }
+                    })
+                  });
+                  
+                  if (!celResponse.ok) {
+                    const errorText = await celResponse.text();
+                    apiResponse = {
+                      data: [`CEL execution error: ${errorText}`],
+                      result: `Failed: ${node.data.label}`
+                    };
+                  } else {
+                    const celData = await celResponse.json();
+                    const resultText = typeof celData.result === 'object' 
+                      ? JSON.stringify(celData.result, null, 2)
+                      : String(celData.result);
+                    
+                    apiResponse = {
+                      data: [resultText],
+                      result: `Completed: ${node.data.label}`,
+                      fullResponse: celData
+                    };
+                  }
+                } else if (apiEndpoint === '/api/answer') {
+                  // Data processor node
+                  const answerResponse = await fetch('/api/answer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      query: universalTask,
+                      context: previousNodeData || '',
+                      documents: previousNodeData ? [{ content: previousNodeData }] : [],
+                      queryType: nodeConfig.queryType || 'analysis',
+                      preferredModel: nodeConfig.preferredModel || 'gemma-3'
+                    })
+                  });
+                  
+                  if (!answerResponse.ok) {
+                    const errorText = await answerResponse.text();
+                    apiResponse = {
+                      data: [`Processing error: ${errorText}`],
+                      result: `Failed: ${node.data.label}`
+                    };
+                  } else {
+                    const answerData = await answerResponse.json();
+                    apiResponse = {
+                      data: [answerData.answer || 'Processing completed'],
+                      result: `Completed: ${node.data.label}`,
+                      fullResponse: answerData
+                    };
+                  }
+                } else {
+                  // AI Agent node (default)
+                  const universalMessages = [
+                    { role: 'system', content: universalSystemPrompt },
+                    { role: 'user', content: universalTask }
+                  ];
+                  
+                  const universalResponse = await fetch('/api/agent/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      messages: universalMessages,
+                      useAxFramework: nodeConfig.useAxFramework || false
+                    })
+                  });
+                  
+                  if (!universalResponse.ok) {
+                    const errorText = await universalResponse.text();
+                    apiResponse = {
+                      data: [`Agent error: ${errorText}`],
+                      result: `❌ ${node.data.label} failed`
+                    };
+                  } else {
+                    const universalData = await universalResponse.json();
+                    apiResponse = {
+                      data: universalData.response ? [universalData.response] : ['Analysis completed'],
+                      result: `✅ ${node.data.label} completed`,
+                      fullResponse: universalData
+                    };
+                  }
+                }
             }
             
             workflowData[nodeId] = apiResponse.fullResponse || apiResponse.data;
@@ -1412,12 +1658,15 @@ export default function WorkflowPage() {
   };
 
   const loadExampleWorkflow = () => {
+    console.log('🏢 LOADING DEFAULT EXAMPLE WORKFLOW');
     const example = getExampleWorkflow();
+    console.log('🏢 Example workflow:', example);
     setNodes(example.nodes);
     setEdges(example.edges);
     setNodeConfigs(example.configs);
     setWorkflowResults(null); // Clear previous results
     setExecutionLog([]); // Clear previous logs
+    setCurrentWorkflowName('Real Estate Market Analysis');
     addLog('🏢 Streamlined Real Estate Market Analysis workflow loaded (3 nodes)');
     addLog('📋 Linear Flow: Market Research → Market Analyst → Investment Report');
     addLog('💡 Fast and reliable with free models');
@@ -1430,6 +1679,7 @@ export default function WorkflowPage() {
     setNodeConfigs(complex.configs);
     setWorkflowResults(null);
     setExecutionLog([]);
+    setCurrentWorkflowName('Self-Optimizing AI Workflow');
     addLog('🚀 Self-Optimizing AI Workflow loaded (8 nodes)');
     addLog('📋 Flow: Multi-Source RAG → DSPy Optimization → GEPA Evolution → Expert Analysis');
     addLog('💡 Leverages: DSPy, Ax LLM, GEPA, RAG, Vector Memory, Continuous Learning');
@@ -1443,10 +1693,60 @@ export default function WorkflowPage() {
     setNodeConfigs(dspy.configs);
     setWorkflowResults(null);
     setExecutionLog([]);
+    setCurrentWorkflowName('DSPy-Optimized Workflow');
     addLog('🔥 DSPy-Optimized Workflow loaded (5 nodes)');
     addLog('📋 Flow: RAG → DSPy Market Analyzer → DSPy Real Estate Agent → DSPy Report');
     addLog('💡 Uses ONLY self-optimizing DSPy modules with continuous learning');
     addLog('🎯 Best for: Maximum quality, automatic improvement, production deployments');
+  };
+
+  const loadAxLLMWorkflow = () => {
+    const axWorkflow = getAxLLMWorkflow();
+    setNodes(axWorkflow.nodes);
+    setEdges(axWorkflow.edges);
+    setNodeConfigs(axWorkflow.configs);
+    setWorkflowResults(null);
+    setExecutionLog([]);
+    setCurrentWorkflowName('Ax LLM Workflow');
+    addLog('⚡ Ax LLM Workflow loaded (Official Ax Framework)');
+    addLog('📋 Flow: Web Search → Ax Agent → Ax Optimizer → Ax Report');
+    addLog('💡 Uses official Ax LLM from https://github.com/ax-llm/ax');
+    addLog('🎯 Production-ready with Ollama + OpenRouter fallback');
+  };
+
+  const loadGeneratedWorkflow = (workflow: any) => {
+    console.log('🔧 loadGeneratedWorkflow called with:', workflow);
+    
+    // Convert generated workflow format to our internal format
+    const nodes = workflow.nodes.map((node: any, index: number) => ({
+      id: node.id,
+      type: node.type || 'customizable',
+      position: { x: 100 + (index * 300), y: 200 },
+      data: {
+        label: node.label,
+        role: node.role,
+        description: node.description,
+        apiEndpoint: node.apiEndpoint,
+        icon: node.icon,
+        iconColor: node.iconColor,
+        status: 'idle',
+      },
+    }));
+
+    console.log('🔧 Converted nodes:', nodes);
+    console.log('🔧 Edges:', workflow.edges);
+    console.log('🔧 Configs:', workflow.configs);
+
+    setNodes(nodes);
+    setEdges(workflow.edges);
+    setNodeConfigs(workflow.configs);
+    setWorkflowResults(null);
+    setExecutionLog([]);
+    setCurrentWorkflowName(workflow.name);
+    addLog(`🎉 Generated Workflow loaded: ${workflow.name}`);
+    addLog(`📋 Flow: ${workflow.nodes.map((n: any) => n.label).join(' → ')}`);
+    addLog(`💡 ${workflow.description}`);
+    addLog('🚀 Ready to execute your custom workflow!');
   };
 
   const exportWorkflow = () => {
@@ -1478,6 +1778,55 @@ export default function WorkflowPage() {
     };
     reader.readAsText(file);
   };
+
+  // Check for generated workflow from agent builder on mount
+  useEffect(() => {
+    console.log('🚀 WORKFLOW PAGE MOUNTED - CHECKING FOR SESSION ID');
+    
+    // Check for session_id in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    
+    console.log('🔍 Session ID from URL:', sessionId ? 'Found' : 'Not found');
+    
+    if (sessionId) {
+      console.log('📡 Loading workflow from Supabase with session ID:', sessionId);
+      
+      // Load workflow from Supabase
+      fetch(`/api/workflows/temp?session_id=${sessionId}`)
+        .then(response => response.json())
+        .then(result => {
+          if (result.success && result.workflow) {
+            console.log('✅ Workflow loaded from Supabase:');
+            console.log('   Workflow Name:', result.workflow.name);
+            console.log('   Nodes Count:', result.workflow.nodes?.length);
+            console.log('   Node Labels:', result.workflow.nodes?.map((n: any) => n.label));
+            console.log('   Created At:', result.createdAt);
+            console.log('   Expires At:', result.expiresAt);
+            
+            loadGeneratedWorkflow(result.workflow);
+            
+            // Clean up the session after loading
+            fetch(`/api/workflows/temp?session_id=${sessionId}`, { method: 'DELETE' })
+              .then(() => console.log('🗑️ Session cleaned up successfully'))
+              .catch(err => console.warn('⚠️ Failed to clean up session:', err));
+              
+            console.log('🎉 Generated workflow loaded successfully from Supabase!');
+          } else {
+            console.error('❌ Failed to load workflow from Supabase:', result.error);
+            loadExampleWorkflow(); // Fallback to default
+          }
+        })
+        .catch(error => {
+          console.error('❌ Error loading workflow from Supabase:', error);
+          loadExampleWorkflow(); // Fallback to default
+        });
+    } else {
+      console.log('📋 No session ID found, loading default example');
+      loadExampleWorkflow(); // Load default workflow
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const clearWorkflow = () => {
     if (confirm('Clear all nodes and connections?')) {
@@ -1635,7 +1984,7 @@ export default function WorkflowPage() {
                 <button
                   onClick={() => {
                     const workflowData = {
-                      workflowName: 'Real Estate Market Analysis',
+                      workflowName: currentWorkflowName,
                       executionTime: `${Math.round(Math.random() * 30 + 10)}s`,
                       results: workflowResults,
                       nodes: nodes.map(n => ({ id: n.id, label: n.data.label }))
@@ -1669,12 +2018,12 @@ export default function WorkflowPage() {
                       {Array.isArray(data) ? (
                         data.map((item, idx) => (
                           <div key={idx} className="text-xs text-gray-700 dark:text-gray-300 mb-1">
-                            • {item}
+                            • {stripMarkdown(typeof item === 'string' ? item : JSON.stringify(item))}
                           </div>
                         ))
                       ) : (
                         <div className="text-xs text-gray-700 dark:text-gray-300">
-                          {typeof data === 'object' ? JSON.stringify(data, null, 2) : data}
+                          {typeof data === 'object' ? JSON.stringify(data, null, 2) : stripMarkdown(data)}
                         </div>
                       )}
                     </div>
@@ -1710,6 +2059,15 @@ export default function WorkflowPage() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeClick={(event, node) => {
+            setSelectedNode({
+              nodeId: node.id,
+              label: node.data.label,
+              apiEndpoint: node.data.apiEndpoint,
+              icon: node.data.icon,
+              iconColor: node.data.iconColor
+            });
+          }}
           fitView
         >
           <Controls />
@@ -1723,18 +2081,7 @@ export default function WorkflowPage() {
                 variant={workflowErrors.length > 0 ? "destructive" : "default"}
                 className="relative"
               >
-                {isExecuting ? 'Running...' : workflowErrors.length > 0 ? 'Fix Issues First' : demoMode ? '▶️ Execute Demo' : '▶️ Execute'}
-              </Button>
-              <Button 
-                size="sm" 
-                variant={demoMode ? "secondary" : "outline"}
-                onClick={() => {
-                  setDemoMode(!demoMode);
-                  addLog(demoMode ? '🔧 Switched to REAL API mode' : '🎮 Switched to DEMO mode');
-                }}
-                className="flex items-center gap-1"
-              >
-                {demoMode ? '🎮 Demo Mode' : '🔧 Real API'}
+                {isExecuting ? 'Running...' : workflowErrors.length > 0 ? 'Fix Issues First' : '▶️ Execute Workflow'}
               </Button>
               <Button 
                 size="sm" 
@@ -1758,6 +2105,14 @@ export default function WorkflowPage() {
                 className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
               >
                 🔥 Load DSPy (5 nodes)
+              </Button>
+              <Button 
+                size="sm" 
+                variant="default" 
+                onClick={loadAxLLMWorkflow}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+              >
+                ⚡ Load Ax LLM (4 nodes)
               </Button>
               <Button size="sm" variant="outline" onClick={exportWorkflow}>
                 Export
@@ -1793,8 +2148,8 @@ export default function WorkflowPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Mode:</span>
-                  <span className={`font-semibold ${demoMode ? 'text-blue-600' : 'text-purple-600'}`}>
-                    {demoMode ? '🎮 Demo' : '🔧 Real'}
+                  <span className="font-semibold text-purple-600">
+                    🔧 Real APIs
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -1857,34 +2212,37 @@ export default function WorkflowPage() {
 
         {/* Configuration Panel */}
         {selectedNode && (
-          <div className="absolute top-4 right-4 w-96 bg-card border-2 border-primary/50 rounded-lg shadow-2xl p-4 max-h-[80vh] overflow-y-auto z-50">
+          <div className="absolute top-4 right-4 w-96 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl p-4 max-h-[80vh] overflow-y-auto z-50">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold flex items-center gap-2">
+              <h3 className="font-semibold text-white flex items-center gap-2">
                 <div className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center ${
-                  selectedNode.iconColor === 'blue' ? 'bg-blue-50 border-blue-200 text-blue-700' :
-                  selectedNode.iconColor === 'green' ? 'bg-green-50 border-green-200 text-green-700' :
-                  selectedNode.iconColor === 'gray' ? 'bg-gray-50 border-gray-200 text-gray-700' :
-                  selectedNode.iconColor === 'yellow' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
-                  selectedNode.iconColor === 'purple' ? 'bg-purple-50 border-purple-200 text-purple-700' :
-                  'bg-gray-50 border-gray-200 text-gray-700'
+                  selectedNode.iconColor === 'blue' ? 'bg-blue-600 border-blue-500 text-white' :
+                  selectedNode.iconColor === 'green' ? 'bg-green-600 border-green-500 text-white' :
+                  selectedNode.iconColor === 'gray' ? 'bg-gray-600 border-gray-500 text-white' :
+                  selectedNode.iconColor === 'yellow' ? 'bg-yellow-600 border-yellow-500 text-white' :
+                  selectedNode.iconColor === 'purple' ? 'bg-purple-600 border-purple-500 text-white' :
+                  'bg-gray-600 border-gray-500 text-white'
                 }`}>
-                  <span className="text-sm font-bold">{selectedNode.icon}</span>
+                  <span className="text-xs font-bold">{selectedNode.icon}</span>
                 </div>
-                <span>{selectedNode.label}</span>
+                <span className="text-white">{selectedNode.label}</span>
               </h3>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedNode(null)}>
+              <button 
+                onClick={() => setSelectedNode(null)}
+                className="text-gray-400 hover:text-white text-xl"
+              >
                 ✕
-              </Button>
+              </button>
             </div>
 
             <div className="space-y-4">
               {Object.entries(nodeConfigs[selectedNode.nodeId] || {}).map(([key, value]) => (
                 <div key={key}>
-                  <label className="text-sm font-medium block mb-2 flex items-center gap-2">
+                  <label className="text-white text-sm font-medium block mb-2 flex items-center gap-2">
                     <span className="capitalize">
                       {key.replace(/([A-Z])/g, ' $1').trim()}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-gray-400">
                       ({typeof value})
                     </span>
                   </label>
@@ -1896,9 +2254,9 @@ export default function WorkflowPage() {
                         onChange={(e) =>
                           updateNodeConfig(selectedNode.nodeId, { [key]: e.target.checked })
                         }
-                        className="w-4 h-4 rounded"
+                        className="w-4 h-4 rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm">{value ? 'Enabled' : 'Disabled'}</span>
+                      <span className="text-sm text-white">{value ? 'Enabled' : 'Disabled'}</span>
                     </div>
                   ) : typeof value === 'number' ? (
                     <input
@@ -1907,7 +2265,7 @@ export default function WorkflowPage() {
                       onChange={(e) =>
                         updateNodeConfig(selectedNode.nodeId, { [key]: parseFloat(e.target.value) || 0 })
                       }
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       step={key === 'temperature' ? '0.1' : '1'}
                     />
                   ) : (
@@ -1916,7 +2274,7 @@ export default function WorkflowPage() {
                       onChange={(e) =>
                         updateNodeConfig(selectedNode.nodeId, { [key]: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary min-h-[60px]"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[60px]"
                       placeholder={`Enter ${key}...`}
                     />
                   )}
@@ -1924,24 +2282,22 @@ export default function WorkflowPage() {
               ))}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-border">
-              <p className="text-xs text-muted-foreground mb-2">
-                <strong>API Endpoint:</strong>
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <p className="text-xs text-gray-400 mb-2">
+                <strong className="text-white">API Endpoint:</strong>
               </p>
-              <code className="text-xs bg-muted p-2 rounded block font-mono">
+              <code className="text-xs bg-gray-800 text-gray-300 p-2 rounded block font-mono border border-gray-600">
                 {selectedNode.apiEndpoint}
               </code>
             </div>
 
             <div className="mt-4">
-              <Button 
-                size="sm" 
-                variant="default" 
+              <button 
                 onClick={() => setSelectedNode(null)}
-                className="w-full"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
               >
                 ✓ Save Configuration
-              </Button>
+              </button>
             </div>
           </div>
         )}
