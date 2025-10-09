@@ -29,7 +29,22 @@ const AGENT_REGISTRY = {
     icon: '🌐',
     iconColor: 'bg-blue-500',
     handoffTo: ['dspyMarketAgent', 'dspyRealEstateAgent', 'customAgent'],
-    priority: 1 // Higher priority = checked first
+    priority: 1, // Higher priority = checked first
+    // Tool-based handoffs (Vercel AI SDK style)
+    tools: [
+      {
+        name: 'switchToMarketAnalyzer',
+        description: 'Switch to DSPy Market Analyzer for deep market analysis',
+        trigger: 'After gathering web data, if analysis is needed',
+        targetAgent: 'dspyMarketAgent'
+      },
+      {
+        name: 'switchToRealEstateAgent',
+        description: 'Switch to DSPy Real Estate Agent for property analysis',
+        trigger: 'After gathering property data, if real estate expertise needed',
+        targetAgent: 'dspyRealEstateAgent'
+      }
+    ]
   },
 
   // === DSPy SELF-OPTIMIZING AGENTS ===
@@ -500,10 +515,39 @@ function selectNextAgent(
  */
 export async function POST(request: Request) {
   try {
-    const { userRequest, strategy = 'auto' } = await request.json();
+    const { userRequest, strategy = 'auto', enableSemanticRouting = true } = await request.json();
     
-    // Route to initial agent
-    const routing = await routeToAgent(userRequest, {}, strategy);
+    // Try semantic routing first (FREE + instant!)
+    let routing;
+    if (enableSemanticRouting && strategy === 'auto') {
+      try {
+        const semanticResponse = await fetch('http://localhost:3000/api/semantic-route', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: userRequest, threshold: 0.6 })
+        });
+        
+        if (semanticResponse.ok) {
+          const semanticData = await semanticResponse.json();
+          if (semanticData.success && semanticData.selectedAgent) {
+            console.log('✅ Semantic routing successful:', semanticData.selectedAgent.name);
+            routing = {
+              selectedAgent: semanticData.selectedAgent.key,
+              reasoning: `Semantic match (${(semanticData.routing.similarity * 100).toFixed(0)}% similar)`,
+              confidence: semanticData.routing.confidence,
+              method: 'semantic'
+            };
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Semantic routing failed, falling back to keyword/LLM:', error);
+      }
+    }
+    
+    // Fallback to keyword/LLM routing if semantic didn't work
+    if (!routing) {
+      routing = await routeToAgent(userRequest, {}, strategy);
+    }
     
     // Build workflow with handoffs
     const workflow = buildAgentWorkflow(routing.selectedAgent, userRequest);
@@ -547,7 +591,7 @@ export async function POST(request: Request) {
         reasoning: routing.reasoning
       },
       workflow: {
-        name: `${AGENT_REGISTRY[routing.selectedAgent].name} Workflow`,
+        name: `${AGENT_REGISTRY[routing.selectedAgent as keyof typeof AGENT_REGISTRY].name} Workflow`,
         description: `Auto-routed workflow: ${routing.reasoning}`,
         nodes,
         strategy: strategy

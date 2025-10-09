@@ -986,7 +986,10 @@ export default function WorkflowPage() {
         addLog('⚠️ Concept retrieval skipped (not critical)');
       }
       
-      const executionOrder = getExecutionOrder(nodes, edges);
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // PARALLEL DAG EXECUTION: Execute independent nodes concurrently
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      const executionWaves = getParallelExecutionWaves(nodes, edges);
       let workflowData: any = {};
       let totalCost = 0; // Track total workflow cost
       let freeNodes = 0;
@@ -999,9 +1002,17 @@ export default function WorkflowPage() {
           .join('\n');
       }
       
-      for (const nodeId of executionOrder) {
+      addLog(`🌊 Executing workflow in ${executionWaves.length} parallel wave(s)`);
+      
+      // Execute waves (nodes in same wave run in parallel!)
+      for (let waveIndex = 0; waveIndex < executionWaves.length; waveIndex++) {
+        const wave = executionWaves[waveIndex];
+        addLog(`🌊 Wave ${waveIndex + 1}/${executionWaves.length}: ${wave.length} node(s) in parallel`);
+        
+        // Execute all nodes in this wave in parallel
+        await Promise.all(wave.map(async (nodeId) => {
         const node = nodes.find((n) => n.id === nodeId);
-        if (!node) continue;
+        if (!node) return; // Can't use continue in map, use return instead
 
         addLog(`▶️  Executing: ${node.data.label}`);
         
@@ -1752,10 +1763,17 @@ Format as a professional risk assessment report with specific data points, risk 
         }
         
         addLog(`✅ Completed: ${node.data.label}`);
+        })); // End Promise.all for parallel wave execution
+        
+        addLog(`✅ Wave ${waveIndex + 1} completed!`);
         
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // DYNAMIC ROUTING: Let agents decide next steps based on results
+        // DYNAMIC ROUTING: Check if any node in wave needs handoffs
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        for (const nodeId of wave) {
+          const node = nodes.find(n => n.id === nodeId);
+          if (!node) continue;
+          
         try {
           addLog(`🤔 Checking if agent handoff needed...`);
           
@@ -1773,8 +1791,9 @@ Format as a professional risk assessment report with specific data points, risk 
               userRequest: `Based on this result from ${node.data.label}: "${resultSummary}", determine if we need additional agents to handle complexity, verify data, or address gaps. Original goal: ${currentWorkflowName}`,
               strategy: 'auto',
               currentContext: {
-                executedNodes: executionOrder.slice(0, executionOrder.indexOf(nodeId) + 1),
-                remainingNodes: executionOrder.slice(executionOrder.indexOf(nodeId) + 1),
+                executedNodes: Object.keys(workflowData), // All completed nodes so far
+                remainingNodes: executionWaves.slice(waveIndex + 1).flat(), // Remaining waves
+                currentWave: wave,
                 currentResult: resultSummary
               }
             })
@@ -1796,8 +1815,9 @@ Format as a professional risk assessment report with specific data points, risk 
               
               if (shouldHandoff && routingData.workflow && routingData.workflow.nodes) {
                 // Agent suggests additional nodes!
+                const alreadyExecuted = Object.keys(workflowData);
                 const suggestedNodes = routingData.workflow.nodes.filter((n: any) => 
-                  !executionOrder.includes(n.id) // Only new nodes
+                  !alreadyExecuted.includes(n.id) && !wave.includes(n.id) // Only new nodes not in current execution
                 );
                 
                 if (suggestedNodes.length > 0) {
@@ -1805,13 +1825,18 @@ Format as a professional risk assessment report with specific data points, risk 
                   addLog(`💡 Reason: ${routingData.routing.reasoning.substring(0, 100)}...`);
                   
                   // Insert new nodes into the workflow
-                  const currentIndex = executionOrder.indexOf(nodeId);
+                  // For parallel execution, add to next wave
                   for (let i = 0; i < suggestedNodes.length; i++) {
                     const newNode = suggestedNodes[i];
                     const newNodeId = `dynamic-${Date.now()}-${i}`;
                     
-                    // Add to execution order (after current node)
-                    executionOrder.splice(currentIndex + 1 + i, 0, newNodeId);
+                    // Add to next wave (will execute after current wave completes)
+                    if (waveIndex + 1 < executionWaves.length) {
+                      executionWaves[waveIndex + 1].push(newNodeId);
+                    } else {
+                      // Create new wave if at end
+                      executionWaves.push([newNodeId]);
+                    }
                     
                     // Add to nodes array
                     setNodes((nds) => [
@@ -1865,7 +1890,8 @@ Format as a professional risk assessment report with specific data points, risk 
           console.warn('⚠️ Dynamic routing check failed (non-critical):', error);
           addLog(`⚠️ Handoff check skipped (non-critical)`);
         }
-      }
+        } // End for loop checking handoffs for wave nodes
+      } // End for loop for waves
 
       addLog('🎉 Workflow completed successfully!');
       addLog('📊 Results: ' + Object.keys(workflowData).length + ' nodes executed');
@@ -1939,6 +1965,43 @@ Format as a professional risk assessment report with specific data points, risk 
 
     nodes.forEach((node) => visit(node.id));
     return order;
+  };
+
+  /**
+   * PARALLEL DAG EXECUTION: Group nodes into waves for concurrent execution
+   * Nodes in the same wave have no dependencies on each other and can run in parallel
+   */
+  const getParallelExecutionWaves = (nodes: FlowNode[], edges: FlowEdge[]): string[][] => {
+    const waves: string[][] = [];
+    const completed = new Set<string>();
+    const allNodeIds = nodes.map(n => n.id);
+    
+    while (completed.size < allNodeIds.length) {
+      // Find nodes that can execute now (all dependencies completed)
+      const readyNodes = allNodeIds.filter(nodeId => {
+        if (completed.has(nodeId)) return false;
+        
+        // Check if all incoming edges are from completed nodes
+        const dependencies = edges.filter(e => e.target === nodeId);
+        return dependencies.every(dep => completed.has(dep.source));
+      });
+      
+      if (readyNodes.length === 0) {
+        // No more nodes can execute (might have cycles or issues)
+        console.warn('⚠️ No ready nodes found, breaking to avoid infinite loop');
+        break;
+      }
+      
+      // This wave can execute in parallel
+      waves.push(readyNodes);
+      readyNodes.forEach(nodeId => completed.add(nodeId));
+    }
+    
+    console.log(`🌊 Workflow organized into ${waves.length} parallel waves:`,
+      waves.map((w, i) => `Wave ${i+1}: ${w.length} node(s)`).join(', ')
+    );
+    
+    return waves;
   };
 
   const loadExampleWorkflow = () => {
