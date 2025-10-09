@@ -1768,20 +1768,24 @@ Format as a professional risk assessment report with specific data points, risk 
         addLog(`✅ Wave ${waveIndex + 1} completed!`);
         
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // DYNAMIC ROUTING: Check if any node in wave needs handoffs
+        // DYNAMIC ROUTING: DISABLED (was causing duplicate disconnected nodes)
+        // The Agent Builder already creates the correct workflow structure
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        for (const nodeId of wave) {
-          const node = nodes.find(n => n.id === nodeId);
+        const isLastWave = waveIndex === executionWaves.length - 1;
+        const shouldCheckHandoff = false; // DISABLED - Agent Builder handles workflow structure
+        
+        if (shouldCheckHandoff && wave.length > 0) {
+          const node = nodes.find(n => n.id === wave[0]); // Check only first node in wave
           if (!node) continue;
           
         try {
-          addLog(`🤔 Checking if agent handoff needed...`);
+          addLog(`🤔 Checking if workflow needs expansion...`);
           
-          // Get the result of this node
-          const nodeResult = workflowData[nodeId];
-          const resultSummary = typeof nodeResult === 'string' 
-            ? nodeResult.substring(0, 500)
-            : JSON.stringify(nodeResult).substring(0, 500);
+          // Get the combined results from this wave
+          const waveResults = wave.map(id => workflowData[id]).filter(Boolean);
+          const resultSummary = waveResults.map(r => 
+            typeof r === 'string' ? r : JSON.stringify(r)
+          ).join('\n').substring(0, 500);
           
           // Ask the hybrid router if we should handoff to another agent
           const routingResponse = await fetch('/api/agents', {
@@ -1888,9 +1892,9 @@ Format as a professional risk assessment report with specific data points, risk 
           }
         } catch (error) {
           console.warn('⚠️ Dynamic routing check failed (non-critical):', error);
-          addLog(`⚠️ Handoff check skipped (non-critical)`);
+          addLog(`⚠️ Workflow expansion check skipped (non-critical)`);
         }
-        } // End for loop checking handoffs for wave nodes
+        } // End if shouldCheckHandoff
       } // End for loop for waves
 
       addLog('🎉 Workflow completed successfully!');

@@ -845,6 +845,35 @@ function buildWorkflowFromLLMPlan(plan: any, originalRequest: string): WorkflowR
     };
   });
   
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // CRITICAL FIX: Ensure workflow has proper data flow!
+  // If the first node is a processing/synthesis node, add a data source first
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const processingNodes = ['dspy_data_synthesizer', 'dspy_financial', 'dspy_investment_report', 'gepa_optimize'];
+  const dataSourceNodes = ['web_search', 'memory_search', 'context_assembly'];
+  
+  const firstNode = nodes[0];
+  const firstNodeKey = Object.keys(TOOL_LIBRARY).find(key => {
+    const tool = TOOL_LIBRARY[key as keyof typeof TOOL_LIBRARY];
+    return tool.apiEndpoint === firstNode?.apiEndpoint;
+  });
+  
+  // If first node is a processing node and not a data source, prepend a web search
+  if (firstNode && processingNodes.includes(firstNodeKey || '') && !dataSourceNodes.includes(firstNodeKey || '')) {
+    console.log('⚠️ First node is processing/synthesis, adding Web Search first!');
+    const webSearch = TOOL_LIBRARY.web_search;
+    nodes.unshift({
+      id: `${webSearch.id}-${Date.now()}-0`,
+      type: 'customizable',
+      label: webSearch.label,
+      role: 'Data Collector',
+      description: `Research and gather data about: ${originalRequest}`,
+      apiEndpoint: webSearch.apiEndpoint,
+      icon: webSearch.icon,
+      iconColor: webSearch.iconColor
+    });
+  }
+  
   // Always ensure we end with answer generator
   const hasAnswerGen = nodes.some((n: any) => n.apiEndpoint === '/api/answer');
   if (!hasAnswerGen) {
@@ -878,7 +907,7 @@ function buildWorkflowFromLLMPlan(plan: any, originalRequest: string): WorkflowR
     requiresDataAnalysis: false,
     requiresDataTransformation: false
   };
-  const configs = generateNodeConfigurations(nodes, simpleAnalysis);
+  const configs = generateNodeConfigurations(nodes, simpleAnalysis, originalRequest);
   
   return {
     name: plan.goal.length > 50 ? plan.goal.substring(0, 50) + '...' : plan.goal,
@@ -1376,7 +1405,7 @@ function generateEdges(nodes: any[]) {
 /**
  * Generate intelligent node configurations with dynamic system prompts
  */
-function generateNodeConfigurations(nodes: any[], analysis: any) {
+function generateNodeConfigurations(nodes: any[], analysis: any, originalRequest?: string) {
   const configs: Record<string, any> = {};
   
   nodes.forEach((node, index) => {
@@ -1423,8 +1452,12 @@ function generateNodeConfigurations(nodes: any[], analysis: any) {
     
     // Special configuration for web search nodes
     if (node.apiEndpoint === '/api/perplexity/chat') {
-      configs[nodeId].searchQuery = generateSearchQuery(analysis);
-      configs[nodeId].query = generateSearchQuery(analysis);
+      // Use original user request if this is the first node and we have it
+      const searchQuery = (isFirstNode && originalRequest) 
+        ? originalRequest 
+        : generateSearchQuery(analysis);
+      configs[nodeId].searchQuery = searchQuery;
+      configs[nodeId].query = searchQuery;
     }
     
     // Special configuration for CEL nodes

@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if we have at least one LLM provider configured
-    const hasOllama = OLLAMA_ENABLED && (OLLAMA_API_KEY || OLLAMA_BASE_URL);
+    const hasOllama = !!(OLLAMA_API_KEY || (OLLAMA_ENABLED && OLLAMA_BASE_URL));
     const hasOpenRouter = !!OPENROUTER_API_KEY;
     
     if (!hasOllama && !hasOpenRouter) {
