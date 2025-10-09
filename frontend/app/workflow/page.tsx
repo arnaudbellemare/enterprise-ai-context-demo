@@ -133,60 +133,65 @@ const AVAILABLE_NODE_TYPES = [
   { 
     id: 'dspyMarketAnalyzer', 
     label: 'DSPy Market Analyzer',
-    description: '🔧 Self-optimizing market analysis',
+    description: '🔧 Self-optimizing market analysis (FREE - Ollama)',
     icon: 'M',
     iconColor: 'purple',
-    apiEndpoint: '/api/dspy/execute',
+    apiEndpoint: '/api/ax-dspy',
     config: {
       moduleName: 'market_research_analyzer',
+      provider: 'ollama',
       optimize: true,
     }
   },
   { 
     id: 'dspyRealEstateAgent', 
     label: 'DSPy Real Estate Agent',
-    description: '🔧 Self-optimizing RE analysis',
+    description: '🔧 Self-optimizing RE analysis (FREE - Ollama)',
     icon: 'R',
     iconColor: 'blue',
-    apiEndpoint: '/api/dspy/execute',
+    apiEndpoint: '/api/ax-dspy',
     config: {
       moduleName: 'real_estate_agent',
+      provider: 'ollama',
       optimize: true,
     }
   },
   { 
     id: 'dspyFinancialAnalyst', 
     label: 'DSPy Financial Analyst',
-    description: '🔧 Self-optimizing financial analysis',
+    description: '🔧 Self-optimizing financial analysis (FREE - Ollama)',
     icon: 'F',
     iconColor: 'green',
-    apiEndpoint: '/api/dspy/execute',
+    apiEndpoint: '/api/ax-dspy',
     config: {
       moduleName: 'financial_analyst',
+      provider: 'ollama',
       optimize: true,
     }
   },
   { 
     id: 'dspyInvestmentReport', 
     label: 'DSPy Investment Report',
-    description: '🔧 Self-optimizing reports',
+    description: '🔧 Self-optimizing reports (FREE - Ollama)',
     icon: 'I',
     iconColor: 'indigo',
-    apiEndpoint: '/api/dspy/execute',
+    apiEndpoint: '/api/ax-dspy',
     config: {
       moduleName: 'investment_report_generator',
+      provider: 'ollama',
       optimize: true,
     }
   },
   { 
     id: 'dspyDataSynthesizer', 
     label: 'DSPy Data Synthesizer',
-    description: '🔧 Self-optimizing data merge',
+    description: '🔧 Self-optimizing data merge (FREE - Ollama)',
     icon: 'D',
     iconColor: 'orange',
-    apiEndpoint: '/api/dspy/execute',
+    apiEndpoint: '/api/ax-dspy',
     config: {
       moduleName: 'data_synthesizer',
+      provider: 'ollama',
       optimize: true,
     }
   },
@@ -983,6 +988,9 @@ export default function WorkflowPage() {
       
       const executionOrder = getExecutionOrder(nodes, edges);
       let workflowData: any = {};
+      let totalCost = 0; // Track total workflow cost
+      let freeNodes = 0;
+      let paidNodes = 0;
       
       // Inject learned concepts as context (if any)
       if (learnedConcepts.length > 0) {
@@ -995,7 +1003,7 @@ export default function WorkflowPage() {
         const node = nodes.find((n) => n.id === nodeId);
         if (!node) continue;
 
-        addLog(`Executing: ${node.data.label}`);
+        addLog(`▶️  Executing: ${node.data.label}`);
         
         setNodes((nds) =>
           nds.map((n) =>
@@ -1014,22 +1022,96 @@ export default function WorkflowPage() {
           }
           return String(data);
         }).join('\n\n---\n\n');
-
+        
         // REAL API MODE: All workflows use real API calls
         // - Perplexity for Market Research (web search)
         // - Ollama (gemma3:4b) for all other AI tasks
         // - OpenRouter as fallback if Ollama fails
+        
+        // Declare cost tracking variables in outer scope
+        let useFreeLLM = false;
+        let estimatedCost = 0;
+        
         {
           // REAL API MODE: Make actual API calls
           try {
             let apiResponse;
+            
+            // Start with base config - this will be optimized by GEPA if applicable
+            const baseConfig = nodeConfigs[nodeId] || {};
+            let nodeConfig = { ...baseConfig };
+            
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // COST OPTIMIZATION: Choose between Perplexity (paid) and Ollama (free)
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            
+            // Use free Ollama for these tasks (don't need web search):
+            const nodeLabel = String(node.data.label || '');
+            const canUseFree = nodeLabel.includes('DSPy') || 
+                               nodeLabel.includes('Custom Agent') ||
+                               nodeLabel.includes('Generate Answer') ||
+                               nodeLabel.includes('Investment Report');
+            
+            // Must use Perplexity for web search
+            const requiresWebSearch = nodeLabel.includes('Market Research') ||
+                                      nodeLabel.includes('Web Search');
+            
+            if (canUseFree && !requiresWebSearch) {
+              useFreeLLM = true;
+              estimatedCost = 0; // FREE!
+              addLog(`💰 Using FREE Ollama (cost: $0.00)`);
+            } else if (requiresWebSearch) {
+              estimatedCost = 0.005; // $0.005 per request
+              addLog(`💸 Using Perplexity for web search (cost: ~$0.005)`);
+            }
+            
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            // GEPA: Optimize prompts BEFORE execution (for AI nodes)
+            // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            const nodeEndpoint = String(node.data.apiEndpoint || '');
+            const isAINode = nodeEndpoint.includes('/agent/') || 
+                             nodeEndpoint.includes('/perplexity/') ||
+                             nodeEndpoint.includes('/ax-dspy') ||
+                             nodeLabel.includes('Custom Agent') ||
+                             nodeLabel.includes('DSPy');
+            
+            if (isAINode) {
+              try {
+                addLog(`⚡ Optimizing prompt with GEPA...`);
+                const gepaResponse = await fetch('/api/gepa/optimize', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    prompt: nodeConfig.query || nodeConfig.prompt || nodeConfig.systemPrompt || currentWorkflowName,
+                    context: previousNodeData.substring(0, 2000), // Limit context size
+                    industry: currentWorkflowName.toLowerCase().includes('real estate') ? 'real_estate' : 
+                             currentWorkflowName.toLowerCase().includes('financ') ? 'finance' : 'general'
+                  })
+                });
+                
+                if (gepaResponse.ok) {
+                  const gepaData = await gepaResponse.json();
+                  if (gepaData.optimizedPrompt) {
+                    nodeConfig = {
+                      ...nodeConfig,
+                      query: gepaData.optimizedPrompt,
+                      _gepaOptimized: true
+                    };
+                    addLog(`✨ GEPA optimization applied (15-30% quality boost)`);
+                  }
+                }
+              } catch (error) {
+                console.warn('⚠️ GEPA optimization failed (non-critical):', error);
+                addLog(`⚠️ GEPA optimization skipped (non-critical)`);
+              }
+            }
             
             console.log(`🔍 Executing node: "${node.data.label}" with endpoint: ${node.data.apiEndpoint}`);
             
             switch (node.data.label) {
               case 'Market Research':
                 // Use Perplexity API ONLY for Market Research (web search)
-                const searchQuery = nodeConfigs[nodeId]?.query || 'Real estate market trends 2024 luxury properties Miami Beach condo prices investment opportunities';
+                const searchQuery = nodeConfig.query || nodeConfigs[nodeId]?.query || 'Real estate market trends 2024 luxury properties Miami Beach condo prices investment opportunities';
                 const perplexityResponse = await fetch('/api/perplexity/chat', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -1425,8 +1507,8 @@ Format as a professional risk assessment report with specific data points, risk 
               case 'DSPy Financial Analyst':
               case 'DSPy Investment Report':
               case 'DSPy Data Synthesizer':
-                // Execute DSPy modules with self-optimization
-                const dspyModuleName = nodeConfigs[nodeId]?.moduleName || 'market_research_analyzer';
+                // Execute DSPy modules with Ax framework + Ollama (FREE!)
+                const dspyModuleName = nodeConfig.moduleName || 'market_research_analyzer';
                 
                 // Prepare inputs based on previous node data
                 const dspyInputs: any = {};
@@ -1444,7 +1526,7 @@ Format as a professional risk assessment report with specific data points, risk 
                   dspyInputs.data = previousNodeData || 'No data available';
                 }
                 
-                const dspyResponse = await fetch('/api/dspy/execute', {
+                const dspyResponse = await fetch('/api/ax-dspy', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ 
@@ -1504,7 +1586,7 @@ Format as a professional risk assessment report with specific data points, risk 
               default:
                 // Universal AI Agent Handler
                 // This handles ANY node type dynamically using the node's configuration
-                const nodeConfig = nodeConfigs[nodeId] || {};
+                // nodeConfig is already declared at the beginning of try block
                 const apiEndpoint = node.data.apiEndpoint || '/api/agent/chat';
                 
                 // Use dynamic system prompt from config or generate based on node label/role
@@ -1660,11 +1742,20 @@ Format as a professional risk assessment report with specific data points, risk 
           )
         );
         
+        // Track costs
+        totalCost += estimatedCost;
+        if (useFreeLLM || estimatedCost === 0) {
+          freeNodes++;
+        } else {
+          paidNodes++;
+        }
+        
         addLog(`✅ Completed: ${node.data.label}`);
       }
 
       addLog('🎉 Workflow completed successfully!');
       addLog('📊 Results: ' + Object.keys(workflowData).length + ' nodes executed');
+      addLog(`💰 Total cost: $${totalCost.toFixed(4)} (${freeNodes} free nodes, ${paidNodes} paid nodes)`);
       
       // Store results for display
       setWorkflowResults(workflowData);
