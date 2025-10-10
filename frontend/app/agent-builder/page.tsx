@@ -196,10 +196,17 @@ Try these examples:`,
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white relative">
+      {/* Logo */}
+      <div className="absolute top-4 left-4 z-10">
+        <div className="w-8 h-8 bg-black rounded-sm flex items-center justify-center">
+          <div className="w-2 h-2 bg-white rounded-sm"></div>
+        </div>
+      </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="flex-1 flex flex-col items-center justify-start pt-32">
+        <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Title */}
         <h1 className="text-center text-4xl font-bold text-black mb-12" style={{ fontFamily: 'monospace' }}>
           What would you like to know?
@@ -528,6 +535,7 @@ Try these examples:`,
             </p>
                   </div>
                 )}
+        </div>
       </div>
     </div>
   );
