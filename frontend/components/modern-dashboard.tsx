@@ -34,9 +34,41 @@ interface ModernDashboardProps {
 
 export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* Dither Effect Overlay - Representing Optimization & Storage Servers */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+        <div 
+          className="w-full h-full"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 20% 80%, #000 1px, transparent 1px),
+              radial-gradient(circle at 80% 20%, #000 1px, transparent 1px),
+              radial-gradient(circle at 40% 40%, #000 1px, transparent 1px),
+              radial-gradient(circle at 60% 60%, #000 1px, transparent 1px),
+              radial-gradient(circle at 10% 10%, #000 1px, transparent 1px),
+              radial-gradient(circle at 90% 90%, #000 1px, transparent 1px),
+              radial-gradient(circle at 30% 70%, #000 1px, transparent 1px),
+              radial-gradient(circle at 70% 30%, #000 1px, transparent 1px)
+            `,
+            backgroundSize: '120px 120px, 80px 80px, 60px 60px, 100px 100px, 40px 40px, 140px 140px, 90px 90px, 70px 70px',
+            backgroundPosition: '0 0, 60px 60px, 30px 30px, 50px 50px, 20px 20px, 70px 70px, 45px 45px, 35px 35px'
+          }}
+        />
+        {/* Additional optimization patterns */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(45deg, transparent 48%, rgba(0,0,0,0.1) 49%, rgba(0,0,0,0.1) 51%, transparent 52%),
+              linear-gradient(-45deg, transparent 48%, rgba(0,0,0,0.05) 49%, rgba(0,0,0,0.05) 51%, transparent 52%)
+            `,
+            backgroundSize: '20px 20px, 30px 30px'
+          }}
+        />
+      </div>
+
       {/* Header */}
-      <div className="border-b bg-card">
+      <div className="border-b bg-card relative z-10">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
@@ -73,7 +105,7 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Core Capabilities */}
         <div className="mb-12">
           <div className="mb-6">
