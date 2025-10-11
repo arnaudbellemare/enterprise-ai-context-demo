@@ -31,6 +31,8 @@ const ICON_MAP: Record<string, any> = {
   Home01: Home01Icon,
   DollarCircle: DollarCircleIcon,
   Settings02: Settings02Icon,
+  // Fallback for AiNetworkIcon (doesn't exist in hugeicons)
+  AiNetworkIcon: Settings02Icon,  // Use Settings as AI/router icon
   // Letter fallbacks (show as text in colored box)
   F: null,  // Financial (will show "F")
   I: null,  // Investment (will show "I")
