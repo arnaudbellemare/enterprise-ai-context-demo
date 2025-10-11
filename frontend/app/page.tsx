@@ -3819,13 +3819,13 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
               <span className="font-bold text-sm tracking-wide">AI.AGENT.BUILDER</span>
             </a>
             
-            <button
-              onClick={() => setActiveTab('arena')}
+            <a
+              href="/agent-builder-v2"
               className="group flex items-center gap-2 px-4 py-2 border-2 border-gray-700 bg-transparent text-gray-400 hover:border-red-500 hover:text-red-500 transition-all duration-200"
             >
               <Target02Icon size={18} className="text-gray-400 group-hover:text-red-500" />
               <span className="font-bold text-sm tracking-wide">ARENA.COMPARISON</span>
-            </button>
+            </a>
             
             <a
               href="/workflow"
