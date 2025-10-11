@@ -10,7 +10,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/  # Commented out - blocks frontend/lib/
 lib64/
 parts/
 sdist/
@@ -20,6 +20,12 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# But DO ignore Python-specific lib folders
+backend/lib/
+src/lib/
+**/venv/lib/
+**/.venv/lib/
 
 # Virtual environments
 venv/
