@@ -3796,6 +3796,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
               <span className="font-bold text-sm tracking-wide">DASHBOARD</span>
             </button>
             
+            {/* Hidden: Agent Builder tab - keeping data but not showing in nav
             <button
               className={`group flex items-center gap-2 px-4 py-2 border-2 transition-all duration-200 ${
                 activeTab === 'agent_builder' 
@@ -3807,6 +3808,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
               <CheckmarkBadge02Icon size={18} className={activeTab === 'agent_builder' ? 'text-white' : 'text-gray-400 group-hover:text-green-500'} />
               <span className="font-bold text-sm tracking-wide">AGENT.BUILDER</span>
             </button>
+            */}
             
             <a
               href="/agent-builder"
@@ -3954,7 +3956,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
         )}
 
 
-        {activeTab === 'agent_builder' && (
+        {false && activeTab === 'agent_builder' && ( // Hidden but keeping data
           <div className="space-y-8 overflow-hidden">
                   <div className="mb-6">
                     <div className="text-green-400 text-sm font-mono">◄ ENTERPRISE.AI.AGENT.BUILDER</div>
