@@ -24,15 +24,16 @@ import {
   type Edge as FlowEdge,
   type Connection as FlowConnection
 } from '@xyflow/react';
+import { NuxtNodeIcon, NuxtNodePaletteItem } from '@/components/nuxt-workflow-nodes';
 
-// Available node types - keeping original functionality but with clean icons
+// Available node types - Nuxt UI inspired with Hugeicons
 const AVAILABLE_NODE_TYPES = [
   { 
     id: 'memorySearch', 
     label: 'Memory Search',
     description: 'Vector similarity search',
-    icon: 'S',
-    iconColor: 'yellow',
+    icon: 'Database02',
+    iconColor: 'indigo',
     apiEndpoint: '/api/search/indexed',
     config: {
       matchThreshold: 0.8,
@@ -44,8 +45,8 @@ const AVAILABLE_NODE_TYPES = [
     id: 'webSearch', 
     label: 'Web Search',
     description: 'Live Perplexity search',
-    icon: '🌐',
-    iconColor: 'yellow',
+    icon: 'Globe02',
+    iconColor: 'blue',
     apiEndpoint: '/api/perplexity/chat',
     config: {
       recencyFilter: 'month',
@@ -56,7 +57,7 @@ const AVAILABLE_NODE_TYPES = [
     id: 'contextAssembly', 
     label: 'Context Assembly',
     description: 'Merge results',
-    icon: '📦',
+    icon: 'Package',
     iconColor: 'purple',
     apiEndpoint: '/api/context/assemble',
     config: {
@@ -68,8 +69,8 @@ const AVAILABLE_NODE_TYPES = [
     id: 'modelRouter', 
     label: 'Model Router',
     description: 'Select best AI model',
-    icon: '🤖',
-    iconColor: 'blue',
+    icon: 'AiNetworkIcon',
+    iconColor: 'emerald',
     apiEndpoint: '/api/answer',
     config: {
       autoSelect: true,
@@ -80,8 +81,8 @@ const AVAILABLE_NODE_TYPES = [
     id: 'gepaOptimize', 
     label: 'GEPA Optimize',
     description: 'Prompt evolution',
-    icon: '⚡',
-    iconColor: 'purple',
+    icon: 'Rocket01',
+    iconColor: 'violet',
     apiEndpoint: '/api/gepa/optimize',
     config: {
       iterations: 3,
@@ -92,8 +93,8 @@ const AVAILABLE_NODE_TYPES = [
     id: 'langstruct', 
     label: 'LangStruct',
     description: 'Extract structured data',
-    icon: 'S',
-    iconColor: 'gray',
+    icon: 'L',
+    iconColor: 'slate',
     apiEndpoint: '/api/langstruct/process',
     config: {
       useRealLangStruct: true,
@@ -104,8 +105,8 @@ const AVAILABLE_NODE_TYPES = [
     id: 'customAgent', 
     label: 'Custom Agent',
     description: 'Customizable task agent',
-    icon: '▶',
-    iconColor: 'blue',
+    icon: 'UserCircle',
+    iconColor: 'cyan',
     apiEndpoint: '/api/agent/chat',
     config: {
       taskDescription: 'Analyze customer sentiment',
@@ -119,7 +120,7 @@ const AVAILABLE_NODE_TYPES = [
     id: 'answer', 
     label: 'Generate Answer',
     description: 'Final AI response',
-    icon: 'OK',
+    icon: 'CheckmarkCircle01',
     iconColor: 'green',
     apiEndpoint: '/api/answer',
     config: {
@@ -133,8 +134,8 @@ const AVAILABLE_NODE_TYPES = [
   { 
     id: 'dspyMarketAnalyzer', 
     label: 'DSPy Market Analyzer',
-    description: '🔧 Self-optimizing market analysis (FREE - Ollama)',
-    icon: 'M',
+    description: 'Self-optimizing market analysis (FREE - Ollama)',
+    icon: 'ChartLineData01',
     iconColor: 'purple',
     apiEndpoint: '/api/ax-dspy',
     config: {
@@ -146,8 +147,8 @@ const AVAILABLE_NODE_TYPES = [
   { 
     id: 'dspyRealEstateAgent', 
     label: 'DSPy Real Estate Agent',
-    description: '🔧 Self-optimizing RE analysis (FREE - Ollama)',
-    icon: 'R',
+    description: 'Self-optimizing RE analysis (FREE - Ollama)',
+    icon: 'Home01',
     iconColor: 'blue',
     apiEndpoint: '/api/ax-dspy',
     config: {
@@ -159,7 +160,7 @@ const AVAILABLE_NODE_TYPES = [
   { 
     id: 'dspyFinancialAnalyst', 
     label: 'DSPy Financial Analyst',
-    description: '🔧 Self-optimizing financial analysis (FREE - Ollama)',
+    description: 'Self-optimizing financial analysis (FREE - Ollama)',
     icon: 'F',
     iconColor: 'green',
     apiEndpoint: '/api/ax-dspy',
@@ -2492,33 +2493,13 @@ Format as a professional risk assessment report with specific data points, risk 
         </p>
 
         <div className="space-y-2">
-          {AVAILABLE_NODE_TYPES.map((nodeType) => {
-            const colorClasses = {
-              blue: 'bg-blue-50 border-blue-200 text-blue-700',
-              green: 'bg-green-50 border-green-200 text-green-700',
-              gray: 'bg-gray-50 border-gray-200 text-gray-700',
-              yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700',
-              purple: 'bg-purple-50 border-purple-200 text-purple-700',
-            };
-            
-            return (
-              <button
-                key={nodeType.id}
-                onClick={() => addNode(nodeType)}
-                className="w-full p-3 text-left bg-background hover:bg-accent border border-border rounded-lg transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center flex-shrink-0 ${colorClasses[nodeType.iconColor as keyof typeof colorClasses]}`}>
-                    <span className="text-sm font-bold">{nodeType.icon}</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm">{nodeType.label}</div>
-                    <div className="text-xs text-muted-foreground">{nodeType.description}</div>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+          {AVAILABLE_NODE_TYPES.map((nodeType) => (
+            <NuxtNodePaletteItem
+              key={nodeType.id}
+              node={nodeType}
+              onClick={() => addNode(nodeType)}
+            />
+          ))}
         </div>
 
         {/* Workflow Validation Errors */}

@@ -1,9 +1,11 @@
 /**
  * Context Enrichment API - Enhanced context engineering with memory network
  * Enrich agent context with real-time user data and previous interactions
+ * NOW WITH ARKTYPE RUNTIME VALIDATION
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { ContextEnrichRequest, validateRequest, type ContextEnrichRequestType } from '@/lib/validators';
 
 interface ContextSource {
   name: string;
@@ -21,20 +23,34 @@ const CONTEXT_SOURCES: ContextSource[] = [
 
 export async function POST(req: NextRequest) {
   try {
+    const body = await req.json();
+    
+    // ArkType validation
+    const validation = validateRequest<ContextEnrichRequestType>(ContextEnrichRequest, body);
+    
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          error: validation.error,
+          details: validation.details 
+        },
+        { status: 400 }
+      );
+    }
+    
     const {
       query,
       userId,
       conversationHistory = [],
       userPreferences = {},
       includeSources = ['memory_network', 'conversation_history', 'knowledge_graph']
-    } = await req.json();
-
-    if (!query || !userId) {
-      return NextResponse.json(
-        { error: 'Query and userId are required' },
-        { status: 400 }
-      );
-    }
+    } = validation.data as { 
+      query: string; 
+      userId: string; 
+      conversationHistory?: any[]; 
+      userPreferences?: any; 
+      includeSources?: string[] 
+    };
 
     const startTime = Date.now();
     const enrichedContext: any[] = [];

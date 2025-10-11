@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ACEFramework, ACEUtils } from '@/lib/ace-framework';
 
 export const runtime = 'nodejs';
 
@@ -331,7 +332,7 @@ const TOOL_LIBRARY = {
  * LLM-POWERED WORKFLOW PLANNER
  * Uses AI to understand the request and select optimal tools
  */
-async function planWorkflowWithLLM(userRequest: string): Promise<{
+async function planWorkflowWithLLM(userRequest: string, aceInsight?: string): Promise<{
   goal: string;
   reasoning: string;
   requiredCapabilities: string[];
@@ -353,10 +354,17 @@ async function planWorkflowWithLLM(userRequest: string): Promise<{
 - Limitations: ${tool.limitations.join(', ')}`;
   }).join('\n\n');
 
-  const systemPrompt = `You are an expert AI workflow architect. Your job is to analyze user requests and design optimal multi-agent workflows.
+  const aceContext = aceInsight ? `
+
+ACE CONTEXT ENGINEERING INSIGHTS:
+${aceInsight}
+
+These insights come from the ACE (Agentic Context Engineering) framework, which provides evolved context for self-improving workflows. Use these insights to enhance your workflow design.` : '';
+
+  const systemPrompt = `You are an expert AI workflow architect with access to advanced context engineering capabilities. Your job is to analyze user requests and design optimal multi-agent workflows.
 
 AVAILABLE TOOLS:
-${toolDescriptions}
+${toolDescriptions}${aceContext}
 
 Your task:
 1. Understand the user's goal
@@ -364,6 +372,7 @@ Your task:
 3. Select the BEST tools from the library above
 4. Design an optimal workflow structure
 5. Explain your reasoning
+6. Incorporate ACE insights for enhanced workflow quality
 
 GUIDELINES:
 - Use specialized tools (DSPy agents) when available for better quality
@@ -372,6 +381,7 @@ GUIDELINES:
 - Always end with answer_generator
 - Aim for 3-5 nodes (not too simple, not too complex)
 - Provide clear reasoning for each tool selection
+- Leverage ACE insights to improve workflow robustness and effectiveness
 
 Respond in JSON format:
 {
@@ -843,14 +853,14 @@ const ROLE_ICONS: Record<string, { icon: string; color: string }> = {
 /**
  * MAIN WORKFLOW GENERATOR - Uses LLM planner with keyword-based fallback
  */
-async function generateIntelligentWorkflow(userRequest: string, conversationHistory: any[]): Promise<WorkflowRecommendation> {
+async function generateIntelligentWorkflow(userRequest: string, conversationHistory: any[], aceInsight?: string): Promise<WorkflowRecommendation> {
   console.log('🤖 Starting intelligent workflow generation...');
   console.log('📝 Request:', userRequest);
   
   try {
     // Try LLM-powered planning first
     console.log('🧠 Attempting LLM-powered workflow planning...');
-    const llmPlan = await planWorkflowWithLLM(userRequest);
+    const llmPlan = await planWorkflowWithLLM(userRequest, aceInsight);
     
     console.log('✅ LLM planning successful!');
     console.log('🎯 Goal:', llmPlan.goal);
@@ -1691,7 +1701,7 @@ function generateClarifyingQuestions(userRequest: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userRequest, conversationHistory = [] } = body;
+    const { userRequest, conversationHistory = [], useACE = true } = body;
     
     if (!userRequest || typeof userRequest !== 'string') {
       return NextResponse.json(
@@ -1709,6 +1719,7 @@ export async function POST(request: NextRequest) {
     console.log('📏 Request Length:', userRequest.length);
     console.log('📊 Word Count:', userRequest.split(' ').length);
     console.log('🔤 Lowercase Request:', userRequest.toLowerCase().trim());
+    console.log('🧠 ACE Integration:', useACE ? 'Enabled' : 'Disabled');
     
     const needsClarification = shouldAskForClarification(userRequest, conversationHistory);
     
@@ -1726,13 +1737,69 @@ export async function POST(request: NextRequest) {
     
     console.log('✅ REQUEST APPROVED - GENERATING WORKFLOW');
     
-    // Generate intelligent workflow (now with LLM planning!)
-    console.log('🔍 Processing request:', userRequest);
-    const recommendation = await generateIntelligentWorkflow(userRequest, conversationHistory);
+    let recommendation: WorkflowRecommendation;
+    let aceContext = null;
+
+    if (useACE) {
+      console.log('🧠 ACE: Initializing context engineering framework...');
+      
+      // Initialize ACE framework for context engineering
+      const initialKnowledge = [
+        {
+          description: "Workflow generation requires understanding of business processes and automation patterns",
+          tags: ['workflow', 'automation', 'business_process']
+        },
+        {
+          description: "Agent-based workflows should include error handling and fallback mechanisms",
+          tags: ['error_handling', 'fallback', 'robustness']
+        },
+        {
+          description: "Multi-step workflows benefit from clear data flow and validation steps",
+          tags: ['data_flow', 'validation', 'multi_step']
+        },
+        {
+          description: "Context engineering improves workflow quality through iterative refinement",
+          tags: ['context_engineering', 'refinement', 'quality']
+        }
+      ];
+      
+      const initialPlaybook = ACEUtils.createInitialPlaybook(initialKnowledge);
+      const aceFramework = new ACEFramework({ generate: async (prompt: string) => prompt }, initialPlaybook);
+      
+      console.log('🧠 ACE: Processing query with context engineering...');
+      
+      // Use ACE to process the query and generate context-enhanced workflow
+      const aceResult = await aceFramework.processQuery(userRequest);
+      
+      console.log('🧠 ACE: Generated insights:', aceResult.reflection.key_insight);
+      console.log('🧠 ACE: Used bullets:', aceResult.trace.used_bullets.length);
+      
+      // Generate workflow with ACE-enhanced context
+      recommendation = await generateIntelligentWorkflow(userRequest, conversationHistory, aceResult.reflection.key_insight);
+      
+      aceContext = {
+        playbook_stats: aceFramework.getPlaybook().stats,
+        reflection_insights: aceResult.reflection.key_insight,
+        used_bullets: aceResult.trace.used_bullets.length,
+        context_evolution: 'enhanced'
+      };
+    } else {
+      // Standard workflow generation without ACE
+      console.log('🔍 Processing request:', userRequest);
+      recommendation = await generateIntelligentWorkflow(userRequest, conversationHistory);
+    }
+    
     console.log('✅ Generated workflow:', recommendation.name);
     console.log('📋 Nodes:', recommendation.nodes.map(n => n.label).join(' → '));
     
-    return NextResponse.json({ recommendation });
+    return NextResponse.json({ 
+      recommendation,
+      ace_context: aceContext,
+      metadata: {
+        ace_enabled: useACE,
+        timestamp: new Date().toISOString()
+      }
+    });
     
   } catch (error) {
     console.error('Error in agent-builder/create:', error);

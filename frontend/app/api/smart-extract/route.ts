@@ -1,21 +1,11 @@
 /**
  * Smart Extraction API - Intelligent hybrid of Knowledge Graph + LangStruct
  * Automatically chooses the best extraction method based on complexity
+ * NOW WITH ARKTYPE RUNTIME VALIDATION
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-interface SmartExtractionRequest {
-  text: string;
-  userId: string;
-  schema?: any;
-  options?: {
-    preferSpeed?: boolean;      // Prefer Knowledge Graph (fast)
-    preferAccuracy?: boolean;   // Prefer LangStruct (accurate)
-    autoDetect?: boolean;       // Auto-detect best method (default)
-    forceMethod?: 'kg' | 'langstruct';  // Force specific method
-  };
-}
+import { SmartExtractRequest, validateRequest, type SmartExtractRequestType } from '@/lib/validators';
 
 interface ComplexityScore {
   score: number;  // 0-1 (0=simple, 1=complex)
@@ -31,19 +21,22 @@ interface ComplexityScore {
 
 export async function POST(req: NextRequest) {
   try {
-    const { 
-      text, 
-      userId, 
-      schema, 
-      options = {} 
-    } = await req.json() as SmartExtractionRequest;
-
-    if (!text || !userId) {
+    const body = await req.json();
+    
+    // ArkType validation
+    const validation = validateRequest<SmartExtractRequestType>(SmartExtractRequest, body);
+    
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Text and userId are required' },
+        { 
+          error: validation.error,
+          details: validation.details 
+        },
         { status: 400 }
       );
     }
+    
+    const { text, userId, schema, options = {} } = validation.data;
 
     const startTime = Date.now();
 
