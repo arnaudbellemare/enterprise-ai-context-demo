@@ -3819,19 +3819,19 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             </a>
             
             <a
-              href="/workflow"
-              className="group flex items-center gap-2 px-4 py-2 border-2 border-gray-700 bg-transparent text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-all duration-200"
-            >
-              <Clock01Icon size={18} className="text-gray-400 group-hover:text-blue-500" />
-              <span className="font-bold text-sm tracking-wide">VISUAL.WORKFLOW</span>
-            </a>
-            
-            <a
               href="/agent-builder-v2"
               className="group flex items-center gap-2 px-4 py-2 border-2 border-gray-700 bg-transparent text-gray-400 hover:border-red-500 hover:text-red-500 transition-all duration-200"
             >
               <Target02Icon size={18} className="text-gray-400 group-hover:text-red-500" />
               <span className="font-bold text-sm tracking-wide">ARENA.COMPARISON</span>
+            </a>
+            
+            <a
+              href="/workflow"
+              className="group flex items-center gap-2 px-4 py-2 border-2 border-gray-700 bg-transparent text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-all duration-200"
+            >
+              <Clock01Icon size={18} className="text-gray-400 group-hover:text-blue-500" />
+              <span className="font-bold text-sm tracking-wide">VISUAL.WORKFLOW</span>
             </a>
       </nav>
 
