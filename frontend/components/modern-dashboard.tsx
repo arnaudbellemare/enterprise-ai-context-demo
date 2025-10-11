@@ -84,8 +84,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-primary/10">
-                    <Brain01Icon size={20} className="text-primary" />
+                  <div className="p-2 rounded-md bg-muted">
+                    <Brain01Icon size={20} className="text-foreground" />
                   </div>
                   <div>
                     <CardTitle className="text-lg">Learned Router</CardTitle>
@@ -103,8 +103,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-blue-500/10">
-                    <Target02Icon size={20} className="text-blue-600" />
+                  <div className="p-2 rounded-md bg-muted">
+                    <Target02Icon size={20} className="text-foreground" />
                   </div>
                   <div>
                     <CardTitle className="text-lg">ACE Framework</CardTitle>
@@ -122,8 +122,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-green-500/10">
-                    <DollarCircleIcon size={20} className="text-green-600" />
+                  <div className="p-2 rounded-md bg-muted">
+                    <DollarCircleIcon size={20} className="text-foreground" />
                   </div>
                   <div>
                     <CardTitle className="text-lg">99% Cost Reduction</CardTitle>
@@ -141,8 +141,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-orange-500/10">
-                    <ChartLineData01Icon size={20} className="text-orange-600" />
+                  <div className="p-2 rounded-md bg-muted">
+                    <ChartLineData01Icon size={20} className="text-foreground" />
                   </div>
                   <div>
                     <CardTitle className="text-lg">Statistical Validation</CardTitle>
@@ -160,8 +160,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-purple-500/10">
-                    <NetworkIcon size={20} className="text-purple-600" />
+                  <div className="p-2 rounded-md bg-muted">
+                    <NetworkIcon size={20} className="text-foreground" />
                   </div>
                   <div>
                     <CardTitle className="text-lg">Hybrid AI Processing</CardTitle>
@@ -179,8 +179,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-pink-500/10">
-                    <Database02Icon size={20} className="text-pink-600" />
+                  <div className="p-2 rounded-md bg-muted">
+                    <Database02Icon size={20} className="text-foreground" />
                   </div>
                   <div>
                     <CardTitle className="text-lg">Knowledge Graph</CardTitle>
@@ -205,8 +205,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-md bg-primary/10">
-                      <FlashIcon size={20} className="text-primary" />
+                    <div className="p-2 rounded-md bg-muted">
+                      <FlashIcon size={20} className="text-foreground" />
                     </div>
                     <div>
                       <CardTitle>ACE Framework Performance</CardTitle>
@@ -251,21 +251,21 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
                   <div className="flex items-center gap-3">
-                    <Brain01Icon size={16} className="text-primary" />
+                    <Brain01Icon size={16} className="text-foreground" />
                     <span className="text-sm font-medium">Learned Router</span>
                   </div>
                   <Badge variant="secondary" className="text-xs">Connected</Badge>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
                   <div className="flex items-center gap-3">
-                    <Database02Icon size={16} className="text-blue-600" />
+                    <Database02Icon size={16} className="text-foreground" />
                     <span className="text-sm font-medium">Knowledge Graph</span>
                   </div>
                   <Badge variant="secondary" className="text-xs">Connected</Badge>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
                   <div className="flex items-center gap-3">
-                    <Globe02Icon size={16} className="text-purple-600" />
+                    <Globe02Icon size={16} className="text-foreground" />
                     <span className="text-sm font-medium">Perplexity AI</span>
                   </div>
                   <Badge variant="secondary" className="text-xs">Connected</Badge>
@@ -285,8 +285,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-md bg-green-500/10">
-                    <Target02Icon size={20} className="text-green-600" />
+                  <div className="p-2 rounded-md bg-muted">
+                    <Target02Icon size={20} className="text-foreground" />
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Router Accuracy</div>
@@ -300,8 +300,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-md bg-blue-500/10">
-                    <DollarCircleIcon size={20} className="text-blue-600" />
+                  <div className="p-2 rounded-md bg-muted">
+                    <DollarCircleIcon size={20} className="text-foreground" />
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Average Cost</div>
@@ -315,8 +315,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-md bg-purple-500/10">
-                    <ChartBarLineIcon size={20} className="text-purple-600" />
+                  <div className="p-2 rounded-md bg-muted">
+                    <ChartBarLineIcon size={20} className="text-foreground" />
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Free Queries</div>
@@ -330,8 +330,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-md bg-orange-500/10">
-                    <Clock01Icon size={20} className="text-orange-600" />
+                  <div className="p-2 rounded-md bg-muted">
+                    <Clock01Icon size={20} className="text-foreground" />
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Instant Answers</div>
