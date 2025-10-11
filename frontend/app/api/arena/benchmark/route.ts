@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runStatisticalComparison, TestResult } from '@/lib/statistical-testing';
 
 export const runtime = 'nodejs';
-export const maxDuration = 600; // 10 minutes for full benchmark
+export const maxDuration = 300; // Vercel Hobby plan limit (5 min max)
 
 /**
  * Statistical Benchmark Suite
