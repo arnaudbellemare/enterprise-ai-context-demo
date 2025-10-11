@@ -28,9 +28,9 @@ interface ContextSource {
 }
 
 const initialContextSources: ContextSource[] = [
-  { id: 'crm', name: 'CRM.DATA', status: 'CONNECTED' },
-  { id: 'docs', name: 'DOC.REPOSITORY', status: 'CONNECTED' },
-  { id: 'prod_db', name: 'PRODUCT.DB', status: 'CONNECTED' },
+  { id: 'learned_router', name: 'LEARNED.ROUTER', status: 'CONNECTED' },
+  { id: 'knowledge_graph', name: 'KNOWLEDGE.GRAPH', status: 'CONNECTED' },
+  { id: 'perplexity', name: 'PERPLEXITY.AI', status: 'CONNECTED' },
 ];
 
 export default function Home() {
@@ -3839,62 +3839,62 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
           <div className="space-y-8">
             {/* System Response */}
             <div className="border border-gray-700 p-6">
-              <div className="text-green-400 text-sm font-mono mb-4">◄ SYS.RESPONSE</div>
-              <h2 className="text-xl text-white mb-2">GEPA-DSPy // NEURAL OPTIMIZATION INTERFACE v2.0</h2>
-              <p className="text-gray-400">RAG SYSTEM ONLINE | KB:CONNECTED | ENGINE:ACTIVE</p>
+              <div className="text-green-400 text-sm font-mono mb-4">◄ SYS.STATUS</div>
+              <h2 className="text-xl text-white mb-2">ACE FRAMEWORK // INTELLIGENT ORCHESTRATION v1.0</h2>
+              <p className="text-gray-400">LEARNED.ROUTER:ACTIVE | STATISTICAL.TESTS:READY | COST.OPTIMIZATION:67%</p>
           </div>
 
             {/* What We Can Offer */}
             <div className="border border-green-500 p-4">
-              <div className="text-green-400 text-sm font-mono mb-3">◄ WHAT WE CAN OFFER</div>
+              <div className="text-green-400 text-sm font-mono mb-3">◄ CORE.CAPABILITIES</div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                 <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">AI-powered business processes</span>
+                  <span className="text-green-400">Learned Router (Adaptive)</span>
         </div>
                 <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">Automated decision systems</span>
+                  <span className="text-green-400">ACE Context Engineering</span>
                 </div>
                 <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">Real-time data pipelines</span>
+                  <span className="text-green-400">99% Cost Reduction</span>
                 </div>
                 <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">Custom industry solutions</span>
+                  <span className="text-green-400">Statistical Validation</span>
                 </div>
                 <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">Scalable enterprise platforms</span>
+                  <span className="text-green-400">Hybrid AI Processing</span>
                 </div>
                 <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">Global deployment systems</span>
+                  <span className="text-green-400">Knowledge Graph Memory</span>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* GEPA Optimization Engine */}
+              {/* ACE Framework Stats */}
               <div className="lg:col-span-2 border border-green-500 p-6">
                   <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg text-green-400">◄ GEPA.ENGINE</h3>
+                  <h3 className="text-lg text-green-400">◄ ACE.FRAMEWORK</h3>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-green-400">LEARNING.ACTIVE</span>
+                    <span className="text-sm text-green-400">ROUTER.LEARNING</span>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="bg-gray-900 p-4 border border-gray-700">
-                    <p className="text-sm text-gray-400">ITERATIONS</p>
-                    <p className="text-2xl text-white">120</p>
+                    <p className="text-sm text-gray-400">ACCURACY.GAIN</p>
+                    <p className="text-2xl text-white">+10.6%</p>
                     </div>
                   <div className="bg-gray-900 p-4 border border-gray-700">
-                    <p className="text-sm text-gray-400">PERFORMANCE</p>
-                    <p className="text-2xl text-white">+10%</p>
+                    <p className="text-sm text-gray-400">COST.SAVINGS</p>
+                    <p className="text-2xl text-white">99%</p>
                     </div>
                   <div className="bg-gray-900 p-4 border border-gray-700">
-                    <p className="text-sm text-gray-400">EFFICIENCY</p>
-                    <p className="text-2xl text-white">35x</p>
+                    <p className="text-sm text-gray-400">LATENCY.REDUCED</p>
+                    <p className="text-2xl text-white">86.9%</p>
                     </div>
                   </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-green-500 h-full rounded-full" style={{ width: '75%' }}></div>
+                  <div className="bg-green-500 h-full rounded-full" style={{ width: '90%' }}></div>
                 </div>
               </div>
               
@@ -3916,38 +3916,38 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
             
             {/* Platform Analytics */}
             <div className="border border-gray-700 p-6">
-              <h3 className="text-lg text-green-400 mb-6">◄ PLATFORM.ANALYTICS</h3>
+              <h3 className="text-lg text-green-400 mb-6">◄ SYSTEM.METRICS</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-gray-900 p-4 border border-gray-700">
-                  <h4 className="text-md text-gray-400">TOTAL.QUERIES</h4>
-                  <p className="text-3xl text-white mb-2">1.2M</p>
+                  <h4 className="text-md text-gray-400">ROUTER.ACCURACY</h4>
+                  <p className="text-3xl text-white mb-2">87%</p>
                     <div className="flex items-center">
-                    <span className="text-sm text-green-500">+12%</span>
-                    <span className="ml-1 text-sm text-gray-500">SINCE.LAST.MONTH</span>
+                    <span className="text-sm text-green-500">+15%</span>
+                    <span className="ml-1 text-sm text-gray-500">ADAPTIVE.LEARNING</span>
                     </div>
                   </div>
                 <div className="bg-gray-900 p-4 border border-gray-700">
-                  <h4 className="text-md text-gray-400">AVG.RESPONSE.TIME</h4>
-                  <p className="text-3xl text-white mb-2">250ms</p>
+                  <h4 className="text-md text-gray-400">AVG.COST</h4>
+                  <p className="text-3xl text-white mb-2">$0.001</p>
                     <div className="flex items-center">
-                    <span className="text-sm text-red-500">-5%</span>
-                    <span className="ml-1 text-sm text-gray-500">SINCE.LAST.MONTH</span>
+                    <span className="text-sm text-green-500">99%</span>
+                    <span className="ml-1 text-sm text-gray-500">VS.BROWSERBASE</span>
                     </div>
                   </div>
                 <div className="bg-gray-900 p-4 border border-gray-700">
-                  <h4 className="text-md text-gray-400">GEPA.OPTIMIZATIONS</h4>
-                  <p className="text-3xl text-white mb-2">500</p>
+                  <h4 className="text-md text-gray-400">FREE.QUERIES</h4>
+                  <p className="text-3xl text-white mb-2">75%</p>
                     <div className="flex items-center">
-                    <span className="text-sm text-green-500">+20%</span>
-                    <span className="ml-1 text-sm text-gray-500">SINCE.LAST.MONTH</span>
+                    <span className="text-sm text-green-500">LOCAL</span>
+                    <span className="ml-1 text-sm text-gray-500">OLLAMA.LLM</span>
                     </div>
                   </div>
                 <div className="bg-gray-900 p-4 border border-gray-700">
-                  <h4 className="text-md text-gray-400">RAG.HIT.RATE</h4>
-                  <p className="text-3xl text-white mb-2">92%</p>
+                  <h4 className="text-md text-gray-400">INSTANT.ANSWERS</h4>
+                  <p className="text-3xl text-white mb-2">&lt;100ms</p>
                   <div className="flex items-center">
-                    <span className="text-sm text-green-500">+3%</span>
-                    <span className="ml-1 text-sm text-gray-500">SINCE.LAST.MONTH</span>
+                    <span className="text-sm text-green-500">FREE</span>
+                    <span className="ml-1 text-sm text-gray-500">KNOWLEDGE.GRAPH</span>
                 </div>
               </div>
             </div>
