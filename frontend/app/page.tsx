@@ -1,6 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { 
+  ChartLineData01Icon,
+  CheckmarkBadge02Icon,
+  ArrowRight01Icon,
+  Clock01Icon,
+  Target02Icon
+} from 'hugeicons-react';
 
 interface TestResult {
   query: string;
@@ -3775,41 +3782,54 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                   </div>
         </header>
 
-        {/* Navigation Tabs */}
-        <nav className="flex space-x-6 mb-8">
+        {/* Navigation Tabs - Nuxt UI Style */}
+        <nav className="flex flex-wrap gap-3 mb-8">
             <button
-            className={`text-lg ${
-              activeTab === 'dashboard' ? 'text-green-500 border-b-2 border-green-500' : 'text-gray-500'
-            } pb-2`}
+              className={`group flex items-center gap-2 px-4 py-2 border-2 transition-all duration-200 ${
+                activeTab === 'dashboard' 
+                  ? 'bg-green-500 border-green-500 text-white' 
+                  : 'bg-transparent border-gray-700 text-gray-400 hover:border-green-500 hover:text-green-500'
+              }`}
               onClick={() => setActiveTab('dashboard')}
             >
-            ◄ DASHBOARD
+              <ChartLineData01Icon size={18} className={activeTab === 'dashboard' ? 'text-white' : 'text-gray-400 group-hover:text-green-500'} />
+              <span className="font-bold text-sm tracking-wide">DASHBOARD</span>
             </button>
+            
             <button
-            className={`text-lg ${
-              activeTab === 'agent_builder' ? 'text-green-500 border-b-2 border-green-500' : 'text-gray-500'
-            } pb-2`}
-            onClick={() => setActiveTab('agent_builder')}
-          >
-            ◄ AGENT.BUILDER
+              className={`group flex items-center gap-2 px-4 py-2 border-2 transition-all duration-200 ${
+                activeTab === 'agent_builder' 
+                  ? 'bg-green-500 border-green-500 text-white' 
+                  : 'bg-transparent border-gray-700 text-gray-400 hover:border-green-500 hover:text-green-500'
+              }`}
+              onClick={() => setActiveTab('agent_builder')}
+            >
+              <CheckmarkBadge02Icon size={18} className={activeTab === 'agent_builder' ? 'text-white' : 'text-gray-400 group-hover:text-green-500'} />
+              <span className="font-bold text-sm tracking-wide">AGENT.BUILDER</span>
             </button>
+            
             <a
               href="/agent-builder"
-              className="text-lg text-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-400 hover:to-blue-400 border-b-2 border-transparent hover:border-purple-400 pb-2 transition-colors"
+              className="group flex items-center gap-2 px-4 py-2 border-2 border-gray-700 bg-transparent text-gray-400 hover:border-purple-500 hover:text-purple-500 transition-all duration-200"
             >
-              AI.AGENT.BUILDER
+              <ArrowRight01Icon size={18} className="text-gray-400 group-hover:text-purple-500" />
+              <span className="font-bold text-sm tracking-wide">AI.AGENT.BUILDER</span>
             </a>
+            
             <a
               href="/workflow"
-              className="text-lg text-blue-500 hover:text-blue-400 border-b-2 border-transparent hover:border-blue-400 pb-2 transition-colors"
+              className="group flex items-center gap-2 px-4 py-2 border-2 border-gray-700 bg-transparent text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-all duration-200"
             >
-              ◄ VISUAL.WORKFLOW
+              <Clock01Icon size={18} className="text-gray-400 group-hover:text-blue-500" />
+              <span className="font-bold text-sm tracking-wide">VISUAL.WORKFLOW</span>
             </a>
+            
             <a
               href="/agent-builder-v2"
-              className="text-lg text-purple-500 hover:text-purple-400 border-b-2 border-transparent hover:border-purple-400 pb-2 transition-colors"
+              className="group flex items-center gap-2 px-4 py-2 border-2 border-gray-700 bg-transparent text-gray-400 hover:border-red-500 hover:text-red-500 transition-all duration-200"
             >
-              ⚔️ ARENA.COMPARISON
+              <Target02Icon size={18} className="text-gray-400 group-hover:text-red-500" />
+              <span className="font-bold text-sm tracking-wide">ARENA.COMPARISON</span>
             </a>
       </nav>
 
