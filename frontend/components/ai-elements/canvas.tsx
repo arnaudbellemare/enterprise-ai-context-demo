@@ -14,6 +14,8 @@ interface CanvasProps {
   onNodesChange?: (changes: any) => void;
   onEdgesChange?: (changes: any) => void;
   onConnect?: (connection: any) => void;
+  onConnectStart?: () => void;
+  onConnectEnd?: () => void;
   onNodeClick?: (event: any, node: any) => void;
   onInit?: (instance: any) => void;
   children?: ReactNode;
@@ -29,6 +31,8 @@ export function Canvas({
   onNodesChange,
   onEdgesChange,
   onConnect,
+  onConnectStart,
+  onConnectEnd,
   onNodeClick,
   onInit,
   children,
@@ -43,11 +47,14 @@ export function Canvas({
           edgeTypes={edgeTypes}
           connectionLineComponent={connectionLineComponent}
           fitView={fitView}
-          minZoom={0.05}
+          minZoom={0.1}
           maxZoom={2.0}
+          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onConnectStart={onConnectStart}
+          onConnectEnd={onConnectEnd}
           onNodeClick={onNodeClick}
           onInit={onInit}
           className="bg-white"

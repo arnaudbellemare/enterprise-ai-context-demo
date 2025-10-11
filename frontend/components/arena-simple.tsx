@@ -57,6 +57,18 @@ export default function ArenaSimple() {
       name: 'Review GitHub PR', 
       description: 'Navigate and review pull requests',
       example: 'Go to https://github.com/microsoft/vscode and review the latest open pull request'
+    },
+    { 
+      id: 'comprehensive-demo', 
+      name: '🚀 ACE Framework Integration Demo', 
+      description: 'Complete system demonstration with all technologies',
+      example: 'Demonstrate the full ACE Framework capabilities: Smart Model Routing, Context Engineering, Knowledge Graph integration, Statistical Validation, and Multi-Agent Orchestration. Show how all components work together to provide superior performance compared to traditional approaches.'
+    },
+    { 
+      id: 'financial-lora', 
+      name: '🏦 Financial LoRA Analysis', 
+      description: 'Compare LoRA methods for financial AI tasks',
+      example: 'Analyze the performance of LoRA, QLoRA, rsLoRA, and DORA fine-tuning methods on financial tasks including XBRL tagging, sentiment analysis, market analysis, and risk assessment. Compare costs, accuracy, and practical deployment considerations.'
     }
   ];
 
@@ -117,9 +129,19 @@ export default function ArenaSimple() {
     }));
 
     try {
-      const endpoint = provider === 'browserbase' 
-        ? '/api/arena/execute-browserbase-real' // Use REAL execution with Playwright
-        : '/api/arena/execute-ace-fast';
+      let endpoint;
+      if (provider === 'browserbase') {
+        endpoint = '/api/arena/execute-browserbase-real'; // Use REAL execution with Playwright
+      } else {
+        // Use specialized endpoints for demo tasks
+        if (selectedTask === 'comprehensive-demo') {
+          endpoint = '/api/arena/execute-comprehensive-demo';
+        } else if (selectedTask === 'financial-lora') {
+          endpoint = '/api/finance/lora-comparison';
+        } else {
+          endpoint = '/api/arena/execute-ace-fast';
+        }
+      }
       
       const response = await fetch(endpoint, {
         method: 'POST',

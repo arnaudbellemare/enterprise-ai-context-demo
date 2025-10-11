@@ -6,6 +6,19 @@ import { Connection } from '@/components/ai-elements/connection';
 import { Controls } from '@/components/ai-elements/controls';
 import { Edge } from '@/components/ai-elements/edge';
 import {
+  Database02Icon,
+  Globe02Icon,
+  PackageIcon,
+  Rocket01Icon,
+  UserCircleIcon,
+  CheckmarkCircle01Icon,
+  ChartLineData01Icon,
+  Home01Icon,
+  DollarCircleIcon,
+  Settings02Icon,
+  Search02Icon
+} from 'hugeicons-react';
+import {
   Node,
   NodeContent,
   NodeDescription,
@@ -752,6 +765,51 @@ const getDSPyOptimizedWorkflow = () => {
   return { nodes, edges, configs };
 };
 
+// Icon map for dynamic rendering
+const ICON_MAP: Record<string, any> = {
+  Database02: Database02Icon,
+  Globe02: Globe02Icon,
+  Package: PackageIcon,
+  Rocket01: Rocket01Icon,
+  UserCircle: UserCircleIcon,
+  CheckmarkCircle01: CheckmarkCircle01Icon,
+  ChartLineData01: ChartLineData01Icon,
+  Home01: Home01Icon,
+  DollarCircle: DollarCircleIcon,
+  Settings02: Settings02Icon,
+  // Fallback for AiNetworkIcon (doesn't exist in hugeicons)
+  AiNetworkIcon: Settings02Icon,  // Use Settings as AI/router icon
+  // LangStruct fallback
+  L: Search02Icon,  // LangStruct uses Search02 icon
+};
+
+// Function to render node icons
+const renderNodeIcon = (iconName: string) => {
+  // Handle emoji icons
+  if (iconName && iconName.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u)) {
+    return <span className="text-lg">{iconName}</span>;
+  }
+  
+  // Handle single letter icons
+  if (iconName && iconName.length === 1 && iconName.match(/[A-Z]/)) {
+    return <span className="text-lg font-bold">{iconName}</span>;
+  }
+  
+  // Handle special text icons
+  if (iconName === 'OK' || iconName === 'CONFIG') {
+    return <span className="text-xs font-bold">{iconName}</span>;
+  }
+  
+  // Handle Hugeicons
+  const IconComponent = ICON_MAP[iconName];
+  if (IconComponent) {
+    return <IconComponent size={20} />;
+  }
+  
+  // Fallback to text
+  return <span className="text-lg font-bold">{iconName}</span>;
+};
+
 export default function WorkflowPage() {
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowEdge[]>([]);
@@ -879,6 +937,15 @@ export default function WorkflowPage() {
     },
     []
   );
+
+  // Prevent unwanted zoom behavior during connection
+  const onConnectStart = useCallback(() => {
+    // Prevent any automatic viewport changes during connection
+  }, []);
+
+  const onConnectEnd = useCallback(() => {
+    // Prevent any automatic viewport changes after connection
+  }, []);
 
 
   const addNode = (nodeType: typeof AVAILABLE_NODE_TYPES[0]) => {
@@ -2423,7 +2490,7 @@ Format as a professional risk assessment report with specific data points, risk 
             <NodeHeader>
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center flex-shrink-0 ${colorClasses[data.iconColor as keyof typeof colorClasses] || 'bg-gray-50 border-gray-200 text-gray-700'}`}>
-                  <span className="text-lg font-bold">{data.icon}</span>
+                  {renderNodeIcon(data.icon)}
                 </div>
                 <div className="flex-1">
                   <NodeTitle>{data.label}</NodeTitle>
@@ -2479,7 +2546,15 @@ Format as a professional risk assessment report with specific data points, risk 
   };
 
   const edgeTypes = {
-    animated: (props: any) => <Edge.Animated {...props} isValid={!workflowErrors.length} />,
+    animated: (props: any) => {
+      // Check if this specific edge is valid
+      // An edge is valid if both source and target nodes exist and the connection makes sense
+      const sourceNode = nodes.find(n => n.id === props.source);
+      const targetNode = nodes.find(n => n.id === props.target);
+      const isValidEdge = sourceNode && targetNode && sourceNode.id !== targetNode.id;
+      
+      return <Edge.Animated {...props} isValid={isValidEdge} />;
+    },
     temporary: Edge.Temporary,
   };
 
@@ -2553,7 +2628,7 @@ Format as a professional risk assessment report with specific data points, risk 
                 return (
                   <div key={nodeId} className="mb-3 last:mb-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{String(node?.data.icon || '')}</span>
+                      {renderNodeIcon(String(node?.data.icon || ''))}
                       <span className="text-xs font-semibold">{String(node?.data.label || '')}</span>
                     </div>
                     <div className="bg-white dark:bg-gray-900 rounded p-2 ml-6">
@@ -2622,6 +2697,8 @@ Format as a professional risk assessment report with specific data points, risk 
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onConnectStart={onConnectStart}
+          onConnectEnd={onConnectEnd}
           onInit={(instance) => {
             reactFlowInstance.current = instance;
           }}
@@ -2634,7 +2711,7 @@ Format as a professional risk assessment report with specific data points, risk 
               iconColor: node.data.iconColor
             });
           }}
-          fitView
+          fitView={false}
         >
           <Controls />
           

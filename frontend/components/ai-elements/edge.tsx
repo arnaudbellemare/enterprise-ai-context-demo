@@ -47,7 +47,7 @@ export const Edge = {
         {/* Moving dot animation */}
         <circle
           r="3"
-          fill={edgeColor}
+          fill="#000000"
           style={{
             animation: `dot-flow-${props.id} 3s linear infinite`
           }}

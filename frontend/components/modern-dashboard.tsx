@@ -36,19 +36,19 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
   return (
     <div className="min-h-screen bg-background relative">
       {/* Dither Effect Overlay - Representing Optimization & Storage Servers */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+      <div className="absolute inset-0 opacity-[0.3] pointer-events-none">
         <div 
           className="w-full h-full"
           style={{
             backgroundImage: `
-              radial-gradient(circle at 20% 80%, #000 1px, transparent 1px),
-              radial-gradient(circle at 80% 20%, #000 1px, transparent 1px),
-              radial-gradient(circle at 40% 40%, #000 1px, transparent 1px),
-              radial-gradient(circle at 60% 60%, #000 1px, transparent 1px),
-              radial-gradient(circle at 10% 10%, #000 1px, transparent 1px),
-              radial-gradient(circle at 90% 90%, #000 1px, transparent 1px),
-              radial-gradient(circle at 30% 70%, #000 1px, transparent 1px),
-              radial-gradient(circle at 70% 30%, #000 1px, transparent 1px)
+              radial-gradient(circle at 20% 80%, rgba(0,0,0,0.8) 2px, transparent 2px),
+              radial-gradient(circle at 80% 20%, rgba(0,0,0,0.6) 1.5px, transparent 1.5px),
+              radial-gradient(circle at 40% 40%, rgba(0,0,0,0.9) 2.5px, transparent 2.5px),
+              radial-gradient(circle at 60% 60%, rgba(0,0,0,0.7) 1.8px, transparent 1.8px),
+              radial-gradient(circle at 10% 10%, rgba(0,0,0,0.5) 1.2px, transparent 1.2px),
+              radial-gradient(circle at 90% 90%, rgba(0,0,0,0.8) 2.2px, transparent 2.2px),
+              radial-gradient(circle at 30% 70%, rgba(0,0,0,0.6) 1.6px, transparent 1.6px),
+              radial-gradient(circle at 70% 30%, rgba(0,0,0,0.7) 1.9px, transparent 1.9px)
             `,
             backgroundSize: '120px 120px, 80px 80px, 60px 60px, 100px 100px, 40px 40px, 140px 140px, 90px 90px, 70px 70px',
             backgroundPosition: '0 0, 60px 60px, 30px 30px, 50px 50px, 20px 20px, 70px 70px, 45px 45px, 35px 35px'
@@ -59,8 +59,8 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
           className="absolute inset-0"
           style={{
             backgroundImage: `
-              linear-gradient(45deg, transparent 48%, rgba(0,0,0,0.1) 49%, rgba(0,0,0,0.1) 51%, transparent 52%),
-              linear-gradient(-45deg, transparent 48%, rgba(0,0,0,0.05) 49%, rgba(0,0,0,0.05) 51%, transparent 52%)
+              linear-gradient(45deg, transparent 48%, rgba(0,0,0,0.4) 49%, rgba(0,0,0,0.4) 51%, transparent 52%),
+              linear-gradient(-45deg, transparent 48%, rgba(0,0,0,0.2) 49%, rgba(0,0,0,0.2) 51%, transparent 52%)
             `,
             backgroundSize: '20px 20px, 30px 30px'
           }}

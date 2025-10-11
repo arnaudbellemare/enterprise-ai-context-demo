@@ -3738,31 +3738,6 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
           100% { background-position: -200% 0; }
         }
       `}</style>
-      {/* Grid Overlay */}
-      <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
-        {Array.from({ length: 50 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-gray-800"
-            style={{
-              height: '1px',
-              width: '100%',
-              top: `${i * 2}rem`,
-            }}
-          ></div>
-        ))}
-        {Array.from({ length: 50 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-gray-800"
-            style={{
-              width: '1px',
-              height: '100%',
-              left: `${i * 2}rem`,
-            }}
-          ></div>
-        ))}
-      </div>
 
       <div className="relative z-10 max-w-7xl mx-auto overflow-hidden">
         {/* Header */}
