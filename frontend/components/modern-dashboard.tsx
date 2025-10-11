@@ -1,6 +1,6 @@
 /**
- * Modern Dashboard - Using our existing UI components and modern design
- * Leverages shadcn/ui, Hugeicons, and modern design patterns
+ * Modern Dashboard - Authentic shadcn/ui + Nuxt UI Design
+ * Clean, minimal, and professional with proper spacing and typography
  */
 
 'use client';
@@ -34,38 +34,38 @@ interface ModernDashboardProps {
 
 export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="border-b bg-card">
+        <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-white mb-2">
+              <h1 className="text-3xl font-bold tracking-tight">
                 ACE Framework
               </h1>
-              <p className="text-xl text-gray-300">
+              <p className="text-muted-foreground mt-1">
                 Intelligent Orchestration v1.0
               </p>
-              <div className="flex items-center gap-4 mt-4">
-                <Badge variant="secondary" className="bg-green-900 text-green-300 border-green-700">
-                  <CheckmarkBadge02Icon size={16} className="mr-2" />
-                  LEARNED.ROUTER:ACTIVE
+              <div className="flex items-center gap-2 mt-3">
+                <Badge variant="secondary" className="gap-1">
+                  <CheckmarkBadge02Icon size={14} />
+                  Router Active
                 </Badge>
-                <Badge variant="secondary" className="bg-blue-900 text-blue-300 border-blue-700">
-                  <ShieldCheckIcon size={16} className="mr-2" />
-                  STATISTICAL.TESTS:READY
+                <Badge variant="secondary" className="gap-1">
+                  <ShieldCheckIcon size={14} />
+                  Tests Ready
                 </Badge>
-                <Badge variant="secondary" className="bg-purple-900 text-purple-300 border-purple-700">
-                  <ZapIcon size={16} className="mr-2" />
-                  COST.OPTIMIZATION:67%
+                <Badge variant="secondary" className="gap-1">
+                  <ZapIcon size={14} />
+                  67% Optimized
                 </Badge>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-400 mb-1">System Status</div>
+              <div className="text-sm text-muted-foreground mb-1">System Status</div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-green-400 font-medium">All Systems Operational</span>
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm font-medium">Operational</span>
               </div>
             </div>
           </div>
@@ -73,120 +73,123 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 py-8">
         {/* Core Capabilities */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-6">Core Capabilities</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="bg-gray-800/50 border-gray-700 hover:border-green-500 transition-colors">
-              <CardHeader className="pb-4">
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold tracking-tight">Core Capabilities</h2>
+            <p className="text-muted-foreground">Advanced AI orchestration and optimization</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-900 rounded-lg">
-                    <Brain01Icon size={24} className="text-green-400" />
+                  <div className="p-2 rounded-md bg-primary/10">
+                    <Brain01Icon size={20} className="text-primary" />
                   </div>
                   <div>
-                    <CardTitle className="text-white text-lg">Learned Router</CardTitle>
-                    <CardDescription className="text-gray-400">Adaptive Intelligence</CardDescription>
+                    <CardTitle className="text-lg">Learned Router</CardTitle>
+                    <CardDescription>Adaptive Intelligence</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-300 text-sm">
+                <p className="text-sm text-muted-foreground">
                   Self-improving routing that learns from execution feedback and adapts to new patterns automatically.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700 hover:border-blue-500 transition-colors">
-              <CardHeader className="pb-4">
+            <Card>
+              <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-900 rounded-lg">
-                    <Target02Icon size={24} className="text-blue-400" />
+                  <div className="p-2 rounded-md bg-blue-500/10">
+                    <Target02Icon size={20} className="text-blue-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-white text-lg">ACE Framework</CardTitle>
-                    <CardDescription className="text-gray-400">Context Engineering</CardDescription>
+                    <CardTitle className="text-lg">ACE Framework</CardTitle>
+                    <CardDescription>Context Engineering</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-300 text-sm">
+                <p className="text-sm text-muted-foreground">
                   Comprehensive context adaptation with evolving playbooks that preserve domain insights.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700 hover:border-purple-500 transition-colors">
-              <CardHeader className="pb-4">
+            <Card>
+              <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-900 rounded-lg">
-                    <DollarCircleIcon size={24} className="text-purple-400" />
+                  <div className="p-2 rounded-md bg-green-500/10">
+                    <DollarCircleIcon size={20} className="text-green-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-white text-lg">99% Cost Reduction</CardTitle>
-                    <CardDescription className="text-gray-400">Hybrid Processing</CardDescription>
+                    <CardTitle className="text-lg">99% Cost Reduction</CardTitle>
+                    <CardDescription>Hybrid Processing</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-300 text-sm">
+                <p className="text-sm text-muted-foreground">
                   Intelligent routing between free local LLMs and paid cloud APIs for maximum efficiency.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700 hover:border-orange-500 transition-colors">
-              <CardHeader className="pb-4">
+            <Card>
+              <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-900 rounded-lg">
-                    <ChartLineData01Icon size={24} className="text-orange-400" />
+                  <div className="p-2 rounded-md bg-orange-500/10">
+                    <ChartLineData01Icon size={20} className="text-orange-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-white text-lg">Statistical Validation</CardTitle>
-                    <CardDescription className="text-gray-400">Scientific Proof</CardDescription>
+                    <CardTitle className="text-lg">Statistical Validation</CardTitle>
+                    <CardDescription>Scientific Proof</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-300 text-sm">
+                <p className="text-sm text-muted-foreground">
                   McNemar's test, paired t-tests, and Cohen's d for scientifically proven performance differences.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700 hover:border-cyan-500 transition-colors">
-              <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-cyan-900 rounded-lg">
-                      <NetworkIcon size={24} className="text-cyan-400" />
-                    </div>
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-md bg-purple-500/10">
+                    <NetworkIcon size={20} className="text-purple-600" />
+                  </div>
                   <div>
-                    <CardTitle className="text-white text-lg">Hybrid AI Processing</CardTitle>
-                    <CardDescription className="text-gray-400">Smart Model Selection</CardDescription>
+                    <CardTitle className="text-lg">Hybrid AI Processing</CardTitle>
+                    <CardDescription>Smart Model Selection</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-300 text-sm">
+                <p className="text-sm text-muted-foreground">
                   Dynamic routing between Ollama (local), Perplexity (web), and GPT-4 based on task complexity.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700 hover:border-pink-500 transition-colors">
-              <CardHeader className="pb-4">
+            <Card>
+              <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-pink-900 rounded-lg">
-                    <Database02Icon size={24} className="text-pink-400" />
+                  <div className="p-2 rounded-md bg-pink-500/10">
+                    <Database02Icon size={20} className="text-pink-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-white text-lg">Knowledge Graph</CardTitle>
-                    <CardDescription className="text-gray-400">Memory Network</CardDescription>
+                    <CardTitle className="text-lg">Knowledge Graph</CardTitle>
+                    <CardDescription>Memory Network</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-300 text-sm">
+                <p className="text-sm text-muted-foreground">
                   Entity/relationship tracking with confidence scores for instant, free answers.
                 </p>
               </CardContent>
@@ -195,87 +198,77 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
         </div>
 
         {/* Performance Metrics */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
           {/* ACE Framework Stats */}
           <div className="lg:col-span-2">
-            <Card className="bg-gray-800/50 border-gray-700">
+            <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-900 rounded-lg">
-                      <FlashIcon size={24} className="text-green-400" />
+                    <div className="p-2 rounded-md bg-primary/10">
+                      <FlashIcon size={20} className="text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-white">ACE Framework Performance</CardTitle>
-                      <CardDescription className="text-gray-400">Real-time metrics</CardDescription>
+                      <CardTitle>ACE Framework Performance</CardTitle>
+                      <CardDescription>Real-time metrics</CardDescription>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-green-900 text-green-300">
-                    ROUTER.LEARNING
-                  </Badge>
+                  <Badge variant="secondary">Router Learning</Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-6 mb-6">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-white mb-1">+10.6%</div>
-                    <div className="text-sm text-gray-400">Accuracy Gain</div>
+                    <div className="text-2xl font-bold mb-1">+10.6%</div>
+                    <div className="text-sm text-muted-foreground">Accuracy Gain</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-white mb-1">99%</div>
-                    <div className="text-sm text-gray-400">Cost Savings</div>
+                    <div className="text-2xl font-bold mb-1">99%</div>
+                    <div className="text-sm text-muted-foreground">Cost Savings</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-white mb-1">86.9%</div>
-                    <div className="text-sm text-gray-400">Latency Reduced</div>
+                    <div className="text-2xl font-bold mb-1">86.9%</div>
+                    <div className="text-sm text-muted-foreground">Latency Reduced</div>
                   </div>
                 </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full" style={{ width: '90%' }}></div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full" style={{ width: '90%' }}></div>
                 </div>
-                <div className="text-sm text-gray-400 mt-2">System Optimization Progress</div>
+                <div className="text-sm text-muted-foreground mt-2">System Optimization Progress</div>
               </CardContent>
             </Card>
           </div>
 
           {/* Context Sources */}
-          <Card className="bg-gray-800/50 border-gray-700">
+          <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-white">Context Sources</CardTitle>
-                <Badge variant="secondary" className="bg-green-900 text-green-300">
-                  3 CONNECTED
-                </Badge>
+                <CardTitle>Context Sources</CardTitle>
+                <Badge variant="secondary">3 Connected</Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
                   <div className="flex items-center gap-3">
-                    <Brain01Icon size={20} className="text-green-400" />
-                    <span className="text-white font-medium">LEARNED.ROUTER</span>
+                    <Brain01Icon size={16} className="text-primary" />
+                    <span className="text-sm font-medium">Learned Router</span>
                   </div>
-                  <Badge variant="secondary" className="bg-green-900 text-green-300">
-                    CONNECTED
-                  </Badge>
+                  <Badge variant="secondary" className="text-xs">Connected</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg">
+                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
                   <div className="flex items-center gap-3">
-                    <Database02Icon size={20} className="text-blue-400" />
-                    <span className="text-white font-medium">KNOWLEDGE.GRAPH</span>
+                    <Database02Icon size={16} className="text-blue-600" />
+                    <span className="text-sm font-medium">Knowledge Graph</span>
                   </div>
-                  <Badge variant="secondary" className="bg-green-900 text-green-300">
-                    CONNECTED
-                  </Badge>
+                  <Badge variant="secondary" className="text-xs">Connected</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg">
+                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
                   <div className="flex items-center gap-3">
-                    <Globe02Icon size={20} className="text-purple-400" />
-                    <span className="text-white font-medium">PERPLEXITY.AI</span>
+                    <Globe02Icon size={16} className="text-purple-600" />
+                    <span className="text-sm font-medium">Perplexity AI</span>
                   </div>
-                  <Badge variant="secondary" className="bg-green-900 text-green-300">
-                    CONNECTED
-                  </Badge>
+                  <Badge variant="secondary" className="text-xs">Connected</Badge>
                 </div>
               </div>
             </CardContent>
@@ -284,73 +277,68 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
 
         {/* System Metrics */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-6">System Metrics</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-gray-800/50 border-gray-700">
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold tracking-tight">System Metrics</h2>
+            <p className="text-muted-foreground">Real-time performance indicators</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-green-900 rounded-lg">
-                    <Target02Icon size={20} className="text-green-400" />
+                  <div className="p-2 rounded-md bg-green-500/10">
+                    <Target02Icon size={20} className="text-green-600" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-400">Router Accuracy</div>
-                    <div className="text-2xl font-bold text-white">87%</div>
+                    <div className="text-sm text-muted-foreground">Router Accuracy</div>
+                    <div className="text-2xl font-bold">87%</div>
                   </div>
                 </div>
-                <Badge variant="secondary" className="bg-green-900 text-green-300">
-                  +15% Adaptive Learning
-                </Badge>
+                <Badge variant="secondary" className="text-xs">+15% Adaptive Learning</Badge>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700">
+            <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-900 rounded-lg">
-                    <DollarCircleIcon size={20} className="text-blue-400" />
+                  <div className="p-2 rounded-md bg-blue-500/10">
+                    <DollarCircleIcon size={20} className="text-blue-600" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-400">Average Cost</div>
-                    <div className="text-2xl font-bold text-white">$0.001</div>
+                    <div className="text-sm text-muted-foreground">Average Cost</div>
+                    <div className="text-2xl font-bold">$0.001</div>
                   </div>
                 </div>
-                <Badge variant="secondary" className="bg-blue-900 text-blue-300">
-                  99% vs Browserbase
-                </Badge>
+                <Badge variant="secondary" className="text-xs">99% vs Browserbase</Badge>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700">
+            <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-purple-900 rounded-lg">
-                    <ChartBarLineIcon size={20} className="text-purple-400" />
+                  <div className="p-2 rounded-md bg-purple-500/10">
+                    <ChartBarLineIcon size={20} className="text-purple-600" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-400">Free Queries</div>
-                    <div className="text-2xl font-bold text-white">75%</div>
+                    <div className="text-sm text-muted-foreground">Free Queries</div>
+                    <div className="text-2xl font-bold">75%</div>
                   </div>
                 </div>
-                <Badge variant="secondary" className="bg-purple-900 text-purple-300">
-                  Local Ollama LLM
-                </Badge>
+                <Badge variant="secondary" className="text-xs">Local Ollama LLM</Badge>
               </CardContent>
             </Card>
 
-            <Card className="bg-gray-800/50 border-gray-700">
+            <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-orange-900 rounded-lg">
-                    <Clock01Icon size={20} className="text-orange-400" />
+                  <div className="p-2 rounded-md bg-orange-500/10">
+                    <Clock01Icon size={20} className="text-orange-600" />
                   </div>
                   <div>
-                    <div className="text-sm text-gray-400">Instant Answers</div>
-                    <div className="text-2xl font-bold text-white">&lt;100ms</div>
+                    <div className="text-sm text-muted-foreground">Instant Answers</div>
+                    <div className="text-2xl font-bold">&lt;100ms</div>
                   </div>
                 </div>
-                <Badge variant="secondary" className="bg-orange-900 text-orange-300">
-                  Free Knowledge Graph
-                </Badge>
+                <Badge variant="secondary" className="text-xs">Free Knowledge Graph</Badge>
               </CardContent>
             </Card>
           </div>
@@ -358,21 +346,26 @@ export function ModernDashboard({ onNavigate }: ModernDashboardProps) {
 
         {/* Quick Actions */}
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-6">Ready to Experience ACE?</h2>
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold tracking-tight mb-2">Ready to Experience ACE?</h2>
+            <p className="text-muted-foreground">Start comparing or building with our framework</p>
+          </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               onClick={() => onNavigate('arena')}
-              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-8 py-3 text-lg"
+              size="lg"
+              className="gap-2"
             >
-              <ArrowRight01Icon size={20} className="mr-2" />
+              <ArrowRight01Icon size={20} />
               Launch Arena Comparison
             </Button>
             <Button 
               variant="outline"
               onClick={() => onNavigate('workflow')}
-              className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white px-8 py-3 text-lg"
+              size="lg"
+              className="gap-2"
             >
-              <Settings02Icon size={20} className="mr-2" />
+              <Settings02Icon size={20} />
               Build Custom Workflow
             </Button>
           </div>
