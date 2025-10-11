@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { ModernDashboard } from '@/components/modern-dashboard';
 import { 
   ChartLineData01Icon,
   CheckmarkBadge02Icon,
@@ -3818,13 +3819,13 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
               <span className="font-bold text-sm tracking-wide">AI.AGENT.BUILDER</span>
             </a>
             
-            <a
-              href="/agent-builder-v2"
+            <button
+              onClick={() => setActiveTab('arena')}
               className="group flex items-center gap-2 px-4 py-2 border-2 border-gray-700 bg-transparent text-gray-400 hover:border-red-500 hover:text-red-500 transition-all duration-200"
             >
               <Target02Icon size={18} className="text-gray-400 group-hover:text-red-500" />
               <span className="font-bold text-sm tracking-wide">ARENA.COMPARISON</span>
-            </a>
+            </button>
             
             <a
               href="/workflow"
@@ -3836,125 +3837,34 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
       </nav>
 
         {activeTab === 'dashboard' && (
-          <div className="space-y-8">
-            {/* System Response */}
-            <div className="border border-gray-700 p-6">
-              <div className="text-green-400 text-sm font-mono mb-4">◄ SYS.STATUS</div>
-              <h2 className="text-xl text-white mb-2">ACE FRAMEWORK // INTELLIGENT ORCHESTRATION v1.0</h2>
-              <p className="text-gray-400">LEARNED.ROUTER:ACTIVE | STATISTICAL.TESTS:READY | COST.OPTIMIZATION:67%</p>
-          </div>
+          <ModernDashboard onNavigate={setActiveTab} />
+        )}
 
-            {/* What We Can Offer */}
-            <div className="border border-green-500 p-4">
-              <div className="text-green-400 text-sm font-mono mb-3">◄ CORE.CAPABILITIES</div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-                <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">Learned Router (Adaptive)</span>
-        </div>
-                <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">ACE Context Engineering</span>
-                </div>
-                <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">99% Cost Reduction</span>
-                </div>
-                <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">Statistical Validation</span>
-                </div>
-                <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">Hybrid AI Processing</span>
-                </div>
-                <div className="bg-gray-900 border border-gray-600 p-2 rounded">
-                  <span className="text-green-400">Knowledge Graph Memory</span>
+        {activeTab === 'arena' && (
+          <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-white mb-4">Arena Comparison</h1>
+                <p className="text-xl text-gray-300">Scientific head-to-head testing of ACE Framework vs Browserbase</p>
+              </div>
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-white mb-4">Ready to Compare Systems?</h2>
+                  <p className="text-gray-300 mb-6">
+                    Experience real-time comparison between our ACE Framework and Browserbase Arena
+                  </p>
+                  <a
+                    href="/agent-builder-v2"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-all duration-200"
+                  >
+                    <Target02Icon size={20} />
+                    Launch Arena Comparison
+                  </a>
                 </div>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* ACE Framework Stats */}
-              <div className="lg:col-span-2 border border-green-500 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg text-green-400">◄ ACE.FRAMEWORK</h3>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-green-400">ROUTER.LEARNING</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="bg-gray-900 p-4 border border-gray-700">
-                    <p className="text-sm text-gray-400">ACCURACY.GAIN</p>
-                    <p className="text-2xl text-white">+10.6%</p>
-                    </div>
-                  <div className="bg-gray-900 p-4 border border-gray-700">
-                    <p className="text-sm text-gray-400">COST.SAVINGS</p>
-                    <p className="text-2xl text-white">99%</p>
-                    </div>
-                  <div className="bg-gray-900 p-4 border border-gray-700">
-                    <p className="text-sm text-gray-400">LATENCY.REDUCED</p>
-                    <p className="text-2xl text-white">86.9%</p>
-                    </div>
-                  </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-green-500 h-full rounded-full" style={{ width: '90%' }}></div>
-                </div>
-              </div>
-              
-              {/* Active Context Sources */}
-              <div className="border border-gray-700 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg text-green-400">◄ CONTEXT.SOURCES</h3>
-                  <span className="bg-green-700 text-green-200 px-3 py-1 text-xs font-mono">
-                    {contextSources.length} CONNECTED
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  {contextSources.map((source) => (
-                    <ContextSourceCard key={source.id} source={source} />
-                  ))}
-                    </div>
-              </div>
-            </div>
-            
-            {/* Platform Analytics */}
-            <div className="border border-gray-700 p-6">
-              <h3 className="text-lg text-green-400 mb-6">◄ SYSTEM.METRICS</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gray-900 p-4 border border-gray-700">
-                  <h4 className="text-md text-gray-400">ROUTER.ACCURACY</h4>
-                  <p className="text-3xl text-white mb-2">87%</p>
-                    <div className="flex items-center">
-                    <span className="text-sm text-green-500">+15%</span>
-                    <span className="ml-1 text-sm text-gray-500">ADAPTIVE.LEARNING</span>
-                    </div>
-                  </div>
-                <div className="bg-gray-900 p-4 border border-gray-700">
-                  <h4 className="text-md text-gray-400">AVG.COST</h4>
-                  <p className="text-3xl text-white mb-2">$0.001</p>
-                    <div className="flex items-center">
-                    <span className="text-sm text-green-500">99%</span>
-                    <span className="ml-1 text-sm text-gray-500">VS.BROWSERBASE</span>
-                    </div>
-                  </div>
-                <div className="bg-gray-900 p-4 border border-gray-700">
-                  <h4 className="text-md text-gray-400">FREE.QUERIES</h4>
-                  <p className="text-3xl text-white mb-2">75%</p>
-                    <div className="flex items-center">
-                    <span className="text-sm text-green-500">LOCAL</span>
-                    <span className="ml-1 text-sm text-gray-500">OLLAMA.LLM</span>
-                    </div>
-                  </div>
-                <div className="bg-gray-900 p-4 border border-gray-700">
-                  <h4 className="text-md text-gray-400">INSTANT.ANSWERS</h4>
-                  <p className="text-3xl text-white mb-2">&lt;100ms</p>
-                  <div className="flex items-center">
-                    <span className="text-sm text-green-500">FREE</span>
-                    <span className="ml-1 text-sm text-gray-500">KNOWLEDGE.GRAPH</span>
-                </div>
-              </div>
-            </div>
             </div>
           </div>
         )}
-
 
         {false && activeTab === 'agent_builder' && ( // Hidden but keeping data
           <div className="space-y-8 overflow-hidden">
@@ -4039,7 +3949,7 @@ Based on your inquiry, I can provide expert assistance across multiple areas:
                               {Object.entries(industryCategories[selectedCategory as keyof typeof industryCategories].industries).map(([industryKey, industry]) => (
                 <button
                                   key={industryKey}
-                                  onClick={() => loadIndustryExample(industryKey, selectedCategory)}
+                                  onClick={() => loadIndustryExample(industryKey, selectedCategory || undefined)}
                                   className="text-left p-4 bg-gray-700 border border-gray-600 rounded hover:border-green-500 transition-colors"
                                 >
                                   <div className="text-white text-sm font-mono mb-2">{industry.name}</div>
