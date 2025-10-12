@@ -112,6 +112,12 @@ export default function ArenaSimple() {
       name: '🔗 LangChain Parallel',
       description: 'RunnableParallel pattern with async concurrency - LangChain-style execution',
       example: 'Demonstrate LangChain-style parallel execution: Multiple independent LLM chains execute concurrently using async concurrency (not true parallelism). Event loop switches between tasks during network requests. Followed by synthesis step that combines all parallel results. Shows the classic RunnableParallel pattern.'
+    },
+    {
+      id: 'ax-dspy-showcase',
+      name: '🤖 Ax DSPy Modules',
+      description: '40+ specialized business modules with type-safe AI programming and transparent execution',
+      example: 'Execute specialized financial analysis using Ax DSPy modules: financial_analyst for metrics and recommendations, portfolio_optimizer for allocation strategies, and risk_assessor for risk analysis. Demonstrate type-safe DSPy signatures, self-optimizing prompts with intermediate step logging, and cost-effective execution. Compare structured module execution vs traditional prompting approaches.'
     }
   ];
 
@@ -195,6 +201,8 @@ export default function ArenaSimple() {
           endpoint = '/api/parallel-agents/demo';
         } else if (selectedTask === 'langchain-parallel') {
           endpoint = '/api/langchain-parallel/demo';
+        } else if (selectedTask === 'ax-dspy-showcase') {
+          endpoint = '/api/ax-dspy/showcase';
         } else {
           endpoint = '/api/arena/execute-ace-fast';
         }
