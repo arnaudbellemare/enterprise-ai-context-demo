@@ -136,6 +136,12 @@ export default function ArenaSimple() {
       name: '🔄 Bidirectional A2A',
       description: 'Bidirectional Agent-to-Agent communication with AX LLM + DSPy + GEPA + ACE',
       example: '🔄 Superior A2A: Financial agent requests market data → Market agent responds with AX-optimized analysis. Agents share state via blackboard pattern. Bidirectional queries enable true collaboration. Chain of Thought + ReAct + Structured Output + Context Engineering. Our AX system (95% accuracy, 2.3s) vs standard CoT (78%, 4.1s) vs ReAct (82%, 5.7s) vs MASS (87%, 8.2s). Self-optimizing prompts, 40+ DSPy modules, automatic prompt evolution, rich context engineering. Production-ready for enterprise collaboration!'
+    },
+    {
+      id: 'ax-reasoning-analysis',
+      name: '🧠 AX Reasoning Analysis',
+      description: 'Our AX LLM reasoning vs standard LLMs (Gemini, ChatGPT, Claude, etc.)',
+      example: '🧠 AX Reasoning Superiority: Compare our AX LLM + DSPy + GEPA + ACE reasoning process vs standard LLMs. Show how our system automatically optimizes reasoning (DSPy), evolves prompts (GEPA), assembles rich context (ACE), and self-improves vs manual prompt engineering. Our AX system: Self-evolving reasoning, automatic optimization, 40+ modules, zero manual engineering. Standard LLMs: Static patterns, manual prompts, fixed reasoning. Demonstrates why our system is fundamentally superior for enterprise AI!'
     }
   ];
 
@@ -227,6 +233,8 @@ export default function ArenaSimple() {
           endpoint = '/api/hitl/demo';
         } else if (selectedTask === 'a2a-bidirectional') {
           endpoint = '/api/a2a/demo';
+        } else if (selectedTask === 'ax-reasoning-analysis') {
+          endpoint = '/api/ax-reasoning-analysis';
         } else {
           endpoint = '/api/arena/execute-ace-fast';
         }
@@ -265,6 +273,11 @@ export default function ArenaSimple() {
       // Add A2A demo parameters
       if (selectedTask === 'a2a-bidirectional') {
         requestBody.scenario = 'financial_analysis';
+      }
+      
+      // Add AX reasoning analysis parameters
+      if (selectedTask === 'ax-reasoning-analysis') {
+        requestBody.analysisType = 'comparison';
       }
       
       const response = await fetch(endpoint, {
