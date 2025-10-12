@@ -43,6 +43,12 @@ const AGENT_REGISTRY = {
         description: 'Switch to DSPy Real Estate Agent for property analysis',
         trigger: 'After gathering property data, if real estate expertise needed',
         targetAgent: 'dspyRealEstateAgent'
+      },
+      {
+        name: 'escalateToHuman',
+        description: 'Escalate to human operator for critical decisions or low confidence',
+        trigger: 'When confidence < 0.7 OR risk > 0.6 OR amount > $10K',
+        apiEndpoint: '/api/hitl/escalate'
       }
     ]
   },
@@ -90,7 +96,17 @@ const AGENT_REGISTRY = {
     iconColor: 'bg-yellow-600',
     config: { moduleName: 'financial_analyst', provider: 'ollama', optimize: true },
     handoffTo: ['dspyInvestmentReportAgent'],
-    priority: 2
+    priority: 2,
+    // HITL Tools for financial decisions
+    tools: [
+      {
+        name: 'escalateToHuman',
+        description: 'Escalate to human financial advisor for high-risk decisions',
+        trigger: 'When investment amount > $50K OR risk score > 0.7 OR confidence < 0.8',
+        apiEndpoint: '/api/hitl/escalate',
+        domain: 'finance'
+      }
+    ]
   },
 
   dspyInvestmentReportAgent: {

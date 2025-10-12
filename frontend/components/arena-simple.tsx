@@ -124,6 +124,12 @@ export default function ArenaSimple() {
       name: '🧬 GEPA Agent Evolution',
       description: 'Evolve entire agent CODE (not just prompts) - 25+ agents across 12 domains',
       example: '🧬 Revolutionary: Evolve agents for ANY use case - Financial, Real Estate, Legal, Marketing, Healthcare, Manufacturing, Education, Data Analytics, Operations, Customer Service, Cybersecurity, and more! Start with basic 10-line agent (72% accuracy). GEPA evolves the actual CODE through 20 iterations, discovering self-reflection loops, multi-step reasoning, tool integration, and compliance checks. Watch agent architecture transform from simple prompting to sophisticated multi-stage reasoning. Final: 89% accuracy (+23.6%!). See discovered patterns and actual code evolution. Same technique that improved Gemini-2.5-Pro +5.5% on ARC-AGI. Zero cost with local Ollama!'
+    },
+    {
+      id: 'hitl-enterprise',
+      name: '🧑‍💼 HITL Enterprise',
+      description: 'Human-in-the-Loop escalation and approval gates for enterprise deployment',
+      example: '🧑‍💼 Enterprise HITL: Financial high-risk investment ($150K, risk 0.8) → Escalates to human financial advisor. Legal merger contract → Senior lawyer review required. Medical critical diagnosis → Cardiologist confirmation. Security incident → Analyst intervention. Approval gates pause workflows until human approval. Complete escalation system with risk detection, human notification, response waiting, and feedback learning. Production-ready for finance, legal, medical, and security domains!'
     }
   ];
 
@@ -211,6 +217,8 @@ export default function ArenaSimple() {
           endpoint = '/api/ax-dspy/showcase';
         } else if (selectedTask === 'gepa-agent-evolution') {
           endpoint = '/api/gepa/evolve-agent';
+        } else if (selectedTask === 'hitl-enterprise') {
+          endpoint = '/api/hitl/demo';
         } else {
           endpoint = '/api/arena/execute-ace-fast';
         }
@@ -239,6 +247,11 @@ export default function ArenaSimple() {
       if (selectedTask === 'gepa-agent-evolution') {
         requestBody.agentType = 'financial_analyst';
         requestBody.budget = 20;
+      }
+      
+      // Add HITL demo parameters
+      if (selectedTask === 'hitl-enterprise') {
+        requestBody.scenario = 'financial_high_risk';
       }
       
       const response = await fetch(endpoint, {
