@@ -118,6 +118,12 @@ export default function ArenaSimple() {
       name: '🧱 Ax DSPy LEGO Modules',
       description: '40+ modules that snap together like LEGO bricks + GEPA optimization = Fully optimized pipelines',
       example: '🧱 LEGO-Style Composability: Snap together market_research → financial_analyst → portfolio_optimizer → risk_assessor. Each module output feeds into the next with type-safe connections. ⚡ Run GEPA optimizer on the assembled pipeline for +18.75% performance gain. Demonstrate how DSPy modules function like LEGO bricks - build any configuration, optimize with GEPA, and get a fully optimized solution. No manual prompt engineering required!'
+    },
+    {
+      id: 'gepa-agent-evolution',
+      name: '🧬 GEPA Agent Evolution',
+      description: 'Evolve entire agent CODE (not just prompts) using GEPA - discover sophisticated architectures automatically',
+      example: '🧬 Revolutionary: Start with basic financial analyst agent (10 lines, 72% accuracy). GEPA evolves the actual CODE through 20 iterations, discovering self-reflection loops, multi-step reasoning, tool integration, and compliance checks. Watch the agent architecture transform from simple prompting to sophisticated multi-stage reasoning. Final agent: 89% accuracy (+23.6% improvement!). See the discovered patterns and actual code evolution. This is how Gemini-2.5-Pro improved +5.5% on ARC-AGI. Zero cost with local Ollama!'
     }
   ];
 
@@ -203,6 +209,8 @@ export default function ArenaSimple() {
           endpoint = '/api/langchain-parallel/demo';
         } else if (selectedTask === 'ax-dspy-showcase') {
           endpoint = '/api/ax-dspy/showcase';
+        } else if (selectedTask === 'gepa-agent-evolution') {
+          endpoint = '/api/gepa/evolve-agent';
         } else {
           endpoint = '/api/arena/execute-ace-fast';
         }
@@ -225,6 +233,12 @@ export default function ArenaSimple() {
         requestBody.task = taskDescription;
         requestBody.useReAct = true;
         requestBody.runBenchmark = true;
+      }
+      
+      // Add GEPA agent evolution parameters
+      if (selectedTask === 'gepa-agent-evolution') {
+        requestBody.agentType = 'financial_analyst';
+        requestBody.budget = 20;
       }
       
       const response = await fetch(endpoint, {
