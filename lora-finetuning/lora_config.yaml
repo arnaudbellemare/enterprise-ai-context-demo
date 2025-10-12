@@ -1,0 +1,215 @@
+# LoRA Fine-Tuning Configuration with Low Weight Decay
+
+# Base Model Configuration
+base_model:
+  name: "meta-llama/Llama-3-8B"
+  trust_remote_code: true
+  device_map: "auto"
+  torch_dtype: "bfloat16"
+
+# LoRA Configuration (Low Weight Decay Optimization)
+lora:
+  # Core LoRA hyperparameters
+  r: 16                           # Rank of LoRA matrices (8, 16, 32, 64)
+  lora_alpha: 32                  # Scaling factor (typically 2*r)
+  lora_dropout: 0.05              # Dropout for LoRA layers
+  bias: "none"                    # Bias training ("none", "all", "lora_only")
+  task_type: "CAUSAL_LM"          # Task type
+  
+  # Target modules for LoRA
+  target_modules:
+    - q_proj                      # Query projection
+    - v_proj                      # Value projection
+    - k_proj                      # Key projection
+    - o_proj                      # Output projection
+    - gate_proj                   # Gate projection (for Llama)
+    - up_proj                     # Up projection (for Llama)
+    - down_proj                   # Down projection (for Llama)
+  
+  # Advanced LoRA techniques
+  use_rslora: true                # Rank-stabilized LoRA (recommended)
+  use_dora: false                 # Weight-decomposed LoRA (experimental)
+  
+# Training Configuration (Low Weight Decay)
+training:
+  # Optimization
+  learning_rate: 3e-4             # Higher than full fine-tuning (1e-5)
+  weight_decay: 1e-5              # LOW weight decay (key parameter!)
+  optimizer: "adamw_torch"        # AdamW optimizer
+  lr_scheduler_type: "cosine"     # Cosine annealing
+  warmup_ratio: 0.1               # Warmup ratio
+  
+  # Training hyperparameters
+  num_train_epochs: 3
+  max_steps: 1000                 # Override epochs if set
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: true
+  
+  # Precision
+  bf16: true                      # Use bfloat16 for training
+  fp16: false                     # Don't use fp16 with bf16
+  
+  # Logging and saving
+  logging_steps: 10
+  save_steps: 100
+  eval_steps: 100
+  save_total_limit: 3
+  load_best_model_at_end: true
+  
+  # Early stopping
+  early_stopping_patience: 3
+  early_stopping_threshold: 0.001
+  
+  # Misc
+  seed: 42
+  dataloader_num_workers: 4
+  remove_unused_columns: false
+  report_to: ["wandb", "tensorboard"]
+
+# QLoRA Configuration (for memory-efficient training)
+qlora:
+  enabled: false                  # Enable 4-bit quantization
+  load_in_4bit: true
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_compute_dtype: "bfloat16"
+  bnb_4bit_use_double_quant: true
+
+# Domain-Specific Configurations
+domains:
+  financial:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/financial/train.json"
+    validation_data: "../benchmarking/data/financial/validation.json"
+    
+  legal:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/legal/train.json"
+    validation_data: "../benchmarking/data/legal/validation.json"
+    
+  healthcare:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/healthcare/train.json"
+    validation_data: "../benchmarking/data/healthcare/validation.json"
+    
+  marketing:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/marketing/train.json"
+    validation_data: "../benchmarking/data/marketing/validation.json"
+    
+  manufacturing:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/manufacturing/train.json"
+    validation_data: "../benchmarking/data/manufacturing/validation.json"
+    
+  real_estate:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/real_estate/train.json"
+    validation_data: "../benchmarking/data/real_estate/validation.json"
+    
+  education:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/education/train.json"
+    validation_data: "../benchmarking/data/education/validation.json"
+    
+  analytics:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/analytics/train.json"
+    validation_data: "../benchmarking/data/analytics/validation.json"
+    
+  operations:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/operations/train.json"
+    validation_data: "../benchmarking/data/operations/validation.json"
+    
+  customer_service:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/customer_service/train.json"
+    validation_data: "../benchmarking/data/customer_service/validation.json"
+    
+  research:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/research/train.json"
+    validation_data: "../benchmarking/data/research/validation.json"
+    
+  specialized:
+    r: 16
+    lora_alpha: 32
+    weight_decay: 1e-5
+    learning_rate: 3e-4
+    max_steps: 1000
+    training_data: "../benchmarking/data/specialized/train.json"
+    validation_data: "../benchmarking/data/specialized/validation.json"
+
+# Evaluation Configuration
+evaluation:
+  metrics:
+    - perplexity
+    - exact_match
+    - f1
+    - rouge
+  batch_size: 8
+  max_samples: 500
+
+# Weight & Biases Configuration
+wandb:
+  project: "ax-lora-finetuning"
+  entity: "ax-team"
+  tags:
+    - lora
+    - low-weight-decay
+    - domain-specific
+  notes: "LoRA fine-tuning with low weight decay (1e-5) for domain-specific optimization"
+
+# Output Configuration
+output:
+  adapters_dir: "adapters"
+  results_dir: "results"
+  logs_dir: "logs"
+  experiments_dir: "experiments"
+
