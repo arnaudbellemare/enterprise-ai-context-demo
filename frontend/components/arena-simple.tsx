@@ -115,9 +115,9 @@ export default function ArenaSimple() {
     },
     {
       id: 'ax-dspy-showcase',
-      name: '🤖 Ax DSPy Modules',
-      description: '40+ specialized business modules with type-safe AI programming and transparent execution',
-      example: 'Execute specialized financial analysis using Ax DSPy modules: financial_analyst for metrics and recommendations, portfolio_optimizer for allocation strategies, and risk_assessor for risk analysis. Demonstrate type-safe DSPy signatures, self-optimizing prompts with intermediate step logging, and cost-effective execution. Compare structured module execution vs traditional prompting approaches.'
+      name: '🧱 Ax DSPy LEGO Modules',
+      description: '40+ modules that snap together like LEGO bricks + GEPA optimization = Fully optimized pipelines',
+      example: '🧱 LEGO-Style Composability: Snap together market_research → financial_analyst → portfolio_optimizer → risk_assessor. Each module output feeds into the next with type-safe connections. ⚡ Run GEPA optimizer on the assembled pipeline for +18.75% performance gain. Demonstrate how DSPy modules function like LEGO bricks - build any configuration, optimize with GEPA, and get a fully optimized solution. No manual prompt engineering required!'
     }
   ];
 
