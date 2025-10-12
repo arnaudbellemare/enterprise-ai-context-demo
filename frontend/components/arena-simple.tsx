@@ -122,8 +122,8 @@ export default function ArenaSimple() {
     {
       id: 'gepa-agent-evolution',
       name: '🧬 GEPA Agent Evolution',
-      description: 'Evolve entire agent CODE (not just prompts) using GEPA - discover sophisticated architectures automatically',
-      example: '🧬 Revolutionary: Start with basic financial analyst agent (10 lines, 72% accuracy). GEPA evolves the actual CODE through 20 iterations, discovering self-reflection loops, multi-step reasoning, tool integration, and compliance checks. Watch the agent architecture transform from simple prompting to sophisticated multi-stage reasoning. Final agent: 89% accuracy (+23.6% improvement!). See the discovered patterns and actual code evolution. This is how Gemini-2.5-Pro improved +5.5% on ARC-AGI. Zero cost with local Ollama!'
+      description: 'Evolve entire agent CODE (not just prompts) - 25+ agents across 12 domains',
+      example: '🧬 Revolutionary: Evolve agents for ANY use case - Financial, Real Estate, Legal, Marketing, Healthcare, Manufacturing, Education, Data Analytics, Operations, Customer Service, Cybersecurity, and more! Start with basic 10-line agent (72% accuracy). GEPA evolves the actual CODE through 20 iterations, discovering self-reflection loops, multi-step reasoning, tool integration, and compliance checks. Watch agent architecture transform from simple prompting to sophisticated multi-stage reasoning. Final: 89% accuracy (+23.6%!). See discovered patterns and actual code evolution. Same technique that improved Gemini-2.5-Pro +5.5% on ARC-AGI. Zero cost with local Ollama!'
     }
   ];
 
