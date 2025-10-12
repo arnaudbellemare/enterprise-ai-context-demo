@@ -100,6 +100,12 @@ export default function ArenaSimple() {
       name: '🔗 Prompt Chaining',
       description: 'Sequential decomposition of complex tasks - Pipeline pattern with state management',
       example: 'Demonstrate Prompt Chaining pattern: Break complex tasks into sequential steps, each with focused prompts and roles. Output of one step feeds into the next, with validation, retry policies, and external tool integration. Shows how to handle multifaceted tasks reliably.'
+    },
+    {
+      id: 'parallel-agents',
+      name: '⚡ Parallel Agents',
+      description: 'Concurrent execution of multiple specialized sub-agents - Parallelization pattern',
+      example: 'Demonstrate Parallel Agent processing: Single input distributed to multiple specialized agents that execute concurrently. Each agent focuses on a specific aspect (news, financial, competitive, social) and results are aggregated. Shows massive performance improvements over sequential processing.'
     }
   ];
 
@@ -179,6 +185,8 @@ export default function ArenaSimple() {
           endpoint = '/api/gepa/evolution-demo';
         } else if (selectedTask === 'prompt-chaining') {
           endpoint = '/api/prompt-chaining/demo';
+        } else if (selectedTask === 'parallel-agents') {
+          endpoint = '/api/parallel-agents/demo';
         } else {
           endpoint = '/api/arena/execute-ace-fast';
         }
