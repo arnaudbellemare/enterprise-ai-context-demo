@@ -88,6 +88,12 @@ export default function ArenaSimple() {
       name: '🎯 GEPA Runtime Routing',
       description: 'Runtime feature flags for agents - Pareto banks with live signal routing',
       example: 'Demonstrate GEPA runtime routing: Maintains Pareto banks of prompt variants, routes by live signals (latency, cost, risk), no weight retraining - just auditable text diffs. See how prompts change based on load, budget, and task complexity.'
+    },
+    {
+      id: 'gepa-evolution',
+      name: '🧬 GEPA Evolution',
+      description: 'Reflective Prompt Evolution - Budget-controlled iteration with mutation and merge',
+      example: 'Demonstrate full GEPA process: Reflective Prompt Mutation using execution feedback, System Aware Merge preserving evolved modules, Pareto-based Candidate Filtering, and evolutionary lineage tracking. See how prompts evolve across generations.'
     }
   ];
 
@@ -163,6 +169,8 @@ export default function ArenaSimple() {
           endpoint = '/api/multi-domain/execute';
         } else if (selectedTask === 'gepa-routing') {
           endpoint = '/api/gepa/route-demo';
+        } else if (selectedTask === 'gepa-evolution') {
+          endpoint = '/api/gepa/evolution-demo';
         } else {
           endpoint = '/api/arena/execute-ace-fast';
         }
