@@ -106,6 +106,12 @@ export default function ArenaSimple() {
       name: '⚡ Parallel Agents',
       description: 'Concurrent execution of multiple specialized sub-agents - Parallelization pattern',
       example: 'Demonstrate Parallel Agent processing: Single input distributed to multiple specialized agents that execute concurrently. Each agent focuses on a specific aspect (news, financial, competitive, social) and results are aggregated. Shows massive performance improvements over sequential processing.'
+    },
+    {
+      id: 'langchain-parallel',
+      name: '🔗 LangChain Parallel',
+      description: 'RunnableParallel pattern with async concurrency - LangChain-style execution',
+      example: 'Demonstrate LangChain-style parallel execution: Multiple independent LLM chains execute concurrently using async concurrency (not true parallelism). Event loop switches between tasks during network requests. Followed by synthesis step that combines all parallel results. Shows the classic RunnableParallel pattern.'
     }
   ];
 
@@ -187,6 +193,8 @@ export default function ArenaSimple() {
           endpoint = '/api/prompt-chaining/demo';
         } else if (selectedTask === 'parallel-agents') {
           endpoint = '/api/parallel-agents/demo';
+        } else if (selectedTask === 'langchain-parallel') {
+          endpoint = '/api/langchain-parallel/demo';
         } else {
           endpoint = '/api/arena/execute-ace-fast';
         }
