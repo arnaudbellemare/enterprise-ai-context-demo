@@ -94,6 +94,12 @@ export default function ArenaSimple() {
       name: '🧬 GEPA Evolution',
       description: 'Reflective Prompt Evolution - Budget-controlled iteration with mutation and merge',
       example: 'Demonstrate full GEPA process: Reflective Prompt Mutation using execution feedback, System Aware Merge preserving evolved modules, Pareto-based Candidate Filtering, and evolutionary lineage tracking. See how prompts evolve across generations.'
+    },
+    {
+      id: 'prompt-chaining',
+      name: '🔗 Prompt Chaining',
+      description: 'Sequential decomposition of complex tasks - Pipeline pattern with state management',
+      example: 'Demonstrate Prompt Chaining pattern: Break complex tasks into sequential steps, each with focused prompts and roles. Output of one step feeds into the next, with validation, retry policies, and external tool integration. Shows how to handle multifaceted tasks reliably.'
     }
   ];
 
@@ -171,6 +177,8 @@ export default function ArenaSimple() {
           endpoint = '/api/gepa/route-demo';
         } else if (selectedTask === 'gepa-evolution') {
           endpoint = '/api/gepa/evolution-demo';
+        } else if (selectedTask === 'prompt-chaining') {
+          endpoint = '/api/prompt-chaining/demo';
         } else {
           endpoint = '/api/arena/execute-ace-fast';
         }
