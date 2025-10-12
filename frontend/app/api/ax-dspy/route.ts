@@ -10,8 +10,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ai, ax } from '@ax-llm/ax';
 
-// DSPy Module Signatures using Ax
+// DSPy Module Signatures using Ax - Comprehensive Business Domain Coverage
 const DSPY_SIGNATURES: Record<string, string> = {
+  // === FINANCIAL & INVESTMENT ===
   market_research_analyzer: `
     marketData:string,
     industry:string ->
@@ -30,16 +31,6 @@ const DSPY_SIGNATURES: Record<string, string> = {
     riskAssessment:string "Risk analysis and mitigation strategies"
   `,
   
-  real_estate_agent: `
-    propertyData:string,
-    location:string,
-    budget:string ->
-    propertyAnalysis:string "Detailed property and location analysis",
-    marketComparison:string "Comparison with similar properties",
-    investmentPotential:string "Investment potential and ROI estimate",
-    recommendation:string "Buy/pass recommendation with reasoning"
-  `,
-  
   investment_report_generator: `
     researchData:string,
     investmentGoals:string ->
@@ -49,24 +40,63 @@ const DSPY_SIGNATURES: Record<string, string> = {
     riskAnalysis:string "Risk assessment and mitigation",
     recommendations:string "Specific actionable recommendations"
   `,
-  
-  data_synthesizer: `
-    dataSources:string[],
-    synthesisGoal:string ->
-    combinedInsights:string "Synthesized insights from all sources",
-    keyFindings:string[] "Most important findings",
-    contradictions:string[] "Any contradicting information found",
-    confidenceLevel:class "high, medium, low" "Confidence in synthesis"
+
+  portfolio_optimizer: `
+    portfolioData:string,
+    riskTolerance:string,
+    timeHorizon:string ->
+    currentAllocation:string[] "Current portfolio allocation breakdown",
+    optimalAllocation:string[] "Recommended optimal allocation",
+    riskMetrics:string "Portfolio risk assessment",
+    expectedReturns:string "Expected return projections",
+    rebalancingPlan:string "Specific rebalancing recommendations"
   `,
-  
-  entity_extractor: `
-    text:string,
-    entityTypes:string[] ->
-    entities:string[] "Extracted entities",
-    relationships:string[] "Relationships between entities",
-    structuredData:string "Structured representation of extracted data"
+
+  risk_assessor: `
+    riskData:string,
+    riskType:string,
+    context:string ->
+    riskFactors:string[] "Identified risk factors",
+    riskScores:number[] "Quantified risk scores (0-100)",
+    mitigationStrategies:string[] "Risk mitigation strategies",
+    monitoringPlan:string "Ongoing risk monitoring plan",
+    riskRating:class "low, medium, high, critical" "Overall risk rating"
   `,
-  
+
+  // === REAL ESTATE ===
+  real_estate_agent: `
+    propertyData:string,
+    location:string,
+    budget:string ->
+    propertyAnalysis:string "Detailed property and location analysis",
+    marketComparison:string "Comparison with similar properties",
+    investmentPotential:string "Investment potential and ROI estimate",
+    recommendation:string "Buy/pass recommendation with reasoning"
+  `,
+
+  property_valuator: `
+    propertyDetails:string,
+    marketData:string,
+    location:string ->
+    estimatedValue:number "Estimated property value",
+    valueFactors:string[] "Key factors affecting value",
+    comparableProperties:string[] "Similar properties for comparison",
+    appreciationPotential:string "Long-term appreciation forecast",
+    valuationMethod:string "Methodology used for valuation"
+  `,
+
+  rental_analyzer: `
+    propertyData:string,
+    location:string,
+    marketRates:string ->
+    rentalIncome:number "Projected monthly rental income",
+    expenses:number "Estimated monthly expenses",
+    netYield:number "Net rental yield percentage",
+    cashFlowAnalysis:string "Detailed cash flow analysis",
+    rentalStrategy:string "Recommended rental strategy"
+  `,
+
+  // === LEGAL & COMPLIANCE ===
   legal_analyst: `
     legalText:string,
     jurisdiction:string,
@@ -76,7 +106,257 @@ const DSPY_SIGNATURES: Record<string, string> = {
     risks:string[] "Legal risks identified",
     recommendations:string "Legal recommendations"
   `,
-  
+
+  contract_reviewer: `
+    contractText:string,
+    contractType:string,
+    jurisdiction:string ->
+    keyTerms:string[] "Critical contract terms",
+    risks:string[] "Identified contractual risks",
+    missingClauses:string[] "Recommended additional clauses",
+    negotiationPoints:string[] "Key negotiation points",
+    recommendation:class "accept, negotiate, reject" "Overall recommendation"
+  `,
+
+  compliance_checker: `
+    businessData:string,
+    regulations:string,
+    industry:string ->
+    complianceStatus:string "Overall compliance status",
+    violations:string[] "Identified compliance violations",
+    requirements:string[] "Unmet regulatory requirements",
+    actionPlan:string[] "Steps to achieve compliance",
+    penalties:string[] "Potential penalties for non-compliance"
+  `,
+
+  // === MARKETING & SALES ===
+  marketing_strategist: `
+    productData:string,
+    targetAudience:string,
+    budget:string ->
+    marketingChannels:string[] "Recommended marketing channels",
+    campaignStrategy:string "Overall campaign strategy",
+    budgetAllocation:string[] "Budget allocation across channels",
+    keyMessages:string[] "Core marketing messages",
+    successMetrics:string[] "KPIs to track campaign success"
+  `,
+
+  content_creator: `
+    topic:string,
+    audience:string,
+    contentType:string,
+    brandVoice:string ->
+    contentOutline:string[] "Content structure and outline",
+    keyPoints:string[] "Main points to cover",
+    callToAction:string "Recommended call-to-action",
+    tone:string "Content tone and style",
+    distributionPlan:string[] "Content distribution strategy"
+  `,
+
+  sales_optimizer: `
+    salesData:string,
+    productInfo:string,
+    customerProfile:string ->
+    salesFunnel:string[] "Sales funnel analysis",
+    conversionPoints:string[] "Key conversion opportunities",
+    objections:string[] "Common customer objections",
+    responses:string[] "Objection handling responses",
+    closingStrategies:string[] "Effective closing techniques"
+  `,
+
+  // === TECHNOLOGY & SAAS ===
+  tech_architect: `
+    requirements:string,
+    constraints:string,
+    techStack:string ->
+    architecture:string "Recommended system architecture",
+    components:string[] "Key system components",
+    integrations:string[] "Required integrations",
+    scalabilityPlan:string "Scalability considerations",
+    technologyChoices:string[] "Technology stack recommendations"
+  `,
+
+  saas_analyzer: `
+    saasData:string,
+    marketSegment:string,
+    competitors:string ->
+    marketPosition:string "Current market position",
+    pricingStrategy:string "Optimal pricing strategy",
+    featureGaps:string[] "Missing features vs competitors",
+    growthOpportunities:string[] "Growth opportunities",
+    competitiveAdvantage:string "Unique value proposition"
+  `,
+
+  product_manager: `
+    productData:string,
+    userFeedback:string,
+    marketData:string ->
+    productRoadmap:string[] "Recommended product roadmap",
+    featurePriorities:string[] "Feature prioritization",
+    userStories:string[] "Key user stories",
+    successMetrics:string[] "Product success metrics",
+    marketFit:string "Product-market fit assessment"
+  `,
+
+  // === HEALTHCARE & MEDICAL ===
+  medical_analyzer: `
+    medicalData:string,
+    condition:string,
+    patientProfile:string ->
+    diagnosis:string "Diagnostic assessment",
+    treatmentOptions:string[] "Available treatment options",
+    riskFactors:string[] "Identified risk factors",
+    monitoringPlan:string "Ongoing monitoring recommendations",
+    followUp:string "Follow-up care plan"
+  `,
+
+  clinical_researcher: `
+    researchData:string,
+    studyType:string,
+    population:string ->
+    methodology:string "Recommended research methodology",
+    endpoints:string[] "Primary and secondary endpoints",
+    sampleSize:number "Required sample size",
+    timeline:string "Study timeline and milestones",
+    ethicalConsiderations:string[] "Ethical considerations"
+  `,
+
+  healthcare_compliance: `
+    healthcareData:string,
+    regulations:string,
+    facilityType:string ->
+    complianceStatus:string "Current compliance status",
+    gaps:string[] "Compliance gaps identified",
+    actionPlan:string[] "Compliance improvement plan",
+    trainingNeeds:string[] "Required staff training",
+    auditSchedule:string "Recommended audit schedule"
+  `,
+
+  // === MANUFACTURING & INDUSTRY ===
+  manufacturing_optimizer: `
+    productionData:string,
+    constraints:string,
+    goals:string ->
+    optimizationPlan:string "Manufacturing optimization plan",
+    efficiencyGains:string[] "Potential efficiency improvements",
+    costReductions:string[] "Cost reduction opportunities",
+    qualityImprovements:string[] "Quality enhancement strategies",
+    timeline:string "Implementation timeline"
+  `,
+
+  supply_chain_analyst: `
+    supplyChainData:string,
+    risks:string,
+    objectives:string ->
+    supplyChainMap:string "Current supply chain visualization",
+    riskAssessment:string[] "Supply chain risk analysis",
+    optimizationOpportunities:string[] "Optimization opportunities",
+    vendorPerformance:string[] "Vendor performance analysis",
+    recommendations:string[] "Supply chain improvements"
+  `,
+
+  quality_assurance: `
+    qualityData:string,
+    standards:string,
+    products:string ->
+    qualityMetrics:string[] "Key quality metrics",
+    defectAnalysis:string "Defect pattern analysis",
+    improvementAreas:string[] "Areas needing improvement",
+    testingStrategy:string "Quality testing strategy",
+    complianceStatus:string "Standards compliance status"
+  `,
+
+  // === EDUCATION & RESEARCH ===
+  educational_designer: `
+    learningObjectives:string,
+    audience:string,
+    constraints:string ->
+    curriculum:string[] "Recommended curriculum structure",
+    learningMethods:string[] "Effective learning methods",
+    assessmentStrategy:string "Assessment and evaluation plan",
+    resources:string[] "Required learning resources",
+    timeline:string "Learning timeline and milestones"
+  `,
+
+  research_analyst: `
+    researchQuestion:string,
+    data:string,
+    methodology:string ->
+    researchDesign:string "Recommended research design",
+    dataCollectionPlan:string "Data collection strategy",
+    analysisMethods:string[] "Statistical analysis methods",
+    limitations:string[] "Research limitations",
+    implications:string "Research implications and applications"
+  `,
+
+  // === DATA & ANALYTICS ===
+  data_synthesizer: `
+    dataSources:string[],
+    synthesisGoal:string ->
+    combinedInsights:string "Synthesized insights from all sources",
+    keyFindings:string[] "Most important findings",
+    contradictions:string[] "Any contradicting information found",
+    confidenceLevel:class "high, medium, low" "Confidence in synthesis"
+  `,
+
+  data_analyst: `
+    dataset:string,
+    analysisGoal:string,
+    context:string ->
+    insights:string[] "Key data insights",
+    patterns:string[] "Identified patterns and trends",
+    correlations:string[] "Statistical correlations",
+    predictions:string "Predictive analysis",
+    recommendations:string[] "Data-driven recommendations"
+  `,
+
+  business_intelligence: `
+    businessData:string,
+    objectives:string,
+    stakeholders:string ->
+    kpis:string[] "Key performance indicators",
+    dashboards:string[] "Recommended dashboard views",
+    reports:string[] "Essential business reports",
+    alerts:string[] "Automated alert triggers",
+    insights:string "Strategic business insights"
+  `,
+
+  // === OPERATIONS & LOGISTICS ===
+  operations_optimizer: `
+    operationsData:string,
+    constraints:string,
+    goals:string ->
+    optimizationPlan:string "Operations optimization strategy",
+    efficiencyGains:string[] "Efficiency improvement opportunities",
+    costReductions:string[] "Cost reduction strategies",
+    processImprovements:string[] "Process enhancement recommendations",
+    implementationPlan:string "Step-by-step implementation plan"
+  `,
+
+  logistics_coordinator: `
+    logisticsData:string,
+    requirements:string,
+    constraints:string ->
+    routingPlan:string "Optimal routing strategy",
+    costOptimization:string[] "Cost optimization opportunities",
+    deliverySchedule:string[] "Recommended delivery schedule",
+    riskMitigation:string[] "Logistics risk mitigation",
+    performanceMetrics:string[] "Key performance indicators"
+  `,
+
+  // === CUSTOMER SERVICE ===
+  customer_service_optimizer: `
+    serviceData:string,
+    customerFeedback:string,
+    metrics:string ->
+    serviceGaps:string[] "Identified service gaps",
+    improvementAreas:string[] "Areas for service improvement",
+    trainingNeeds:string[] "Staff training requirements",
+    processOptimization:string[] "Process optimization opportunities",
+    customerSatisfactionPlan:string "Customer satisfaction strategy"
+  `,
+
+  // === GENERAL BUSINESS ===
   competitive_analyzer: `
     competitorData:string,
     market:string ->
@@ -86,6 +366,59 @@ const DSPY_SIGNATURES: Record<string, string> = {
     opportunities:string[] "Market opportunities",
     threats:string[] "Competitive threats",
     strategy:string "Recommended competitive strategy"
+  `,
+
+  entity_extractor: `
+    text:string,
+    entityTypes:string[] ->
+    entities:string[] "Extracted entities",
+    relationships:string[] "Relationships between entities",
+    structuredData:string "Structured representation of extracted data"
+  `,
+
+  business_consultant: `
+    businessData:string,
+    challenges:string,
+    goals:string ->
+    strategicAnalysis:string "Strategic business analysis",
+    recommendations:string[] "Strategic recommendations",
+    implementationPlan:string[] "Implementation roadmap",
+    riskAssessment:string "Risk assessment and mitigation",
+    successMetrics:string[] "Success measurement criteria"
+  `,
+
+  // === SPECIALIZED DOMAINS ===
+  sustainability_advisor: `
+    businessData:string,
+    industry:string,
+    goals:string ->
+    carbonFootprint:string "Current carbon footprint analysis",
+    sustainabilityPlan:string[] "Sustainability improvement plan",
+    greenInitiatives:string[] "Recommended green initiatives",
+    complianceRequirements:string[] "Environmental compliance needs",
+    roi:string "Sustainability investment ROI"
+  `,
+
+  cybersecurity_analyst: `
+    systemData:string,
+    threats:string,
+    requirements:string ->
+    vulnerabilityAssessment:string[] "Identified vulnerabilities",
+    securityRecommendations:string[] "Security improvement recommendations",
+    complianceStatus:string "Security compliance status",
+    incidentResponsePlan:string "Incident response strategy",
+    trainingNeeds:string[] "Security training requirements"
+  `,
+
+  innovation_catalyst: `
+    industryData:string,
+    trends:string,
+    constraints:string ->
+    innovationOpportunities:string[] "Innovation opportunities",
+    technologyTrends:string[] "Relevant technology trends",
+    competitiveAdvantage:string[] "Innovation-based competitive advantages",
+    implementationStrategy:string "Innovation implementation plan",
+    riskMitigation:string[] "Innovation risk mitigation"
   `
 };
 
