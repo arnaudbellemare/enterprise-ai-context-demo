@@ -423,16 +423,28 @@ const DSPY_SIGNATURES: Record<string, string> = {
 };
 
 /**
- * POST: Execute a DSPy module using Ax framework
+ * POST: Execute a DSPy module OR workflow node using Ax framework
+ * 
+ * Supports two modes:
+ * 1. DSPy Module Execution: { moduleName, inputs, provider }
+ * 2. Workflow Node Execution: { nodeType, input, config }
  */
 export async function POST(req: NextRequest) {
   try {
+    const body = await req.json();
+    
+    // Check if this is a workflow node execution (new mode)
+    if (body.nodeType) {
+      return await executeWorkflowNode(body);
+    }
+    
+    // Otherwise, it's a DSPy module execution (existing mode)
     const { 
       moduleName, 
       inputs, 
       optimize = false,
       provider = 'ollama' // Default to Ollama for free local execution
-    } = await req.json();
+    } = body;
 
     if (!moduleName) {
       return NextResponse.json(
@@ -455,6 +467,7 @@ export async function POST(req: NextRequest) {
         { 
           error: `Module "${moduleName}" not found`,
           availableModules: Object.keys(DSPY_SIGNATURES),
+          availableNodeTypes: ['memorySearch', 'webSearch', 'contextAssembly', 'modelRouter', 'gepaOptimize', 'intelligentAgent'],
           success: false
         },
         { status: 404 }
@@ -676,5 +689,253 @@ function prepareInputs(moduleName: string, inputs: any): any {
         context: inputs.context || inputs.data || ''
       };
   }
+}
+
+// ============================================================================
+// WORKFLOW NODE EXECUTION (Consolidated from /api/ax/execute)
+// ============================================================================
+
+/**
+ * Execute workflow node using Ax-powered optimization
+ */
+async function executeWorkflowNode(body: any) {
+  const { nodeType, input, config = {} } = body;
+
+  // Initialize LLM based on provider
+  const llm = ai({
+    name: config.provider || 'openai',
+    apiKey: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY,
+  });
+
+  let result;
+
+  switch (nodeType) {
+    case 'memorySearch':
+      result = await executeMemorySearchNode(llm, input, config);
+      break;
+    
+    case 'webSearch':
+      result = await executeWebSearchNode(llm, input, config);
+      break;
+    
+    case 'contextAssembly':
+      result = await executeContextAssemblyNode(llm, input, config);
+      break;
+    
+    case 'modelRouter':
+      result = await executeModelRouterNode(llm, input, config);
+      break;
+    
+    case 'gepaOptimize':
+      result = await executeGEPAOptimizeNode(llm, input, config);
+      break;
+    
+    case 'intelligentAgent':
+      result = await executeIntelligentAgentNode(llm, input, config);
+      break;
+    
+    default:
+      throw new Error(`Unknown node type: ${nodeType}`);
+  }
+
+  return NextResponse.json({
+    success: true,
+    nodeType,
+    result,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * Memory Search Node - Uses Ax signature for semantic search
+ */
+async function executeMemorySearchNode(llm: any, input: any, config: any) {
+  const memorySearcher = ax(`
+    query:string,
+    userId:string ->
+    searchQuery:string "Optimized search query",
+    relevanceThreshold:number "Similarity threshold (0-1)",
+    topK:number "Number of results to return"
+  `);
+
+  const axResult = await memorySearcher.forward(llm, {
+    query: input.query,
+    userId: input.userId,
+  });
+
+  // Call actual memory search API
+  const searchResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/search/indexed`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query: axResult.searchQuery,
+      userId: input.userId,
+      matchThreshold: axResult.relevanceThreshold,
+      matchCount: axResult.topK,
+    }),
+  });
+
+  const searchData = await searchResponse.json();
+
+  return {
+    optimizedQuery: axResult.searchQuery,
+    threshold: axResult.relevanceThreshold,
+    results: searchData.documents || [],
+    metrics: {
+      resultsCount: searchData.documents?.length || 0,
+      processingTime: searchData.processingTime,
+    }
+  };
+}
+
+/**
+ * Web Search Node - Uses Ax for query optimization
+ */
+async function executeWebSearchNode(llm: any, input: any, config: any) {
+  const webSearchOptimizer = ax(`
+    originalQuery:string,
+    context:string ->
+    optimizedQuery:string "Search-engine optimized query",
+    recencyImportance:class "critical, important, moderate, low" "How recent results should be",
+    expectedSources:string[] "Types of sources to prioritize"
+  `);
+
+  const axResult = await webSearchOptimizer.forward(llm, {
+    originalQuery: input.query,
+    context: input.context || '',
+  });
+
+  // Call Perplexity API
+  const webResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/perplexity/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [{ role: 'user', content: axResult.optimizedQuery }],
+      searchRecencyFilter: axResult.recencyImportance === 'critical' ? 'day' : 'month',
+    }),
+  });
+
+  const webData = await webResponse.json();
+
+  return {
+    optimizedQuery: axResult.optimizedQuery,
+    recency: axResult.recencyImportance,
+    expectedSources: axResult.expectedSources,
+    results: webData.citations || [],
+  };
+}
+
+/**
+ * Context Assembly Node - Uses Ax for intelligent merging
+ */
+async function executeContextAssemblyNode(llm: any, input: any, config: any) {
+  const contextAssembler = ax(`
+    memoryResults:string[],
+    webResults:string[],
+    query:string ->
+    combinedContext:string "Merged and deduplicated context",
+    relevanceScores:number[] "Relevance score for each piece",
+    summary:string "Brief summary of assembled context",
+    missingInfo:string[] "What information is still missing"
+  `);
+
+  const axResult = await contextAssembler.forward(llm, {
+    memoryResults: input.memoryResults || [],
+    webResults: input.webResults || [],
+    query: input.query,
+  });
+
+  return {
+    context: axResult.combinedContext,
+    scores: axResult.relevanceScores,
+    summary: axResult.summary,
+    gaps: axResult.missingInfo,
+    totalPieces: (input.memoryResults?.length || 0) + (input.webResults?.length || 0),
+  };
+}
+
+/**
+ * Model Router Node - Uses Ax for intelligent model selection
+ */
+async function executeModelRouterNode(llm: any, input: any, config: any) {
+  const modelSelector = ax(`
+    query:string,
+    context:string,
+    availableModels:string[] ->
+    selectedModel:string "Best model for this task",
+    reasoning:string "Why this model was chosen",
+    expectedQuality:class "excellent, good, acceptable, poor" "Expected output quality",
+    estimatedCost:class "high, medium, low" "Estimated API cost"
+  `);
+
+  const axResult = await modelSelector.forward(llm, {
+    query: input.query,
+    context: input.context || '',
+    availableModels: [
+      'claude-3-haiku',
+      'claude-3-sonnet', 
+      'gpt-4o-mini',
+      'gpt-4o',
+      'o1-mini'
+    ],
+  });
+
+  return {
+    model: axResult.selectedModel,
+    reasoning: axResult.reasoning,
+    quality: axResult.expectedQuality,
+    cost: axResult.estimatedCost,
+  };
+}
+
+/**
+ * GEPA Optimize Node - Uses Ax for prompt evolution
+ */
+async function executeGEPAOptimizeNode(llm: any, input: any, config: any) {
+  const promptOptimizer = ax(`
+    originalPrompt:string,
+    context:string,
+    performanceGoal:string ->
+    optimizedPrompt:string "Evolved and improved prompt",
+    improvements:string[] "Specific improvements made",
+    expectedImprovement:number "Expected performance gain (0-1)",
+    tradeoffs:string[] "Any tradeoffs made"
+  `);
+
+  const axResult = await promptOptimizer.forward(llm, {
+    originalPrompt: input.prompt,
+    context: input.context || '',
+    performanceGoal: input.goal || 'accuracy',
+  });
+
+  return {
+    prompt: axResult.optimizedPrompt,
+    improvements: axResult.improvements,
+    expectedGain: axResult.expectedImprovement,
+    tradeoffs: axResult.tradeoffs,
+  };
+}
+
+/**
+ * Intelligent Agent Node - Uses Ax ReAct pattern
+ */
+async function executeIntelligentAgentNode(llm: any, input: any, config: any) {
+  const intelligentAgent = ax(
+    'task:string, context:string -> plan:string[], actions:string[], result:string',
+    {
+      functions: config.functions || [],
+    }
+  );
+
+  const axResult = await intelligentAgent.forward(llm, {
+    task: input.task,
+    context: input.context || '',
+  });
+
+  return {
+    plan: axResult.plan,
+    actions: axResult.actions,
+    result: axResult.result,
+  };
 }
 

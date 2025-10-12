@@ -100,7 +100,7 @@ const AVAILABLE_NODE_TYPES = [
     label: '✨ Ax DSPy Optimize',
     description: 'Auto-optimize with Ax signatures',
     icon: '✨',
-    apiEndpoint: '/api/ax/execute',
+    apiEndpoint: '/api/ax-dspy',
     config: {
       provider: 'openai',
     }
