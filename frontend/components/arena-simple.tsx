@@ -82,6 +82,12 @@ export default function ArenaSimple() {
       name: '🌐 Multi-Domain AI Platform',
       description: 'Financial, Medical, Legal, Manufacturing, SaaS, Marketing, Education, Research, Retail, Logistics',
       example: 'Select a domain and execute specialized AI analysis with domain-specific ReAct reasoning, industry benchmarks (1200+ tasks), and regulatory compliance. Supports all major industries with expert-level performance.'
+    },
+    {
+      id: 'gepa-routing',
+      name: '🎯 GEPA Runtime Routing',
+      description: 'Runtime feature flags for agents - Pareto banks with live signal routing',
+      example: 'Demonstrate GEPA runtime routing: Maintains Pareto banks of prompt variants, routes by live signals (latency, cost, risk), no weight retraining - just auditable text diffs. See how prompts change based on load, budget, and task complexity.'
     }
   ];
 
@@ -155,6 +161,8 @@ export default function ArenaSimple() {
           endpoint = '/api/finance/advanced-ace';
         } else if (selectedTask === 'multi-domain') {
           endpoint = '/api/multi-domain/execute';
+        } else if (selectedTask === 'gepa-routing') {
+          endpoint = '/api/gepa/route-demo';
         } else {
           endpoint = '/api/arena/execute-ace-fast';
         }
