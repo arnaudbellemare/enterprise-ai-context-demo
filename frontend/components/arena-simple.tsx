@@ -142,6 +142,12 @@ export default function ArenaSimple() {
       name: '🧠 AX Reasoning Analysis',
       description: 'Our AX LLM reasoning vs standard LLMs (Gemini, ChatGPT, Claude, etc.)',
       example: '🧠 AX Reasoning Superiority: Compare our AX LLM + DSPy + GEPA + ACE reasoning process vs standard LLMs. Show how our system automatically optimizes reasoning (DSPy), evolves prompts (GEPA), assembles rich context (ACE), and self-improves vs manual prompt engineering. Our AX system: Self-evolving reasoning, automatic optimization, 40+ modules, zero manual engineering. Standard LLMs: Static patterns, manual prompts, fixed reasoning. Demonstrates why our system is fundamentally superior for enterprise AI!'
+    },
+    {
+      id: 'agentic-evolution-analysis',
+      name: '🤖 Agentic Evolution Analysis',
+      description: 'From passive tools to autonomous agents - our AX system as the pinnacle',
+      example: '🤖 Agentic Evolution Pinnacle: Analyze the evolution from passive tools → CoT → Self-Correction → ToT → ReAct → Multi-Agent → AX System. Show how our AX LLM + DSPy + GEPA + ACE represents the ultimate autonomous agent with self-evolving reasoning, automatic optimization, rich context engineering, and production-ready deployment. Demonstrates why our system completes the transformation of AI into truly agentic problem-solvers!'
     }
   ];
 
@@ -235,6 +241,8 @@ export default function ArenaSimple() {
           endpoint = '/api/a2a/demo';
         } else if (selectedTask === 'ax-reasoning-analysis') {
           endpoint = '/api/ax-reasoning-analysis';
+        } else if (selectedTask === 'agentic-evolution-analysis') {
+          endpoint = '/api/agentic-evolution-analysis';
         } else {
           endpoint = '/api/arena/execute-ace-fast';
         }
@@ -278,6 +286,11 @@ export default function ArenaSimple() {
       // Add AX reasoning analysis parameters
       if (selectedTask === 'ax-reasoning-analysis') {
         requestBody.analysisType = 'comparison';
+      }
+      
+      // Add agentic evolution analysis parameters
+      if (selectedTask === 'agentic-evolution-analysis') {
+        requestBody.analysisType = 'evolution';
       }
       
       const response = await fetch(endpoint, {
