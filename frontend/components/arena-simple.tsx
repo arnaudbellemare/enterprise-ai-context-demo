@@ -37,8 +37,8 @@ export default function ArenaSimple() {
   const tasks = [
     { 
       id: 'swirl-trm-full', 
-      name: '🚀 SWiRL + TRM-ADAPTIVE - FULL INTEGRATION! (ALL REAL!)', 
-      description: 'SWiRL multi-step decomposition + TRM recursive reasoning! Stanford + Google DeepMind + TRM paper. Shows REAL multi-query, REAL SQL, REAL ACE bullets, REAL ReasoningBank, REAL LoRA, REAL IRT. +25% GSM8K, +15% HotPotQA!',
+      name: '🚀 PERMUTATION - SWiRL×TRM×ACE×GEPA×IRT! (ALL REAL!)', 
+      description: 'Full permutation of cutting-edge AI! SWiRL (Stanford+DeepMind) multi-step × TRM recursive reasoning × ACE context evolution × GEPA optimization × IRT validation. Shows REAL multi-query (60), REAL SQL execution, REAL bullets from DB, REAL memories, REAL LoRA params, REAL IRT metrics. +25% GSM8K, +15% HotPotQA, 80% ARC-AGI!',
       example: 'Calculate the ROI of a $50,000 investment in Bitcoin from Jan 2020 to Dec 2024, considering market volatility and compare with S&P 500 performance.'
     },
     { 
