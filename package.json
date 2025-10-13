@@ -29,6 +29,7 @@
     "demo:full-system": "npx tsx demo-full-system-capabilities.ts",
     "test:per-domain": "npx tsx test-per-domain-gepa-iterations.ts",
     "test:smart-retrieval": "npx tsx test-smart-retrieval.ts",
+    "test:local-embeddings": "npx tsx test-local-embeddings.ts",
     "test:collaborative": "npx tsx test-collaborative-tools.ts",
     "test:multimodal": "npx tsx test-multimodal-features.ts",
     "test:gepa-retrieval": "npx tsx test-gepa-retrieval.ts",
@@ -47,7 +48,8 @@
     "validate": "npm run test:overfitting"
   },
   "dependencies": {
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "@xenova/transformers": "^2.17.1"
   },
   "devDependencies": {
     "tsx": "^4.20.6"
