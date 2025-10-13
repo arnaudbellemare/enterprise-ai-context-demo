@@ -236,19 +236,21 @@ export default function ArenaSimple() {
       if (provider === 'browserbase') {
         endpoint = '/api/arena/execute-browserbase-real'; // Use REAL execution with Playwright
       } else {
-        // Use specialized endpoints for demo tasks
+        // Use PERMUTATION endpoint for ALL tasks (fast, no timeouts!)
         if (selectedTask === 'swirl-trm-full') {
-          endpoint = '/api/arena/execute-swirl-trm-full';
+          endpoint = '/api/arena/execute-permutation-fast';
         } else if (selectedTask === 'trm-adaptive') {
           endpoint = '/api/arena/execute-trm-adaptive';
         } else if (selectedTask === 'verified-execution') {
           endpoint = '/api/arena/execute-with-verification';
         } else if (selectedTask === 'truly-full-system') {
-          endpoint = '/api/arena/execute-truly-full-system';
+          endpoint = '/api/arena/execute-permutation-fast'; // Use fast endpoint
+        } else if (selectedTask === 'liquidations' || selectedTask === 'crypto' || selectedTask === 'hackernews' || selectedTask === 'github') {
+          endpoint = '/api/arena/execute-permutation-fast'; // Use PERMUTATION for all basic tasks!
         } else if (selectedTask === 'full-system-test') {
-          endpoint = '/api/arena/execute-full-system';
+          endpoint = '/api/arena/execute-permutation-fast';
         } else if (selectedTask === 'comprehensive-demo') {
-          endpoint = '/api/arena/execute-comprehensive-demo';
+          endpoint = '/api/arena/execute-permutation-fast';
         } else if (selectedTask === 'financial-lora') {
           endpoint = '/api/finance/lora-comparison';
         } else if (selectedTask === 'advanced-ace') {
