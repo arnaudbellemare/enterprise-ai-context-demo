@@ -29,7 +29,18 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const { taskDescription } = validation.data as { taskDescription: string; useRealExecution?: boolean };
+    // Safe destructuring with fallback
+    const taskDescription = (validation.data as any)?.taskDescription || body.taskDescription || body.task || '';
+    
+    if (!taskDescription) {
+      return NextResponse.json(
+        { 
+          error: 'Missing taskDescription',
+          details: 'Request must include taskDescription field'
+        },
+        { status: 400 }
+      );
+    }
 
     logs.push('OPTIMIZED ACE EXECUTION WITH LEARNED ROUTING');
     logs.push(`Task: ${taskDescription}`);
