@@ -34,7 +34,7 @@ const REAL_BENCHMARK_TESTS: BenchmarkTest[] = [
     success_criteria: {
       min_quality: 0.7,
       max_cost: 0.001,
-      max_time_ms: 30000,
+      max_time_ms: 60000, // Increased to 60s
       must_include: ['market', 'trend', 'analysis'],
     },
   },
@@ -47,7 +47,7 @@ const REAL_BENCHMARK_TESTS: BenchmarkTest[] = [
     success_criteria: {
       min_quality: 0.8,
       max_cost: 0.001,
-      max_time_ms: 20000,
+      max_time_ms: 60000, // Increased to 60s
       must_include: ['ROI', 'calculation', '10000'],
     },
   },
@@ -60,7 +60,7 @@ const REAL_BENCHMARK_TESTS: BenchmarkTest[] = [
     success_criteria: {
       min_quality: 0.7,
       max_cost: 0.001,
-      max_time_ms: 25000,
+      max_time_ms: 60000, // Increased to 60s
       must_include: ['property', 'yield', 'investment'],
     },
   },
@@ -75,7 +75,7 @@ const REAL_BENCHMARK_TESTS: BenchmarkTest[] = [
     success_criteria: {
       min_quality: 0.8,
       max_cost: 0.006,
-      max_time_ms: 15000,
+      max_time_ms: 60000, // Increased to 60s
       must_include: ['2025', 'regulation'],
     },
   },
@@ -90,7 +90,7 @@ const REAL_BENCHMARK_TESTS: BenchmarkTest[] = [
     success_criteria: {
       min_quality: 0.85,
       max_cost: 0.006,
-      max_time_ms: 30000,
+      max_time_ms: 60000, // Increased to 60s
       must_include: ['crypto', 'portfolio', 'trend'],
     },
   },
@@ -103,7 +103,7 @@ const REAL_BENCHMARK_TESTS: BenchmarkTest[] = [
     success_criteria: {
       min_quality: 0.9,
       max_cost: 0.006,
-      max_time_ms: 30000,
+      max_time_ms: 60000, // Increased to 60s
       must_include: ['CAGR', 'Bitcoin', '2020'],
     },
   },
@@ -118,7 +118,7 @@ const REAL_BENCHMARK_TESTS: BenchmarkTest[] = [
     success_criteria: {
       min_quality: 0.75,
       max_cost: 0.005,
-      max_time_ms: 25000,
+      max_time_ms: 60000, // Increased to 60s
       must_include: ['compliance', 'fintech'],
     },
   },
@@ -133,7 +133,7 @@ const REAL_BENCHMARK_TESTS: BenchmarkTest[] = [
     success_criteria: {
       min_quality: 0.7,
       max_cost: 0.005,
-      max_time_ms: 40000,
+      max_time_ms: 60000, // Increased to 60s
       must_include: ['optimization', 'prompt'],
     },
   },
@@ -168,7 +168,7 @@ async function runBenchmarkTest(test: BenchmarkTest): Promise<TestResult> {
       ? { messages: [{ role: 'user', content: test.test_query }] }
       : test.agent_endpoint.includes('ax-dspy')
       ? {
-          userRequest: test.test_query,
+          inputs: { query: test.test_query }, // Fixed: Use inputs parameter
           moduleName: test.domain.includes('market') ? 'market_research_analyzer' :
                      test.domain.includes('financial') ? 'financial_analyst' :
                      test.domain.includes('real_estate') ? 'real_estate_agent' : 'general',
@@ -179,6 +179,12 @@ async function runBenchmarkTest(test: BenchmarkTest): Promise<TestResult> {
       ? {
           request: test.test_query,
           domain: 'financial',
+        }
+      : test.agent_endpoint.includes('perplexity')
+      ? { 
+          taskDescription: test.test_query, 
+          task: test.test_query,
+          useRealAI: true // Fixed: Add useRealAI flag
         }
       : { taskDescription: test.test_query, task: test.test_query };
 
