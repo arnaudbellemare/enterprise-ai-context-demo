@@ -21,6 +21,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link href="https://fonts.cdnfonts.com/css/armitage" rel="stylesheet" />
+      </head>
       <body className={`${inter.className} ${quicksand.variable}`}>{children}</body>
     </html>
   )

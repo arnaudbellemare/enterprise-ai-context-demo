@@ -8,6 +8,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { Message02Icon } from 'hugeicons-react';
 
 interface Message {
   id: string;
@@ -98,8 +99,9 @@ export default function PermutationChat() {
             <span className="text-xs font-bold tracking-widest">CONTINUOUS WORKFLOW</span>
           </div>
           
-          <h1 className="text-5xl font-bold text-black mb-4 tracking-tight" style={{ fontFamily: 'var(--font-quicksand), Quicksand, sans-serif' }}>
-            💬 PERMUTATION CHAT
+          <h1 className="text-5xl font-bold text-black mb-4 tracking-tight flex items-center justify-center gap-4" style={{ fontFamily: 'Armitage, var(--font-quicksand), Quicksand, sans-serif' }}>
+            <Message02Icon size={48} className="text-black" />
+            PERMUTATION CHAT
           </h1>
           
           <p className="text-lg text-gray-600" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>
