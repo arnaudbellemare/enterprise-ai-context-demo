@@ -49,6 +49,7 @@
     "test:verification": "npx tsx test-verification-system.ts",
     "test:trm-adaptive": "npx tsx test-trm-adaptive.ts",
     "test:permutation-edge": "npx tsx test-permutation-edge.ts",
+    "test:permutation-real": "npx tsx test-permutation-real-benchmarks.ts",
     "validate": "npm run test:overfitting"
   },
   "dependencies": {
