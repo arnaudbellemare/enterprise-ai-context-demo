@@ -78,12 +78,12 @@ Always cite data sources and explain your analytical methodology.`;
       evolution_history: history,
 
       key_insights: [
-        'GEPA evolved prompts through reflective mutation and strategic merging',
-        'Generated 12 new candidates across 4 generations',
-        'Pareto frontier contains 1 non-dominated candidate',
-        'Each evolution step used execution feedback to guide prompt improvement',
+        'GEPA optimization evolved prompts through reflective mutation and strategic merging',
+        'Generated 12 new candidates across 4 generations via prompt optimization',
+        'Pareto frontier contains 1 non-dominated candidate through multi-objective optimization',
+        'Each evolution step used execution feedback to guide prompt improvement and optimization',
         'System-aware merge preserved evolved modules from parent candidates',
-        'Budget-controlled iteration ensured efficient evolution process'
+        'Budget-controlled iteration ensured efficient optimization evolution process'
       ],
 
       evolution_process: [

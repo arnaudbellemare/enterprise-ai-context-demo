@@ -24,7 +24,7 @@
     "passed": false,
     "quality_score": 0,
     "actual_cost": 0,
-    "actual_time_ms": 263,
+    "actual_time_ms": 234,
     "response_length": 0,
     "components_detected": [],
     "missing_criteria": [
@@ -57,7 +57,7 @@
     "passed": false,
     "quality_score": 0,
     "actual_cost": 0,
-    "actual_time_ms": 13,
+    "actual_time_ms": 16,
     "response_length": 0,
     "components_detected": [],
     "missing_criteria": [
@@ -122,8 +122,8 @@
     "passed": true,
     "quality_score": 0.95,
     "actual_cost": 0.005,
-    "actual_time_ms": 12422,
-    "response_length": 3441,
+    "actual_time_ms": 9985,
+    "response_length": 3931,
     "components_detected": [
       "Unknown"
     ],
@@ -158,8 +158,8 @@
     "passed": true,
     "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 43482,
-    "response_length": 3099,
+    "actual_time_ms": 65698,
+    "response_length": 2752,
     "components_detected": [
       "Perplexity Teacher",
       "ACE Framework",
@@ -190,8 +190,8 @@
     "passed": true,
     "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 9726,
-    "response_length": 2744,
+    "actual_time_ms": 6724,
+    "response_length": 2129,
     "components_detected": [
       "All 11 Components",
       "DSPy Refine",
@@ -226,8 +226,8 @@
     "passed": true,
     "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 176,
-    "response_length": 1490,
+    "actual_time_ms": 142,
+    "response_length": 1502,
     "components_detected": [
       "IRT",
       "ReasoningBank"
@@ -257,14 +257,15 @@
       }
     },
     "passed": false,
-    "quality_score": 0,
-    "actual_cost": 0,
-    "actual_time_ms": 301366,
-    "response_length": 0,
-    "components_detected": [],
-    "missing_criteria": [
-      "Test execution failed"
+    "quality_score": 0.9,
+    "actual_cost": 0.005,
+    "actual_time_ms": 18,
+    "response_length": 2556,
+    "components_detected": [
+      "IRT"
     ],
-    "error": "fetch failed"
+    "missing_criteria": [
+      "Missing keyword: \"optimization\""
+    ]
   }
 ]
