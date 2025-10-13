@@ -36,6 +36,8 @@
     "test:stagnation": "npx tsx test-stagnation-detection.ts",
     "test:auto-tuning": "npx tsx test-complete-auto-tuning.ts",
     "test:statistical-proof": "npx tsx test-statistical-proof-system.ts",
+    "test:integration": "npx tsx test-integration-verification.ts",
+    "test:real-deal": "npx tsx test-integration-verification.ts",
     "validate": "npm run test:overfitting"
   },
   "dependencies": {
