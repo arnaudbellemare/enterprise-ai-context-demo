@@ -326,9 +326,9 @@ export async function POST(req: NextRequest) {
     if (perplexityKey) {
       // Try multiple Perplexity model names (API changes frequently)
       const perplexityModels = [
-        'llama-3.1-sonar-small-128k-online',
+        'sonar', // ✅ WORKS! Tested Oct 2025
         'sonar-small-online',
-        'sonar',
+        'llama-3.1-sonar-small-128k-online',
         'llama-3.1-sonar-large-128k-online',
       ];
 
