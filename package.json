@@ -28,6 +28,7 @@
     "test:vs-langchain": "npx tsx test-vs-langchain-langgraph.ts",
     "demo:full-system": "npx tsx demo-full-system-capabilities.ts",
     "test:per-domain": "npx tsx test-per-domain-gepa-iterations.ts",
+    "test:smart-retrieval": "npx tsx test-smart-retrieval.ts",
     "test:collaborative": "npx tsx test-collaborative-tools.ts",
     "test:multimodal": "npx tsx test-multimodal-features.ts",
     "test:gepa-retrieval": "npx tsx test-gepa-retrieval.ts",
