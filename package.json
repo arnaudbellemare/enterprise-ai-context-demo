@@ -38,6 +38,8 @@
     "test:auto-tuning": "npx tsx test-complete-auto-tuning.ts",
     "test:statistical-proof": "npx tsx test-statistical-proof-system.ts",
     "test:integration": "npx tsx test-integration-verification.ts",
+    "migrate:feedback": "psql $DATABASE_URL -f supabase/migrations/008_user_feedback.sql",
+    "demo:feedback": "echo 'Open http://localhost:3000/feedback-demo in your browser'",
     "test:real-deal": "npx tsx test-integration-verification.ts",
     "test:ace": "npx tsx test-ace-framework.ts",
     "test:ace-benchmark": "npx tsx test-ace-benchmark.ts",
