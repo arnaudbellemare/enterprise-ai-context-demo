@@ -405,7 +405,7 @@ export function createDefaultTestDataset(): IRTItem[] {
         { type: 'organization', name: 'Engineering team' },
         { type: 'concept', name: 'automation' }
       ],
-      difficulty: -0.6,
+      difficulty: -0.6, // REVERTED: Recalibration overfit to 2 models
       discrimination: 1.3
     },
 
@@ -430,7 +430,7 @@ export function createDefaultTestDataset(): IRTItem[] {
         { type: 'concept', name: 'machine learning' },
         { type: 'project', name: 'analytics platform' }
       ],
-      difficulty: 0.3,
+      difficulty: 0.3, // REVERTED: Recalibration overfit to 2 models
       discrimination: 1.6
     },
     {
@@ -454,7 +454,7 @@ export function createDefaultTestDataset(): IRTItem[] {
         { type: 'organization', name: 'TechStart Inc' },
         { type: 'concept', name: 'consulting services' }
       ],
-      difficulty: 1.0,
+      difficulty: 1.0, // REVERTED: Keep original rating
       discrimination: 2.0
     },
     {
@@ -466,7 +466,7 @@ export function createDefaultTestDataset(): IRTItem[] {
         { type: 'concept', name: 'Type 2 Diabetes Mellitus' },
         { type: 'concept', name: 'Hypertension' }
       ],
-      difficulty: 1.2,
+      difficulty: 1.2, // REVERTED: Keep original rating
       discrimination: 2.1
     },
     {
@@ -478,7 +478,7 @@ export function createDefaultTestDataset(): IRTItem[] {
         { type: 'concept', name: 'abstract factory' },
         { type: 'concept', name: 'AST traversal' }
       ],
-      difficulty: 1.5,
+      difficulty: 1.5, // REVERTED: Keep original rating
       discrimination: 2.2
     },
 
@@ -495,7 +495,7 @@ export function createDefaultTestDataset(): IRTItem[] {
         { type: 'concept', name: 'OpenCL' },
         { type: 'concept', name: 'SYCL' }
       ],
-      difficulty: 2.0,
+      difficulty: 2.0, // REVERTED: Keep original rating
       discrimination: 1.8
     }
   ];

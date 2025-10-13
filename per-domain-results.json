@@ -1,0 +1,58 @@
+{
+  "timestamp": "2025-10-12T20:59:43.888Z",
+  "domains": [
+    {
+      "domain": "Financial Analysis",
+      "improvement": 31.73845193590782,
+      "finalAccuracy": 92.76897640276837,
+      "speedGain": 66.40419777309916,
+      "tokenReduction": 35.099337748344375,
+      "tasksSuccessRate": 100,
+      "abilityScore": 1.6
+    },
+    {
+      "domain": "Legal & Compliance",
+      "improvement": 33.821289552366515,
+      "finalAccuracy": 93.00833404190712,
+      "speedGain": 64.96140378857615,
+      "tokenReduction": 39.420654911838795,
+      "tasksSuccessRate": 100,
+      "abilityScore": 1.3
+    },
+    {
+      "domain": "Real Estate",
+      "improvement": 32.86697154893175,
+      "finalAccuracy": 91.72668132765423,
+      "speedGain": 69.01278321610195,
+      "tokenReduction": 35.05291005291005,
+      "tasksSuccessRate": 75,
+      "abilityScore": 1.4
+    },
+    {
+      "domain": "OCR Document Extraction",
+      "improvement": 33.23636138517699,
+      "finalAccuracy": 92.96070030983549,
+      "speedGain": 63.90886366350889,
+      "tokenReduction": 34.74240422721268,
+      "tasksSuccessRate": 100,
+      "abilityScore": 1.5
+    },
+    {
+      "domain": "Marketing Strategy",
+      "improvement": 29.19395092391862,
+      "finalAccuracy": 93.40506960174658,
+      "speedGain": 62.89563716471919,
+      "tokenReduction": 40.272614622057,
+      "tasksSuccessRate": 100,
+      "abilityScore": 1.2
+    }
+  ],
+  "summary": {
+    "domainsTest": 5,
+    "avgImprovement": 32.171405069260345,
+    "avgAccuracy": 92.77395233678236,
+    "avgSpeedGain": 65.43657712120105,
+    "avgAbility": 1.4000000000000001,
+    "grade": "A+"
+  }
+}

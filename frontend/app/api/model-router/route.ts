@@ -1,354 +1,165 @@
-import { NextResponse } from 'next/server';
-
 /**
- * INTELLIGENT MODEL ROUTER
- * Routes requests to optimal model based on:
- * - Task complexity
- * - Required capabilities
- * - Cost optimization
- * - Latency requirements
+ * SMART MODEL ROUTER API
+ * Automatically select best model for task
  */
 
-const MODEL_TIERS = {
-  // FREE - Local Ollama models
-  local: {
-    name: 'Ollama (Local)',
-    models: ['llama3.2', 'gemma2', 'mistral'],
-    cost: 0,
-    latency: 'fast',
-    capabilities: ['general', 'analysis', 'synthesis', 'simple_reasoning'],
-    limitations: ['no_web_search', 'no_citations', 'limited_context'],
-    bestFor: ['data_transformation', 'simple_analysis', 'synthesis', 'formatting']
-  },
-  
-  // PAID - Perplexity with web search
-  perplexity: {
-    name: 'Perplexity AI',
-    models: ['sonar-pro', 'sonar'],
-    cost: 0.003, // per 1k tokens
-    latency: 'medium',
-    capabilities: ['web_search', 'citations', 'real_time_data', 'deep_research'],
-    limitations: [],
-    bestFor: ['research', 'market_analysis', 'current_events', 'fact_checking']
-  },
-  
-  // PREMIUM - GPT-4 for complex reasoning
-  premium: {
-    name: 'GPT-4',
-    models: ['gpt-4', 'gpt-4-turbo'],
-    cost: 0.03, // per 1k tokens
-    latency: 'slow',
-    capabilities: ['complex_reasoning', 'planning', 'code_generation', 'multi_step'],
-    limitations: ['no_web_search'],
-    bestFor: ['workflow_planning', 'complex_analysis', 'code_generation']
-  }
-};
+import { NextRequest, NextResponse } from 'next/server';
 
-/**
- * Analyze task to determine optimal model tier
- */
-function selectOptimalModel(task: {
-  type: string; // 'research', 'analysis', 'synthesis', 'planning', 'transform'
-  complexity: 'low' | 'medium' | 'high';
-  requiresWebSearch?: boolean;
-  requiresCitations?: boolean;
-  requiresRealTimeData?: boolean;
-  budgetConstraint?: 'minimize' | 'balanced' | 'quality';
-}): {
-  tier: keyof typeof MODEL_TIERS;
-  model: string;
-  reasoning: string;
-  estimatedCost: number;
-} {
-  
-  const { type, complexity, requiresWebSearch, requiresCitations, requiresRealTimeData, budgetConstraint = 'balanced' } = task;
-  
-  console.log('🧠 Model Router - Analyzing task:', task);
-  
-  // Rule 1: Web search/real-time data REQUIRES Perplexity
-  if (requiresWebSearch || requiresCitations || requiresRealTimeData) {
-    return {
-      tier: 'perplexity',
-      model: 'sonar-pro',
-      reasoning: 'Task requires web search or real-time data - using Perplexity',
-      estimatedCost: MODEL_TIERS.perplexity.cost
-    };
-  }
-  
-  // Rule 2: Complex planning/reasoning → Premium (GPT-4)
-  if (complexity === 'high' && type === 'planning' && budgetConstraint === 'quality') {
-    return {
-      tier: 'premium',
-      model: 'gpt-4-turbo',
-      reasoning: 'Complex planning task requires advanced reasoning',
-      estimatedCost: MODEL_TIERS.premium.cost
-    };
-  }
-  
-  // Rule 3: Simple tasks → Free (Ollama)
-  if (complexity === 'low' || type === 'transform' || type === 'synthesis') {
-    return {
-      tier: 'local',
-      model: 'llama3.2',
-      reasoning: 'Simple task can be handled by local model - zero cost',
-      estimatedCost: 0
-    };
-  }
-  
-  // Rule 4: Medium complexity analysis → Try local first, fallback to Perplexity
-  if (complexity === 'medium' && budgetConstraint === 'minimize') {
-    return {
-      tier: 'local',
-      model: 'gemma2',
-      reasoning: 'Medium complexity with budget constraint - trying local model',
-      estimatedCost: 0
-    };
-  }
-  
-  // Rule 5: Default balanced approach → Perplexity for quality
-  return {
-    tier: 'perplexity',
-    model: 'sonar-pro',
-    reasoning: 'Balanced quality-cost tradeoff - using Perplexity',
-    estimatedCost: MODEL_TIERS.perplexity.cost
-  };
-}
+export const runtime = 'edge';
 
-/**
- * Determine task characteristics from agent config
- */
-function analyzeAgentTask(agentConfig: {
-  apiEndpoint: string;
-  role: string;
-  label: string;
-  config?: any;
-}): {
-  type: string;
-  complexity: 'low' | 'medium' | 'high';
-  requiresWebSearch: boolean;
-  requiresCitations: boolean;
-  requiresRealTimeData: boolean;
-} {
-  
-  const { apiEndpoint, role, label, config } = agentConfig;
-  
-  // Web search agents
-  if (apiEndpoint === '/api/perplexity/chat' || label.includes('Web Search')) {
-    return {
-      type: 'research',
-      complexity: 'medium',
-      requiresWebSearch: true,
-      requiresCitations: true,
-      requiresRealTimeData: true
-    };
-  }
-  
-  // DSPy agents (self-optimizing - use local for cost efficiency)
-  if (apiEndpoint === '/api/dspy/execute' || label.includes('DSPy')) {
-    return {
-      type: 'analysis',
-      complexity: 'medium',
-      requiresWebSearch: false,
-      requiresCitations: false,
-      requiresRealTimeData: false
-    };
-  }
-  
-  // GEPA optimizer (can use local)
-  if (apiEndpoint === '/api/gepa/optimize' || label.includes('GEPA')) {
-    return {
-      type: 'synthesis',
-      complexity: 'low',
-      requiresWebSearch: false,
-      requiresCitations: false,
-      requiresRealTimeData: false
-    };
-  }
-  
-  // CEL expressions (always local)
-  if (apiEndpoint === '/api/cel/execute' || label.includes('CEL')) {
-    return {
-      type: 'transform',
-      complexity: 'low',
-      requiresWebSearch: false,
-      requiresCitations: false,
-      requiresRealTimeData: false
-    };
-  }
-  
-  // LangStruct (structured extraction - local)
-  if (apiEndpoint === '/api/langstruct/process') {
-    return {
-      type: 'transform',
-      complexity: 'low',
-      requiresWebSearch: false,
-      requiresCitations: false,
-      requiresRealTimeData: false
-    };
-  }
-  
-  // Custom agents (can use local if task is simple)
-  if (apiEndpoint === '/api/agent/chat') {
-    // Check role for complexity hints
-    const roleLower = role.toLowerCase();
-    if (roleLower.includes('research') || roleLower.includes('market')) {
-      return {
-        type: 'research',
-        complexity: 'medium',
-        requiresWebSearch: true,
-        requiresCitations: false,
-        requiresRealTimeData: false
-      };
-    }
-    return {
-      type: 'analysis',
-      complexity: 'medium',
-      requiresWebSearch: false,
-      requiresCitations: false,
-      requiresRealTimeData: false
-    };
-  }
-  
-  // Default
-  return {
-    type: 'analysis',
-    complexity: 'medium',
-    requiresWebSearch: false,
-    requiresCitations: false,
-    requiresRealTimeData: false
-  };
-}
-
-/**
- * API Route - Get optimal model for agent
- */
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { 
-      agentConfig, 
-      task, 
-      complexity, 
-      requiresWebSearch,
-      budgetConstraint = 'balanced' 
-    } = body;
+    const { task, context, options } = await req.json();
     
-    // Handle both formats: legacy (agentConfig) and direct (task, complexity)
-    let taskAnalysis;
-    
-    if (agentConfig) {
-      // Legacy format: analyze agent config
-      taskAnalysis = analyzeAgentTask(agentConfig);
-    } else if (task || complexity) {
-      // Direct format: use provided parameters
-      taskAnalysis = {
-        type: task || 'analysis',
-        complexity: complexity || 'medium',
-        requiresWebSearch: requiresWebSearch || false,
-        requiresCitations: false,
-        requiresRealTimeData: false
-      };
-    } else {
-      // Fallback: simple analysis task
-      taskAnalysis = {
-        type: 'analysis',
-        complexity: 'medium',
-        requiresWebSearch: false,
-        requiresCitations: false,
-        requiresRealTimeData: false
-      };
+    if (!task) {
+      return NextResponse.json(
+        { error: 'Missing task' },
+        { status: 400 }
+      );
     }
     
-    // Select optimal model
-    const modelSelection = selectOptimalModel({
-      ...taskAnalysis,
-      budgetConstraint
-    });
+    console.log(`[Model Router] Routing task: ${task.substring(0, 100)}...`);
     
-    return NextResponse.json({
-      success: true,
-      taskAnalysis,
-      modelSelection,
-      selectedModel: {
-        name: modelSelection.model,
-        tier: modelSelection.tier,
-        reasoning: modelSelection.reasoning,
-        estimatedCost: modelSelection.estimatedCost
-      },
-      recommendation: {
-        useModel: modelSelection.model,
-        useTier: modelSelection.tier,
-        reasoning: modelSelection.reasoning,
-        estimatedCost: modelSelection.estimatedCost,
-        apiEndpoint: agentConfig?.apiEndpoint 
-          ? getAPIEndpoint(modelSelection.tier, agentConfig.apiEndpoint)
-          : getAPIEndpoint(modelSelection.tier, '/api/agent/chat')
-      }
-    });
+    // Detect requirements
+    const requirements = detectRequirements(task, context);
+    
+    // Select best model
+    const model = selectModel(requirements);
+    
+    // Estimate cost
+    const estimatedCost = estimateCost(task, model);
+    
+    // Estimate quality
+    const estimatedQuality = estimateQuality(requirements, model);
+    
+    // Explain selection
+    const reason = explainSelection(requirements, model);
+    
+    const selection = {
+      model: model,
+      reason: reason,
+      estimatedCost: estimatedCost,
+      estimatedQuality: estimatedQuality,
+      requirements: requirements
+    };
+    
+    console.log(`[Model Router] Selected: ${model} (${reason})`);
+    console.log(`[Model Router] Estimated cost: $${estimatedCost.toFixed(6)}, Quality: ${estimatedQuality.toFixed(2)}`);
+    
+    return NextResponse.json(selection);
     
   } catch (error) {
-    console.error('Model router error:', error);
-    return NextResponse.json({ 
-      error: 'Model routing failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    console.error('[Model Router] Error:', error);
+    return NextResponse.json(
+      { error: 'Model routing failed' },
+      { status: 500 }
+    );
   }
 }
 
-/**
- * Determine API endpoint based on tier
- */
-function getAPIEndpoint(tier: keyof typeof MODEL_TIERS, originalEndpoint: string): string {
-  // If already using specialized endpoint (DSPy, GEPA, etc), keep it
-  if (originalEndpoint !== '/api/perplexity/chat' && originalEndpoint !== '/api/agent/chat') {
-    return originalEndpoint;
-  }
+function detectRequirements(task: string, context?: string) {
+  const fullText = (task + ' ' + (context || '')).toLowerCase();
   
-  switch (tier) {
-    case 'local':
-      return '/api/ollama/chat'; // Local Ollama
-    case 'perplexity':
-      return '/api/perplexity/chat'; // Perplexity with web search
-    case 'premium':
-      return '/api/openai/chat'; // GPT-4
-    default:
-      return originalEndpoint;
-  }
-}
-
-/**
- * Calculate cost for workflow
- */
-function estimateWorkflowCost(nodes: any[]): {
-  totalEstimatedCost: number;
-  breakdown: Array<{
-    nodeId: string;
-    role: string;
-    tier: string;
-    cost: number;
-  }>;
-  optimization: string;
-} {
-  const breakdown = nodes.map(node => {
-    const taskAnalysis = analyzeAgentTask(node);
-    const modelSelection = selectOptimalModel({ ...taskAnalysis, budgetConstraint: 'balanced' });
-    
-    return {
-      nodeId: node.id,
-      role: node.role || node.label,
-      tier: modelSelection.tier,
-      cost: modelSelection.estimatedCost
-    };
-  });
+  const needsVision = 
+    fullText.includes('image') ||
+    fullText.includes('video') ||
+    fullText.includes('chart') ||
+    fullText.includes('diagram') ||
+    fullText.includes('visual');
   
-  const totalCost = breakdown.reduce((sum, item) => sum + item.cost, 0);
-  const localCount = breakdown.filter(b => b.tier === 'local').length;
-  const perplexityCount = breakdown.filter(b => b.tier === 'perplexity').length;
+  const needsWeb =
+    fullText.includes('search') ||
+    fullText.includes('latest') ||
+    fullText.includes('current') ||
+    fullText.includes('trends');
+  
+  const complexity = detectComplexity(task);
   
   return {
-    totalEstimatedCost: totalCost,
-    breakdown,
-    optimization: `Using ${localCount} local (free) and ${perplexityCount} paid API calls. Estimated cost: $${totalCost.toFixed(4)}`
+    needsVision,
+    needsWeb,
+    complexity,
+    costBudget: 'cheap'
   };
 }
 
+function detectComplexity(task: string): 'easy' | 'medium' | 'hard' | 'very_hard' {
+  const lowerTask = task.toLowerCase();
+  
+  if (lowerTask.includes('complex') || lowerTask.includes('sophisticated')) {
+    return 'very_hard';
+  }
+  
+  if (lowerTask.includes('analyze') || lowerTask.includes('evaluate')) {
+    return 'hard';
+  }
+  
+  if (lowerTask.includes('summarize') || lowerTask.includes('extract')) {
+    return 'medium';
+  }
+  
+  return 'easy';
+}
+
+function selectModel(requirements: any): string {
+  if (requirements.needsVision) {
+    return 'gemini-2.0-flash';
+  }
+  
+  if (requirements.needsWeb) {
+    return 'perplexity';
+  }
+  
+  if (requirements.complexity === 'very_hard') {
+    return 'claude-sonnet-4';
+  }
+  
+  if (requirements.complexity === 'hard') {
+    return 'gpt-4o-mini';
+  }
+  
+  return 'ollama/gemma3:4b';
+}
+
+function estimateCost(task: string, model: string): number {
+  const costs: Record<string, number> = {
+    'ollama/gemma3:4b': 0,
+    'perplexity': 0.001,
+    'gemini-2.0-flash': 0.002,
+    'gpt-4o-mini': 0.150,
+    'claude-sonnet-4': 3.000
+  };
+  
+  const estimatedTokens = (task.length * 4) + 500;
+  return (estimatedTokens / 1000000) * (costs[model] || 0);
+}
+
+function estimateQuality(requirements: any, model: string): number {
+  let quality = 0.7;
+  
+  if (requirements.needsVision && model === 'gemini-2.0-flash') quality += 0.2;
+  if (requirements.needsWeb && model === 'perplexity') quality += 0.2;
+  if (requirements.complexity === 'very_hard' && model === 'claude-sonnet-4') quality += 0.3;
+  
+  return Math.min(quality, 1.0);
+}
+
+function explainSelection(requirements: any, model: string): string {
+  if (requirements.needsVision) {
+    return 'Task requires vision capabilities';
+  }
+  
+  if (requirements.needsWeb) {
+    return 'Task requires web/real-time data';
+  }
+  
+  if (requirements.complexity === 'very_hard') {
+    return 'Very challenging task requires best reasoning model';
+  }
+  
+  if (requirements.complexity === 'hard') {
+    return 'Challenging task requires good reasoning model';
+  }
+  
+  return 'Straightforward task - using free local model';
+}

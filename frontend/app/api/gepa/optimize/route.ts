@@ -1,29 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Mock LLM client for demonstration
-class MockLLMClient {
+// REAL LLM client using Ollama
+class RealLLMClient {
   async generate(prompt: string): Promise<string> {
-    // Simulate LLM response with realistic content
-    const responses = [
-      "Based on the execution traces, I recommend focusing on clearer instruction formatting and adding specific examples for better performance.",
-      "The analysis shows that the module needs more explicit guidance on handling edge cases and error conditions.",
-      "I suggest restructuring the prompt to emphasize the key decision points and provide better context for reasoning.",
-      "The feedback indicates that adding validation steps and quality checks would significantly improve performance.",
-      "Consider incorporating more detailed reasoning chains and step-by-step validation in the prompt structure."
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
+    // Call REAL Ollama API
+    try {
+      const response = await fetch('http://localhost:11434/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemma3:4b',
+          messages: [
+            { role: 'system', content: 'You are an expert prompt optimization assistant.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || 'No optimization suggestions available.';
+      
+    } catch (error: any) {
+      console.error('GEPA LLM error:', error);
+      // Fallback only on error
+      return "Focus on clarity, specificity, and providing clear examples in the prompt.";
+    }
   }
 }
 
-// Simplified GEPA implementation for TypeScript/Next.js
+// REAL GEPA implementation using Ollama
 class GEPAReflectiveOptimizer {
-  private llmClient: MockLLMClient;
+  private llmClient: RealLLMClient;
   private candidatePool: any[] = [];
   private paretoFrontier: any[] = [];
   private optimizationHistory: any[] = [];
 
-  constructor(llmClient: MockLLMClient) {
+  constructor(llmClient: RealLLMClient) {
     this.llmClient = llmClient;
   }
 
@@ -44,14 +62,14 @@ class GEPAReflectiveOptimizer {
     };
     this.candidatePool = [baseCandidate];
 
-    // Simulate GEPA optimization process
+    // REAL GEPA optimization process
     const iterations = Math.min(options.budget, 10);
     
     for (let i = 0; i < iterations; i++) {
       // Select candidate for mutation
       const selectedCandidate = this.selectCandidate();
       
-      // Simulate reflective mutation
+      // REAL reflective mutation using Ollama
       const newPrompts = await this.reflectiveMutation(selectedCandidate.prompts);
       
       // Create new candidate
@@ -163,7 +181,7 @@ export async function POST(request: NextRequest) {
 
     if (useRealGEPA) {
       // Use real GEPA implementation
-      const llmClient = new MockLLMClient();
+      const llmClient = new RealLLMClient();
       const gepaOptimizer = new GEPAReflectiveOptimizer(llmClient);
       
       // Prepare system modules with industry-specific optimization
@@ -252,16 +270,11 @@ export async function POST(request: NextRequest) {
         realGEPA: true
       });
     } else {
-      // Simulated GEPA (fast mock for performance)
-      const queryComplexity = (query?.length || 0) + (context?.length || 0);
-      const baseScore = Math.min(95, 70 + Math.floor(queryComplexity / 100));
-      
-      // Generate optimized prompt (mock enhancement)
-      const optimizedPrompt = `[GEPA-Optimized] ${query}\n\nContext-aware enhancement: ${context ? 'Leverage provided context for deeper analysis.' : 'Conduct independent analysis.'}\n\nIndustry focus: ${body.industry || 'general'}\n\nApply systematic reasoning and cite sources.`;
-
+      // NO HAND-CRAFTING! Use real GEPA or fail
       return NextResponse.json({
-        success: true,
-        optimizedPrompt,
+        success: false,
+        error: 'GEPA real optimization required. Set useRealGEPA: true or enable ENABLE_REAL_GEPA env var.',
+        message: 'We do not hand-craft prompts. DSPy and GEPA are designed to obviate manual prompt engineering.',
         metrics: {
           optimizationScore: baseScore,
           efficiencyGain: '35x fewer rollouts',

@@ -19,25 +19,46 @@ async function testFluidBenchmarkingTS() {
   // Initialize evaluator
   const evaluator = new FluidBenchmarking(testDataset);
   
-  // Mock test function (simulates Knowledge Graph with ability ~0.6)
-  const mockKGTest = async (item: IRTItem): Promise<boolean> => {
-    const kg_ability = 0.6;
-    const p_correct = evaluator.probabilityCorrect(
-      kg_ability,
-      item.difficulty,
-      item.discrimination
-    );
-    // Simulate probabilistic success
-    return Math.random() < p_correct;
+  // REAL test function - calls actual Knowledge Graph API
+  const realKGTest = async (item: IRTItem): Promise<boolean> => {
+    try {
+      const response = await fetch('http://localhost:3000/api/entities/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: item.text,
+          userId: 'benchmark-user'
+        })
+      });
+      
+      if (!response.ok) return false;
+      
+      const data = await response.json();
+      const entities = data.entities || [];
+      
+      // Check if extracted expected entities
+      let matches = 0;
+      for (const expected of item.expected_entities) {
+        const found = entities.some((e: any) => 
+          e.name?.toLowerCase().includes(expected.name.toLowerCase())
+        );
+        if (found) matches++;
+      }
+      
+      return (matches / item.expected_entities.length) >= 0.7;
+    } catch (error) {
+      console.warn(`KG test error for ${item.id}:`, error);
+      return false;
+    }
   };
   
   console.log('\n' + '=' .repeat(80));
-  console.log('\n📊 Simulating Knowledge Graph Evaluation (ability ≈ 0.6)...\n');
+  console.log('\n📊 REAL Knowledge Graph Evaluation (calling actual API)...\n');
   
-  // Run fluid benchmarking
+  // Run REAL fluid benchmarking
   const result = await evaluator.fluidBenchmarking(
     'knowledge_graph',
-    mockKGTest,
+    realKGTest,
     {
       start_ability: 0.0,
       n_max: 30,
@@ -73,23 +94,46 @@ async function testFluidBenchmarkingTS() {
   console.log(`   • Medium items (-0.5 to 0.5): ${(mediumAccuracy * 100).toFixed(1)}%`);
   console.log(`   • Hard items (b > 0.5): ${(hardAccuracy * 100).toFixed(1)}%`);
   
-  // Simulate second method for comparison
+  // REAL second method - Smart Extract API
   console.log('\n' + '=' .repeat(80));
-  console.log('\n📊 Simulating LangStruct Evaluation (ability ≈ 1.4)...\n');
+  console.log('\n📊 REAL Smart Extract Evaluation (calling actual API)...\n');
   
-  const mockLSTest = async (item: IRTItem): Promise<boolean> => {
-    const ls_ability = 1.4;
-    const p_correct = evaluator.probabilityCorrect(
-      ls_ability,
-      item.difficulty,
-      item.discrimination
-    );
-    return Math.random() < p_correct;
+  const realSmartExtractTest = async (item: IRTItem): Promise<boolean> => {
+    try {
+      const response = await fetch('http://localhost:3000/api/smart-extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: item.text,
+          userId: 'benchmark-user'
+        })
+      });
+      
+      if (!response.ok) return false;
+      
+      const data = await response.json();
+      const entities = data.entities || [];
+      
+      // Check matches
+      let matches = 0;
+      for (const expected of item.expected_entities) {
+        const found = entities.some((e: any) => {
+          const text = typeof e === 'string' ? e : (e.name || e.entity || '');
+          return text.toLowerCase().includes(expected.name.toLowerCase());
+        });
+        if (found) matches++;
+      }
+      
+      return (matches / item.expected_entities.length) >= 0.7;
+    } catch (error) {
+      console.warn(`Smart Extract test error for ${item.id}:`, error);
+      return false;
+    }
   };
   
   const lsResult = await evaluator.fluidBenchmarking(
-    'langstruct',
-    mockLSTest,
+    'smart_extract',
+    realSmartExtractTest,
     {
       start_ability: 0.0,
       n_max: 30,
@@ -121,13 +165,13 @@ async function testFluidBenchmarkingTS() {
   const isSignificant = Math.abs(zScore) > 1.96; // p < 0.05
   
   console.log(`   Knowledge Graph: θ = ${result.final_ability.toFixed(2)} ± ${result.standard_error.toFixed(2)}`);
-  console.log(`   LangStruct: θ = ${lsResult.final_ability.toFixed(2)} ± ${lsResult.standard_error.toFixed(2)}`);
+  console.log(`   Smart Extract: θ = ${lsResult.final_ability.toFixed(2)} ± ${lsResult.standard_error.toFixed(2)}`);
   console.log(`\n   Difference: ${abilityDiff.toFixed(2)}`);
   console.log(`   Z-score: ${zScore.toFixed(2)}`);
   console.log(`   Statistical Significance: ${isSignificant ? '✅ YES (p < 0.05)' : '❌ NO'}`);
   
   if (abilityDiff > 0.5) {
-    console.log(`\n   💡 Recommendation: LangStruct significantly better for complex extractions`);
+    console.log(`\n   💡 Recommendation: Smart Extract significantly better for complex extractions`);
   } else if (abilityDiff < -0.5) {
     console.log(`\n   💡 Recommendation: Knowledge Graph surprisingly effective!`);
   } else {

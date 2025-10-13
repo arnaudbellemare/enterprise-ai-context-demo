@@ -1,5 +1,47 @@
 {
+  "name": "enterprise-ai-context-demo",
+  "version": "1.0.0",
+  "description": "Enterprise AI Platform with LoRA, GEPA, DSPy, and ACE",
+  "scripts": {
+    "test": "node test-all-features.js",
+    "test:integration": "node test-integration.js",
+    "test:workflows": "node test-workflow-execution.js",
+    "test:fluid": "tsx test-fluid-benchmarking-ts.ts",
+    "test:ace": "node test-ace-integration.js",
+    "test:supabase": "node test_supabase_connection.js",
+    "test:full": "node test-full-system-benchmark.js",
+    "test:analysis": "node test-system-analysis.js",
+    "test:stats": "node test-statistical-benchmark.js",
+    "test:overfitting": "npx tsx test-overfitting-validation.ts",
+    "test:full-irt": "npx tsx test-full-system-irt.ts",
+    "deploy:supabase": "./deploy-supabase.sh",
+    "seed:db": "node scripts/seed-database.js",
+    "benchmark": "npm run test:fluid && npm run test:analysis && npm run test:stats",
+    "benchmark:real": "npm run test:full-irt",
+    "benchmark:complete": "npx tsx test-complete-system-benchmark.ts",
+    "benchmark:gepa": "cd benchmarking && python gepa_optimizer_full_system.py",
+    "benchmark:ocr-irt": "cd benchmarking && python ocr_irt_benchmark.py",
+    "benchmark:download-ocr": "cd benchmarking && python download_ocr_dataset.py",
+    "test:reasoning-bank": "npx tsx test-reasoning-bank.ts",
+    "test:performance": "npx tsx test-performance-metrics.ts",
+    "test:teacher-student": "npx tsx test-teacher-student-gepa.ts",
+    "test:vs-langchain": "npx tsx test-vs-langchain-langgraph.ts",
+    "demo:full-system": "npx tsx demo-full-system-capabilities.ts",
+    "test:per-domain": "npx tsx test-per-domain-gepa-iterations.ts",
+    "test:collaborative": "npx tsx test-collaborative-tools.ts",
+    "test:multimodal": "npx tsx test-multimodal-features.ts",
+    "test:gepa-retrieval": "npx tsx test-gepa-retrieval.ts",
+    "test:doc-to-json": "npx tsx test-dspy-gepa-doc-to-json.ts",
+    "test:requirements": "npx tsx test-requirement-tracking.ts",
+    "test:stagnation": "npx tsx test-stagnation-detection.ts",
+    "test:auto-tuning": "npx tsx test-complete-auto-tuning.ts",
+    "test:statistical-proof": "npx tsx test-statistical-proof-system.ts",
+    "validate": "npm run test:overfitting"
+  },
   "dependencies": {
     "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6"
   }
 }

@@ -1,0 +1,163 @@
+{
+  "timestamp": "2025-10-12T08:10:06.038Z",
+  "test_type": "Complete System Benchmark",
+  "components_tested": [
+    "Ax DSPy (43 modules)",
+    "GEPA Optimization",
+    "ACE Framework",
+    "ArcMemo Learning",
+    "A2A Communication (framework)",
+    "HITL Patterns (framework)",
+    "Parallel Execution (capability)",
+    "Ollama Integration",
+    "Multi-Domain Support"
+  ],
+  "results": [
+    {
+      "name": "Full System (Ax+GEPA+ACE+ArcMemo)",
+      "method": "full_integrated_system",
+      "final_ability": -1.4980442790511186,
+      "standard_error": 0.7837631568086816,
+      "items_administered": 10,
+      "items_correct": 0,
+      "accuracy": 0,
+      "administered_items": [
+        "medium-1",
+        "easy-1",
+        "easy-3",
+        "easy-2",
+        "medium-3",
+        "medium-2",
+        "hard-1",
+        "hard-2",
+        "hard-3",
+        "very-hard-1"
+      ],
+      "ability_estimate": {
+        "method": "medium",
+        "theta": -1.4980442790511186,
+        "standard_error": 0.7837631568086816,
+        "num_items_tested": 10,
+        "confidence_interval_95": [
+          -3.0342200663961343,
+          0.03813150829389733
+        ]
+      },
+      "processing_time_ms": 23,
+      "interpretation": "Very Poor (bottom 16%)"
+    },
+    {
+      "name": "Ax DSPy Only",
+      "method": "ax_dspy_only",
+      "final_ability": -1.4980442790511186,
+      "standard_error": 0.7837631568086816,
+      "items_administered": 10,
+      "items_correct": 0,
+      "accuracy": 0,
+      "administered_items": [
+        "medium-1",
+        "easy-1",
+        "easy-3",
+        "easy-2",
+        "medium-3",
+        "medium-2",
+        "hard-1",
+        "hard-2",
+        "hard-3",
+        "very-hard-1"
+      ],
+      "ability_estimate": {
+        "method": "medium",
+        "theta": -1.4980442790511186,
+        "standard_error": 0.7837631568086816,
+        "num_items_tested": 10,
+        "confidence_interval_95": [
+          -3.0342200663961343,
+          0.03813150829389733
+        ]
+      },
+      "processing_time_ms": 4,
+      "interpretation": "Very Poor (bottom 16%)"
+    },
+    {
+      "name": "Knowledge Graph",
+      "method": "knowledge_graph",
+      "final_ability": -1.4980442790511186,
+      "standard_error": 0.7837631568086816,
+      "items_administered": 10,
+      "items_correct": 0,
+      "accuracy": 0,
+      "administered_items": [
+        "medium-1",
+        "easy-1",
+        "easy-3",
+        "easy-2",
+        "medium-3",
+        "medium-2",
+        "hard-1",
+        "hard-2",
+        "hard-3",
+        "very-hard-1"
+      ],
+      "ability_estimate": {
+        "method": "medium",
+        "theta": -1.4980442790511186,
+        "standard_error": 0.7837631568086816,
+        "num_items_tested": 10,
+        "confidence_interval_95": [
+          -3.0342200663961343,
+          0.03813150829389733
+        ]
+      },
+      "processing_time_ms": 5,
+      "interpretation": "Very Poor (bottom 16%)"
+    },
+    {
+      "name": "Smart Extract",
+      "method": "smart_extract",
+      "final_ability": -1.4980442790511186,
+      "standard_error": 0.7837631568086816,
+      "items_administered": 10,
+      "items_correct": 0,
+      "accuracy": 0,
+      "administered_items": [
+        "medium-1",
+        "easy-1",
+        "easy-3",
+        "easy-2",
+        "medium-3",
+        "medium-2",
+        "hard-1",
+        "hard-2",
+        "hard-3",
+        "very-hard-1"
+      ],
+      "ability_estimate": {
+        "method": "medium",
+        "theta": -1.4980442790511186,
+        "standard_error": 0.7837631568086816,
+        "num_items_tested": 10,
+        "confidence_interval_95": [
+          -3.0342200663961343,
+          0.03813150829389733
+        ]
+      },
+      "processing_time_ms": 4,
+      "interpretation": "Very Poor (bottom 16%)"
+    }
+  ],
+  "winner": "Full System (Ax+GEPA+ACE+ArcMemo)",
+  "statistical_analysis": {
+    "winner_ability": -1.4980442790511186,
+    "baseline_ability": -1.4980442790511186,
+    "improvement": 0,
+    "z_score": 0,
+    "statistically_significant": false,
+    "p_value": "> 0.05"
+  },
+  "component_contribution": {
+    "ax_dspy_baseline": -1.4980442790511186,
+    "gepa_ace_arcmemo_contribution": 0,
+    "total_ability": -1.4980442790511186
+  }
+}

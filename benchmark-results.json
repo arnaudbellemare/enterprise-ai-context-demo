@@ -1,0 +1,93 @@
+{
+  "timestamp": "2025-10-12T07:35:39.848Z",
+  "overallScore": 2.5,
+  "grade": "D (MAJOR ISSUES)",
+  "componentResults": {
+    "axDSpy": {
+      "passed": 0,
+      "failed": 5,
+      "total": 5,
+      "avgDuration": 0,
+      "successRate": 0
+    },
+    "gepa": {
+      "passed": false,
+      "error": "request to http://localhost:3000/api/gepa/optimize failed, reason: "
+    },
+    "ace": {
+      "passed": false,
+      "error": "request to http://localhost:3000/api/ace failed, reason: "
+    },
+    "specializedAgents": {
+      "passed": 0,
+      "total": 5,
+      "avgDuration": 0,
+      "successRate": 0
+    },
+    "a2a": {
+      "passed": false,
+      "error": "request to http://localhost:3000/api/a2a/demo failed, reason: "
+    },
+    "hitl": {
+      "passed": false,
+      "error": "request to http://localhost:3000/api/hitl/demo failed, reason: "
+    },
+    "arcmemo": {
+      "passed": false,
+      "error": "request to http://localhost:3000/api/arcmemo failed, reason: "
+    },
+    "routing": {
+      "passed": false,
+      "error": "request to http://localhost:3000/api/agents failed, reason: "
+    },
+    "caching": {
+      "passed": false,
+      "endpointsImplemented": 0,
+      "totalEndpoints": 3,
+      "implementationRate": 0
+    },
+    "fullWorkflow": {
+      "completedSteps": 1,
+      "totalSteps": 4,
+      "successRate": 25,
+      "stepResults": [
+        {
+          "step": "ArcMemo Retrieval",
+          "passed": false
+        },
+        {
+          "step": "GEPA Optimization",
+          "passed": false
+        },
+        {
+          "step": "Ax DSPy Execution",
+          "passed": false
+        },
+        {
+          "step": "ArcMemo Learning",
+          "passed": true
+        }
+      ]
+    }
+  },
+  "irtBenchmarking": {
+    "knowledgeGraph": {
+      "ability": 0.48,
+      "standardError": 0.47
+    },
+    "langStruct": {
+      "ability": 1.27,
+      "standardError": 0.45
+    },
+    "difference": 0.79,
+    "zScore": 1.21,
+    "statistically_significant": false,
+    "practical_significance": "moderate"
+  },
+  "systemMetrics": {
+    "apiReliability": 97.3,
+    "componentsImplemented": 100,
+    "totalAgents": 60,
+    "linesOfCode": 7950
+  }
+}

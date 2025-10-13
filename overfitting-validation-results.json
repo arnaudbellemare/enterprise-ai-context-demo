@@ -1,0 +1,9 @@
+{
+  "timestamp": "2025-10-12T07:51:00.224Z",
+  "overfitting_detected": true,
+  "discrepancy": 0.9446981167732303,
+  "smart_extract_ability": 0.05530188322676965,
+  "expected_ability": 1,
+  "validation_set_size": 3,
+  "recommendation": "Revert to original difficulties"
+}

@@ -1,0 +1,213 @@
+{
+  "timestamp": "2025-10-13T00:45:39.171Z",
+  "aggregateStats": {
+    "totalDomains": 6,
+    "totalTasks": 18,
+    "significantImprovements": 18,
+    "averageImprovement": 26.460730575671995,
+    "averagePValue": 0,
+    "averageEffectSize": 12.772280065544878,
+    "largeEffectCount": 18,
+    "allSignificant": true
+  },
+  "results": [
+    {
+      "domain": "financial",
+      "task": "Extract balance sheet items",
+      "before": "71.07% ± 1.28%",
+      "after": "86.80% ± 1.42%",
+      "improvement": "+22.13%",
+      "pValue": "0.0000",
+      "cohensD": "11.644",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "financial",
+      "task": "Analyze quarterly trends",
+      "before": "68.83% ± 0.82%",
+      "after": "84.86% ± 1.90%",
+      "improvement": "+23.28%",
+      "pValue": "0.0000",
+      "cohensD": "10.944",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "financial",
+      "task": "Risk assessment modeling",
+      "before": "60.21% ± 1.45%",
+      "after": "80.61% ± 0.91%",
+      "improvement": "+33.87%",
+      "pValue": "0.0000",
+      "cohensD": "16.807",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "legal",
+      "task": "Contract clause extraction",
+      "before": "69.77% ± 1.38%",
+      "after": "85.47% ± 1.41%",
+      "improvement": "+22.51%",
+      "pValue": "0.0000",
+      "cohensD": "11.256",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "legal",
+      "task": "Legal precedent analysis",
+      "before": "65.25% ± 1.22%",
+      "after": "83.09% ± 1.56%",
+      "improvement": "+27.33%",
+      "pValue": "0.0000",
+      "cohensD": "12.706",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "legal",
+      "task": "Compliance violation detection",
+      "before": "57.90% ± 1.55%",
+      "after": "77.60% ± 1.51%",
+      "improvement": "+34.04%",
+      "pValue": "0.0000",
+      "cohensD": "12.915",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "medical",
+      "task": "Symptom-diagnosis mapping",
+      "before": "74.97% ± 1.52%",
+      "after": "89.48% ± 1.01%",
+      "improvement": "+19.35%",
+      "pValue": "0.0000",
+      "cohensD": "11.217",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "medical",
+      "task": "Treatment recommendation",
+      "before": "67.05% ± 1.23%",
+      "after": "84.87% ± 1.84%",
+      "improvement": "+26.59%",
+      "pValue": "0.0000",
+      "cohensD": "11.363",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "medical",
+      "task": "Drug interaction prediction",
+      "before": "54.89% ± 0.86%",
+      "after": "75.49% ± 1.18%",
+      "improvement": "+37.54%",
+      "pValue": "0.0000",
+      "cohensD": "19.930",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "ecommerce",
+      "task": "Product categorization",
+      "before": "78.50% ± 1.10%",
+      "after": "92.16% ± 1.61%",
+      "improvement": "+17.40%",
+      "pValue": "0.0000",
+      "cohensD": "9.883",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "ecommerce",
+      "task": "Customer review sentiment",
+      "before": "70.43% ± 1.10%",
+      "after": "86.56% ± 1.16%",
+      "improvement": "+22.90%",
+      "pValue": "0.0000",
+      "cohensD": "14.288",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "ecommerce",
+      "task": "Recommendation personalization",
+      "before": "62.18% ± 1.34%",
+      "after": "80.91% ± 1.26%",
+      "improvement": "+30.13%",
+      "pValue": "0.0000",
+      "cohensD": "14.361",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "real_estate",
+      "task": "Property valuation",
+      "before": "72.72% ± 1.43%",
+      "after": "88.67% ± 1.44%",
+      "improvement": "+21.94%",
+      "pValue": "0.0000",
+      "cohensD": "11.116",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "real_estate",
+      "task": "Market trend prediction",
+      "before": "64.73% ± 1.05%",
+      "after": "82.24% ± 1.56%",
+      "improvement": "+27.05%",
+      "pValue": "0.0000",
+      "cohensD": "13.152",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "real_estate",
+      "task": "Investment risk scoring",
+      "before": "53.09% ± 1.61%",
+      "after": "73.73% ± 1.56%",
+      "improvement": "+38.89%",
+      "pValue": "0.0000",
+      "cohensD": "13.021",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "customer_support",
+      "task": "Ticket classification",
+      "before": "80.01% ± 1.35%",
+      "after": "93.33% ± 1.70%",
+      "improvement": "+16.64%",
+      "pValue": "0.0000",
+      "cohensD": "8.679",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "customer_support",
+      "task": "Issue resolution routing",
+      "before": "71.86% ± 1.32%",
+      "after": "88.13% ± 1.35%",
+      "improvement": "+22.64%",
+      "pValue": "0.0000",
+      "cohensD": "12.223",
+      "effectSize": "very large",
+      "significant": true
+    },
+    {
+      "domain": "customer_support",
+      "task": "Escalation prediction",
+      "before": "60.94% ± 1.33%",
+      "after": "80.48% ± 1.38%",
+      "improvement": "+32.07%",
+      "pValue": "0.0000",
+      "cohensD": "14.395",
+      "effectSize": "very large",
+      "significant": true
+    }
+  ]
+}

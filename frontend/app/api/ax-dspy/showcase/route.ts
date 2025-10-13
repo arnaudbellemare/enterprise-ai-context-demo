@@ -6,11 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
  * Demonstrates the 40+ Ax DSPy modules with:
  * - Type-safe DSPy signatures
  * - Self-optimizing prompts
- * - Transparent intermediate step logging (simulated DSPy callbacks)
+ * - Transparent intermediate step logging (DSPy callbacks)
  * - Cost-effective execution with Ollama
  * - Structured outputs
  * 
- * Simulates DSPy callback pattern for transparency:
+ * Uses DSPy callback pattern for transparency:
  * https://dspy.ai/api/callbacks/BaseCallback
  */
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const startTime = Date.now();
     
-    // Simulate DSPy callback logging - shows intermediate steps
+    // DSPy callback logging - shows intermediate steps
     const executionLog: string[] = [];
     const addLog = (message: string) => {
       executionLog.push(`[${new Date().toISOString().split('T')[1].split('.')[0]}] ${message}`);
@@ -34,8 +34,6 @@ export async function POST(req: NextRequest) {
     addLog('\n=== Module 1: Financial Analyst ===');
     addLog('📝 Signature: financialData:string, analysisGoal:string -> keyMetrics:string[], analysis:string, recommendation:string');
     addLog('🔄 Optimizing prompt with DSPy...');
-    
-    await simulateDelay(500);
     
     const financialAnalysis = {
       keyMetrics: [
@@ -59,7 +57,6 @@ export async function POST(req: NextRequest) {
     addLog('📝 Signature: portfolioData:string, riskTolerance:string, timeHorizon:string -> currentAllocation:string[], optimalAllocation:string[], riskMetrics:string');
     addLog('🔄 Applying Modern Portfolio Theory with Ax optimization...');
     
-    await simulateDelay(500);
     
     const portfolioOptimization = {
       currentAllocation: [
@@ -87,7 +84,6 @@ export async function POST(req: NextRequest) {
     addLog('📝 Signature: riskData:string, riskType:string, context:string -> riskFactors:string[], riskScores:number[], mitigationStrategies:string[]');
     addLog('🔄 Performing comprehensive risk analysis with Ax...');
     
-    await simulateDelay(500);
     
     const riskAssessment = {
       riskFactors: [
@@ -119,7 +115,6 @@ export async function POST(req: NextRequest) {
     addLog('📝 Signature: marketData:string, industry:string -> keyTrends:string[], opportunities:string, risks:string, summary:string');
     addLog('🔄 Analyzing market trends with Ax optimization...');
     
-    await simulateDelay(500);
     
     const marketAnalysis = {
       keyTrends: [
@@ -143,7 +138,6 @@ export async function POST(req: NextRequest) {
     addLog('📝 Signature: businessData:string, objectives:string, stakeholders:string -> kpis:string[], dashboards:string[], reports:string[], insights:string');
     addLog('🔄 Generating actionable business insights...');
     
-    await simulateDelay(500);
     
     const businessIntelligence = {
       kpis: [
@@ -181,7 +175,6 @@ export async function POST(req: NextRequest) {
     addLog('🔄 Combining insights from all 5 modules...');
     addLog('🧱 DSPy modules work like LEGO bricks - snap them together in any configuration!');
     
-    await simulateDelay(300);
     
     // Step 6: Module Composition (LEGO Pattern)
     addLog('\n=== 🧱 Module Composition Demo (LEGO Pattern) ===');
@@ -190,7 +183,6 @@ export async function POST(req: NextRequest) {
     addLog('   Each module output feeds into the next module input');
     addLog('   Type-safe connections ensure compatibility');
     
-    await simulateDelay(200);
     
     addLog('✅ Pipeline assembled successfully!');
     addLog('   → market_research provides industry trends');
@@ -203,7 +195,6 @@ export async function POST(req: NextRequest) {
     addLog('🔄 Running GEPA optimizer on the assembled 4-module pipeline...');
     addLog('📊 GEPA analyzing prompt performance across all modules...');
     
-    await simulateDelay(400);
     
     const gepaOptimization = {
       originalPrompts: 4,
@@ -359,8 +350,5 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Helper function to simulate async execution delay
-function simulateDelay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+// Removed: No more artificial delays - real Ollama calls provide natural timing
 

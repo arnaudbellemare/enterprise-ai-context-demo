@@ -489,49 +489,15 @@ export async function POST(req: NextRequest) {
     console.log(`📝 Module inputs:`, JSON.stringify(moduleInputs, null, 2));
     console.log(`📝 Signature:`, signature.substring(0, 200));
     
+    // DSPy/Ax AUTOMATICALLY generates the prompt from signature
+    // NO HAND-CRAFTING! Let DSPy do its job.
     let result;
     try {
       result = await dspyModule.forward(llm, moduleInputs);
     } catch (axError: any) {
-      // Fallback: If Ax fails, call Ollama directly
-      console.warn(`⚠️  Ax forward failed, using direct Ollama fallback:`, axError.message);
-      
-      const prompt = `You are a ${moduleName.replace(/_/g, ' ')}. 
-
-Inputs: ${JSON.stringify(moduleInputs, null, 2)}
-
-Generate a structured response following this signature:
-${signature}
-
-Provide your analysis in JSON format.`;
-
-      const ollamaResponse = await fetch('http://localhost:11434/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'gemma3:4b',
-          messages: [
-            { role: 'system', content: 'You are a helpful AI assistant specialized in structured analysis.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.7,
-          max_tokens: 2000
-        })
-      });
-      
-      const ollamaData = await ollamaResponse.json();
-      const content = ollamaData.choices?.[0]?.message?.content || '{}';
-      
-      // Parse JSON or create structured response
-      try {
-        result = JSON.parse(content);
-      } catch {
-        result = {
-          analysis: content,
-          summary: content.substring(0, 200),
-          reasoning: 'Direct Ollama fallback (Ax unavailable)'
-        };
-      }
+      // Only fail - don't hand-craft prompts as fallback
+      console.error(`❌ DSPy/Ax execution failed:`, axError.message);
+      throw new Error(`DSPy module execution failed: ${axError.message}. This ensures we use DSPy/GEPA, not hand-crafted prompts.`);
     }
     
     const executionTime = Date.now() - startTime;
