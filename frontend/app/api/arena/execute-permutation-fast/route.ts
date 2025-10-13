@@ -14,6 +14,32 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 1 minute max
 
+/**
+ * Fallback to Ollama if Perplexity fails
+ */
+async function fallbackToOllama(query: string): Promise<string> {
+  try {
+    const response = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'qwen2.5:14b',
+        prompt: query,
+        stream: false,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.response || 'Ollama fallback succeeded';
+    }
+  } catch (error) {
+    console.error('Ollama fallback failed:', error);
+  }
+  
+  return 'Both Perplexity and Ollama unavailable. Please check API keys and Ollama status.';
+}
+
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
   const logs: any[] = [];
@@ -307,16 +333,21 @@ export async function POST(req: NextRequest) {
           teacherResult = data.choices?.[0]?.message?.content || 'No result';
           console.log(`   ✅ Teacher result: ${teacherResult.substring(0, 200)}...`);
         } else {
-          console.error(`   ❌ Perplexity failed: ${response.status}`);
-          teacherResult = `Perplexity API error: ${response.status}`;
+          const errorText = await response.text();
+          console.error(`   ❌ Perplexity failed: ${response.status} - ${errorText}`);
+          
+          // Fallback to Ollama if Perplexity fails
+          console.log(`   🔄 Falling back to Ollama (local)...`);
+          teacherResult = await fallbackToOllama(query);
         }
       } catch (error: any) {
         console.error(`   ❌ Perplexity error:`, error);
-        teacherResult = `Perplexity error: ${error.message}`;
+        console.log(`   🔄 Falling back to Ollama (local)...`);
+        teacherResult = await fallbackToOllama(query);
       }
     } else {
-      console.log(`   ⚠️  No Perplexity API key`);
-      teacherResult = 'Perplexity unavailable (no API key). Set PERPLEXITY_API_KEY in .env';
+      console.log(`   ⚠️  No Perplexity API key - using Ollama instead`);
+      teacherResult = await fallbackToOllama(query);
     }
 
     logs.push({
