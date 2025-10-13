@@ -88,8 +88,6 @@ export default function PermutationChat() {
     setInput(e.target.value);
   };
 
-  const [showComponents, setShowComponents] = useState(true);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -108,20 +106,10 @@ export default function PermutationChat() {
             SWiRL×TRM×ACE×GEPA×IRT - Full AI research stack in conversational mode
           </p>
 
-          <div className="mt-4 flex items-center justify-center gap-4">
-            <button
-              onClick={() => setShowComponents(!showComponents)}
-              className="px-4 py-2 border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-all text-sm font-bold"
-            >
-              {showComponents ? 'Hide' : 'Show'} Components
-            </button>
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Main Chat Area */}
-          <div className="lg:col-span-2">
+        {/* Main Chat Area - Full Width Centered */}
+        <div className="max-w-4xl mx-auto">
             <div className="bg-white border-2 border-gray-900 shadow-xl">
               
               {/* Chat Header */}
@@ -205,75 +193,6 @@ export default function PermutationChat() {
               </form>
             </div>
           </div>
-
-          {/* Components Panel */}
-          {showComponents && (
-            <div className="lg:col-span-1">
-              <div className="bg-white border-2 border-gray-900 shadow-xl sticky top-8">
-                <div className="bg-black text-white p-4 border-b-2 border-white">
-                  <h3 className="text-lg font-bold tracking-tight">PERMUTATION STACK</h3>
-                  <p className="text-xs text-gray-400">11 Components Active</p>
-                </div>
-                
-                <div className="p-4 space-y-2 max-h-[600px] overflow-y-auto">
-                  {[
-                    { name: 'Smart Routing', status: 'active', icon: '🎯' },
-                    { name: 'Multi-Query (60)', status: 'active', icon: '🔍' },
-                    { name: 'SQL Generation', status: 'standby', icon: '🗄️' },
-                    { name: 'Local Embeddings', status: 'active', icon: '💾' },
-                    { name: 'ACE Framework', status: 'active', icon: '📚' },
-                    { name: 'ReasoningBank', status: 'active', icon: '🧠' },
-                    { name: 'LoRA Parameters', status: 'active', icon: '🎯' },
-                    { name: 'IRT Validation', status: 'active', icon: '📊' },
-                    { name: 'SWiRL Decomposition', status: 'active', icon: '🔄' },
-                    { name: 'Perplexity Teacher', status: 'active', icon: '🎓' },
-                    { name: 'DSPy Refine', status: 'active', icon: '⚡' },
-                  ].map((component, i) => (
-                    <div
-                      key={i}
-                      className={`p-3 border-2 ${
-                        component.status === 'active'
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-300 bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{component.icon}</span>
-                          <span className="text-sm font-bold">{component.name}</span>
-                        </div>
-                        <span
-                          className={`text-xs font-bold ${
-                            component.status === 'active' ? 'text-green-600' : 'text-gray-400'
-                          }`}
-                        >
-                          {component.status.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="p-4 border-t-2 border-gray-900 bg-gray-50">
-                  <div className="text-xs text-gray-600 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Teacher:</span>
-                      <span className="font-bold">Perplexity 'sonar'</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Student:</span>
-                      <span className="font-bold">Ollama gemma3:4b</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Cost/Query:</span>
-                      <span className="font-bold text-green-600">~$0.005</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Footer Info */}
         <div className="mt-8 text-center text-sm text-gray-500">
