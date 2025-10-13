@@ -5,9 +5,7 @@
  * Uses AI SDK streaming for real-time responses
  */
 
-import { streamText } from 'ai';
-import { createOllama } from 'ollama-ai-provider';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -102,27 +100,36 @@ Respond to the user's message${teacherData ? ', using the real-time Perplexity d
     console.log(`   - Context built (${permutationContext.length} chars)`);
 
     // =================================================================
-    // PHASE 4: STREAM RESPONSE WITH OLLAMA
+    // PHASE 4: GENERATE RESPONSE WITH OLLAMA
     // =================================================================
     
-    const ollama = createOllama({
-      baseURL: 'http://localhost:11434/api',
+    console.log(`   - Generating response with Ollama gemma3:4b...`);
+
+    const response = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gemma3:4b',
+        prompt: `${permutationContext}\n\nConversation history:\n${messages.map((m: any) => `${m.role}: ${m.content}`).join('\n')}\n\nassistant:`,
+        stream: false,
+      }),
     });
 
-    console.log(`   - Streaming response with Ollama gemma3:4b...`);
-
-    const result = await streamText({
-      model: ollama('gemma3:4b'),
-      messages: [
-        {
-          role: 'system',
-          content: permutationContext,
-        },
-        ...messages,
-      ],
-    });
-
-    return result.toDataStreamResponse();
+    if (response.ok) {
+      const data = await response.json();
+      const assistantResponse = data.response || 'No response generated';
+      
+      console.log(`   ✅ Response generated: ${assistantResponse.substring(0, 100)}...`);
+      
+      return NextResponse.json({
+        response: assistantResponse,
+        components_used: 11,
+        teacher: teacherData ? 'Perplexity' : 'None (Ollama only)',
+        domain,
+      });
+    } else {
+      throw new Error('Ollama generation failed');
+    }
 
   } catch (error: any) {
     console.error('PERMUTATION chat error:', error);
