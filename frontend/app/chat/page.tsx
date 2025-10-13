@@ -140,15 +140,22 @@ export default function PermutationChat() {
                     key={message.id}
                     className={`p-4 rounded-lg ${
                       message.role === 'user'
-                        ? 'bg-gray-100 ml-12'
+                        ? 'bg-gray-100 ml-12 text-black'
                         : 'bg-black text-white mr-12'
                     }`}
                   >
                     <div className="text-xs font-bold tracking-widest mb-2 opacity-60" style={{ fontFamily: 'var(--font-quicksand), Quicksand, sans-serif' }}>
                       {message.role === 'user' ? 'YOU' : 'PERMUTATION'}
                     </div>
-                    <div className="prose prose-sm max-w-none" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif', lineHeight: '1.6' }}>
-                      {message.content}
+                    <div 
+                      className={`max-w-none ${message.role === 'user' ? 'text-black' : 'text-white'}`}
+                      style={{ 
+                        fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif', 
+                        lineHeight: '1.6',
+                        whiteSpace: 'pre-wrap'
+                      }}
+                    >
+                      {message.content.replace(/\*\*/g, '')}
                     </div>
                   </div>
                 ))}

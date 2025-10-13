@@ -95,6 +95,8 @@ ${strategies.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
 **Your task:**
 Respond to the user's message${teacherData ? ', using the real-time Perplexity data as foundation' : ''}, enhanced with the ACE strategies above. Be conversational but thorough.
+
+IMPORTANT: Do NOT use markdown bold formatting (**). Write in plain text with good structure using line breaks and bullet points (-) instead.
 `.trim();
 
     console.log(`   - Context built (${permutationContext.length} chars)`);
