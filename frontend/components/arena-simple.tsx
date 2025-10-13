@@ -428,7 +428,7 @@ export default function ArenaSimple() {
               ARENA COMPARISON
             </h1>
             <p className="text-2xl text-gray-300 mb-6 font-medium">
-              ACE Framework vs. Browserbase Arena
+              PERMUTATION vs. Browserbase Arena
             </p>
             <p className="text-lg text-gray-400 max-w-2xl leading-relaxed">
               Head-to-head comparison with real APIs, statistical significance testing (McNemar's test, p &lt; 0.05), 
@@ -550,7 +550,7 @@ export default function ArenaSimple() {
             />
             
             <ModernResultsCard
-              title="ACE Framework"
+              title="PERMUTATION Stack"
               subtitle="GEPA + DSPy + ACE Optimization"
               result={results.ourSystem}
               isCompleted={results.ourSystem.status !== 'idle' && results.ourSystem.status !== 'running'}

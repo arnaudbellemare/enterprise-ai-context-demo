@@ -17,15 +17,15 @@ export default function AgentBuilderV2() {
           {/* Hero Section */}
           <div className="text-center mb-16">
             <div className="inline-block px-6 py-2 bg-black text-white mb-6">
-              <span className="text-xs font-bold tracking-widest">ENTERPRISE AI PLATFORM</span>
+              <span className="text-xs font-bold tracking-widest">FULL AI RESEARCH STACK</span>
             </div>
             
             <h1 className="text-5xl font-bold text-black mb-4 tracking-tight" style={{ fontFamily: 'monospace' }}>
-              ACE Framework vs Browserbase
+              PERMUTATION vs Browserbase
             </h1>
             
             <p className="text-lg text-gray-600" style={{ fontFamily: 'monospace' }}>
-              Comprehensive comparison of our application-level optimized system vs Arena's model-focused approach
+              SWiRL×TRM×ACE×GEPA×IRT - Full permutation of cutting-edge AI research vs standard browser automation
             </p>
           </div>
 
