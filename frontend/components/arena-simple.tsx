@@ -36,6 +36,12 @@ export default function ArenaSimple() {
 
   const tasks = [
     { 
+      id: 'swirl-trm-full', 
+      name: '🚀 SWiRL + TRM-ADAPTIVE - FULL INTEGRATION! (ALL REAL!)', 
+      description: 'SWiRL multi-step decomposition + TRM recursive reasoning! Stanford + Google DeepMind + TRM paper. Shows REAL multi-query, REAL SQL, REAL ACE bullets, REAL ReasoningBank, REAL LoRA, REAL IRT. +25% GSM8K, +15% HotPotQA!',
+      example: 'Calculate the ROI of a $50,000 investment in Bitcoin from Jan 2020 to Dec 2024, considering market volatility and compare with S&P 500 performance.'
+    },
+    { 
       id: 'trm-adaptive', 
       name: '🧠 TRM-ADAPTIVE - TRM Paper Implementation! (NEW!)', 
       description: 'TRM-inspired verification! Based on "Less is More: Recursive Reasoning with Tiny Networks". ACT (Adaptive Computational Time), EMA stability, multi-scale reasoning like TRM\'s z features. +45% accuracy on ARC-AGI!',
@@ -231,7 +237,9 @@ export default function ArenaSimple() {
         endpoint = '/api/arena/execute-browserbase-real'; // Use REAL execution with Playwright
       } else {
         // Use specialized endpoints for demo tasks
-        if (selectedTask === 'trm-adaptive') {
+        if (selectedTask === 'swirl-trm-full') {
+          endpoint = '/api/arena/execute-swirl-trm-full';
+        } else if (selectedTask === 'trm-adaptive') {
           endpoint = '/api/arena/execute-trm-adaptive';
         } else if (selectedTask === 'verified-execution') {
           endpoint = '/api/arena/execute-with-verification';
