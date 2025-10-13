@@ -30,6 +30,7 @@
     "test:per-domain": "npx tsx test-per-domain-gepa-iterations.ts",
     "test:smart-retrieval": "npx tsx test-smart-retrieval.ts",
     "test:local-embeddings": "npx tsx test-local-embeddings.ts",
+    "test:comprehensive": "npx tsx test-comprehensive-everything.ts",
     "test:collaborative": "npx tsx test-collaborative-tools.ts",
     "test:multimodal": "npx tsx test-multimodal-features.ts",
     "test:gepa-retrieval": "npx tsx test-gepa-retrieval.ts",
