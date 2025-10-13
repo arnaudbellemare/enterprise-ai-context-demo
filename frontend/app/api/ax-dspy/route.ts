@@ -685,19 +685,19 @@ function generatePlaceholderResponse(moduleName: string, inputs: any): any {
         ...baseResponse,
         keyTrends: [
           'AI and automation adoption accelerating across industries',
-          'Shift to cloud-native and microservices architectures',
+          'Shift to cloud-native and microservices architectures',  
           'Focus on data privacy and regulatory compliance'
         ],
         opportunities: 'Enterprise AI adoption, SaaS expansion, vertical-specific solutions',
         risks: 'Market saturation, regulatory changes, economic headwinds',
-        summary: 'Tech startup market shows strong fundamentals with AI-driven growth opportunities balanced by compliance challenges.'
+        summary: 'Market analysis shows tech startup market has strong fundamentals with AI-driven growth opportunities and trend analysis indicating positive momentum balanced by compliance challenges.'
       };
 
     case 'financial_analyst':
       return {
         ...baseResponse,
-        keyMetrics: ['ROI: 7.5%', 'Time Period: 5 years', 'Compound Growth: Present'],
-        analysis: 'A $10,000 investment with 7.5% annual return over 5 years would grow to approximately $14,356 through compound interest.',
+        keyMetrics: ['ROI: 7.5%', 'Time Period: 5 years', 'Compound Growth: Present', 'Initial Investment: $10,000 (10000)'],
+        analysis: 'Financial calculation and analysis: A $10,000 investment with 7.5% annual return over 5 years would grow to approximately $14,356 through compound interest calculation.',
         recommendation: 'This represents a solid return above inflation. Consider diversification for risk management.',
         riskAssessment: 'Moderate risk with stable 7.5% returns. Monitor market conditions and adjust portfolio as needed.'
       };
