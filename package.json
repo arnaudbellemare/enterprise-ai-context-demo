@@ -47,6 +47,7 @@
     "test:ace-benchmark": "npx tsx test-ace-benchmark.ts",
     "benchmark:ace": "npx tsx test-ace-benchmark.ts",
     "test:verification": "npx tsx test-verification-system.ts",
+    "test:trm-adaptive": "npx tsx test-trm-adaptive.ts",
     "validate": "npm run test:overfitting"
   },
   "dependencies": {
