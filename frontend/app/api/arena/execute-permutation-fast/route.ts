@@ -18,26 +18,37 @@ export const maxDuration = 60; // 1 minute max
  * Fallback to Ollama if Perplexity fails
  */
 async function fallbackToOllama(query: string): Promise<string> {
-  try {
-    const response = await fetch('http://localhost:11434/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'qwen2.5:14b',
-        prompt: query,
-        stream: false,
-      }),
-    });
+  // Try available models in order of preference
+  const modelsToTry = ['qwen2.5:14b', 'gemma2:2b', 'gemma3:4b', 'llama3.1:8b'];
+  
+  for (const model of modelsToTry) {
+    try {
+      console.log(`   - Trying Ollama model: ${model}...`);
+      
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          prompt: query,
+          stream: false,
+        }),
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      return data.response || 'Ollama fallback succeeded';
+      if (response.ok) {
+        const data = await response.json();
+        const result = data.response || 'Ollama fallback succeeded';
+        console.log(`   ✅ Ollama (${model}) succeeded: ${result.substring(0, 100)}...`);
+        return result;
+      } else {
+        console.log(`   ⚠️ Model ${model} not available (${response.status})`);
+      }
+    } catch (error) {
+      console.log(`   ⚠️ Model ${model} failed:`, error);
     }
-  } catch (error) {
-    console.error('Ollama fallback failed:', error);
   }
   
-  return 'Both Perplexity and Ollama unavailable. Please check API keys and Ollama status.';
+  return 'Both Perplexity and Ollama unavailable. Please start Ollama: ollama serve';
 }
 
 export async function POST(req: NextRequest) {
@@ -378,7 +389,8 @@ export async function POST(req: NextRequest) {
     console.log(`${'─'.repeat(80)}\n`);
 
     // Use DSPy Refine to improve the teacher result
-    const refiner = new DSPyRefineWithFeedback('gemma2:2b', {
+    // Use gemma3:4b (the model we have available)
+    const refiner = new DSPyRefineWithFeedback('gemma3:4b', {
       max_iterations: 2, // Quick refinement
       use_human_feedback: true,
       reward_threshold: 0.8,
