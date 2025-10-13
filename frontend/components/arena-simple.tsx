@@ -280,7 +280,8 @@ export default function ArenaSimple() {
         } else if (selectedTask === 'agentic-evolution-analysis') {
           endpoint = '/api/agentic-evolution-analysis';
         } else {
-          endpoint = '/api/arena/execute-ace-fast';
+          // DEFAULT: Use PERMUTATION-FAST for all other tasks!
+          endpoint = '/api/arena/execute-permutation-fast';
         }
       }
       
