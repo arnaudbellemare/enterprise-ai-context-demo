@@ -36,10 +36,10 @@ export default function ArenaSimple() {
 
   const tasks = [
     { 
-      id: 'full-system-test', 
-      name: '🏆 FULL SYSTEM TEST - Uses ALL 11 Components!', 
-      description: 'Tests Multi-Query (60), SQL, ACE, GEPA, ReasoningBank, LoRA, IRT, Teacher-Student, Local Embeddings - EVERYTHING!',
-      example: 'Analyze the financial impact of recent AI developments. Include market trends, company valuations, and investment opportunities.'
+      id: 'truly-full-system', 
+      name: '🏆 TRULY FULL SYSTEM - REAL Integration (NOT Fake Logs!)', 
+      description: 'ACTUALLY uses Multi-Query (60), SQL, ACE, GEPA, ReasoningBank, LoRA, IRT, Local Embeddings, Teacher-Student - ALL 11 components with REAL execution!',
+      example: 'What are the recent developments in AI technology and their market impact? Include specific companies, investments, and technological breakthroughs.'
     },
     { 
       id: 'liquidations', 
@@ -219,7 +219,9 @@ export default function ArenaSimple() {
         endpoint = '/api/arena/execute-browserbase-real'; // Use REAL execution with Playwright
       } else {
         // Use specialized endpoints for demo tasks
-        if (selectedTask === 'full-system-test') {
+        if (selectedTask === 'truly-full-system') {
+          endpoint = '/api/arena/execute-truly-full-system';
+        } else if (selectedTask === 'full-system-test') {
           endpoint = '/api/arena/execute-full-system';
         } else if (selectedTask === 'comprehensive-demo') {
           endpoint = '/api/arena/execute-comprehensive-demo';
