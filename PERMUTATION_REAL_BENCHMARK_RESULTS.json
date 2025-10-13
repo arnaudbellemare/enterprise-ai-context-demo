@@ -21,17 +21,15 @@
         ]
       }
     },
-    "passed": false,
-    "quality_score": 0.95,
+    "passed": true,
+    "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 246,
-    "response_length": 1076,
+    "actual_time_ms": 27,
+    "response_length": 1144,
     "components_detected": [
       "Unknown"
     ],
-    "missing_criteria": [
-      "Missing keyword: \"analysis\""
-    ]
+    "missing_criteria": []
   },
   {
     "test": {
@@ -55,18 +53,15 @@
         ]
       }
     },
-    "passed": false,
-    "quality_score": 0.85,
+    "passed": true,
+    "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 23,
-    "response_length": 1052,
+    "actual_time_ms": 7,
+    "response_length": 1138,
     "components_detected": [
       "Unknown"
     ],
-    "missing_criteria": [
-      "Missing keyword: \"calculation\"",
-      "Missing keyword: \"10000\""
-    ]
+    "missing_criteria": []
   },
   {
     "test": {
@@ -93,7 +88,7 @@
     "passed": true,
     "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 21,
+    "actual_time_ms": 6,
     "response_length": 1093,
     "components_detected": [
       "Unknown"
@@ -122,10 +117,10 @@
       }
     },
     "passed": true,
-    "quality_score": 0.95,
+    "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 20278,
-    "response_length": 4472,
+    "actual_time_ms": 26769,
+    "response_length": 4931,
     "components_detected": [
       "Unknown"
     ],
@@ -160,12 +155,13 @@
     "passed": true,
     "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 64938,
-    "response_length": 3613,
+    "actual_time_ms": 34665,
+    "response_length": 2689,
     "components_detected": [
       "Perplexity Teacher",
       "ACE Framework",
-      "11 components"
+      "11 components",
+      "IRT"
     ],
     "missing_criteria": []
   },
@@ -192,8 +188,8 @@
     "passed": true,
     "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 10645,
-    "response_length": 2741,
+    "actual_time_ms": 2918,
+    "response_length": 1758,
     "components_detected": [
       "All 11 Components",
       "DSPy Refine",
@@ -228,8 +224,8 @@
     "passed": true,
     "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 440,
-    "response_length": 1888,
+    "actual_time_ms": 117,
+    "response_length": 1494,
     "components_detected": [
       "IRT",
       "ReasoningBank"
@@ -261,7 +257,7 @@
     "passed": true,
     "quality_score": 1,
     "actual_cost": 0.005,
-    "actual_time_ms": 22,
+    "actual_time_ms": 10,
     "response_length": 2660,
     "components_detected": [
       "IRT"
