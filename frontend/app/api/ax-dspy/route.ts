@@ -577,12 +577,13 @@ function initializeLLM(provider: string) {
   // FORCE OLLAMA - we have it installed locally!
   console.log(`🔧 Initializing Ax DSPy with Ollama (requested provider: ${provider})`);
   
-  return ai({
-    name: 'ollama',
+  // Return Ax LLM config object (not ai() call)
+  return {
+    name: 'ollama' as const,
     model: 'gemma3:4b', // Using local Gemma 3 (4B - installed model)
-    url: process.env.OLLAMA_API_URL || 'http://localhost:11434', // Ax uses 'url' not 'apiURL'
+    url: process.env.OLLAMA_API_URL || 'http://localhost:11434',
     apiKey: process.env.OLLAMA_API_KEY || 'ollama' // Required by Ax even though Ollama doesn't need it
-  });
+  };
 }
 
 /**
