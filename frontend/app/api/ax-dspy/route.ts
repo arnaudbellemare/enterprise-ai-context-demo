@@ -477,9 +477,6 @@ export async function POST(req: NextRequest) {
     // Initialize LLM based on provider
     const llm = initializeLLM(provider);
 
-    // Create Ax program from signature
-    const dspyModule = ax(signature);
-
     // Prepare inputs
     const moduleInputs = prepareInputs(moduleName, inputs);
 
@@ -493,22 +490,17 @@ export async function POST(req: NextRequest) {
     // NO HAND-CRAFTING! Let DSPy do its job.
     let result;
     try {
-      // Ax framework uses direct call, not .forward()
-      result = await dspyModule(moduleInputs, { ai: llm });
+      // Ax framework: Use ai() function directly with signature
+      const dspyProgram = ai(signature, { ai: llm });
+      result = await dspyProgram(moduleInputs);
     } catch (axError: any) {
       console.error(`❌ DSPy/Ax execution failed:`, axError.message);
       console.error(`   Module: ${moduleName}`);
       console.error(`   Provider: ${provider}`);
       console.error(`   Inputs:`, moduleInputs);
       
-      // Try alternative Ax invocation pattern
-      try {
-        console.log('   Trying alternative Ax pattern...');
-        result = await ai(signature, { ai: llm })(moduleInputs);
-      } catch (retryError: any) {
-        // If both fail, provide helpful error
-        throw new Error(`DSPy/Ax execution failed. Module: ${moduleName}. Error: ${axError.message}. Make sure Ollama is running with the required model.`);
-      }
+      // Provide helpful error
+      throw new Error(`DSPy/Ax execution failed. Module: ${moduleName}. Error: ${axError.message}. Make sure Ollama is running with the required model.`);
     }
     
     const executionTime = Date.now() - startTime;
