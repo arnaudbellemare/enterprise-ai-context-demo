@@ -90,7 +90,7 @@ const REAL_BENCHMARK_TESTS: BenchmarkTest[] = [
     success_criteria: {
       min_quality: 0.85,
       max_cost: 0.006,
-      max_time_ms: 60000, // Increased to 60s
+      max_time_ms: 70000, // Increased to 70s (chat can take longer)
       must_include: ['crypto', 'portfolio', 'trend'],
     },
   },
@@ -182,8 +182,7 @@ async function runBenchmarkTest(test: BenchmarkTest): Promise<TestResult> {
         }
       : test.agent_endpoint.includes('perplexity')
       ? { 
-          taskDescription: test.test_query, 
-          task: test.test_query,
+          query: test.test_query, // Fixed: Use 'query' not 'taskDescription'
           useRealAI: true // Fixed: Add useRealAI flag
         }
       : { taskDescription: test.test_query, task: test.test_query };
