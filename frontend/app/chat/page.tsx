@@ -98,11 +98,11 @@ export default function PermutationChat() {
             <span className="text-xs font-bold tracking-widest">CONTINUOUS WORKFLOW</span>
           </div>
           
-          <h1 className="text-5xl font-bold text-black mb-4 tracking-tight" style={{ fontFamily: 'monospace' }}>
+          <h1 className="text-5xl font-bold text-black mb-4 tracking-tight" style={{ fontFamily: 'var(--font-quicksand), Quicksand, sans-serif' }}>
             💬 PERMUTATION CHAT
           </h1>
           
-          <p className="text-lg text-gray-600" style={{ fontFamily: 'monospace' }}>
+          <p className="text-lg text-gray-600" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>
             SWiRL×TRM×ACE×GEPA×IRT - Full AI research stack in conversational mode
           </p>
 
@@ -114,8 +114,8 @@ export default function PermutationChat() {
               
               {/* Chat Header */}
               <div className="bg-black text-white p-4 border-b-2 border-white">
-                <h2 className="text-xl font-bold tracking-tight">CONVERSATION</h2>
-                <p className="text-sm text-gray-400">Teacher-Student Architecture: Perplexity + Ollama</p>
+                <h2 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-quicksand), Quicksand, sans-serif' }}>CONVERSATION</h2>
+                <p className="text-sm text-gray-400" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>Teacher-Student Architecture: Perplexity + Ollama</p>
               </div>
 
               {/* Messages */}
@@ -142,10 +142,10 @@ export default function PermutationChat() {
                         : 'bg-black text-white mr-12'
                     }`}
                   >
-                    <div className="text-xs font-bold tracking-widest mb-2 opacity-60">
+                    <div className="text-xs font-bold tracking-widest mb-2 opacity-60" style={{ fontFamily: 'var(--font-quicksand), Quicksand, sans-serif' }}>
                       {message.role === 'user' ? 'YOU' : 'PERMUTATION'}
                     </div>
-                    <div className="prose prose-sm max-w-none" style={{ fontFamily: 'monospace' }}>
+                    <div className="prose prose-sm max-w-none" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif', lineHeight: '1.6' }}>
                       {message.content}
                     </div>
                   </div>
@@ -176,7 +176,8 @@ export default function PermutationChat() {
                     value={input}
                     onChange={handleInputChange}
                     placeholder="Ask anything... (powered by PERMUTATION)"
-                    className="flex-1 px-4 py-3 border-2 border-gray-900 bg-white focus:border-black focus:shadow-lg transition-all font-mono"
+                    className="flex-1 px-4 py-3 border-2 border-gray-900 bg-white focus:border-black focus:shadow-lg transition-all"
+                    style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}
                     disabled={isLoading}
                   />
                   <button
@@ -187,7 +188,7 @@ export default function PermutationChat() {
                     {isLoading ? 'PROCESSING...' : 'SEND'}
                   </button>
                 </div>
-                <div className="mt-2 text-xs text-gray-500 font-mono">
+                <div className="mt-2 text-xs text-gray-500" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>
                   Uses: Perplexity (teacher) + Ollama (student) + PERMUTATION (ACE, GEPA, IRT, LoRA, ReasoningBank)
                 </div>
               </form>
