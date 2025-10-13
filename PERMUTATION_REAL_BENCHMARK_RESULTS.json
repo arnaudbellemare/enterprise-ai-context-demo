@@ -1,0 +1,276 @@
+[
+  {
+    "test": {
+      "name": "DSPy Market Agent",
+      "domain": "market_analysis",
+      "agent_endpoint": "/api/ax-dspy",
+      "test_query": "Analyze the current tech startup market trends",
+      "expected_components": [
+        "DSPy",
+        "GEPA",
+        "Ollama"
+      ],
+      "success_criteria": {
+        "min_quality": 0.7,
+        "max_cost": 0.001,
+        "max_time_ms": 30000,
+        "must_include": [
+          "market",
+          "trend",
+          "analysis"
+        ]
+      }
+    },
+    "passed": false,
+    "quality_score": 0,
+    "actual_cost": 0,
+    "actual_time_ms": 630,
+    "response_length": 0,
+    "components_detected": [],
+    "missing_criteria": [
+      "Test execution failed"
+    ],
+    "error": "HTTP 400: {\"error\":\"inputs are required\",\"success\":false}"
+  },
+  {
+    "test": {
+      "name": "DSPy Financial Agent",
+      "domain": "financial",
+      "agent_endpoint": "/api/ax-dspy",
+      "test_query": "Calculate ROI for a $10,000 investment with 7.5% annual return over 5 years",
+      "expected_components": [
+        "DSPy",
+        "Financial LoRA",
+        "Verification"
+      ],
+      "success_criteria": {
+        "min_quality": 0.8,
+        "max_cost": 0.001,
+        "max_time_ms": 20000,
+        "must_include": [
+          "ROI",
+          "calculation",
+          "10000"
+        ]
+      }
+    },
+    "passed": false,
+    "quality_score": 0,
+    "actual_cost": 0,
+    "actual_time_ms": 11,
+    "response_length": 0,
+    "components_detected": [],
+    "missing_criteria": [
+      "Test execution failed"
+    ],
+    "error": "HTTP 400: {\"error\":\"inputs are required\",\"success\":false}"
+  },
+  {
+    "test": {
+      "name": "DSPy Real Estate Agent",
+      "domain": "real_estate",
+      "agent_endpoint": "/api/ax-dspy",
+      "test_query": "Evaluate a $500,000 property investment with 4% rental yield",
+      "expected_components": [
+        "DSPy",
+        "Real Estate LoRA",
+        "GEPA"
+      ],
+      "success_criteria": {
+        "min_quality": 0.7,
+        "max_cost": 0.001,
+        "max_time_ms": 25000,
+        "must_include": [
+          "property",
+          "yield",
+          "investment"
+        ]
+      }
+    },
+    "passed": false,
+    "quality_score": 0,
+    "actual_cost": 0,
+    "actual_time_ms": 21,
+    "response_length": 0,
+    "components_detected": [],
+    "missing_criteria": [
+      "Test execution failed"
+    ],
+    "error": "HTTP 400: {\"error\":\"inputs are required\",\"success\":false}"
+  },
+  {
+    "test": {
+      "name": "Perplexity Web Search",
+      "domain": "web_search",
+      "agent_endpoint": "/api/perplexity/chat",
+      "test_query": "What are the latest developments in AI regulation October 2025?",
+      "expected_components": [
+        "Perplexity",
+        "Real-time search",
+        "Citations"
+      ],
+      "success_criteria": {
+        "min_quality": 0.8,
+        "max_cost": 0.006,
+        "max_time_ms": 15000,
+        "must_include": [
+          "2025",
+          "regulation"
+        ]
+      }
+    },
+    "passed": false,
+    "quality_score": 0,
+    "actual_cost": 0,
+    "actual_time_ms": 62,
+    "response_length": 0,
+    "components_detected": [],
+    "missing_criteria": [
+      "Test execution failed"
+    ],
+    "error": "HTTP 400: {\"success\":false,\"error\":\"Real AI API calls are required. Set useRealAI to true.\",\"isRealAI\":false}"
+  },
+  {
+    "test": {
+      "name": "PERMUTATION Chat",
+      "domain": "multi_component",
+      "agent_endpoint": "/api/chat/permutation",
+      "test_query": "What are the current crypto market trends and how should I position my portfolio?",
+      "expected_components": [
+        "Smart Routing",
+        "ACE",
+        "ReasoningBank",
+        "LoRA",
+        "IRT",
+        "Perplexity",
+        "DSPy Refine"
+      ],
+      "success_criteria": {
+        "min_quality": 0.85,
+        "max_cost": 0.006,
+        "max_time_ms": 30000,
+        "must_include": [
+          "crypto",
+          "portfolio",
+          "trend"
+        ]
+      }
+    },
+    "passed": false,
+    "quality_score": 1,
+    "actual_cost": 0.005,
+    "actual_time_ms": 47727,
+    "response_length": 3553,
+    "components_detected": [
+      "Perplexity Teacher",
+      "ACE Framework",
+      "11 components",
+      "IRT"
+    ],
+    "missing_criteria": [
+      "Too slow: 47727ms > 30000ms"
+    ]
+  },
+  {
+    "test": {
+      "name": "PERMUTATION Arena",
+      "domain": "multi_component",
+      "agent_endpoint": "/api/arena/execute-permutation-fast",
+      "test_query": "Calculate the compound annual growth rate (CAGR) of Bitcoin from 2020 to 2025",
+      "expected_components": [
+        "All 11 components"
+      ],
+      "success_criteria": {
+        "min_quality": 0.9,
+        "max_cost": 0.006,
+        "max_time_ms": 30000,
+        "must_include": [
+          "CAGR",
+          "Bitcoin",
+          "2020"
+        ]
+      }
+    },
+    "passed": false,
+    "quality_score": 1,
+    "actual_cost": 0.005,
+    "actual_time_ms": 41537,
+    "response_length": 3198,
+    "components_detected": [
+      "All 11 Components",
+      "DSPy Refine",
+      "Perplexity Teacher",
+      "ACE Framework",
+      "LoRA",
+      "IRT",
+      "ReasoningBank"
+    ],
+    "missing_criteria": [
+      "Too slow: 41537ms > 30000ms"
+    ]
+  },
+  {
+    "test": {
+      "name": "Multi-Domain Platform",
+      "domain": "multi_domain",
+      "agent_endpoint": "/api/multi-domain/execute",
+      "test_query": "Analyze financial compliance requirements for a fintech startup",
+      "expected_components": [
+        "Domain-specific agent",
+        "Benchmarks"
+      ],
+      "success_criteria": {
+        "min_quality": 0.75,
+        "max_cost": 0.005,
+        "max_time_ms": 25000,
+        "must_include": [
+          "compliance",
+          "fintech"
+        ]
+      }
+    },
+    "passed": false,
+    "quality_score": 0,
+    "actual_cost": 0,
+    "actual_time_ms": 411,
+    "response_length": 0,
+    "components_detected": [],
+    "missing_criteria": [
+      "Test execution failed"
+    ],
+    "error": "result.substring is not a function"
+  },
+  {
+    "test": {
+      "name": "GEPA Evolution",
+      "domain": "optimization",
+      "agent_endpoint": "/api/gepa/evolution-demo",
+      "test_query": "Optimize a prompt for financial analysis tasks",
+      "expected_components": [
+        "GEPA",
+        "Reflection",
+        "Mutation",
+        "Pareto"
+      ],
+      "success_criteria": {
+        "min_quality": 0.7,
+        "max_cost": 0.005,
+        "max_time_ms": 40000,
+        "must_include": [
+          "optimization",
+          "prompt"
+        ]
+      }
+    },
+    "passed": false,
+    "quality_score": 0,
+    "actual_cost": 0,
+    "actual_time_ms": 76,
+    "response_length": 0,
+    "components_detected": [],
+    "missing_criteria": [
+      "Test execution failed"
+    ],
+    "error": "result.substring is not a function"
+  }
+]
