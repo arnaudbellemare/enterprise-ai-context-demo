@@ -90,51 +90,68 @@ export default function PermutationChat() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         
-        {/* Header - Apple minimalist style */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-semibold text-gray-900 mb-2 tracking-tight" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif' }}>
-            Permutation
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-block px-6 py-2 bg-black text-white mb-4">
+            <span className="text-xs font-bold tracking-widest">CONTINUOUS WORKFLOW</span>
+          </div>
+          
+          <h1 className="text-5xl font-bold text-black mb-4 tracking-tight flex items-center justify-center gap-4" style={{ fontFamily: 'Armitage, var(--font-quicksand), Quicksand, sans-serif' }}>
+            <Message02Icon size={48} className="text-black" />
+            Intelligence
           </h1>
-
-          <p className="text-base text-gray-500 font-normal" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>
-            Advanced AI reasoning system
+          
+          <p className="text-lg text-gray-600" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>
+            SWiRL×TRM×ACE×GEPA×IRT - Full AI research stack in conversational mode
           </p>
 
         </div>
 
-        {/* Main Chat Area - Apple minimalist */}
+        {/* Main Chat Area - Full Width Centered */}
         <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+            <div className="bg-white border-2 border-gray-900 shadow-xl">
               
-              {/* Chat Messages - No separate header */}
+              {/* Chat Header */}
+              <div className="bg-black text-white p-4 border-b-2 border-white">
+                <h2 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-quicksand), Quicksand, sans-serif' }}>CONVERSATION</h2>
+                <p className="text-sm text-gray-400" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>Teacher-Student Architecture: Perplexity + Ollama</p>
+              </div>
 
               {/* Messages */}
-              <div className="h-[500px] overflow-y-auto p-8 space-y-6">
+              <div className="h-[500px] overflow-y-auto p-6 space-y-4">
                 {messages.length === 0 && (
-                  <div className="text-center py-20" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>
-                    <p className="text-xl font-medium text-gray-900 mb-3">How can I help you?</p>
-                    <p className="text-sm text-gray-500">Ask me anything about current events, analysis, or research.</p>
+                  <div className="text-center text-gray-400 py-12">
+                    <p className="text-lg mb-4">Start a conversation with PERMUTATION</p>
+                    <p className="text-sm">Try asking about:</p>
+                    <ul className="text-sm mt-2 space-y-1">
+                      <li>• Latest tech news</li>
+                      <li>• Crypto market analysis</li>
+                      <li>• Financial calculations</li>
+                      <li>• Complex research tasks</li>
+                    </ul>
                   </div>
                 )}
 
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`p-5 rounded-2xl ${
+                    className={`p-4 rounded-lg ${
                       message.role === 'user'
-                        ? 'bg-blue-500 text-white ml-auto max-w-[75%]'
-                        : 'bg-gray-100 text-gray-900 mr-auto max-w-[75%]'
+                        ? 'bg-gray-100 ml-12 text-black'
+                        : 'bg-black text-white mr-12'
                     }`}
                   >
+                    <div className="text-xs font-bold tracking-widest mb-2 opacity-60" style={{ fontFamily: 'var(--font-quicksand), Quicksand, sans-serif' }}>
+                      {message.role === 'user' ? 'YOU' : 'PERMUTATION'}
+                    </div>
                     <div 
-                      className="max-w-none leading-relaxed"
+                      className={`max-w-none ${message.role === 'user' ? 'text-black' : 'text-white'}`}
                       style={{ 
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', 
-                        fontSize: '15px',
-                        lineHeight: '1.5',
+                        fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif', 
+                        lineHeight: '1.6',
                         whiteSpace: 'pre-wrap'
                       }}
                     >
@@ -144,11 +161,15 @@ export default function PermutationChat() {
                 ))}
 
                 {isLoading && (
-                  <div className="p-5 bg-gray-100 rounded-2xl mr-auto max-w-[75%]">
-                    <div className="flex items-center gap-2" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  <div className="p-4 bg-black text-white rounded-lg mr-12 animate-pulse">
+                    <div className="text-xs font-bold tracking-widest mb-2 opacity-60">
+                      PERMUTATION
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      <span className="ml-2 text-sm">Processing with PERMUTATION stack...</span>
                     </div>
                   </div>
                 )}
@@ -156,34 +177,39 @@ export default function PermutationChat() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Form - Apple style */}
-              <form onSubmit={handleSubmit} className="border-t border-gray-200 p-6 bg-white rounded-b-2xl">
-                <div className="flex gap-3">
+              {/* Input Form */}
+              <form onSubmit={handleSubmit} className="border-t-2 border-gray-900 p-4 bg-gray-50">
+                <div className="flex gap-2">
                   <input
                     type="text"
                     value={input}
                     onChange={handleInputChange}
-                    placeholder="Message..."
-                    className="flex-1 px-4 py-3 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder-gray-400 text-gray-900"
-                    style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', fontSize: '15px' }}
+                    placeholder="Ask anything..."
+                    className="flex-1 px-4 py-3 border-2 border-gray-900 bg-black text-white focus:border-white focus:shadow-lg transition-all placeholder-gray-500"
+                    style={{ fontFamily: 'VT323, "Courier New", monospace', fontSize: '20px', letterSpacing: '1px' }}
                     disabled={isLoading}
                   />
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}
+                    className="px-6 py-3 bg-black text-white border-2 border-black hover:bg-white hover:text-black transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isLoading ? '...' : '↑'}
+                    {isLoading ? 'PROCESSING...' : 'SEND'}
                   </button>
+                </div>
+                <div className="mt-2 text-xs text-gray-500" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>
+                  Uses: Perplexity (teacher) + Ollama (student) + PERMUTATION (ACE, GEPA, IRT, LoRA, ReasoningBank)
                 </div>
               </form>
             </div>
           </div>
 
-        {/* Footer Info - Apple style */}
-        <div className="mt-8 text-center text-xs text-gray-400" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>
-          <p>Powered by advanced AI reasoning</p>
+        {/* Footer Info */}
+        <div className="mt-8 text-center text-sm text-gray-500">
+          <p>Powered by PERMUTATION - Full AI Research Stack</p>
+          <p className="text-xs mt-1">
+            SWiRL (Stanford+DeepMind) × TRM × ACE × GEPA × IRT × ReasoningBank × LoRA
+          </p>
         </div>
       </div>
     </div>
