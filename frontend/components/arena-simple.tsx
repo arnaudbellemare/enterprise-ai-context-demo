@@ -36,6 +36,12 @@ export default function ArenaSimple() {
 
   const tasks = [
     { 
+      id: 'full-system-test', 
+      name: '🏆 FULL SYSTEM TEST - Uses ALL 11 Components!', 
+      description: 'Tests Multi-Query (60), SQL, ACE, GEPA, ReasoningBank, LoRA, IRT, Teacher-Student, Local Embeddings - EVERYTHING!',
+      example: 'Analyze the financial impact of recent AI developments. Include market trends, company valuations, and investment opportunities.'
+    },
+    { 
       id: 'liquidations', 
       name: '🔥 Crypto Liquidations (Real-Time)', 
       description: 'Find actual liquidations in last 24h',
@@ -213,7 +219,9 @@ export default function ArenaSimple() {
         endpoint = '/api/arena/execute-browserbase-real'; // Use REAL execution with Playwright
       } else {
         // Use specialized endpoints for demo tasks
-        if (selectedTask === 'comprehensive-demo') {
+        if (selectedTask === 'full-system-test') {
+          endpoint = '/api/arena/execute-full-system';
+        } else if (selectedTask === 'comprehensive-demo') {
           endpoint = '/api/arena/execute-comprehensive-demo';
         } else if (selectedTask === 'financial-lora') {
           endpoint = '/api/finance/lora-comparison';
