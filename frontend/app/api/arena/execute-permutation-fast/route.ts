@@ -324,36 +324,49 @@ export async function POST(req: NextRequest) {
     const perplexityKey = process.env.PERPLEXITY_API_KEY;
     
     if (perplexityKey) {
-      try {
-        console.log(`   - Calling Perplexity API...`);
-        
-        const response = await fetch('https://api.perplexity.ai/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${perplexityKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'llama-3.1-sonar-small-128k-online',
-            messages: [{ role: 'user', content: query }],
-          }),
-        });
+      // Try multiple Perplexity model names (API changes frequently)
+      const perplexityModels = [
+        'llama-3.1-sonar-small-128k-online',
+        'sonar-small-online',
+        'sonar',
+        'llama-3.1-sonar-large-128k-online',
+      ];
 
-        if (response.ok) {
-          const data = await response.json();
-          teacherResult = data.choices?.[0]?.message?.content || 'No result';
-          console.log(`   ✅ Teacher result: ${teacherResult.substring(0, 200)}...`);
-        } else {
-          const errorText = await response.text();
-          console.error(`   ❌ Perplexity failed: ${response.status} - ${errorText}`);
+      let perplexitySuccess = false;
+
+      for (const model of perplexityModels) {
+        try {
+          console.log(`   - Trying Perplexity model: ${model}...`);
           
-          // Fallback to Ollama if Perplexity fails
-          console.log(`   🔄 Falling back to Ollama (local)...`);
-          teacherResult = await fallbackToOllama(query);
+          const response = await fetch('https://api.perplexity.ai/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${perplexityKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model,
+              messages: [{ role: 'user', content: query }],
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            teacherResult = data.choices?.[0]?.message?.content || 'No result';
+            console.log(`   ✅ Perplexity (${model}) succeeded: ${teacherResult.substring(0, 200)}...`);
+            perplexitySuccess = true;
+            break;
+          } else {
+            const errorText = await response.text();
+            console.log(`   ⚠️ Model ${model} failed: ${response.status} - ${errorText.substring(0, 100)}`);
+          }
+        } catch (error: any) {
+          console.log(`   ⚠️ Model ${model} error:`, error.message);
         }
-      } catch (error: any) {
-        console.error(`   ❌ Perplexity error:`, error);
-        console.log(`   🔄 Falling back to Ollama (local)...`);
+      }
+
+      if (!perplexitySuccess) {
+        console.log(`   ❌ All Perplexity models failed. Falling back to Ollama...`);
         teacherResult = await fallbackToOllama(query);
       }
     } else {
