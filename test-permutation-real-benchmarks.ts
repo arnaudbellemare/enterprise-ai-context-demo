@@ -177,7 +177,7 @@ async function runBenchmarkTest(test: BenchmarkTest): Promise<TestResult> {
         }
       : test.agent_endpoint.includes('multi-domain')
       ? {
-          request: test.test_query,
+          task: test.test_query, // Fixed: Use 'task' not 'request'
           domain: 'financial',
         }
       : test.agent_endpoint.includes('perplexity')
@@ -202,7 +202,21 @@ async function runBenchmarkTest(test: BenchmarkTest): Promise<TestResult> {
     }
 
     const data = await response.json();
-    const result = data.response || data.result || data.answer || JSON.stringify(data);
+    
+    // Handle different response formats
+    let result: string;
+    if (typeof data.response === 'string') {
+      result = data.response;
+    } else if (typeof data.result === 'string') {
+      result = data.result;
+    } else if (data.result && typeof data.result === 'object') {
+      // Multi-domain returns an object with finalResult
+      result = data.result.finalResult || JSON.stringify(data.result);
+    } else if (typeof data.answer === 'string') {
+      result = data.answer;
+    } else {
+      result = JSON.stringify(data);
+    }
 
     console.log(`   ✅ Response received: ${result.substring(0, 150)}...`);
     console.log(`   ⏱️  Time: ${actualTime}ms`);

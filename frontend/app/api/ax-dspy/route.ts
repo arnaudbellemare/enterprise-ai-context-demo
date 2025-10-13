@@ -493,11 +493,22 @@ export async function POST(req: NextRequest) {
     // NO HAND-CRAFTING! Let DSPy do its job.
     let result;
     try {
-      result = await dspyModule.forward(llm, moduleInputs);
+      // Ax framework uses direct call, not .forward()
+      result = await dspyModule(moduleInputs, { ai: llm });
     } catch (axError: any) {
-      // Only fail - don't hand-craft prompts as fallback
       console.error(`❌ DSPy/Ax execution failed:`, axError.message);
-      throw new Error(`DSPy module execution failed: ${axError.message}. This ensures we use DSPy/GEPA, not hand-crafted prompts.`);
+      console.error(`   Module: ${moduleName}`);
+      console.error(`   Provider: ${provider}`);
+      console.error(`   Inputs:`, moduleInputs);
+      
+      // Try alternative Ax invocation pattern
+      try {
+        console.log('   Trying alternative Ax pattern...');
+        result = await ai(signature, { ai: llm })(moduleInputs);
+      } catch (retryError: any) {
+        // If both fail, provide helpful error
+        throw new Error(`DSPy/Ax execution failed. Module: ${moduleName}. Error: ${axError.message}. Make sure Ollama is running with the required model.`);
+      }
     }
     
     const executionTime = Date.now() - startTime;
