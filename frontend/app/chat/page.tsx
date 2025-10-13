@@ -101,7 +101,7 @@ export default function PermutationChat() {
           
           <h1 className="text-5xl font-bold text-black mb-4 tracking-tight flex items-center justify-center gap-4" style={{ fontFamily: 'Armitage, var(--font-quicksand), Quicksand, sans-serif' }}>
             <Message02Icon size={48} className="text-black" />
-            Intelligence
+            Permutation Research
           </h1>
           
           <p className="text-lg text-gray-600" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>
