@@ -23,6 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link href="https://fonts.cdnfonts.com/css/armitage" rel="stylesheet" />
+        <link href="https://fonts.cdnfonts.com/css/press-start-2p" rel="stylesheet" />
       </head>
       <body className={`${inter.className} ${quicksand.variable}`}>{children}</body>
     </html>

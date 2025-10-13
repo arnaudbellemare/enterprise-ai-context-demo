@@ -184,9 +184,9 @@ export default function PermutationChat() {
                     type="text"
                     value={input}
                     onChange={handleInputChange}
-                    placeholder="Ask anything... (powered by PERMUTATION)"
-                    className="flex-1 px-4 py-3 border-2 border-gray-900 bg-white focus:border-black focus:shadow-lg transition-all"
-                    style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}
+                    placeholder="Ask anything..."
+                    className="flex-1 px-4 py-3 border-2 border-gray-900 bg-black text-white focus:border-white focus:shadow-lg transition-all placeholder-gray-500"
+                    style={{ fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px', letterSpacing: '0.5px' }}
                     disabled={isLoading}
                   />
                   <button
