@@ -38,6 +38,9 @@
     "test:statistical-proof": "npx tsx test-statistical-proof-system.ts",
     "test:integration": "npx tsx test-integration-verification.ts",
     "test:real-deal": "npx tsx test-integration-verification.ts",
+    "test:ace": "npx tsx test-ace-framework.ts",
+    "test:ace-benchmark": "npx tsx test-ace-benchmark.ts",
+    "benchmark:ace": "npx tsx test-ace-benchmark.ts",
     "validate": "npm run test:overfitting"
   },
   "dependencies": {
