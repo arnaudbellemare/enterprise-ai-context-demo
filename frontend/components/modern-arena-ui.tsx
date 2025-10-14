@@ -78,7 +78,7 @@ export function ModernTaskSelector({ onSelectTask, selectedTask }: any) {
             }`}
           >
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 pr-8">
                 <Icon 
                   size={32} 
                   className={selectedTask === task.id ? 'text-white' : 'text-black'}
@@ -90,8 +90,8 @@ export function ModernTaskSelector({ onSelectTask, selectedTask }: any) {
                 </span>
               </div>
               {selectedTask === task.id && (
-                <div className="absolute top-4 right-4">
-                  <CheckmarkBadge02Icon size={24}  className="text-white" />
+                <div className="absolute top-2 right-2">
+                  <CheckmarkBadge02Icon size={20}  className="text-white" />
                 </div>
               )}
               <h3 className={`font-bold text-lg mb-2 ${
@@ -164,10 +164,7 @@ export function ModernExecutionButtons({ onRun, isRunning, disabled }: any) {
             <div className="text-xs font-bold tracking-widest text-gray-400 mb-3">
               OUR SYSTEM
             </div>
-            <div className="font-bold text-2xl mb-3">ACE Framework</div>
-            <div className="text-sm text-gray-300">
-              GEPA + DSPy + ACE Optimization
-            </div>
+            <div className="font-bold text-2xl mb-3">PERMUTATION</div>
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
         </button>

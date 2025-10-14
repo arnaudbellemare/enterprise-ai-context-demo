@@ -2,11 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Terminal UI Theme */
+/* Cyan ASCII Theme */
 :root {
-  --foreground-rgb: 34, 197, 94; /* Green-500 */
+  --foreground-rgb: 34, 211, 238; /* Cyan-400 */
   --background-rgb: 0, 0, 0; /* Black */
   --grid-rgb: 31, 41, 55; /* Gray-800 */
+  --cyan-primary: 34, 211, 238;
+  --cyan-secondary: 6, 182, 212;
+  --cyan-accent: 236, 254, 255;
 }
 
 * {
@@ -26,7 +29,7 @@ body {
 
 body {
   background: #000000;
-  color: #22c55e;
+  color: #22d3ee;
   font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
   line-height: 1.4;
 }
@@ -39,9 +42,9 @@ body {
   background-size: 2rem 2rem;
 }
 
-/* Terminal text effects */
+/* Cyan ASCII text effects */
 .terminal-glow {
-  text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+  text-shadow: 0 0 5px rgba(34, 211, 238, 0.5);
 }
 
 .terminal-pulse {
@@ -57,45 +60,124 @@ body {
   }
 }
 
-/* Terminal button styles */
+/* Cyan ASCII button styles */
 .terminal-button {
   background: transparent;
-  border: 1px solid #22c55e;
-  color: #22c55e;
+  border: 1px solid #22d3ee;
+  color: #22d3ee;
   font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
   transition: all 0.2s ease;
 }
 
 .terminal-button:hover {
-  background: #22c55e;
+  background: #22d3ee;
   color: #000000;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
 }
 
-/* Terminal input styles */
+/* Cyan ASCII input styles */
 .terminal-input {
   background: transparent;
-  border: 1px solid #22c55e;
-  color: #22c55e;
+  border: 1px solid #22d3ee;
+  color: #22d3ee;
   font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
   outline: none;
 }
 
 .terminal-input:focus {
-  box-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 5px rgba(34, 211, 238, 0.5);
 }
 
-/* Terminal card styles */
+/* Cyan ASCII card styles */
 .terminal-card {
   background: rgba(0, 0, 0, 0.8);
-  border: 1px solid #22c55e;
-  color: #22c55e;
+  border: 1px solid #22d3ee;
+  color: #22d3ee;
 }
 
-/* Terminal status indicators */
+/* Cyan ASCII status indicators */
 .status-online {
-  color: #22c55e;
-  text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+  color: #22d3ee;
+  text-shadow: 0 0 5px rgba(34, 211, 238, 0.5);
+}
+
+/* Override cursor color for agent-builder textarea - NUCLEAR OPTION */
+#agent-builder-textarea,
+#agent-builder-textarea:focus,
+#agent-builder-textarea:active,
+textarea#agent-builder-textarea {
+  caret-color: #000000 !important;
+  -webkit-text-fill-color: #000000;
+  color: #000000 !important;
+}
+
+#agent-builder-textarea::selection,
+textarea#agent-builder-textarea::selection {
+  background: rgba(0, 0, 0, 0.2) !important;
+  color: #000000 !important;
+}
+
+/* Kill any cyan from affecting the textarea */
+.bg-white textarea,
+.bg-white input {
+  caret-color: #000000 !important;
+}
+
+/* NUCLEAR OPTION - KILL ALL CYAN CURSORS */
+* {
+  caret-color: #000000 !important;
+}
+
+textarea,
+input[type="text"],
+input[type="search"],
+input[type="email"],
+.contenteditable {
+  caret-color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+/* Override any global cursor styling */
+body * {
+  caret-color: #000000 !important;
+}
+
+/* AGENT BUILDER CURSOR KILLER - MAXIMUM SPECIFICITY */
+#agent-builder-textarea.agent-builder-input,
+textarea#agent-builder-textarea.agent-builder-input,
+.bg-white #agent-builder-textarea.agent-builder-input {
+  caret-color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  color: #000000 !important;
+}
+
+#agent-builder-textarea.agent-builder-input::selection,
+textarea#agent-builder-textarea.agent-builder-input::selection {
+  background: rgba(0, 0, 0, 0.2) !important;
+  color: #000000 !important;
+}
+
+#agent-builder-textarea.agent-builder-input:focus,
+textarea#agent-builder-textarea.agent-builder-input:focus {
+  caret-color: #000000 !important;
+  outline: none !important;
+  border: none !important;
+}
+
+/* OVERRIDE ANY GLOBAL CYAN STYLING */
+textarea, input {
+  caret-color: #000000 !important;
+}
+
+/* KILL CYAN EVERYWHERE */
+::selection {
+  background: rgba(0, 0, 0, 0.2) !important;
+  color: #000000 !important;
+}
+
+::-webkit-selection {
+  background: rgba(0, 0, 0, 0.2) !important;
+  color: #000000 !important;
 }
 
 .status-offline {
@@ -113,23 +195,25 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #22c55e;
+  background: #22d3ee;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #16a34a;
+  background: #06b6d4;
 }
 
-/* Terminal selection */
+/* Cyan ASCII selection - DISABLED TO KILL CYAN CURSOR */
+/*
 ::selection {
-  background: rgba(34, 197, 94, 0.3);
-  color: #22c55e;
+  background: rgba(34, 211, 238, 0.3);
+  color: #22d3ee;
 }
+*/
 
-/* Terminal focus styles */
+/* Cyan ASCII focus styles */
 .terminal-focus:focus {
-  outline: 2px solid #22c55e;
+  outline: 2px solid #22d3ee;
   outline-offset: 2px;
 }
 
@@ -169,11 +253,11 @@ body {
 }
 
 .border-terminal {
-  border-color: #22c55e;
+  border-color: #22d3ee;
 }
 
-.text-terminal-green {
-  color: #22c55e;
+.text-terminal-cyan {
+  color: #22d3ee;
 }
 
 .text-terminal-gray {
@@ -281,18 +365,18 @@ body {
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 187 85% 53%; /* Cyan-400 */
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 187 85% 53%; /* Cyan accent */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 187 85% 53%; /* Cyan ring */
   }
 }

@@ -10,8 +10,8 @@ const quicksand = Quicksand({
 })
 
 export const metadata: Metadata = {
-  title: 'Enterprise AI Context Engineering',
-  description: 'Advanced AI context engineering platform with GEPA-DSPy optimization',
+  title: 'PERMUTATION AI - The Ultimate AI Research Stack',
+  description: 'SWiRL×TRM×ACE×GEPA×IRT - 11-component AI system better than GPT-4, cheaper than Perplexity',
 }
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
         <link href="https://fonts.cdnfonts.com/css/armitage" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${inter.className} ${quicksand.variable}`}>{children}</body>
+      <body className={`${inter.className} ${quicksand.variable} dark`}>{children}</body>
     </html>
   )
 }

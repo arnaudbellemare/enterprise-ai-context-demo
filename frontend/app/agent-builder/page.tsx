@@ -49,6 +49,26 @@ export default function AgentBuilderPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [currentTime, setCurrentTime] = useState('');
+
+  // Update time every second
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      setCurrentTime(timeString);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Function to strip markdown formatting from text
   const stripMarkdown = (text: string): string => {
@@ -107,6 +127,9 @@ Try these examples:`,
       textareaRef.current.style.height = 'auto';
       const newHeight = Math.min(textareaRef.current.scrollHeight, 120); // Max 120px
       textareaRef.current.style.height = `${newHeight}px`;
+      // FORCE BLACK CURSOR
+      textareaRef.current.style.caretColor = '#000000';
+      textareaRef.current.style.setProperty('caret-color', '#000000', 'important');
     }
   };
 
@@ -197,24 +220,43 @@ Try these examples:`,
 
   return (
     <div className="min-h-screen bg-white relative">
-      {/* Logo */}
+      {/* Live Time Display */}
       <div className="absolute top-4 left-4 z-10">
-        <div className="w-8 h-8 bg-black rounded-sm flex items-center justify-center">
-          <div className="w-2 h-2 bg-white rounded-sm"></div>
+        <div className="bg-black rounded-full px-4 py-2 flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></div>
+          <span className="text-xs font-mono text-cyan-400">LIVE</span>
+          <span className="text-xs font-mono text-cyan-400">{currentTime}</span>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-start pt-32">
-        <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="w-full px-6 py-12">
         {/* Title */}
-        <h1 className="text-center text-4xl font-bold text-black mb-12" style={{ fontFamily: 'monospace' }}>
-          What would you like to know?
-        </h1>
+        <div className="text-center mb-12">
+          <pre className="text-xs sm:text-sm mb-6" style={{ 
+            background: 'linear-gradient(180deg, #22d3ee 0%, #000000 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+{`
+ ██████╗ ███████╗██████╗ ███╗   ███╗██╗   ██╗████████╗ █████╗ ████████╗██╗ ██████╗ ███╗   ██╗
+ ██╔══██╗██╔════╝██╔══██╗████╗ ████║██║   ██║╚══██╔══╝██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║
+ ██████╔╝█████╗  ██████╔╝██╔████╔██║██║   ██║   ██║   ███████║   ██║   ██║██║   ██║██╔██╗ ██║
+ ██╔═══╝ ██╔══╝  ██╔══██╗██║╚██╔╝██║██║   ██║   ██║   ██╔══██║   ██║   ██║██║   ██║██║╚██╗██║
+ ██║     ███████╗██║  ██║██║ ╚═╝ ██║╚██████╔╝   ██║   ██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
+ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
+`}
+          </pre>
+          <h1 className="text-4xl font-bold" style={{ fontFamily: 'monospace', color: 'black' }}>
+            What would you like to know?
+          </h1>
+        </div>
 
-        {/* Input Box - Horizontal Search Bar Layout */}
+        {/* Input Box - Centered Layout */}
         <div className="relative mb-12">
-          <div className="bg-white border border-gray-200 rounded-lg max-w-4xl mx-auto">
+          <div className="bg-white border border-gray-200 rounded-lg w-3/4 mx-auto">
             {/* Clean Input Bar */}
             <div className="flex items-center px-4 py-4">
               {/* Input Field */}
@@ -230,9 +272,20 @@ Try these examples:`,
                       handleSend();
                     }
                   }}
-                  className="w-full bg-transparent outline-none resize-none text-sm text-black placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-transparent"
+                  onFocus={() => {
+                    if (textareaRef.current) {
+                      textareaRef.current.style.caretColor = '#000000';
+                      textareaRef.current.style.setProperty('caret-color', '#000000', 'important');
+                    }
+                  }}
+                  className="w-full bg-transparent outline-none resize-none text-sm text-black placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-transparent agent-builder-input"
+                  id="agent-builder-textarea"
                   style={{ 
-                    fontFamily: 'monospace',
+                    fontFamily: 'VT323, "Courier New", monospace', 
+                    fontSize: '20px', 
+                    letterSpacing: '1px',
+                    caretColor: '#000000',
+                    color: '#000000',
                     minHeight: '20px',
                     maxHeight: '100px'
                   }}
@@ -248,14 +301,14 @@ Try these examples:`,
                 className="w-10 h-10 bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg flex items-center justify-center transition-colors ml-4"
                 aria-label="Send message"
               >
-                <span className="text-white text-sm">✈</span>
+                <span className="text-white text-sm flex items-center justify-center">→</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Example Prompts */}
-        <div className="max-w-4xl mx-auto space-y-3 mb-12">
+        <div className="max-w-2xl mx-auto space-y-3 mb-12">
           {/* First Row */}
           <div className="flex flex-wrap gap-6 justify-center">
             <button
@@ -302,7 +355,7 @@ Try these examples:`,
 
         {/* Messages */}
         {messages.length > 1 && (
-          <div className="space-y-4 mb-8">
+          <div className="max-w-2xl mx-auto space-y-4 mb-8">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-black" style={{ fontFamily: 'monospace' }}>
                 Conversation

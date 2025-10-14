@@ -8,7 +8,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { Message02Icon } from 'hugeicons-react';
+import { Message02Icon, ArrowRight01Icon } from 'hugeicons-react';
 
 interface Message {
   id: string;
@@ -85,9 +85,6 @@ export default function PermutationChat() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -101,7 +98,16 @@ export default function PermutationChat() {
           
           <h1 className="text-5xl font-bold text-black mb-4 tracking-tight flex items-center justify-center gap-4" style={{ fontFamily: 'Armitage, var(--font-quicksand), Quicksand, sans-serif' }}>
             <Message02Icon size={48} className="text-black" />
-            Permutation Research
+            <pre className="text-cyan-400 text-xs sm:text-sm">
+{`
+ ██████╗ ███████╗██████╗ ███╗   ███╗██╗   ██╗████████╗ █████╗ ████████╗██╗ ██████╗ ███╗   ██╗
+ ██╔══██╗██╔════╝██╔══██╗████╗ ████║██║   ██║╚══██╔══╝██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║
+ ██████╔╝█████╗  ██████╔╝██╔████╔██║██║   ██║   ██║   ███████║   ██║   ██║██║   ██║██╔██╗ ██║
+ ██╔═══╝ ██╔══╝  ██╔══██╗██║╚██╔╝██║██║   ██║   ██║   ██╔══██║   ██║   ██║██║   ██║██║╚██╗██║
+ ██║     ███████╗██║  ██║██║ ╚═╝ ██║╚██████╔╝   ██║   ██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
+ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
+`}
+            </pre>
           </h1>
           
           <p className="text-lg text-gray-600" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>
@@ -110,8 +116,8 @@ export default function PermutationChat() {
 
         </div>
 
-        {/* Main Chat Area - Full Width Centered */}
-        <div className="max-w-4xl mx-auto">
+        {/* Main Chat Area - Full Width */}
+        <div className="w-full px-4">
             <div className="bg-white border-2 border-gray-900 shadow-xl">
               
               {/* Chat Header */}
@@ -121,7 +127,7 @@ export default function PermutationChat() {
               </div>
 
               {/* Messages */}
-              <div className="h-[500px] overflow-y-auto p-6 space-y-4">
+              <div className="h-[600px] overflow-y-auto p-6 space-y-4">
                 {messages.length === 0 && (
                   <div className="text-center text-gray-400 py-12">
                     <p className="text-lg mb-4">Start a conversation with PERMUTATION</p>
@@ -179,22 +185,42 @@ export default function PermutationChat() {
 
               {/* Input Form */}
               <form onSubmit={handleSubmit} className="border-t-2 border-gray-900 p-4 bg-gray-50">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
+                <div className="flex flex-col gap-3">
+                  <textarea
                     value={input}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      // Auto-resize
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                    }}
                     placeholder="Ask anything..."
-                    className="flex-1 px-4 py-3 border-2 border-gray-900 bg-black text-white focus:border-white focus:shadow-lg transition-all placeholder-gray-500"
+                    className="w-full px-4 py-3 border-2 border-gray-900 bg-black text-white focus:border-white focus:shadow-lg transition-all placeholder-gray-500 resize-none min-h-[60px] max-h-[120px]"
                     style={{ fontFamily: 'VT323, "Courier New", monospace', fontSize: '20px', letterSpacing: '1px' }}
                     disabled={isLoading}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmit(e);
+                      }
+                    }}
                   />
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-6 py-3 bg-black text-white border-2 border-black hover:bg-white hover:text-black transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="self-end px-6 py-3 bg-black text-white border-2 border-black hover:bg-white hover:text-black transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {isLoading ? 'PROCESSING...' : 'SEND'}
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        PROCESSING...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight01Icon size={20} />
+                        SEND
+                      </>
+                    )}
                   </button>
                 </div>
                 <div className="mt-2 text-xs text-gray-500" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>

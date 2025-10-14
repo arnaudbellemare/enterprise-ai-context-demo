@@ -430,9 +430,9 @@ export default function ArenaSimple() {
             <h1 className="text-6xl font-bold mb-6 tracking-tight">
               ARENA COMPARISON
             </h1>
-            <p className="text-2xl text-gray-300 mb-6 font-medium">
+            <div className="text-2xl text-gray-300 mb-6 font-medium">
               PERMUTATION vs. Browserbase Arena
-            </p>
+            </div>
             <p className="text-lg text-gray-400 max-w-2xl leading-relaxed">
               Head-to-head comparison with real APIs, statistical significance testing (McNemar's test, p &lt; 0.05), 
               and peer-reviewable proof. No marketing claims. Only scientific facts.
@@ -446,7 +446,7 @@ export default function ArenaSimple() {
         {/* Modern Task Selection */}
         <div className="bg-white border-2 border-gray-200 p-10 mb-8">
           <div className="mb-8">
-            <div className="inline-block px-3 py-1 border-2 border-black mb-3">
+            <div className="inline-block px-3 py-1 border-2 border-black mb-3 shadow-lg">
               <span className="text-xs font-bold tracking-widest">STEP 01</span>
             </div>
             <h2 className="text-4xl font-bold tracking-tight text-black">
@@ -553,8 +553,8 @@ export default function ArenaSimple() {
             />
             
             <ModernResultsCard
-              title="PERMUTATION Stack"
-              subtitle="GEPA + DSPy + ACE Optimization"
+              title="PERMUTATION"
+              subtitle=""
               result={results.ourSystem}
               isCompleted={results.ourSystem.status !== 'idle' && results.ourSystem.status !== 'running'}
             />
@@ -787,14 +787,14 @@ export default function ArenaSimple() {
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-green-800" style={{ fontFamily: 'monospace' }}>
-                  🧠 Our System + ACE
+                  PERMUTATION
                 </h3>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(results.ourSystem.status)}`}>
                   {getStatusIcon(results.ourSystem.status)} {results.ourSystem.status}
                 </span>
               </div>
               <p className="text-sm text-gray-600 mt-2" style={{ fontFamily: 'monospace' }}>
-                ACE-enhanced workflow automation with KV cache optimization
+                Advanced AI Research Stack
               </p>
             </div>
 
@@ -857,7 +857,6 @@ export default function ArenaSimple() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

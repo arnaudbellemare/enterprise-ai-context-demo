@@ -167,22 +167,15 @@ export class ACEGenerator {
     // In production, this would use embeddings or more sophisticated matching
     return playbook.bullets
       .filter(bullet => 
-        bullet.content.toLowerCase().includes(query.toLowerCase()) ||
-        bullet.metadata.tags.some(tag => query.toLowerCase().includes(tag.toLowerCase()))
+        bullet?.content?.toLowerCase().includes(query.toLowerCase()) ||
+        bullet?.metadata?.tags?.some(tag => query.toLowerCase().includes(tag.toLowerCase()))
       )
-      .sort((a, b) => (b.metadata.helpful_count - b.metadata.harmful_count) - 
-                     (a.metadata.helpful_count - a.metadata.harmful_count))
+      .sort((a, b) => ((b?.metadata?.helpful_count || 0) - (b?.metadata?.harmful_count || 0)) - 
+                     ((a?.metadata?.helpful_count || 0) - (a?.metadata?.harmful_count || 0)))
       .slice(0, 10); // Top 10 most relevant bullets
   }
 
   private async generateReasoning(query: string, bullets: ContextBullet[], cachedPrefix?: string): Promise<string> {
-    if (cachedPrefix) {
-      // Use cached prefix for efficiency
-      const prompt = `${cachedPrefix}\n\nQuery: ${query}\n\nProvide your reasoning step-by-step, referencing specific playbook items when applicable.`;
-      // In production, this would call the actual LLM with cache-aware prompt
-      return `[Using cached context] Based on the playbook context, I need to analyze this query systematically...`;
-    }
-    
     const bulletContext = bullets.map(b => `[${b.id}] ${b.content}`).join('\n');
     
     const prompt = `You are an expert analysis agent. Use the provided playbook to reason through this query.
@@ -194,7 +187,18 @@ Query: ${query}
 
 Provide your reasoning step-by-step, referencing specific playbook items when applicable.`;
 
-    // In production, this would call the actual LLM
+    // REAL LLM CALL - Use student model (Ollama) for fast reasoning
+    if (this.model && typeof this.model.generate === 'function') {
+      try {
+        const response = await this.model.generate(prompt, false); // Use Ollama (student)
+        return response.text || 'Based on the playbook context, I need to analyze this query systematically...';
+      } catch (error) {
+        console.error('ACE Generator LLM call failed:', error);
+        return `Based on the playbook context, I need to analyze this query systematically...`;
+      }
+    }
+    
+    // Fallback if no model provided
     return `Based on the playbook context, I need to analyze this query systematically...`;
   }
 
@@ -261,7 +265,24 @@ Provide analysis in this JSON format:
   "key_insight": "Key principle to remember"
 }`;
 
-    // In production, this would call the actual LLM and parse JSON response
+    // REAL LLM CALL - Use teacher model (Perplexity) for deep analysis
+    if (this.model && typeof this.model.generateJSON === 'function') {
+      try {
+        const schema = `{
+  "reasoning": "string",
+  "error_identification": "string",
+  "root_cause_analysis": "string",
+  "correct_approach": "string",
+  "key_insight": "string"
+}`;
+        const response = await this.model.generateJSON<any>(prompt, schema, true); // Use teacher for quality
+        return response;
+      } catch (error) {
+        console.error('ACE Reflector LLM call failed:', error);
+      }
+    }
+    
+    // Fallback
     return {
       reasoning: "Analyzing the execution trace to identify improvement opportunities...",
       error_identification: "Potential issues in reasoning or execution",
@@ -308,9 +329,48 @@ export class ACECurator {
     currentPlaybook: Playbook,
     questionContext: string
   ): Promise<CuratorOperation[]> {
+    // REAL LLM CALL - Use student model (Ollama) for fast curation
+    const prompt = `You are a knowledge curator. Based on this reflection, determine what playbook updates are needed.
+
+Current Playbook Size: ${currentPlaybook.stats.total_bullets} bullets
+Reflection Key Insight: ${reflection.key_insight}
+Error Identified: ${reflection.error_identification}
+Correct Approach: ${reflection.correct_approach}
+Question Context: ${questionContext}
+
+Respond with JSON:
+{
+  "reasoning": "Why these updates are needed",
+  "operations": [
+    {
+      "type": "ADD",
+      "section": "strategies_and_insights",
+      "content": "New insight to add"
+    }
+  ]
+}`;
+
+    if (this.model && typeof this.model.generateJSON === 'function') {
+      try {
+        const schema = `{
+  "reasoning": "string",
+  "operations": [{
+    "type": "ADD" | "UPDATE" | "REMOVE",
+    "section": "string",
+    "content": "string",
+    "bullet_id": "string?"
+  }]
+}`;
+        const response = await this.model.generateJSON<CuratorResponse>(prompt, schema, false); // Use student
+        return response.operations || [];
+      } catch (error) {
+        console.error('ACE Curator LLM call failed:', error);
+      }
+    }
+    
+    // Fallback to rule-based curation
     const operations: CuratorOperation[] = [];
     
-    // Add new insights from reflection
     if (reflection.key_insight && !this.insightExists(currentPlaybook, reflection.key_insight)) {
       operations.push({
         type: 'ADD',
@@ -319,7 +379,6 @@ export class ACECurator {
       });
     }
     
-    // Update bullet metadata based on tags
     reflection.bullet_tags.forEach(tag => {
       if (tag.tag !== 'neutral') {
         operations.push({
@@ -431,12 +490,14 @@ export class ACEFramework {
         case 'UPDATE':
           if (op.bullet_id) {
             const bullet = newPlaybook.bullets.find(b => b.id === op.bullet_id);
-            if (bullet && op.content === 'helpful') {
-              bullet.metadata.helpful_count++;
-            } else if (bullet && op.content === 'harmful') {
-              bullet.metadata.harmful_count++;
+            if (bullet && bullet.metadata) {
+              if (op.content === 'helpful') {
+                bullet.metadata.helpful_count++;
+              } else if (op.content === 'harmful') {
+                bullet.metadata.harmful_count++;
+              }
+              bullet.metadata.last_used = new Date();
             }
-            bullet!.metadata.last_used = new Date();
           }
           break;
           
@@ -452,8 +513,8 @@ export class ACEFramework {
     // Update stats
     newPlaybook.stats = {
       total_bullets: newPlaybook.bullets.length,
-      helpful_bullets: newPlaybook.bullets.filter(b => b.metadata.helpful_count > b.metadata.harmful_count).length,
-      harmful_bullets: newPlaybook.bullets.filter(b => b.metadata.harmful_count > b.metadata.helpful_count).length,
+      helpful_bullets: newPlaybook.bullets.filter(b => b?.metadata && (b.metadata.helpful_count || 0) > (b.metadata.harmful_count || 0)).length,
+      harmful_bullets: newPlaybook.bullets.filter(b => b?.metadata && (b.metadata.harmful_count || 0) > (b.metadata.helpful_count || 0)).length,
       last_updated: new Date()
     };
     
@@ -553,8 +614,8 @@ export const ACEUtils = {
       sections: mergedSections,
       stats: {
         total_bullets: uniqueBullets.length,
-        helpful_bullets: uniqueBullets.filter(b => b.metadata.helpful_count > b.metadata.harmful_count).length,
-        harmful_bullets: uniqueBullets.filter(b => b.metadata.harmful_count > b.metadata.helpful_count).length,
+        helpful_bullets: uniqueBullets.filter(b => b?.metadata && (b.metadata.helpful_count || 0) > (b.metadata.harmful_count || 0)).length,
+        harmful_bullets: uniqueBullets.filter(b => b?.metadata && (b.metadata.harmful_count || 0) > (b.metadata.helpful_count || 0)).length,
         last_updated: new Date()
       }
     };
