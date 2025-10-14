@@ -697,7 +697,7 @@ Format as a professional investment research report.`,
       parallel_outputs: execution.parallel_results,
       synthesis_output: execution.synthesis_result,
       execution_metadata: execution.execution_metadata,
-      concurrency_insights
+      concurrency_insights: concurrencyInsights
     };
   }
 

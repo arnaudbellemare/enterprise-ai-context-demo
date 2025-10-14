@@ -386,7 +386,7 @@ Output format: Test suite implementation.`,
           execution.execution_metadata.total_tokens_used += stepResult.tokens_used;
           execution.execution_metadata.total_cost += stepResult.cost;
         } else {
-          execution.errors[step.id] = stepResult.error;
+          execution.errors[step.id] = stepResult.error || 'Unknown error';
           console.error(`❌ Step ${step.name} failed: ${stepResult.error}`);
           
           // Handle retry policy
@@ -544,7 +544,7 @@ Output format: Test suite implementation.`,
       latency_requirement: 5000,
       risk_tolerance: 0.3,
       user_tier: 'pro' as const,
-      task_complexity: step.external_tools ? 'high' : 'medium' as const,
+      task_complexity: (step.external_tools ? 'high' : 'medium') as 'high' | 'medium' | 'low',
       time_of_day: new Date().getHours()
     };
     
@@ -683,8 +683,8 @@ Output format: Test suite implementation.`,
       total_steps: execution.steps.length,
       execution_flow: execution.steps.map((step, index) => ({
         step_id: step.id,
-        status: execution.outputs[step.id] ? 'completed' : 
-                execution.errors[step.id] ? 'failed' : 'skipped',
+        status: (execution.outputs[step.id] ? 'completed' : 
+                execution.errors[step.id] ? 'failed' : 'skipped') as 'completed' | 'skipped' | 'failed',
         duration_ms: 1000, // Would be actual duration
         output_preview: execution.outputs[step.id] ? 
           String(execution.outputs[step.id]).substring(0, 100) + '...' : ''

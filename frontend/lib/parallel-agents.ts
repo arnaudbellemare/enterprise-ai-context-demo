@@ -587,7 +587,7 @@ Output format: JSON with visual recommendations.`,
       latency_requirement: 3000,
       risk_tolerance: 0.4,
       user_tier: 'pro' as const,
-      task_complexity: agent.processing_type === 'analysis' ? 'high' : 'medium' as const,
+      task_complexity: (agent.processing_type === 'analysis' ? 'high' : 'medium') as 'high' | 'medium' | 'low',
       time_of_day: new Date().getHours()
     };
     
@@ -878,7 +878,7 @@ Comprehensive analysis completed by ${agent.role} with focus on ${agent.processi
         const perf = execution.performance_metrics.agent_performance.get(agent.id)!;
         return {
           agent_id: agent.id,
-          status: perf.success ? 'completed' : 'failed',
+          status: (perf.success ? 'completed' : 'failed') as 'completed' | 'timeout' | 'failed',
           duration_ms: perf.duration_ms || 0,
           output_preview: execution.results.get(agent.id) ? 
             String(execution.results.get(agent.id)).substring(0, 100) + '...' : 'Failed'

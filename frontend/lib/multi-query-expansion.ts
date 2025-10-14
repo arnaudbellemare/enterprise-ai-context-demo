@@ -365,7 +365,7 @@ Output format:
         // Simple TF-IDF-like scoring
         let score = 0;
         queryWords.forEach(word => {
-          const count = contentWords.filter(w => w.includes(word)).length;
+          const count = contentWords.filter((w: string) => w.includes(word)).length;
           score += count;
         });
 

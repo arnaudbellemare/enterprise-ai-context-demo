@@ -211,7 +211,7 @@ export class SmartRetrievalSystem {
 
       // Prepare reranker function
       const rerankFn = this.config.enable_gepa_rerank && this.gepaRetrieval
-        ? async (q: string, docs: any[]) => await this.gepaRetrieval!.listwise_rerank(q, docs)
+        ? async (q: string, docs: any[]) => await this.gepaRetrieval!.gepaListwiseRerank(q, docs)
         : undefined;
 
       documents = await this.multiQuery.comprehensiveSearch(
@@ -233,7 +233,7 @@ export class SmartRetrievalSystem {
       // Apply GEPA reranking if available
       if (this.config.enable_gepa_rerank && this.gepaRetrieval) {
         console.log(`   🎯 Applying GEPA reranking`);
-        documents = await this.gepaRetrieval.listwise_rerank(query, documents);
+        documents = await this.gepaRetrieval.gepaListwiseRerank(query, documents);
         reranked = true;
       }
     }

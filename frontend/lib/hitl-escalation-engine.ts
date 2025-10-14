@@ -487,7 +487,7 @@ export class HITLEscalationEngine {
       ]
     };
     
-    return questions[type] || questions.validation;
+    return questions[type as keyof typeof questions] || questions.validation;
   }
 
   /**

@@ -350,8 +350,10 @@ Provide a brief synthesis plan (1-2 sentences):`;
    */
   private async useSQLQuery(query: string): Promise<any> {
     // Generate SQL query
-    const { generateSQLQuery } = await import('./sql-generation-retrieval');
-    const sqlResult = await generateSQLQuery(query, 'general');
+    const { SQLGenerationRetrieval } = await import('./sql-generation-retrieval');
+    const sqlGen = new SQLGenerationRetrieval();
+    const dataSource = { name: 'general', type: 'database' as const, schema: [], sample_data: [] };
+    const sqlResult = await sqlGen.generateSQL(query, dataSource);
     
     return {
       result: sqlResult,
