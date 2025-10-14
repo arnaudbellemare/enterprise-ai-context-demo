@@ -37,8 +37,8 @@ export interface AdaptiveRedoConfig extends RedoConfig {
  * Adaptive Redo Loop with TRM-inspired features
  */
 export class AdaptiveRedoLoop extends RedoLoop {
-  private actConfig: Required<ACTConfig>;
-  private multiscaleConfig: Required<MultiScaleConfig>;
+  protected actConfig: Required<ACTConfig>;
+  protected multiscaleConfig: Required<MultiScaleConfig>;
   private emaScore: number;
   private haltQ: number; // Q-value for halting
   private continueQ: number; // Q-value for continuing
@@ -363,7 +363,7 @@ Please provide a corrected answer that addresses these issues. Use the reasoning
   /**
    * Update reasoning state (TRM's multi-scale z features)
    */
-  private updateReasoningState(
+  protected updateReasoningState(
     task: string,
     answer: string,
     verification: VerificationResult

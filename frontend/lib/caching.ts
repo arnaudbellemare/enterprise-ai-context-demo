@@ -32,6 +32,7 @@ class CacheManager {
     // Initialize Redis connection if available
     if (process.env.REDIS_URL && typeof window === 'undefined') {
       try {
+        // @ts-ignore - redis is an optional dependency
         const { createClient } = await import('redis');
         this.redis = createClient({
           url: process.env.REDIS_URL

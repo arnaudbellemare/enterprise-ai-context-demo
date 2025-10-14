@@ -188,8 +188,8 @@ Let's solve the task step by step.`;
         if (bulletRefs) {
           bulletRefs.forEach(ref => {
             const id = ref.slice(1, -1); // Remove [ ]
-            if (!currentStep!.bullets_referenced.includes(id)) {
-              currentStep!.bullets_referenced.push(id);
+            if (currentStep && currentStep.bullets_referenced && !currentStep.bullets_referenced.includes(id)) {
+              currentStep.bullets_referenced.push(id);
             }
           });
         }
@@ -201,7 +201,7 @@ Let's solve the task step by step.`;
     }
 
     // Extract final answer
-    const finalAnswerMatch = response.match(/Final Answer[:\s]+(.+?)(?:\n\n|$)/is);
+    const finalAnswerMatch = response.match(/Final Answer[:\s]+([\s\S]+?)(?:\n\n|$)/i);
     const final_answer = finalAnswerMatch ? finalAnswerMatch[1].trim() : '';
 
     // Extract bullet usage lists

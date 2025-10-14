@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       aceContext: await analyzeACEContextEngineering()
     };
 
-    const analysis = analyses[analysisType] || analyses.comparison;
+    const analysis = analyses[analysisType as keyof typeof analyses] || analyses.comparison;
 
     return NextResponse.json({
       analysisType,

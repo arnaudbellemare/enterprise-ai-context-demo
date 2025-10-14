@@ -3,6 +3,11 @@
  * 
  * Implements the Parallelization pattern from Google ADK
  * with specialized research agents running concurrently
+ * 
+ * Enhanced with:
+ * - GEPA (Grounded Example-based Prompt Adaptation) from Ax LLM
+ * - ACE (Agentic Context Engineering) for context-aware prompts
+ * - Teacher-Student architecture (Perplexity → Ollama)
  */
 
 import { ACELLMClient } from './ace-llm-client';
@@ -44,12 +49,41 @@ class ResearchAgent implements Agent {
     const startTime = Date.now();
     
     try {
-      // Execute specialized research based on domain
-      const prompt = `You are ${this.name}, a specialized ${this.role} focusing on ${this.domain}.
+      // ============================================
+      // GEPA (Grounded Example-based Prompt Adaptation)
+      // Ground the agent's response in the teacher's real-time context
+      // ============================================
+      
+      // ACE Framework: Build context-aware prompt with teacher's knowledge
+      let prompt = `You are ${this.name}, a specialized ${this.role} focusing on ${this.domain}.
 
+=== TEACHER'S KNOWLEDGE (Ground Truth from Perplexity) ===`;
+
+      // Include teacher's real-time data if available (GEPA grounding)
+      if (context.teacherData && context.teacherData.length > 0) {
+        prompt += `
+${context.teacherData.substring(0, 1500)}
+
+=== YOUR TASK ===
+The above is VERIFIED, REAL-TIME information from the teacher model.
+`;
+      }
+
+      // Add ACE-style contextualized instructions
+      prompt += `
 Query: ${query}
 
-Provide a concise summary (1-2 sentences) of key insights from your domain perspective.`;
+As a ${this.domain} specialist, analyze the teacher's real-time data and provide:
+1. Key insight from your ${this.domain} perspective (1-2 sentences)
+2. How this relates to broader ${this.domain} trends
+3. Any implications or patterns you notice
+
+IMPORTANT: 
+- Base your analysis ONLY on the teacher's real-time data above
+- Do NOT introduce information not present in the teacher's context
+- If the teacher's data doesn't contain ${this.domain}-specific info, say so briefly
+
+Your specialized analysis:`;
 
       const response = await this.llmClient.generate(prompt, false);
       

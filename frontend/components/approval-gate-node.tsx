@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { Handle, Position, NodeProps } from '@xyflow/react';
 
 interface ApprovalGateData {
   id: string;
@@ -19,11 +19,11 @@ interface ApprovalGateData {
     domain: 'finance' | 'legal' | 'medical' | 'security' | 'general';
   };
   approverRole: string;
-  status: 'active' | 'approved' | 'rejected' | 'pending';
+  status: 'active' | 'approved' | 'rejected' | 'pending' | 'timeout';
   timeout: number;
 }
 
-export function ApprovalGateNode({ data, isConnectable }: NodeProps<ApprovalGateData>) {
+export function ApprovalGateNode({ data, isConnectable }: NodeProps & { data: ApprovalGateData }) {
   const [status, setStatus] = useState(data.status || 'active');
   const [timeRemaining, setTimeRemaining] = useState(data.timeout);
 

@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
         error: 'GEPA real optimization required. Set useRealGEPA: true or enable ENABLE_REAL_GEPA env var.',
         message: 'We do not hand-craft prompts. DSPy and GEPA are designed to obviate manual prompt engineering.',
         metrics: {
-          optimizationScore: baseScore,
+          optimizationScore: 0,
           efficiencyGain: '35x fewer rollouts',
           rolloutsUsed: Math.floor(Math.random() * 5) + 1,
           reflectionDepth: 3

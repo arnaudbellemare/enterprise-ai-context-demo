@@ -405,7 +405,7 @@ Return as JSON: { "success": boolean, "reasoning": string, "confidence": number 
   // 4. MEMORY-AWARE TEST-TIME SCALING (MaTTS)
   // =========================================================================
   
-  async mattsPar​allelScaling(
+  async mattsParallelScaling(
     query: string,
     domain: string,
     k: number = 3

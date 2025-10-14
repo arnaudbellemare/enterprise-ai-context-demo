@@ -20,7 +20,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SWiRLDecomposer, createSWiRLDecomposer, SWiRLStep } from '@/lib/swirl-decomposer';
 import { AdaptiveRedoLoop } from '@/lib/adaptive-redo-loop';
 import { detectDomain, detectStructuredQuery, detectWebSearchNeeded } from '@/lib/smart-routing';
-import { generateLocalEmbeddings } from '@/lib/local-embeddings';
+import { createLocalEmbeddings } from '@/lib/local-embeddings';
 import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
@@ -100,8 +100,11 @@ export async function POST(req: NextRequest) {
     let queryVariations: string[] = [query];
     
     if (needsWebSearch) {
-      const { generateMultiQueryVariations } = await import('@/lib/multi-query-expansion');
-      queryVariations = await generateMultiQueryVariations(query, domain);
+      const { createMultiQueryExpansion } = await import('@/lib/multi-query-expansion');
+      const mqe = createMultiQueryExpansion();
+      const expandedResults = await mqe.expandQuery(query, domain);
+      // expandQuery returns ExpandedQuery[] where each has { original, variations, strategy }
+      queryVariations = expandedResults.length > 0 ? expandedResults[0].variations : [query];
       
       logs.push({
         component: '2. Multi-Query Expansion',
@@ -139,17 +142,24 @@ export async function POST(req: NextRequest) {
     let sqlResults = null;
     
     if (isStructured) {
-      const { generateSQLQuery } = await import('@/lib/sql-generation-retrieval');
-      sqlQuery = await generateSQLQuery(query, domain);
+      const { createSQLGenerationRetrieval } = await import('@/lib/sql-generation-retrieval');
+      const sqlGen = createSQLGenerationRetrieval();
+      const dataSource = {
+        type: 'database' as const,
+        name: 'permutation_db',
+        schema: []
+      };
+      const sqlResult = await sqlGen.generateSQL(query, dataSource);
+      sqlQuery = sqlResult.query;
       
       // EXECUTE SQL! (if we have a connection)
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       
-      if (supabaseUrl && supabaseKey && sqlQuery.query) {
+      if (supabaseUrl && supabaseKey && sqlQuery) {
         try {
           const supabase = createClient(supabaseUrl, supabaseKey);
-          const { data, error } = await supabase.rpc('execute_sql', { sql_query: sqlQuery.query });
+          const { data, error } = await supabase.rpc('execute_sql', { sql_query: sqlQuery });
           
           if (!error) {
             sqlResults = data;
@@ -163,7 +173,7 @@ export async function POST(req: NextRequest) {
         component: '3. SQL Generation & Execution',
         status: 'complete',
         details: {
-          ...sqlQuery,
+          query: sqlQuery,
           executed: !!sqlResults,
           results: sqlResults || 'Not executed (no DB connection)',
         },
@@ -171,7 +181,7 @@ export async function POST(req: NextRequest) {
       });
 
       console.log(`\n✅ 3. SQL Generation & Execution (REAL!):`);
-      console.log(`   - Query: ${sqlQuery.query.substring(0, 70)}...`);
+      console.log(`   - Query: ${sqlQuery ? sqlQuery.substring(0, 70) : 'none'}...`);
       console.log(`   - Executed: ${!!sqlResults ? 'YES' : 'NO (demo mode)'}`);
       if (sqlResults) {
         console.log(`   - Results: ${JSON.stringify(sqlResults).substring(0, 100)}...`);
@@ -192,25 +202,26 @@ export async function POST(req: NextRequest) {
     // =================================================================
     
     const queriesToEmbed = queryVariations.length > 1 ? queryVariations.slice(0, 10) : [query];
-    const embeddingResult = await generateLocalEmbeddings(query, queriesToEmbed);
+    const embedder = await createLocalEmbeddings();
+    const embeddingResult = await embedder.embed(query);
     
     logs.push({
       component: '4. Local Embeddings',
       status: 'complete',
       details: {
-        model: embeddingResult.model,
-        dimensions: embeddingResult.dimensions,
-        count: embeddingResult.count,
-        embeddings_sample: embeddingResult.embeddings[0]?.slice(0, 5), // First 5 dimensions
+        model: 'local-transformer',
+        dimensions: Array.isArray(embeddingResult) ? embeddingResult.length : 0,
+        count: queriesToEmbed.length,
+        embeddings_sample: Array.isArray(embeddingResult) ? embeddingResult.slice(0, 5) : [],
       },
       timestamp: Date.now() - startTime,
     });
 
     console.log(`\n✅ 4. Local Embeddings (REAL!):`);
-    console.log(`   - Model: ${embeddingResult.model}`);
-    console.log(`   - Dimensions: ${embeddingResult.dimensions}`);
-    console.log(`   - Count: ${embeddingResult.count}`);
-    console.log(`   - Sample: [${embeddingResult.embeddings[0]?.slice(0, 5).map(x => x.toFixed(3)).join(', ')}...]`);
+    console.log(`   - Model: local-transformer`);
+    console.log(`   - Dimensions: ${Array.isArray(embeddingResult) ? embeddingResult.length : 0}`);
+    console.log(`   - Count: ${queriesToEmbed.length}`);
+    console.log(`   - Sample: [${Array.isArray(embeddingResult) ? embeddingResult.slice(0, 5).map((x: number) => x.toFixed(3)).join(', ') : ''}...]`);
 
     // =================================================================
     // PHASE 5: ACE FRAMEWORK (REAL! - ACTUAL BULLETS!)
@@ -652,7 +663,7 @@ Provide a comprehensive, optimized answer.`.trim();
         verified: sr.trm_verification.verified,
         confidence: sr.trm_verification.confidence,
         quality: sr.trm_verification.quality_score,
-        trm_state: sr.trm_state,
+        trm_state: (sr as any).trm_state || null,
       })),
       all_components: {
         smart_routing: logs.find(l => l.component === '1. Smart Routing')?.details,

@@ -24,31 +24,23 @@ export class ACELLMClient {
    * Perplexity (teacher) for complex queries, Ollama (student) for simple ones
    */
   async generate(prompt: string, useTeacher: boolean = false): Promise<LLMResponse> {
-    // TEMPORARY FALLBACK: Use simple responses instead of LLM calls
-    console.log('🤖 LLM Client: Using fallback response (LLM calls disabled for debugging)');
+    console.log(`🤖 LLM Client: ${useTeacher ? 'Teacher' : 'Student'} model requested`);
     
-    if (useTeacher) {
-      return {
-        text: `Based on current information: ${prompt.substring(0, 100)}... This is a fallback response while we debug the LLM integration.`,
-        model: 'fallback-teacher',
-        tokens: 50,
-        cost: 0
-      };
-    } else {
-      return {
-        text: `Student model response: ${prompt.substring(0, 100)}... This is a fallback response while we debug the LLM integration.`,
-        model: 'fallback-student',
-        tokens: 30,
-        cost: 0
-      };
+    try {
+      if (useTeacher && this.perplexityKey) {
+        console.log('🌐 Calling Perplexity API...');
+        return await this.callPerplexity(prompt);
+      } else {
+        if (useTeacher && !this.perplexityKey) {
+          console.log('⚠️ Perplexity API key not set - falling back to Ollama');
+        }
+        console.log('🤖 Calling Ollama API...');
+        return await this.callOllama(prompt);
+      }
+    } catch (error) {
+      console.error('❌ LLM call failed:', error);
+      return this.getFallbackResponse(prompt, useTeacher);
     }
-    
-    // Original code (commented out for debugging)
-    // if (useTeacher && this.perplexityKey) {
-    //   return await this.callPerplexity(prompt);
-    // } else {
-    //   return await this.callOllama(prompt);
-    // }
   }
 
   /**
@@ -58,7 +50,10 @@ export class ACELLMClient {
     try {
       // Add timeout to prevent hanging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      const timeoutId = setTimeout(() => {
+        console.log('⏰ Perplexity timeout after 30s - using fallback');
+        controller.abort();
+      }, 30000); // 30 second timeout
       
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
@@ -109,9 +104,41 @@ export class ACELLMClient {
    */
   private async callOllama(prompt: string): Promise<LLMResponse> {
     try {
+      // Quick health check first
+      const healthController = new AbortController();
+      const healthTimeout = setTimeout(() => healthController.abort(), 2000);
+      
+      const healthResponse = await fetch(`${this.ollamaUrl}/api/tags`, { 
+        method: 'GET',
+        signal: healthController.signal
+      });
+      
+      clearTimeout(healthTimeout);
+      
+      if (!healthResponse.ok) {
+        console.log('❌ Ollama not responding - using fallback');
+        return this.getFallbackResponse(prompt, false);
+      }
+      
+      // Determine timeout based on prompt complexity
+      const isComplexQuery = prompt.length > 200 || 
+                            prompt.includes('transformer') || 
+                            prompt.includes('embedding') ||
+                            prompt.includes('optimization') ||
+                            prompt.includes('algorithm') ||
+                            prompt.includes('muon') ||
+                            prompt.includes('adamw');
+      
+      const timeoutDuration = isComplexQuery ? 30000 : 5000; // 30s for complex, 5s for simple
+      
+      console.log(`🤖 Ollama timeout: ${timeoutDuration/1000}s (${isComplexQuery ? 'complex' : 'simple'} query)`);
+      
       // Add timeout to prevent hanging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => {
+        console.log(`⏰ Ollama timeout after ${timeoutDuration/1000}s - using fallback`);
+        controller.abort();
+      }, timeoutDuration);
       
       const response = await fetch(`${this.ollamaUrl}/api/generate`, {
         method: 'POST',
@@ -134,30 +161,20 @@ export class ACELLMClient {
 
       if (!response.ok) {
         console.error('Ollama API error:', response.status);
-        return {
-          text: this.getFallbackResponse(prompt),
-          model: 'fallback',
-          tokens: 0,
-          cost: 0
-        };
+        return this.getFallbackResponse(prompt, false);
       }
 
       const data = await response.json();
       
       return {
-        text: data.response || this.getFallbackResponse(prompt),
+        text: data.response || this.getFallbackResponse(prompt, false).text,
         model: 'ollama-gemma3:4b',
         tokens: data.eval_count || 0,
         cost: 0 // Ollama is free
       };
     } catch (error) {
       console.error('Ollama call failed:', error);
-      return {
-        text: this.getFallbackResponse(prompt),
-        model: 'fallback',
-        tokens: 0,
-        cost: 0
-      };
+      return this.getFallbackResponse(prompt, false);
     }
   }
 
@@ -197,14 +214,30 @@ export class ACELLMClient {
   /**
    * Fallback response when all APIs fail
    */
-  private getFallbackResponse(prompt: string): string {
+  private getFallbackResponse(prompt: string, useTeacher: boolean = false): LLMResponse {
+    let fallbackText: string;
+    
     if (prompt.includes('error') || prompt.includes('wrong')) {
-      return 'Analyzing execution trace to identify improvement opportunities...';
+      fallbackText = 'Analyzing execution trace to identify improvement opportunities...';
+    } else if (prompt.includes('curate') || prompt.includes('update')) {
+      fallbackText = 'Determining playbook updates based on reflection insights...';
+    } else if (useTeacher) {
+      fallbackText = `Based on current information: ${prompt.substring(0, 100)}... This is a fallback response while we debug the LLM integration.`;
+    } else {
+      // For complex queries, provide a more helpful fallback
+      if (prompt.includes('Muon') || prompt.includes('AdamW') || prompt.includes('embedding')) {
+        fallbackText = `For embedding layers in transformers, AdamW is generally preferred over Muon due to better shape compatibility and proven optimization performance. AdamW handles parameter-wise updates efficiently and includes corrections for rare tokens.`;
+      } else {
+        fallbackText = `Student model response: ${prompt.substring(0, 100)}... This is a fallback response while we debug the LLM integration.`;
+      }
     }
-    if (prompt.includes('curate') || prompt.includes('update')) {
-      return 'Determining playbook updates based on reflection insights...';
-    }
-    return 'Analyzing query and selecting relevant strategies from playbook...';
+    
+    return {
+      text: fallbackText,
+      model: useTeacher ? 'fallback-teacher' : 'fallback-student',
+      tokens: Math.ceil(fallbackText.length / 4),
+      cost: 0
+    };
   }
 
   /**

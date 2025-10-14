@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       knowledge_sharing: await demoKnowledgeSharing()
     };
 
-    const demo = demos[scenario] || demos.financial_analysis;
+    const demo = demos[scenario as keyof typeof demos] || demos.financial_analysis;
 
     return NextResponse.json({
       scenario,

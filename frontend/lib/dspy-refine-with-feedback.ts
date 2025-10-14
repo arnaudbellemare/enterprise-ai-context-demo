@@ -7,7 +7,7 @@
  * Implements for Ax LLM (TypeScript DSPy)
  */
 
-import Ax from '@ax-llm/ax';
+import * as Ax from '@ax-llm/ax';
 
 export interface HumanFeedback {
   is_helpful: boolean;

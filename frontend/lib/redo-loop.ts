@@ -42,8 +42,8 @@ export interface RedoConfig {
  * Core Redo Loop - Iteratively improve answers
  */
 export class RedoLoop {
-  private verifier: Verifier;
-  private config: Required<RedoConfig>;
+  protected verifier: Verifier;
+  protected config: Required<RedoConfig>;
 
   constructor(config: RedoConfig = {}) {
     this.config = {
@@ -207,7 +207,7 @@ Please provide a corrected answer that addresses these issues. Be specific and a
   /**
    * Generate answer using LLM
    */
-  private async generateAnswer(prompt: string): Promise<string> {
+  protected async generateAnswer(prompt: string): Promise<string> {
     try {
       const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',

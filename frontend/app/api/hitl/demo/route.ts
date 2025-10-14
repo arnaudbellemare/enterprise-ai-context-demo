@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       approval_workflow: await demoApprovalWorkflow()
     };
 
-    const demo = demos[scenario] || demos.financial_high_risk;
+    const demo = demos[scenario as keyof typeof demos] || demos.financial_high_risk;
 
     return NextResponse.json({
       scenario,

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       axSuperiority: await analyzeAXSuperiority()
     };
 
-    const analysis = analyses[analysisType] || analyses.evolution;
+    const analysis = analyses[analysisType as keyof typeof analyses] || analyses.evolution;
 
     return NextResponse.json({
       analysisType,

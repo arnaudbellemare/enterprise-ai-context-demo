@@ -275,7 +275,7 @@ Provide analysis in this JSON format:
   "correct_approach": "string",
   "key_insight": "string"
 }`;
-        const response = await this.model.generateJSON<any>(prompt, schema, true); // Use teacher for quality
+        const response = await this.model.generateJSON(prompt, schema, true); // Use teacher for quality
         return response;
       } catch (error) {
         console.error('ACE Reflector LLM call failed:', error);
@@ -361,7 +361,7 @@ Respond with JSON:
     "bullet_id": "string?"
   }]
 }`;
-        const response = await this.model.generateJSON<CuratorResponse>(prompt, schema, false); // Use student
+        const response = await this.model.generateJSON(prompt, schema, false); // Use student
         return response.operations || [];
       } catch (error) {
         console.error('ACE Curator LLM call failed:', error);

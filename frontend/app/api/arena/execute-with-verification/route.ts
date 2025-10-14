@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SmartRedoLoop } from '@/lib/redo-loop';
 import { detectDomain, detectStructuredQuery, detectWebSearchNeeded } from '@/lib/smart-routing';
-import { generateLocalEmbeddings } from '@/lib/local-embeddings';
+import { createLocalEmbeddings } from '@/lib/local-embeddings';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -73,8 +73,10 @@ export async function POST(req: NextRequest) {
     let queryVariations: string[] = [query];
     
     if (needsWebSearch) {
-      const { generateMultiQueryVariations } = await import('@/lib/multi-query-expansion');
-      queryVariations = await generateMultiQueryVariations(query, domain);
+      const { createMultiQueryExpansion } = await import('@/lib/multi-query-expansion');
+      const mqe = createMultiQueryExpansion();
+      const expandedResults = await mqe.expandQuery(query, domain);
+      queryVariations = expandedResults.length > 0 ? expandedResults[0].variations : [query];
       
       logs.push({
         component: 'Multi-Query Expansion',
@@ -106,8 +108,11 @@ export async function POST(req: NextRequest) {
     let sqlQuery = null;
     
     if (isStructured) {
-      const { generateSQLQuery } = await import('@/lib/sql-generation-retrieval');
-      sqlQuery = await generateSQLQuery(query, domain);
+      const { createSQLGenerationRetrieval } = await import('@/lib/sql-generation-retrieval');
+      const sqlGen = createSQLGenerationRetrieval();
+      const dataSource = { type: 'database' as const, name: 'permutation_db', schema: [] };
+      const sqlResult = await sqlGen.generateSQL(query, dataSource);
+      sqlQuery = sqlResult.query;
       
       logs.push({
         component: 'SQL Generation',
@@ -116,7 +121,7 @@ export async function POST(req: NextRequest) {
         timestamp: Date.now() - startTime,
       });
 
-      console.log(`✅ 3. SQL Generation: ${sqlQuery.query.substring(0, 60)}...`);
+      console.log(`✅ 3. SQL Generation: ${sqlQuery.substring(0, 60)}...`);
     } else {
       logs.push({
         component: 'SQL Generation',
@@ -196,20 +201,21 @@ export async function POST(req: NextRequest) {
     // =================================================================
     
     const queriesToEmbed = queryVariations.length > 1 ? queryVariations.slice(0, 10) : [query];
-    const embeddingResult = await generateLocalEmbeddings(query, queriesToEmbed);
+    const embedder = await createLocalEmbeddings();
+    const embeddingVector = await embedder.embed(query);
     
     logs.push({
       component: 'Local Embeddings',
       status: 'complete',
       details: {
-        model: embeddingResult.model,
-        dimensions: embeddingResult.dimensions,
-        count: embeddingResult.count,
+        model: 'Xenova/all-MiniLM-L6-v2',
+        dimensions: embeddingVector.length,
+        count: 1,
       },
       timestamp: Date.now() - startTime,
     });
 
-    console.log(`✅ 5. Local Embeddings: ${embeddingResult.model} (${embeddingResult.dimensions}D, ${embeddingResult.count} vectors)`);
+    console.log(`✅ 5. Local Embeddings: Xenova/all-MiniLM-L6-v2 (${embeddingVector.length}D, 1 vector)`);
 
     // =================================================================
     // PHASE 6: ACE FRAMEWORK
@@ -294,7 +300,7 @@ ${acePlaybook.strategies.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
 ${retrievedData ? `Retrieved Information:\n${retrievedData}\n` : ''}
 
-${sqlQuery ? `SQL Query: ${sqlQuery.query}\n` : ''}
+${sqlQuery ? `SQL Query: ${sqlQuery}\n` : ''}
 `.trim();
 
       // Execute with Smart Redo Loop

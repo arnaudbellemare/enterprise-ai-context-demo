@@ -339,7 +339,7 @@ export class HITLEscalationEngine {
       low: 3600        // 1 hour
     };
     
-    return timeouts[urgency] || timeouts.medium;
+    return timeouts[urgency as keyof typeof timeouts] || timeouts.medium;
   }
 
   /**
