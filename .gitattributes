@@ -1,0 +1,29 @@
+# Git attributes for PERMUTATION
+
+# Ensure ASCII art displays correctly
+*.txt text eol=lf
+LOGO.txt text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.markdown text eol=lf
+
+# Source code
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.py text eol=lf
+
+# Configuration files
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+.env* text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+
+# SQL
+*.sql text eol=lf
+

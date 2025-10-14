@@ -1,0 +1,35 @@
+# PERMUTATION Python Dependencies
+# For backend AI components (optional - frontend is TypeScript-based)
+
+# Core AI/ML Libraries
+dspy-ai>=2.4.0
+openai>=1.0.0
+anthropic>=0.20.0
+
+# Database & Vector Storage
+supabase>=2.0.0
+pgvector>=0.2.0
+
+# Optimization & Learning
+scipy>=1.11.0
+numpy>=1.24.0
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+requests>=2.31.0
+
+# Optional: For local embeddings
+sentence-transformers>=2.2.0
+
+# Optional: For benchmarking
+pytest>=7.4.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+
+# Note: Main system runs on TypeScript/Node.js
+# Python dependencies are for:
+# - GEPA optimizer (benchmarking/gepa_optimizer_full_system.py)
+# - OCR-IRT benchmark (benchmarking/ocr_irt_benchmark.py)  
+# - Future Python integrations
+

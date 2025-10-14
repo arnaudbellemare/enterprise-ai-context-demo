@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "Advanced AI research stack with automatic optimization",
   "scripts": {
+    "postinstall": "node scripts/welcome.js",
+    "welcome": "node scripts/welcome.js",
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
     "start": "cd frontend && npm run start",
