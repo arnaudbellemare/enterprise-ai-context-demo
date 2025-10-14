@@ -101,17 +101,25 @@ Results include IRT-calibrated difficulty, quality scores, and statistical signi
 
 ## 📚 Documentation
 
-- **[Quick Start](./docs/guides/getting-started.md)**: Get up and running in 5 minutes
+### Getting Started
+- **[Quick Start](./QUICK_START.md)**: Get up and running in 5 minutes
 - **[Architecture](./ARCHITECTURE.md)**: How PERMUTATION works
-- **[Running Benchmarks](./docs/guides/running-benchmarks.md)**: Evaluate performance
-- **[Adding Domains](./docs/guides/adding-domains.md)**: Extend to new use cases
-- **[Deployment](./docs/guides/deployment.md)**: Production deployment guide
+- **[Examples](./examples/)**: Working code examples
 
-### Advanced Topics
-- [GEPA Optimization](./docs/research/gepa-optimization.md)
-- [IRT Calibration](./docs/research/irt-calibration.md)
-- [Cost Optimization](./docs/guides/cost-optimization.md)
-- [Competitive Analysis](./docs/research/competitive-analysis.md)
+### Guides
+- **[Testing](./docs/guides/testing.md)**: Test suite and benchmarking
+- **[Cost Optimization](./docs/guides/COST_OPTIMIZATION_GUIDE.md)**: Reduce API costs
+- **[Deployment](./docs/guides/DEPLOYMENT_GUIDE.md)**: Production deployment
+
+### Advanced Features
+- **[Few-Shot Learning](./docs/architecture/advanced-features.md#few-shot-learning-from-user-feedback)**: Learn from interactions
+- **[Chunk-On-Demand](./docs/architecture/advanced-features.md#chunk-on-demand-smarter-document-processing)**: Dynamic document chunking
+- **[Multi-Model Strategy](./docs/architecture/advanced-features.md#multi-model-strategy)**: Intelligent model routing
+
+### Research
+- **[GEPA Implementation](./docs/research/DSPY_PHILOSOPHY_ANALYSIS.md)**: Prompt optimization
+- **[Competitive Analysis](./docs/research/COMPREHENSIVE_COMPETITIVE_ANALYSIS.md)**: vs. LangChain, LangGraph
+- **[ACE Framework](./docs/research/ACE_FRAMEWORK_ANALYSIS.md)**: Agentic context engineering
 
 ## 🏗️ Architecture
 
