@@ -1,16 +1,22 @@
 ```
-╔═══════════════════════════════════════════════════════════════════════════╗
-║                                                                           ║
-║   ██████╗ ███████╗██████╗ ███╗   ███╗██╗   ██╗████████╗ █████╗ ████████╗ ║
-║   ██╔══██╗██╔════╝██╔══██╗████╗ ████║██║   ██║╚══██╔══╝██╔══██╗╚══██╔══╝ ║
-║   ██████╔╝█████╗  ██████╔╝██╔████╔██║██║   ██║   ██║   ███████║   ██║    ║
-║   ██╔═══╝ ██╔══╝  ██╔══██╗██║╚██╔╝██║██║   ██║   ██║   ██╔══██║   ██║    ║
-║   ██║     ███████╗██║  ██║██║ ╚═╝ ██║╚██████╔╝   ██║   ██║  ██║   ██║    ║
-║   ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝   ╚═╝    ║
-║                                                                           ║
-║         Advanced AI Research Stack with Automatic Optimization            ║
-║                                                                           ║
-╚═══════════════════════════════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                                                    ║
+║            ██████╗ ███████╗██████╗ ███╗   ███╗██╗   ██╗████████╗ █████╗ ████████╗██╗ ██████╗ ███╗   ██╗            ║
+║            ██╔══██╗██╔════╝██╔══██╗████╗ ████║██║   ██║╚══██╔══╝██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║            ║
+║            ██████╔╝█████╗  ██████╔╝██╔████╔██║██║   ██║   ██║   ███████║   ██║   ██║██║   ██║██╔██╗ ██║            ║
+║            ██╔═══╝ ██╔══╝  ██╔══██╗██║╚██╔╝██║██║   ██║   ██║   ██╔══██║   ██║   ██║██║   ██║██║╚██╗██║            ║
+║            ██║     ███████╗██║  ██║██║ ╚═╝ ██║╚██████╔╝   ██║   ██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║            ║
+║            ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝            ║
+║                                                                                                                    ║
+║                                   Advanced AI Research Stack with Automatic Optimization                           ║
+║                                                                                                                    ║
+║                       ACE Framework  │   GEPA Optimization  │   DSPy Composition  │   IRT Routing                  ║
+║                       ReasoningBank  │   LoRA Adaptation    │   BAML (60% token reduction)                         ║
+║                                                                                                                    ║
+║                                           Built for Researchers, by Researchers                                    ║
+║                                           Fork it. Break it. Make it better.                                       ║
+║                                                                                                                    ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 ```
 
 > A production-ready baseline for building advanced AI systems with automatic optimization, multi-model orchestration, and research-grade benchmarking.
@@ -115,6 +121,7 @@ Results include IRT-calibrated difficulty, quality scores, and statistical signi
 - **[Few-Shot Learning](./docs/architecture/advanced-features.md#few-shot-learning-from-user-feedback)**: Learn from interactions
 - **[Chunk-On-Demand](./docs/architecture/advanced-features.md#chunk-on-demand-smarter-document-processing)**: Dynamic document chunking
 - **[Multi-Model Strategy](./docs/architecture/advanced-features.md#multi-model-strategy)**: Intelligent model routing
+- **[BAML Integration](./docs/architecture/baml-integration.md)**: 60% token reduction vs JSON Schema
 
 ### Research
 - **[GEPA Implementation](./docs/research/DSPY_PHILOSOPHY_ANALYSIS.md)**: Prompt optimization

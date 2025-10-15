@@ -16,6 +16,7 @@
  */
 
 import { ACEFramework, ACEUtils, Playbook } from './ace-framework';
+import { getEnhancedACEFramework, EnhancedACEFramework } from './ace-enhanced-framework';
 import { ACELLMClient } from './ace-llm-client';
 import { kvCacheManager } from './kv-cache-manager';
 import { createMultiAgentPipeline } from './parallel-agent-system';
@@ -88,6 +89,7 @@ export interface ExecutionStep {
 export class PermutationEngine {
   private llmClient: ACELLMClient | null = null;
   private aceFramework: ACEFramework | null = null;
+  private enhancedACEFramework: EnhancedACEFramework | null = null;
   private config: PermutationConfig;
   private playbook: Playbook | null = null;
   private tracer: any;
@@ -250,29 +252,30 @@ export class PermutationEngine {
       const needsACE = preliminaryIRT > 0.7; // Re-enabled adaptive ACE
       
       if (this.config.enableACE && needsACE) {
-        console.log(`🧠 Query is complex (IRT: ${preliminaryIRT.toFixed(2)}) - Running ACE Framework`);
+        console.log(`🧠 Query is complex (IRT: ${preliminaryIRT.toFixed(2)}) - Running ENHANCED ACE Framework`);
         const aceStart = Date.now();
         
-        // Initialize ACE with REAL LLM client
-        if (!this.aceFramework) {
-          const initialKnowledge = this.getInitialKnowledge(detectedDomain);
-          const initialPlaybook = ACEUtils.createInitialPlaybook(initialKnowledge);
-          this.aceFramework = new ACEFramework(this.llmClient, initialPlaybook);
+        // Initialize Enhanced ACE with Generator-Reflector-Curator pattern
+        if (!this.enhancedACEFramework) {
+          this.enhancedACEFramework = getEnhancedACEFramework();
+          console.log('✅ Enhanced ACE Framework initialized with Generator-Reflector-Curator pattern');
         }
 
-        // Run ACE: Generator → Reflector → Curator
-        aceResult = await this.aceFramework.processQuery(query);
-        playbookBulletsUsed = aceResult?.trace?.used_bullets?.length || 0;
-        this.playbook = aceResult?.updatedPlaybook || this.playbook;
+        // Run Enhanced ACE: Generator → Reflector → Curator
+        aceResult = await this.enhancedACEFramework.processQuery(query, detectedDomain);
+        playbookBulletsUsed = aceResult?.metadata?.playbook_bullets_used || 0;
+        this.playbook = aceResult?.playbook_stats || this.playbook;
 
         trace.steps.push({
-          component: 'ACE Framework',
-          description: 'Generator → Reflector → Curator workflow (Adaptive)',
-          input: { query, playbookSize: this.playbook?.stats?.total_bullets || 0, irtScore: preliminaryIRT },
+          component: 'Enhanced ACE Framework',
+          description: 'Generator → Reflector → Curator workflow with semantic deduplication',
+          input: { query, domain: detectedDomain, playbookSize: this.playbook?.stats?.total_bullets || 0, irtScore: preliminaryIRT },
           output: {
             bulletsUsed: playbookBulletsUsed,
-            keyInsight: aceResult?.reflection?.key_insight || 'ACE processing completed',
-            playbookUpdated: !!aceResult?.updatedPlaybook
+            insightsGenerated: aceResult?.metadata?.insights_generated || 0,
+            bulletsCurated: aceResult?.metadata?.bullets_curated || 0,
+            duplicatesFound: aceResult?.metadata?.duplicates_found || 0,
+            playbookUpdated: aceResult?.metadata?.playbook_updated || false
           },
           duration_ms: Date.now() - aceStart,
           status: 'success',

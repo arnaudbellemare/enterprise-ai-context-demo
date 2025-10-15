@@ -22,20 +22,20 @@ const colors = {
 function displayLogo() {
   const logoPath = path.join(__dirname, '..', 'LOGO.txt');
   
+  console.log(colors.cyan);
   if (fs.existsSync(logoPath)) {
     const logo = fs.readFileSync(logoPath, 'utf8');
-    console.log(colors.cyan + logo + colors.reset);
+    console.log(logo);
   } else {
     // Fallback simple logo
-    console.log(colors.cyan);
     console.log('╔═══════════════════════════════════════════════════════════╗');
     console.log('║                                                           ║');
     console.log('║                    PERMUTATION                            ║');
     console.log('║         Advanced AI Research Stack                        ║');
     console.log('║                                                           ║');
     console.log('╚═══════════════════════════════════════════════════════════╝');
-    console.log(colors.reset);
   }
+  console.log(colors.reset);
 }
 
 function displayWelcome() {
