@@ -273,6 +273,14 @@ Built on the shoulders of giants:
 
 ---
 
+## 📈 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=arnaudbellemare/enterprise-ai-context-demo&type=Date)](https://star-history.com/#arnaudbellemare/enterprise-ai-context-demo&Date)
+
+*Track the growth of PERMUTATION's community over time*
+
+---
+
 **Built for researchers, by researchers.** 🧪✨
 
 **Fork it. Break it. Make it better.** 🚀
