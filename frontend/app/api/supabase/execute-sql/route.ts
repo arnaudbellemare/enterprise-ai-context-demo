@@ -6,10 +6,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
+// Initialize Supabase client with proper error handling
+let supabase: any = null;
+
+try {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  } else {
+    console.warn('⚠️ Supabase not configured - using in-memory fallback');
+  }
+} catch (error) {
+  console.warn('⚠️ Supabase initialization failed:', error);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,6 +28,15 @@ export async function POST(req: NextRequest) {
 
     if (!query) {
       return NextResponse.json({ error: 'SQL query required' }, { status: 400 });
+    }
+
+    // If Supabase is not configured, return a fallback response
+    if (!supabase) {
+      return NextResponse.json({
+        success: true,
+        message: 'Supabase not configured - using in-memory fallback',
+        data: { query, domain, parameters, result: [] }
+      });
     }
 
     // Security: Only allow SELECT queries

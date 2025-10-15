@@ -446,16 +446,22 @@ export default function ArenaSimple() {
         {/* Modern Task Selection */}
         <div className="bg-white border-2 border-gray-200 p-10 mb-8">
           <div className="mb-8">
-            <div className="inline-block px-3 py-1 border-2 border-black mb-3 shadow-lg">
-              <span className="text-xs font-bold tracking-widest">STEP 01</span>
+            <div className="inline-block px-3 py-1 border-2 border-green-500 bg-green-500 mb-3 shadow-lg">
+              <span className="text-xs font-bold tracking-widest text-white">STEP 01</span>
             </div>
             <h2 className="text-4xl font-bold tracking-tight text-black">
               SELECT TEST CASE
             </h2>
+            {selectedTask && (
+              <div className="mt-2 text-sm text-gray-600">
+                Selected: <span className="font-bold text-black">{selectedTask}</span>
+              </div>
+            )}
           </div>
           
           <ModernTaskSelector
             onSelectTask={(taskId: string, example: string) => {
+              console.log('🎯 Task selected:', taskId, example);
               setSelectedTask(taskId);
               setCustomTask('');
             }}
@@ -507,8 +513,8 @@ export default function ArenaSimple() {
         {/* Modern Execution Controls */}
         <div className="bg-white border-2 border-gray-200 p-10 mb-8">
           <div className="mb-8">
-            <div className="inline-block px-3 py-1 border-2 border-black mb-3">
-              <span className="text-xs font-bold tracking-widest">STEP 02</span>
+            <div className="inline-block px-3 py-1 border-2 border-green-500 bg-green-500 mb-3">
+              <span className="text-xs font-bold tracking-widest text-white">STEP 02</span>
             </div>
             <h2 className="text-4xl font-bold tracking-tight text-black">
               EXECUTE COMPARISON
@@ -536,8 +542,8 @@ export default function ArenaSimple() {
         {/* Modern Live Results */}
         <div className="mb-12">
           <div className="mb-8">
-            <div className="inline-block px-3 py-1 border-2 border-black mb-3">
-              <span className="text-xs font-bold tracking-widest">STEP 03</span>
+            <div className="inline-block px-3 py-1 border-2 border-green-500 bg-green-500 mb-3">
+              <span className="text-xs font-bold tracking-widest text-white">STEP 03</span>
             </div>
             <h2 className="text-4xl font-bold tracking-tight text-black">
               LIVE RESULTS

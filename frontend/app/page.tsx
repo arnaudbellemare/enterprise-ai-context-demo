@@ -60,7 +60,11 @@ export default function TerminalDashboard() {
             { id: 'chat', label: 'CHAT', href: '/chat-reasoning' },
             { id: 'agent-builder', label: 'AGENT BUILDER', href: '/agent-builder' },
             { id: 'arena', label: 'ARENA', href: '/arena' },
-            { id: 'benchmarks', label: 'BENCHMARKS', href: '/benchmarks' }
+            { id: 'benchmarks', label: 'BENCHMARKS', href: '/benchmarks' },
+            { id: 'tech-stack', label: 'TECH STACK', href: '/tech-stack-benchmark' },
+            { id: 'real-benchmarks', label: 'REAL BENCHMARKS', href: '/real-benchmarks' },
+            { id: 'optimization', label: 'OPTIMIZATION', href: '/optimization-strategy' },
+            { id: 'optimized', label: 'OPTIMIZED SYSTEM', href: '/optimized-system' }
           ].map((section) => (
             <Link key={section.id} href={section.href}>
                 <button
@@ -178,6 +182,46 @@ export default function TerminalDashboard() {
                 <div className="text-sm mb-1">&gt; BENCHMARKS [Performance]</div>
                 <div className="text-xs opacity-70">Comprehensive benchmark results</div>
                 <div className="text-xs mt-1">└─ All domain performance metrics</div>
+                      </div>
+            </Link>
+
+            <Link href="/tech-stack-benchmark">
+              <div className="border border-cyan-400 p-3 hover:bg-cyan-400 hover:text-black transition-colors cursor-pointer">
+                <div className="text-sm mb-1">&gt; TECH STACK [Component Analysis]</div>
+                <div className="text-xs opacity-70">OCR • IRT • Optimization • Accuracy • Latency</div>
+                <div className="text-xs mt-1">└─ 12 components performance testing</div>
+                      </div>
+            </Link>
+
+            <Link href="/optimization-strategy">
+              <div className="border border-cyan-400 p-3 hover:bg-cyan-400 hover:text-black transition-colors cursor-pointer">
+                <div className="text-sm mb-1">&gt; OPTIMIZATION [Strategy]</div>
+                <div className="text-xs opacity-70">TRM (78.43) • IRT (93.1%) • KV Cache (43.6%)</div>
+                <div className="text-xs mt-1">└─ Data-driven performance enhancement</div>
+                      </div>
+            </Link>
+
+            <Link href="/optimized-system">
+              <div className="border border-green-500 bg-green-900 bg-opacity-20 p-3 hover:bg-green-400 hover:text-black transition-colors cursor-pointer">
+                <div className="text-sm mb-1 text-green-400">&gt; OPTIMIZED SYSTEM [All 3 Phases] ⚡</div>
+                <div className="text-xs opacity-70">Phase 1: Routing • Phase 2: TRM+ACE • Phase 3: Parallel</div>
+                <div className="text-xs mt-1">└─ Complete optimization implementation</div>
+                      </div>
+            </Link>
+
+            <Link href="/real-benchmarks">
+              <div className="border border-red-500 bg-red-900 bg-opacity-20 p-3 hover:bg-red-400 hover:text-black transition-colors cursor-pointer">
+                <div className="text-sm mb-1 text-red-400">&gt; REAL BENCHMARKS [NO MOCKS] 🔥</div>
+                <div className="text-xs opacity-70">Actual API Calls • Real Latency • Real Costs</div>
+                <div className="text-xs mt-1">└─ Tests real Perplexity, IRT, TRM, ACE</div>
+                      </div>
+            </Link>
+
+            <Link href="/multi-domain-evolution">
+              <div className="border border-purple-500 bg-purple-900 bg-opacity-20 p-3 hover:bg-purple-400 hover:text-black transition-colors cursor-pointer">
+                <div className="text-sm mb-1 text-purple-400">&gt; MULTI-DOMAIN EVOLUTION 📊</div>
+                <div className="text-xs opacity-70">5 Domains × 20 Iterations = 140 Tests</div>
+                <div className="text-xs mt-1">└─ OCR Permutation Research: Complete ATLAS Analysis</div>
                       </div>
             </Link>
                       </div>

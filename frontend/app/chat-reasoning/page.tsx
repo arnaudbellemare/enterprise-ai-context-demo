@@ -243,7 +243,7 @@ export default function ChatReasoningPage() {
                                   <div key={stepIdx} className="text-sm">
                                     <div className="flex items-start gap-2">
                                       <span className={step.status === 'complete' ? 'text-green-600' : 'text-yellow-600'}>
-                                        {step.status === 'complete' ? '✅' : '⏳'}
+                                        {step.status === 'complete' ? 'COMPLETE' : 'IN PROGRESS'}
                                       </span>
                                       <div className="flex-1">
                                         <p className="font-medium text-gray-800">{step.title}</p>
@@ -306,8 +306,8 @@ export default function ChatReasoningPage() {
                             }`}
                           >
                             <div className="flex items-start gap-2">
-                              <span className="text-lg">
-                                {step.status === 'complete' ? '✅' : '⏳'}
+                              <span className="text-sm font-bold">
+                                {step.status === 'complete' ? 'COMPLETE' : 'IN PROGRESS'}
                               </span>
                               <div className="flex-1">
                                 <p className="font-medium text-sm text-gray-900">{step.title}</p>

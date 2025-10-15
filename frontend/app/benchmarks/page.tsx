@@ -1,11 +1,30 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function BenchmarksPage() {
-  const [selectedDomain, setSelectedDomain] = React.useState<string | null>(null);
-  const [hoveredTest, setHoveredTest] = React.useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      console.log('🕐 Benchmarks time update:', timeString);
+      setCurrentTime(timeString);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const benchmarkData = [
     {
       domain: 'Financial',
@@ -71,22 +90,13 @@ export default function BenchmarksPage() {
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
             <span className="text-xs font-mono text-green-400">LIVE</span>
-            <span className="text-xs font-mono text-green-400">{new Date().toLocaleTimeString('en-US', { hour12: false })}</span>
+            <span className="text-sm font-mono text-green-400 font-bold">{currentTime || 'Loading...'}</span>
           </div>
           <div className="text-xs">PERMUTATION TERMINAL v1.0.0</div>
         </div>
         <div className="text-center">
-          <pre className="text-cyan-400 text-xs sm:text-sm">
-{`
- ██████╗ ███████╗███╗   ██╗ ██████╗██╗  ██╗███╗   ███╗ █████╗ ██████╗ ██╗  ██╗███████╗
- ██╔══██╗██╔════╝████╗  ██║██╔════╝██║  ██║████╗ ████║██╔══██╗██╔══██╗██║ ██╔╝██╔════╝
- ██████╔╝█████╗  ██╔██╗ ██║██║     ███████║██╔████╔██║███████║██████╔╝█████╔╝ ███████╗
- ██╔══██╗██╔══╝  ██║╚██╗██║██║     ██╔══██║██║╚██╔╝██║██╔══██║██╔══██╗██╔═██╗ ╚════██║
- ██████╔╝███████╗██║ ╚████║╚██████╗██║  ██║██║ ╚═╝ ██║██║  ██║██║  ██║██║  ██╗███████║
- ╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
-`}
-          </pre>
-          <div className="mt-2 text-xs text-green-400">[ COMPREHENSIVE BENCHMARK RESULTS ACROSS ALL DOMAINS ]</div>
+          <h1 className="text-3xl font-bold text-cyan-400 mb-2">BENCHMARKS</h1>
+          <div className="text-sm text-green-400">PERMUTATION vs Baseline Performance</div>
         </div>
       </div>
 
@@ -140,42 +150,19 @@ export default function BenchmarksPage() {
         {benchmarkData.map((domain, domainIdx) => (
           <div 
             key={domainIdx} 
-            className={`border border-cyan-400 p-4 cursor-pointer transition-all duration-300 ${
-              selectedDomain === domain.domain 
-                ? 'bg-cyan-400/10 border-cyan-300 shadow-lg' 
-                : 'hover:bg-gray-900/20 hover:border-cyan-300'
-            }`}
-            onClick={() => setSelectedDomain(selectedDomain === domain.domain ? null : domain.domain)}
+            className="border border-cyan-400 p-4"
           >
-            <div className="text-green-400 mb-4">
-              ╔══════════════════════════════════════════════════════════════════════════════════════╗
-            </div>
-            <div className="text-green-400 mb-4 flex items-center justify-between">
-              <span>║   {domain.domain.toUpperCase().padEnd(70)}</span>
-              {selectedDomain === domain.domain && (
-                <span className="text-cyan-400 text-sm">[SELECTED]</span>
-              )}
-              <span>║</span>
-            </div>
-            <div className="text-green-400 mb-4">
-              ╚══════════════════════════════════════════════════════════════════════════════════════╝
+            <div className="text-center mb-4">
+              <h2 className="text-xl font-bold text-green-400 border-b-2 border-green-400 pb-2 inline-block">
+                {domain.domain.toUpperCase()}
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {domain.tests.map((test, testIdx) => (
                 <div 
                   key={testIdx} 
-                  className={`bg-gray-900/50 border border-gray-700 p-3 transition-all duration-200 cursor-pointer ${
-                    hoveredTest === `${domain.domain}-${testIdx}`
-                      ? 'bg-cyan-400/10 border-cyan-400 shadow-md'
-                      : 'hover:bg-gray-800/50 hover:border-gray-600'
-                  }`}
-                  onMouseEnter={() => setHoveredTest(`${domain.domain}-${testIdx}`)}
-                  onMouseLeave={() => setHoveredTest(null)}
-                  onClick={() => {
-                    // Add click functionality - could open detailed view
-                    console.log(`Clicked on ${test.name} in ${domain.domain}`);
-                  }}
+                  className="bg-gray-900/50 border border-gray-700 p-3"
                 >
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-cyan-400">{test.name}</span>

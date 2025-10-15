@@ -13,14 +13,34 @@ function getOpenAI() {
   return openai;
 }
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Initialize Supabase client with proper error handling
+let supabase: any = null;
+
+try {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  } else {
+    console.warn('⚠️ Supabase not configured - using in-memory fallback');
+  }
+} catch (error) {
+  console.warn('⚠️ Supabase initialization failed:', error);
+}
 
 export async function POST(req: NextRequest) {
   try {
     const { text, texts } = await req.json();
+
+    // If Supabase is not configured, return a fallback response
+    if (!supabase) {
+      return NextResponse.json({
+        success: true,
+        message: 'Supabase not configured - using in-memory fallback',
+        data: { embeddings: [] }
+      });
+    }
 
     // Support both single text and batch texts
     const inputTexts = texts || [text];

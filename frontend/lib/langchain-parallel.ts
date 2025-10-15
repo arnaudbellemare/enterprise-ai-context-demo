@@ -133,7 +133,7 @@ Create a comprehensive analysis that includes:
 
 Format as a structured, professional analysis.`,
       model_config: {
-        model_name: 'gpt-4o-mini',
+        model_name: 'gemma3:4b',
         temperature: 0.3,
         max_tokens: 1000
       }
@@ -197,7 +197,7 @@ Create a comprehensive market research report with:
 
 Format as a professional market research report.`,
       model_config: {
-        model_name: 'gpt-4o-mini',
+        model_name: 'gemma3:4b',
         temperature: 0.2,
         max_tokens: 1500
       }
@@ -261,7 +261,7 @@ Create a comprehensive content strategy with:
 
 Format as a professional content strategy document.`,
       model_config: {
-        model_name: 'gpt-4o-mini',
+        model_name: 'gemma3:4b',
         temperature: 0.4,
         max_tokens: 1200
       }
@@ -325,7 +325,7 @@ Create a comprehensive investment analysis with:
 
 Format as a professional investment research report.`,
       model_config: {
-        model_name: 'gpt-4o-mini',
+        model_name: 'gemma3:4b',
         temperature: 0.1,
         max_tokens: 1500
       }
@@ -608,7 +608,7 @@ Format as a professional investment research report.`,
     
     // Simulate token usage and cost
     const tokens_used = Math.floor(Math.random() * 400) + 200;
-    const cost = tokens_used * 0.000015; // $0.015 per 1k tokens for gpt-4o-mini
+    const cost = tokens_used * 0.000005; // $0.005 per 1k tokens for gemma3:4b
     
     return { output, tokens_used, cost };
   }

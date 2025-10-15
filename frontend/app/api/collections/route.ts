@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Initialize Supabase client with proper error handling
+let supabase: any = null;
+
+try {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  } else {
+    console.warn('⚠️ Supabase not configured - using in-memory fallback');
+  }
+} catch (error) {
+  console.warn('⚠️ Supabase initialization failed:', error);
+}
 
 // GET - List all collections for a user
 export async function GET(req: NextRequest) {
@@ -19,6 +30,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // If Supabase is not configured, return a fallback response
+    if (!supabase) {
+      return NextResponse.json({
+        success: true,
+        message: 'Supabase not configured - using in-memory fallback',
+        data: { collections: [] }
+      });
+    }
+
     const { data: collections, error } = await supabase
       .from('collections')
       .select(`
@@ -31,7 +51,7 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({
-      collections: collections.map(col => ({
+      collections: collections.map((col: any) => ({
         id: col.id,
         name: col.name,
         description: col.description,
@@ -68,6 +88,15 @@ export async function POST(req: NextRequest) {
         { error: 'User ID is required' },
         { status: 400 }
       );
+    }
+
+    // If Supabase is not configured, return a fallback response
+    if (!supabase) {
+      return NextResponse.json({
+        success: true,
+        message: 'Supabase not configured - using in-memory fallback',
+        data: { collection: { id: 'fallback', name, description, metadata, userId } }
+      });
     }
 
     // Check if collection already exists

@@ -70,7 +70,10 @@ export function ModernTaskSelector({ onSelectTask, selectedTask }: any) {
         return (
           <button
             key={task.id}
-            onClick={() => onSelectTask(task.id, task.example)}
+            onClick={() => {
+              console.log('🖱️ Button clicked:', task.id);
+              onSelectTask(task.id, task.example);
+            }}
             className={`group relative overflow-hidden border transition-all duration-300 ${
               selectedTask === task.id
                 ? 'border-black bg-black text-white shadow-2xl scale-105'
