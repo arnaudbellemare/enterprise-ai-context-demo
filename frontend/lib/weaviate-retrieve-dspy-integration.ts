@@ -352,9 +352,9 @@ export class HybridSearchSystem {
  * Main Weaviate Retrieve-DSPy Integration Class
  */
 export class WeaviateRetrieveDSPyIntegration {
-  private queryExpansion: AdvancedQueryExpansion;
-  private reranking: AdvancedReranking;
-  private hybridSearch: HybridSearchSystem;
+  public queryExpansion: AdvancedQueryExpansion;
+  public reranking: AdvancedReranking;
+  public hybridSearch: HybridSearchSystem;
   private config: WeaviateRetrieverConfig;
 
   constructor(config: WeaviateRetrieverConfig = {}) {

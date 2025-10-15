@@ -47,6 +47,7 @@ export interface PermutationConfig {
   enableSWiRL: boolean; // Multi-step reasoning with tools
   enableTRM: boolean; // Recursive reasoning with verification
   enableSQL: boolean; // Execute SQL for structured data
+  enableWeaviateRetrieveDSPy: boolean; // Advanced retrieval systems
 }
 
 export interface PermutationResult {
