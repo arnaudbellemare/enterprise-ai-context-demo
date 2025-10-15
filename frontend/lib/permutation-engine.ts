@@ -28,6 +28,7 @@ import { getParallelEngine } from './parallel-execution-engine';
 import { getRealBenchmarkSystem } from './real-benchmark-system';
 import { acePlaybookSystem } from './ace-playbook-system';
 import { gepaAlgorithms } from './gepa-algorithms';
+import { WeaviateRetrieveDSPyIntegration } from './weaviate-retrieve-dspy-integration';
 // import { teacherStudentSystem } from './teacher-student-system'; // Temporarily disabled
 
 // ============================================
@@ -106,6 +107,7 @@ export class PermutationEngine {
   private teacherStudentSystem: any;
   private acePlaybookSystem: any;
   private gepaAlgorithms: any;
+  private weaviateRetrieveDSPy: any;
 
   constructor(config?: Partial<PermutationConfig>) {
     this.llmClient = new ACELLMClient();
@@ -120,6 +122,7 @@ export class PermutationEngine {
     this.teacherStudentSystem = null;
     this.acePlaybookSystem = null;
     this.gepaAlgorithms = null;
+    this.weaviateRetrieveDSPy = null;
     this.config = {
       enableTeacherModel: true,
       enableStudentModel: true,
@@ -132,6 +135,7 @@ export class PermutationEngine {
       enableSWiRL: true,         // ✅ ENABLED - Just planning, instant
       enableTRM: true,           // ✅ ENABLED - Fast verification
       enableSQL: false,          // ❌ Disabled - Rarely needed
+      enableWeaviateRetrieveDSPy: true, // ✅ ENABLED - Advanced retrieval systems
       ...config
     };
     console.log('🚀 PermutationEngine initialized with FULL STACK (parallelized + adaptive):', this.config);
@@ -622,6 +626,52 @@ export class PermutationEngine {
       }
 
       // ============================================
+      // STEP 11.7: WEAVIATE RETRIEVE-DSPY INTEGRATION (NEW!)
+      // Advanced compound retrieval systems for enhanced context
+      // ============================================
+      let weaviateRetrieveResult: any = null;
+      if (this.config.enableWeaviateRetrieveDSPy) {
+        console.log('🔍 Running Weaviate Retrieve-DSPy integration...');
+        const weaviateStart = Date.now();
+        
+        // Lazy initialize Weaviate Retrieve-DSPy system
+        if (!this.weaviateRetrieveDSPy) {
+          this.weaviateRetrieveDSPy = new WeaviateRetrieveDSPyIntegration();
+          console.log('✅ Weaviate Retrieve-DSPy Integration initialized');
+        }
+        
+        try {
+          weaviateRetrieveResult = await this.weaviateRetrieveDSPy.enhancedRetrieval(query, detectedDomain);
+          
+          console.log(`🔍 Weaviate Retrieve-DSPy completed in ${Date.now() - weaviateStart}ms`);
+          
+          trace.steps.push({
+            component: 'Weaviate Retrieve-DSPy',
+            description: 'Advanced compound retrieval systems',
+            input: { query, domain: detectedDomain },
+            output: {
+              expanded_queries: weaviateRetrieveResult.expandedQueries.length,
+              search_results: weaviateRetrieveResult.searchResults.length,
+              reranked_results: weaviateRetrieveResult.rerankedResults.length,
+              total_time: weaviateRetrieveResult.retrievalMetrics.totalTime
+            },
+            duration_ms: Date.now() - weaviateStart,
+            status: 'success'
+          });
+        } catch (error) {
+          console.warn('⚠️ Weaviate Retrieve-DSPy integration failed:', error);
+          trace.steps.push({
+            component: 'Weaviate Retrieve-DSPy',
+            description: 'Weaviate Retrieve-DSPy integration failed',
+            input: { query, domain: detectedDomain },
+            output: { error: error instanceof Error ? error.message : 'Unknown error' },
+            duration_ms: Date.now() - weaviateStart,
+            status: 'failed'
+          });
+        }
+      }
+
+      // ============================================
       // STEP 12: SYNTHESIS AGENT (Merger) - Final Generation
       // Combines: Teacher data + Multi-agent research + System intelligence + Teacher-Student results
       // ============================================
@@ -638,7 +688,8 @@ export class PermutationEngine {
         trmResult,
         multiAgentResults, // Add multi-agent results
         teacherStudentResult, // Add Teacher-Student results
-        acePlaybookResult // Add ACE Playbook results
+        acePlaybookResult, // Add ACE Playbook results
+        weaviateRetrieveResult // Add Weaviate Retrieve-DSPy results
       });
 
       trace.steps.push({
