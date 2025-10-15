@@ -31,9 +31,9 @@ LOGO = """
 🎉 PERMUTATION installed successfully!
 
 Quick Start:
-  📚 Read QUICK_START.md for 5-minute setup
-  🚀 Run: npm run dev
-  💡 Visit: http://localhost:3000
+   Read QUICK_START.md for 5-minute setup
+   Run: npm run dev
+   Visit: http://localhost:3000
 
 Documentation:
   • README.md - Overview
