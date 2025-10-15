@@ -56,20 +56,24 @@ export class EnhancedACEFramework {
    */
   async processQuery(query: string, domain?: string): Promise<EnhancedACEResult> {
     const startTime = Date.now();
-    console.log('🎯 Enhanced ACE: Starting Generator-Reflector-Curator workflow...');
+    console.log('⚡ Enhanced ACE: Starting FAST Generator-Reflector-Curator workflow...');
 
     try {
       // ============================================
-      // GENERATOR PHASE: Execute with current playbook
+      // GENERATOR PHASE: Execute with current playbook (FAST!)
       // ============================================
       console.log('🔧 Generator: Executing query with current playbook...');
-      const generatorResult = await this.aceFramework.processQuery(query);
+      const generatorPromise = this.aceFramework.processQuery(query);
+      const domainPromise = domain ? Promise.resolve(domain) : this.detectDomain(query);
+      
+      // Run Generator and domain detection in parallel for speed
+      const [generatorResult, detectedDomain] = await Promise.all([generatorPromise, domainPromise]);
       
       const executionTime = Date.now() - startTime;
-      const detectedDomain = domain || await this.detectDomain(query);
+      console.log(`⚡ Generator completed in ${executionTime}ms`);
 
       // ============================================
-      // REFLECTOR PHASE: Analyze execution outcome
+      // REFLECTOR PHASE: Analyze execution outcome (FAST!)
       // ============================================
       console.log('🔍 Reflector: Analyzing execution outcome...');
       const executionOutcome: ExecutionOutcome = {
@@ -82,23 +86,38 @@ export class EnhancedACEFramework {
         domain: detectedDomain
       };
 
-      const insights = await this.reflector.reflect(executionOutcome);
-      console.log(`📊 Reflector: Generated ${insights.length} insights`);
+      // Add timeout to reflector to prevent hanging
+      const reflectorPromise = this.reflector.reflect(executionOutcome);
+      const timeoutPromise = new Promise<any[]>((_, reject) => 
+        setTimeout(() => reject(new Error('Reflector timeout')), 3000)
+      );
+      
+      const insights = await Promise.race([reflectorPromise, timeoutPromise]);
+      console.log(`📊 Reflector: Generated ${insights.length} insights in ${Date.now() - startTime}ms`);
 
       // ============================================
-      // CURATOR PHASE: Curate insights into playbook
+      // CURATOR PHASE: Curate insights into playbook (FAST!)
       // ============================================
       console.log('🎯 Curator: Curating insights into playbook...');
+      
+      // Process insights in parallel instead of sequential for speed
+      const curatorPromises = insights.map(insight => 
+        Promise.race([
+          this.curator.curate(insight.insight_text, insight.domain, insight.insight_type),
+          new Promise<any>((_, reject) => 
+            setTimeout(() => reject(new Error('Curator timeout')), 2000)
+          )
+        ]).catch(error => {
+          console.warn(`⚠️ Curator failed for insight: ${error.message}`);
+          return { is_duplicate: true, new_bullet: null };
+        })
+      );
+      
+      const curatorResults = await Promise.all(curatorPromises);
       const curatedBullets: PlaybookBullet[] = [];
       let duplicatesFound = 0;
 
-      for (const insight of insights) {
-        const curatorResult = await this.curator.curate(
-          insight.insight_text,
-          insight.domain,
-          insight.insight_type
-        );
-
+      for (const curatorResult of curatorResults) {
         if (curatorResult.is_duplicate) {
           duplicatesFound++;
           console.log(`🔄 Curator: Found duplicate insight (similarity: ${curatorResult.similarity_score?.toFixed(3)})`);

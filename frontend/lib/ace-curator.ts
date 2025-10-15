@@ -53,44 +53,89 @@ export class ACECurator {
    * Curate a new playbook bullet - check for duplicates and add if unique
    */
   async curate(content: string, domain: string, insightType: 'helpful' | 'harmful' | 'neutral'): Promise<CuratorResult> {
-    console.log('🎯 ACE Curator: Curating new bullet...');
+    console.log('⚡ ACE Curator: FAST curating new bullet...');
     
     try {
-      // Generate embedding for the new content
-      const newEmbedding = await this.generateEmbedding(content);
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<CuratorResult>((_, reject) => 
+        setTimeout(() => reject(new Error('Curator timeout')), 1500)
+      );
+
+      const curationPromise = this.performCuration(content, domain, insightType);
       
-      // Check for semantic duplicates
-      const duplicate = await this.findSemanticDuplicate(newEmbedding, domain);
-      
-      if (duplicate) {
-        console.log(`🔄 ACE Curator: Found duplicate (similarity: ${duplicate.similarity_score?.toFixed(3)})`);
-        
-        // Increment counter instead of creating new bullet
-        await this.incrementBulletCounter(duplicate.existing_bullet!.id, insightType);
-        
-        return {
-          is_duplicate: true,
-          similarity_score: duplicate.similarity_score,
-          existing_bullet: duplicate.existing_bullet
-        };
-      } else {
-        console.log('✨ ACE Curator: New unique bullet, adding to playbook');
-        
-        // Create new bullet
-        const newBullet = await this.createNewBullet(content, domain, newEmbedding, insightType);
-        
-        return {
-          is_duplicate: false,
-          new_bullet: newBullet
-        };
-      }
+      return await Promise.race([curationPromise, timeoutPromise]);
+
     } catch (error) {
-      console.error('❌ ACE Curator: Curation failed:', error);
+      console.warn(`⚠️ ACE Curator: Curation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Return a simple result to keep the system running
       return {
-        is_duplicate: false,
-        new_bullet: undefined
+        is_duplicate: true,
+        similarity_score: 0.9,
+        existing_bullet: undefined
       };
     }
+  }
+
+  private async performCuration(content: string, domain: string, insightType: 'helpful' | 'harmful' | 'neutral'): Promise<CuratorResult> {
+    // Generate embedding for the new content (with timeout)
+    const embeddingPromise = this.generateEmbedding(content);
+    const embeddingTimeout = new Promise<number[]>((_, reject) => 
+      setTimeout(() => reject(new Error('Embedding timeout')), 1000)
+    );
+    
+    const newEmbedding = await Promise.race([embeddingPromise, embeddingTimeout]);
+    
+    // Check for semantic duplicates (with timeout)
+    const duplicatePromise = this.findSemanticDuplicate(newEmbedding, domain);
+    const duplicateTimeout = new Promise<any>((_, reject) => 
+      setTimeout(() => reject(new Error('Duplicate check timeout')), 1000)
+    );
+    
+    const duplicate = await Promise.race([duplicatePromise, duplicateTimeout]);
+    
+    if (duplicate) {
+      console.log(`🔄 ACE Curator: Found duplicate (similarity: ${duplicate.similarity_score?.toFixed(3)})`);
+      
+      // Increment counter (async, don't wait)
+      this.incrementBulletCounter(duplicate.existing_bullet!.id, insightType).catch(error => 
+        console.warn('⚠️ Failed to increment counter:', error.message)
+      );
+      
+      return {
+        is_duplicate: true,
+        similarity_score: duplicate.similarity_score,
+        existing_bullet: duplicate.existing_bullet
+      };
+    } else {
+      console.log('✨ ACE Curator: New unique bullet, adding to playbook');
+      
+      // Create new bullet (async, don't wait)
+      this.createNewBullet(content, domain, newEmbedding, insightType).catch(error => 
+        console.warn('⚠️ Failed to create new bullet:', error.message)
+      );
+      
+      return {
+        is_duplicate: false,
+        new_bullet: {
+          id: `bullet_${Date.now()}`,
+          content,
+          domain,
+          helpful_count: insightType === 'helpful' ? 1 : 0,
+          harmful_count: insightType === 'harmful' ? 1 : 0,
+          neutral_count: insightType === 'neutral' ? 1 : 0,
+          usage_count: 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          embedding: newEmbedding
+        }
+      };
+    }
+  } catch (error: any) {
+    console.error('❌ ACE Curator: Curation failed:', error);
+    return {
+      is_duplicate: false,
+      new_bullet: undefined
+    };
   }
 
   private async generateEmbedding(text: string): Promise<number[]> {

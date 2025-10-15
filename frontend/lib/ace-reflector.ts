@@ -59,31 +59,36 @@ export class ACEReflector {
    * Analyze execution outcome and extract insights
    */
   async reflect(outcome: ExecutionOutcome): Promise<ReflectedInsight[]> {
-    console.log('🔍 ACE Reflector: Analyzing execution outcome...');
-    
-    const insights: ReflectedInsight[] = [];
+    console.log('⚡ ACE Reflector: FAST analyzing execution outcome...');
     
     try {
-      // Analyze success/failure patterns
-      const successInsight = await this.analyzeSuccess(outcome);
-      if (successInsight) insights.push(successInsight);
+      // Run all analysis in parallel for speed!
+      const analysisPromises = [
+        this.analyzeSuccess(outcome),
+        this.analyzePerformance(outcome),
+        this.analyzeComponents(outcome),
+        this.analyzeDomain(outcome)
+      ];
 
-      // Analyze performance patterns
-      const performanceInsight = await this.analyzePerformance(outcome);
-      if (performanceInsight) insights.push(performanceInsight);
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<any[]>((_, reject) => 
+        setTimeout(() => reject(new Error('Reflector analysis timeout')), 2000)
+      );
 
-      // Analyze component effectiveness
-      const componentInsight = await this.analyzeComponents(outcome);
-      if (componentInsight) insights.push(componentInsight);
+      const analysisResults = await Promise.race([
+        Promise.all(analysisPromises),
+        timeoutPromise
+      ]);
 
-      // Analyze domain-specific patterns
-      const domainInsight = await this.analyzeDomain(outcome);
-      if (domainInsight) insights.push(domainInsight);
+      // Filter out null results and collect insights
+      const insights: ReflectedInsight[] = analysisResults.filter(insight => insight !== null);
 
-      // Store insights in database
-      await this.storeInsights(insights);
+      // Store insights in database (async, don't wait)
+      this.storeInsights(insights).catch(error => 
+        console.warn('⚠️ Failed to store insights:', error.message)
+      );
 
-      console.log(`✅ ACE Reflector: Generated ${insights.length} insights`);
+      console.log(`⚡ ACE Reflector: Generated ${insights.length} insights FAST!`);
       return insights;
 
     } catch (error) {

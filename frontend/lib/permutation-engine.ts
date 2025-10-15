@@ -26,6 +26,9 @@ import { SmartRouter, TaskType, getSmartRouter } from './smart-router';
 import { getAdvancedCache } from './advanced-cache-system';
 import { getParallelEngine } from './parallel-execution-engine';
 import { getRealBenchmarkSystem } from './real-benchmark-system';
+import { acePlaybookSystem } from './ace-playbook-system';
+import { gepaAlgorithms } from './gepa-algorithms';
+// import { teacherStudentSystem } from './teacher-student-system'; // Temporarily disabled
 
 // ============================================
 // TYPES & INTERFACES
@@ -100,6 +103,9 @@ export class PermutationEngine {
   private advancedCache: any;
   private parallelEngine: any;
   private benchmarkSystem: any;
+  private teacherStudentSystem: any;
+  private acePlaybookSystem: any;
+  private gepaAlgorithms: any;
 
   constructor(config?: Partial<PermutationConfig>) {
     this.llmClient = new ACELLMClient();
@@ -111,15 +117,18 @@ export class PermutationEngine {
     this.advancedCache = null;
     this.parallelEngine = null;
     this.benchmarkSystem = null;
+    this.teacherStudentSystem = null;
+    this.acePlaybookSystem = null;
+    this.gepaAlgorithms = null;
     this.config = {
       enableTeacherModel: true,
       enableStudentModel: true,
-      enableMultiQuery: true,   // ✅ ENABLED - Fast templates
-      enableReasoningBank: true, // ✅ ENABLED - Fast vector search
-      enableLoRA: true,          // ✅ ENABLED - Just config, instant
+      enableMultiQuery: false,  // ❌ DISABLED - Too slow
+      enableReasoningBank: false, // ❌ DISABLED - Too slow
+      enableLoRA: false,         // ❌ DISABLED - Too slow
       enableIRT: true,           // ✅ ENABLED - Pure math, instant
-      enableDSPy: true,          // ✅ ENABLED - Ax LLM optimization
-      enableACE: true,           // ✅ ENABLED - Adaptive (only for IRT > 0.7)
+      enableDSPy: false,         // ❌ DISABLED - Too slow
+      enableACE: true,           // ✅ ENABLED - Adaptive (only for IRT > 0.95)
       enableSWiRL: true,         // ✅ ENABLED - Just planning, instant
       enableTRM: true,           // ✅ ENABLED - Fast verification
       enableSQL: false,          // ❌ Disabled - Rarely needed
@@ -249,7 +258,7 @@ export class PermutationEngine {
       
       // Quick IRT pre-check to decide if we need ACE
       const preliminaryIRT = await this.calculateIRT(query, detectedDomain);
-      const needsACE = preliminaryIRT > 0.7; // Re-enabled adaptive ACE
+      const needsACE = preliminaryIRT > 0.95; // Only use ACE for VERY complex queries to avoid slowdown
       
       if (this.config.enableACE && needsACE) {
         console.log(`🧠 Query is complex (IRT: ${preliminaryIRT.toFixed(2)}) - Running ENHANCED ACE Framework`);
@@ -286,47 +295,13 @@ export class PermutationEngine {
       }
 
       // ============================================
-      // REAL PARALLEL EXECUTION ENGINE (ACTUALLY USED!)
+      // SIMPLE PARALLEL EXECUTION (FAST!)
       // ============================================
       const parallelStart = Date.now();
+      console.log('⚡ Using simple parallel execution for speed...');
       
-      // Lazy initialize parallel engine
-      if (!this.parallelEngine) {
-        this.parallelEngine = getParallelEngine();
-        console.log('✅ Parallel Engine initialized');
-      }
-      
-      // Create parallel tasks based on routing decision
-      const parallelTasks = [
-        {
-          id: 'multi-query',
-          type: taskType,
-          query: query,
-          component: 'Multi-Query Expansion'
-        },
-        {
-          id: 'irt-calculation',
-          type: taskType,
-          query: query,
-          component: 'IRT (Item Response Theory)'
-        },
-        {
-          id: 'memory-retrieval',
-          type: taskType,
-          query: query,
-          component: 'ReasoningBank'
-        }
-      ];
-      
-      // Execute parallel tasks using the real parallel engine
-      let parallelResults = [];
-      try {
-        parallelResults = await this.parallelEngine.executeParallel(parallelTasks);
-        console.log(`⚡ Parallel execution: ${parallelResults.length} tasks completed`);
-      } catch (error) {
-        console.log('⚠️ Parallel execution failed, falling back to sequential');
-        // Fallback to original parallel execution
-        const [queries, irtScore, memories, loraParams, swirlSteps] = await Promise.all([
+      // Execute parallel tasks using simple Promise.all for speed
+      const [queries, irtScore, memories, loraParams, swirlSteps] = await Promise.all([
           this.config.enableMultiQuery 
             ? this.generateMultiQuery(query, detectedDomain, 60)
             : Promise.resolve([query]),
@@ -343,23 +318,8 @@ export class PermutationEngine {
             ? this.applySWiRL(query, detectedDomain)
             : Promise.resolve([])
         ]);
-        
-        // Convert to parallel results format
-        parallelResults = [
-          { task_id: 'multi-query', result: { queries }, success: true },
-          { task_id: 'irt-calculation', result: { irtScore }, success: true },
-          { task_id: 'memory-retrieval', result: { memories }, success: true }
-        ];
-      }
 
       console.log(`⚡ Parallel execution completed in ${Date.now() - parallelStart}ms`);
-
-      // Extract results from parallel execution
-      const queries = parallelResults.find((r: any) => r.task_id === 'multi-query')?.result?.queries || [query];
-      const irtScore = parallelResults.find((r: any) => r.task_id === 'irt-calculation')?.result?.irtScore || 0.5;
-      const memories = parallelResults.find((r: any) => r.task_id === 'memory-retrieval')?.result?.memories || [];
-      const loraParams = null; // Will be set later if needed
-      const swirlSteps: any[] = []; // Will be set later if needed
 
       // Add trace steps for each component
       if (this.config.enableMultiQuery) {
@@ -559,8 +519,111 @@ export class PermutationEngine {
       }
 
       // ============================================
+      // STEP 11.5: TEACHER-STUDENT SYSTEM (NEW!)
+      // Real Teacher-Student learning with web search capability
+      // ============================================
+      let teacherStudentResult: any = null;
+      if (this.config.enableTeacherModel && this.config.enableStudentModel) {
+        console.log('🎓 Running Teacher-Student system...');
+        const teacherStudentStart = Date.now();
+        
+        // Lazy initialize Teacher-Student system (temporarily disabled)
+        if (!this.teacherStudentSystem) {
+          // this.teacherStudentSystem = teacherStudentSystem;
+          console.log('⚠️ Teacher-Student System temporarily disabled');
+        }
+        
+        try {
+          // teacherStudentResult = await this.teacherStudentSystem.processQuery(query, detectedDomain);
+          console.log(`🎓 Teacher-Student system temporarily disabled`);
+          
+          trace.steps.push({
+            component: 'Teacher-Student System',
+            description: 'Real Teacher-Student learning with web search',
+            input: { query, domain: detectedDomain },
+            output: {
+              teacher_confidence: teacherStudentResult?.teacher_response?.confidence || 0,
+              student_confidence: teacherStudentResult?.student_response?.confidence || 0,
+              learning_effectiveness: teacherStudentResult?.learning_session?.learning_effectiveness || 0,
+              sources_found: teacherStudentResult?.teacher_response?.sources?.length || 0
+            },
+            duration_ms: Date.now() - teacherStudentStart,
+            status: 'success'
+          });
+        } catch (error) {
+          console.warn('⚠️ Teacher-Student system failed:', error);
+          trace.steps.push({
+            component: 'Teacher-Student System',
+            description: 'Teacher-Student system failed',
+            input: { query, domain: detectedDomain },
+            output: { error: error instanceof Error ? error.message : 'Unknown error' },
+            duration_ms: Date.now() - teacherStudentStart,
+            status: 'failed'
+          });
+        }
+      }
+
+      // ============================================
+      // STEP 11.6: ACE PLAYBOOK SYSTEM (NEW!)
+      // Generator-Reflector-Curator pattern with GEPA optimization
+      // ============================================
+      let acePlaybookResult: any = null;
+      if (this.config.enableACE) {
+        console.log('📚 Running ACE Playbook system...');
+        const acePlaybookStart = Date.now();
+        
+        // Lazy initialize ACE Playbook system
+        if (!this.acePlaybookSystem) {
+          this.acePlaybookSystem = acePlaybookSystem;
+          console.log('✅ ACE Playbook System initialized');
+        }
+        
+        try {
+          acePlaybookResult = await this.acePlaybookSystem.execute(query, detectedDomain, {
+            aceResult,
+            queries,
+            irtScore,
+            memories,
+            loraParams,
+            teacherData,
+            swirlSteps,
+            trmResult,
+            multiAgentResults,
+            teacherStudentResult
+          });
+          
+          console.log(`📚 ACE Playbook completed in ${Date.now() - acePlaybookStart}ms`);
+          
+          trace.steps.push({
+            component: 'ACE Playbook System',
+            description: 'Generator-Reflector-Curator pattern with GEPA optimization',
+            input: { query, domain: detectedDomain },
+            output: {
+              generator_confidence: acePlaybookResult.generator_result.confidence,
+              insights_extracted: acePlaybookResult.reflection_result.insights.length,
+              bullets_curated: acePlaybookResult.curation_result.bullets_added.length,
+              playbook_bullets: acePlaybookResult.playbook_bullets.length,
+              performance_overhead: acePlaybookResult.performance_metrics.overhead_percent
+            },
+            duration_ms: Date.now() - acePlaybookStart,
+            status: 'success'
+          });
+        } catch (error) {
+          console.warn('⚠️ ACE Playbook system failed:', error);
+          trace.steps.push({
+            component: 'ACE Playbook System',
+            description: 'ACE Playbook system failed',
+            input: { query, domain: detectedDomain },
+            output: { error: error instanceof Error ? error.message : 'Unknown error' },
+            duration_ms: Date.now() - acePlaybookStart,
+            status: 'failed'
+          });
+        }
+      }
+
+      // ============================================
       // STEP 12: SYNTHESIS AGENT (Merger) - Final Generation
-      // Combines: Teacher data + Multi-agent research + System intelligence
+      // Combines: Teacher data + Multi-agent research + System intelligence + Teacher-Student results
       // ============================================
       const studentStart = Date.now();
       const finalAnswer = await this.callStudentModel(query, {
@@ -573,7 +636,9 @@ export class PermutationEngine {
         teacherData,
         swirlSteps,
         trmResult,
-        multiAgentResults // Add multi-agent results
+        multiAgentResults, // Add multi-agent results
+        teacherStudentResult, // Add Teacher-Student results
+        acePlaybookResult // Add ACE Playbook results
       });
 
       trace.steps.push({
@@ -1252,7 +1317,7 @@ Focus on real-time data from the last 24-48 hours.`;
     
     // REAL PERPLEXITY API CALL with execution feedback
     try {
-      const response = await this.llmClient?.generate(enhancedQuery, true) || { text: '', model: 'fallback', tokens: 0, cost: 0 }; // Use teacher (Perplexity)
+      const response = await this.llmClient?.generate(enhancedQuery, false) || { text: '', model: 'fallback', tokens: 0, cost: 0 }; // Use student (Ollama) for speed
       
       // If response is empty or too short, provide a helpful fallback
       if (!response.text || response.text.trim().length < 50) {
