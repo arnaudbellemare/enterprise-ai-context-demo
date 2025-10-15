@@ -1,20 +1,34 @@
-# EXCLUDE EVERYTHING EXCEPT FRONTEND SOURCE
-*
+# Python backend files
+app.py
+main.py
+backend/
+*.py
+requirements.txt
+setup.py
 
-# ONLY INCLUDE FRONTEND SOURCE FILES
-!frontend/
-!frontend/app/
-!frontend/app/**/*
-!frontend/components/
-!frontend/components/**/*
-!frontend/lib/
-!frontend/lib/**/*
-!frontend/public/
-!frontend/public/**/*
-!frontend/package.json
-!frontend/next.config.js
-!frontend/tailwind.config.js
-!frontend/tsconfig.json
-!frontend/postcss.config.js
-!frontend/globals.css
-!frontend/layout.tsx
+# Development files
+docs/
+examples/
+scripts/
+benchmarking/
+lora-finetuning/
+src/
+supabase/
+deployment/
+
+# Test files
+*test*.js
+*benchmark*.js
+comprehensive-domain-benchmark.js
+real-benchmark-test.js
+
+# Results files
+*results*.json
+*benchmark*.json
+
+# Node modules (will be installed by Vercel)
+node_modules/
+
+# Git files
+.git/
+.gitignore

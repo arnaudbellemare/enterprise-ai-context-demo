@@ -216,7 +216,7 @@ class LangStructExtractor:
     Based on the LangStruct library: https://github.com/langstruct-ai/langstruct
     """
     
-    def __init__(self, llm_client: MockLLMClient):
+    def __init__(self, llm_client: RealLLMClient):
         self.llm_client = llm_client
         self.extraction_history: List[ExtractionResult] = []
         self.schema_cache: Dict[str, Dict[str, Any]] = {}
@@ -352,7 +352,7 @@ class LangStructExtractor:
 # Example usage and testing
 async def test_langstruct_extraction():
     """Test the LangStruct extraction"""
-    llm_client = MockLLMClient()
+    llm_client = RealLLMClient()
     extractor = LangStructExtractor(llm_client)
     
     # Define extraction schema

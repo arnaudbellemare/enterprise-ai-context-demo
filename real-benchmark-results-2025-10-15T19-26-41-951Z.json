@@ -1,0 +1,14 @@
+{
+  "domains": {},
+  "overall": {
+    "permutation_wins": 0,
+    "baseline_wins": 0,
+    "total_queries": 0,
+    "total_permutation_time": 0,
+    "total_baseline_time": 0,
+    "total_permutation_cost": 0,
+    "total_baseline_cost": 0,
+    "permutation_errors": 0,
+    "baseline_errors": 12
+  }
+}

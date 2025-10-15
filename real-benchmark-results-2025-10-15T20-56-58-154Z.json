@@ -1,0 +1,45 @@
+{
+  "domains": {
+    "crypto": {
+      "name": "Advanced Cryptocurrency Analysis",
+      "permutation_wins": 0,
+      "baseline_wins": 1,
+      "permutation_avg_quality": 0.95,
+      "permutation_avg_time": 272979,
+      "permutation_avg_cost": 0.1,
+      "permutation_errors": 2,
+      "baseline_errors": 0
+    },
+    "real_estate": {
+      "name": "Complex Real Estate Investment",
+      "permutation_wins": 0,
+      "baseline_wins": 3,
+      "permutation_avg_quality": 0.9373015873015874,
+      "permutation_avg_time": 178027.66666666666,
+      "permutation_avg_cost": 0.10000000000000002,
+      "permutation_errors": 0,
+      "baseline_errors": 0
+    },
+    "technology": {
+      "name": "Advanced Technology & Engineering",
+      "permutation_wins": 0,
+      "baseline_wins": 3,
+      "permutation_avg_quality": 0.9458994708994709,
+      "permutation_avg_time": 156892.33333333334,
+      "permutation_avg_cost": 0.10000000000000002,
+      "permutation_errors": 0,
+      "baseline_errors": 0
+    }
+  },
+  "overall": {
+    "permutation_wins": 0,
+    "baseline_wins": 7,
+    "total_queries": 7,
+    "total_permutation_time": 1277739,
+    "total_baseline_time": 0,
+    "total_permutation_cost": 0.7000000000000001,
+    "total_baseline_cost": 0,
+    "permutation_errors": 5,
+    "baseline_errors": 0
+  }
+}
