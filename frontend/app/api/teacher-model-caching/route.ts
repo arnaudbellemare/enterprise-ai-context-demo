@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { teacherModelCache } from '@/lib/teacher-model-caching';
+import { realOCROmniAIBenchmark } from '@/lib/real-ocr-omniai-benchmark';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -52,6 +53,52 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString()
         });
 
+      case 'ocr':
+        const { image_data } = await request.json();
+        if (!image_data) {
+          return NextResponse.json(
+            { error: 'Image data is required for OCR' },
+            { status: 400 }
+          );
+        }
+
+        // Use real OCR from OmniAI Benchmark
+        const ocrResult = await realOCROmniAIBenchmark.performOCR(image_data, 'gpt-4o', {
+          extract_json: false,
+          confidence_threshold: 0.8
+        });
+
+        // Handle both OCRResult and JSONExtractionResult types
+        const isOCRResult = 'text' in ocrResult;
+        const resultText = isOCRResult ? ocrResult.text : JSON.stringify(ocrResult.extracted_data);
+        const resultConfidence = isOCRResult ? ocrResult.confidence : ocrResult.confidence;
+
+        // Cache the OCR result using the existing cacheResponse method
+        const ocrCacheKey = teacherModelCache.cacheResponse(
+          `OCR: ${resultText.substring(0, 100)}...`,
+          resultText,
+          domain,
+          {
+            model: 'gpt-4o',
+            tokens: resultText.length / 4,
+            cost: ocrResult.metadata.cost,
+            processingTime: ocrResult.metadata.processing_time,
+            ocrResults: [resultText]
+          }
+        );
+
+        console.log(`   ✅ Real OCR processed: ${resultText.length} characters, ${(resultConfidence * 100).toFixed(1)}% confidence`);
+        
+        return NextResponse.json({
+          success: true,
+          result: {
+            ...ocrResult,
+            cache_key: ocrCacheKey,
+            domain: domain
+          },
+          timestamp: new Date().toISOString()
+        });
+
       case 'clear':
         teacherModelCache.clear();
         console.log(`   ✅ Cache cleared`);
@@ -64,7 +111,7 @@ export async function POST(request: NextRequest) {
 
       default:
         return NextResponse.json(
-          { error: 'Invalid action. Use: cache, get, or clear' },
+          { error: 'Invalid action. Use: cache, get, ocr, or clear' },
           { status: 400 }
         );
     }

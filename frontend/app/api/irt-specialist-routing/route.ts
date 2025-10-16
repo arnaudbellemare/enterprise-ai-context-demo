@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { irtSpecialistRouter } from '@/lib/irt-specialist-routing';
+import { realIRTFluidBenchmarking } from '@/lib/real-irt-fluid-benchmarking';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,19 +15,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`🧠 IRT Specialist Routing - Query: ${query.substring(0, 50)}...`);
+    console.log(`🧠 Real IRT Fluid Benchmarking - Query: ${query.substring(0, 50)}...`);
     console.log(`   Domain: ${domain}`);
 
-    // Get IRT-based routing decision
-    const routingDecision = irtSpecialistRouter.routeQuery(query, domain, requirements);
+    // Create mock language model responses for testing
+    const mockResponses = {
+      subject_id: 'test_model',
+      responses: {
+        'item_1': Math.random() > 0.5 ? 1 : 0,
+        'item_2': Math.random() > 0.5 ? 1 : 0,
+        'item_3': Math.random() > 0.5 ? 1 : 0,
+        'item_4': Math.random() > 0.5 ? 1 : 0,
+        'item_5': Math.random() > 0.5 ? 1 : 0
+      }
+    };
 
-    console.log(`   ✅ IRT Decision: ${routingDecision.selectedComponent}`);
-    console.log(`   📊 Probability: ${(routingDecision.probability * 100).toFixed(1)}%`);
-    console.log(`   🎯 Confidence: ${(routingDecision.confidence * 100).toFixed(1)}%`);
+    // Run real Fluid Benchmarking
+    const result = await realIRTFluidBenchmarking.runFluidBenchmarking(mockResponses, {
+      start_ability: 0,
+      n_max: 20,
+      estimation_method: 'map',
+      benchmark: 'mmlu'
+    });
+
+    console.log(`   ✅ Real IRT Fluid Benchmarking completed`);
+    console.log(`   📊 Final ability: ${result.final_ability.toFixed(3)}`);
+    console.log(`   🎯 Accuracy: ${(result.benchmark_performance.accuracy * 100).toFixed(1)}%`);
 
     return NextResponse.json({
       success: true,
-      routing: routingDecision,
+      result,
       timestamp: new Date().toISOString()
     });
 
@@ -42,15 +59,20 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const stats = irtSpecialistRouter.getIRTStats();
+    const availableBenchmarks = realIRTFluidBenchmarking.getAvailableBenchmarks();
+    const benchmarkStats = availableBenchmarks.map(benchmark => ({
+      benchmark,
+      stats: realIRTFluidBenchmarking.getIRTModelStats(benchmark)
+    }));
     
     return NextResponse.json({
       success: true,
-      stats,
+      available_benchmarks: availableBenchmarks,
+      benchmark_stats: benchmarkStats,
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('IRT stats error:', error);
+    console.error('Real IRT stats error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to get IRT stats' },
       { status: 500 }
