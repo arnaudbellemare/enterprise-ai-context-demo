@@ -62,13 +62,19 @@ export class ACELLMClient {
     // TRACE: Log Teacher Model start
     this.tracer.logTeacherCall('start', prompt);
     
+    // Check if we have a valid API key
+    if (!this.perplexityKey || this.perplexityKey === 'pplx-test-key' || this.perplexityKey.startsWith('pplx-test')) {
+      console.log('⚠️ Perplexity API key not configured, using Ollama fallback');
+      return await this.callOllama(prompt);
+    }
+    
     try {
       // Add timeout to prevent hanging
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.log('⏰ Perplexity timeout after 30s - using fallback');
+        console.log('⏰ Perplexity timeout after 15s - using fallback');
         controller.abort();
-      }, 30000); // 30 second timeout
+      }, 15000); // 15 second timeout
       
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
@@ -179,7 +185,7 @@ export class ACELLMClient {
                             prompt.includes('technical') ||
                             prompt.includes('fundamental');
       
-      const timeoutDuration = isComplexQuery ? 120000 : 15000; // 2 minutes for complex, 15s for simple
+      const timeoutDuration = isComplexQuery ? 30000 : 10000; // 30s for complex, 10s for simple
       
       console.log(`🤖 Ollama timeout: ${timeoutDuration/1000}s (${isComplexQuery ? 'complex' : 'simple'} query)`);
       

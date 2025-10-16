@@ -51,9 +51,18 @@ function analyzeQueryDomain(query: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json();
+    const body = await req.json();
+    const { messages, message } = body;
     
-    const lastMessage = messages[messages.length - 1]?.content || '';
+    // Handle both message formats
+    const lastMessage = messages?.[messages.length - 1]?.content || message || '';
+    
+    if (!lastMessage) {
+      return NextResponse.json(
+        { error: 'No message provided' },
+        { status: 400 }
+      );
+    }
     
     console.log(`\n💬 PERMUTATION Chat - New message: ${lastMessage.substring(0, 80)}...`);
 
