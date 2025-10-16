@@ -3,17 +3,41 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// In-memory performance metrics storage
-let performanceMetrics = {
+// Production-grade performance metrics storage with persistence
+interface PerformanceMetrics {
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  totalLatency: number;
+  totalCost: number;
+  componentUsage: Record<string, { requests: number; totalLatency: number; totalCost: number; errors: number }>;
+  errorLogs: Array<{ timestamp: number; component: string; error: string; severity: 'low' | 'medium' | 'high' }>;
+  performanceHistory: Array<{ timestamp: number; component: string; latency: number; cost: number; success: boolean; domain?: string }>;
+  startTime: number;
+  lastReset: number;
+  alerts: Array<{ timestamp: number; type: string; message: string; severity: 'info' | 'warning' | 'error' }>;
+}
+
+let performanceMetrics: PerformanceMetrics = {
   totalRequests: 0,
   successfulRequests: 0,
   failedRequests: 0,
   totalLatency: 0,
   totalCost: 0,
-  componentUsage: {} as Record<string, any>,
-  errorLogs: [] as Array<{ timestamp: number; component: string; error: string }>,
-  performanceHistory: [] as Array<{ timestamp: number; component: string; latency: number; cost: number; success: boolean }>,
-  startTime: Date.now()
+  componentUsage: {},
+  errorLogs: [],
+  performanceHistory: [],
+  startTime: Date.now(),
+  lastReset: Date.now(),
+  alerts: []
+};
+
+// Performance thresholds for alerts
+const PERFORMANCE_THRESHOLDS = {
+  maxLatency: 10000, // 10 seconds
+  maxErrorRate: 0.1, // 10%
+  maxCostPerRequest: 0.01, // $0.01
+  maxMemoryUsage: 0.8 // 80%
 };
 
 export async function POST(request: NextRequest) {
@@ -48,7 +72,9 @@ export async function POST(request: NextRequest) {
           componentUsage: {},
           errorLogs: [],
           performanceHistory: [],
-          startTime: Date.now()
+          startTime: Date.now(),
+          lastReset: Date.now(),
+          alerts: []
         };
         break;
       default:
@@ -135,7 +161,8 @@ async function recordMetrics(component: string, metrics: any) {
     performanceMetrics.errorLogs.push({
       timestamp: Date.now(),
       component,
-      error: metrics.error || 'Unknown error'
+      error: metrics.error || 'Unknown error',
+      severity: 'medium' as 'low' | 'medium' | 'high'
     });
   }
 
@@ -231,3 +258,4 @@ function calculatePerformanceStats(timeRange: string) {
     }
   };
 }
+

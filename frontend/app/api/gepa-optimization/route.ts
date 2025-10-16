@@ -188,7 +188,51 @@ async function evaluatePrompt(prompt: string, domain: string): Promise<any> {
 }
 
 async function generateImprovements(prompt: string, domain: string, evaluation: any): Promise<string[]> {
-  // Simulate improvement generation
+  try {
+    const improvementPrompt = `Analyze this ${domain} prompt and suggest specific improvements:
+
+Prompt: "${prompt}"
+Evaluation: ${JSON.stringify(evaluation)}
+
+Based on the evaluation scores, suggest 2-4 specific improvements. Focus on:
+- Areas with low scores (< 0.8)
+- Domain-specific enhancements
+- Practical, actionable improvements
+
+Return as a JSON array of improvement suggestions:
+["Improvement 1", "Improvement 2", "Improvement 3"]
+
+Be specific and actionable.`;
+
+    const response = await fetch('http://localhost:11434/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gemma3:4b',
+        messages: [{ role: 'user', content: improvementPrompt }],
+        stream: false
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const content = data.message?.content || '';
+      
+      try {
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const improvements = JSON.parse(jsonMatch[0]);
+          return improvements;
+        }
+      } catch (e) {
+        console.warn('Failed to parse GEPA improvements JSON:', e);
+      }
+    }
+  } catch (error) {
+    console.warn('GEPA Improvement generation failed:', error);
+  }
+  
+  // Fallback
   const improvements = [];
   
   if (evaluation.clarity < 0.8) {

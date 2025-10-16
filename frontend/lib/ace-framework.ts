@@ -203,7 +203,53 @@ Provide your reasoning step-by-step, referencing specific playbook items when ap
   }
 
   private async generateActions(query: string, reasoning: string, bullets: ContextBullet[]): Promise<string[]> {
-    // Generate actionable steps based on reasoning and playbook
+    try {
+      const actionsPrompt = `Generate specific, actionable steps based on this reasoning:
+
+Query: "${query}"
+Reasoning: "${reasoning}"
+
+Available Playbook Context:
+${bullets.map(b => `[${b.id}] ${b.content}`).join('\n')}
+
+Generate 3-5 specific, actionable steps that:
+1. Are concrete and measurable
+2. Reference relevant playbook items
+3. Build upon the reasoning provided
+4. Lead to a complete solution
+
+Return as a JSON array:
+["Step 1", "Step 2", "Step 3", "Step 4"]`;
+
+      const response = await fetch('http://localhost:11434/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemma3:4b',
+          messages: [{ role: 'user', content: actionsPrompt }],
+          stream: false
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.message?.content || '';
+        
+        try {
+          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            const actions = JSON.parse(jsonMatch[0]);
+            return actions;
+          }
+        } catch (e) {
+          console.warn('Failed to parse ACE actions JSON:', e);
+        }
+      }
+    } catch (error) {
+      console.warn('ACE Actions generation failed:', error);
+    }
+    
+    // Fallback
     return [
       'Analyze the query requirements',
       'Apply relevant playbook strategies',
