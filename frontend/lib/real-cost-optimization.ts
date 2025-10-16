@@ -104,94 +104,26 @@ class RealCostOptimizationEngine {
    * Initialize cost models for different providers
    */
   private initializeCostModels(): void {
-    // OpenAI Models
-    this.costModels.set('openai_gpt4o', {
-      provider: 'OpenAI',
-      model: 'gpt-4o',
+    // ONLY REAL AVAILABLE MODELS - Perplexity AI - Our actual teacher model
+    this.costModels.set('perplexity_llama3_1', {
+      provider: 'Perplexity',
+      model: 'llama-3.1-sonar-large-128k-online',
       pricing: {
-        inputTokens: 0.005,
-        outputTokens: 0.015,
-        baseCost: 0.01,
-        premiumMultiplier: 1.5
+        inputTokens: 0.001,
+        outputTokens: 0.001,
+        baseCost: 0.005,
+        premiumMultiplier: 1.2
       },
       performance: {
-        latency: 2000,
-        throughput: 10,
+        latency: 1800,
+        throughput: 8,
         reliability: 0.99,
         quality: 0.95
       },
       availability: {
-        currentLoad: 0.7,
-        estimatedWaitTime: 500,
-        region: 'us-east'
-      }
-    });
-
-    this.costModels.set('openai_gpt4o_mini', {
-      provider: 'OpenAI',
-      model: 'gpt-4o-mini',
-      pricing: {
-        inputTokens: 0.00015,
-        outputTokens: 0.0006,
-        baseCost: 0.001,
-        premiumMultiplier: 1.2
-      },
-      performance: {
-        latency: 1500,
-        throughput: 20,
-        reliability: 0.98,
-        quality: 0.9
-      },
-      availability: {
-        currentLoad: 0.5,
-        estimatedWaitTime: 200,
-        region: 'us-east'
-      }
-    });
-
-    // Anthropic Models
-    this.costModels.set('anthropic_claude_3_5_sonnet', {
-      provider: 'Anthropic',
-      model: 'claude-3-5-sonnet-20241022',
-      pricing: {
-        inputTokens: 0.003,
-        outputTokens: 0.015,
-        baseCost: 0.008,
-        premiumMultiplier: 1.3
-      },
-      performance: {
-        latency: 2500,
-        throughput: 8,
-        reliability: 0.99,
-        quality: 0.96
-      },
-      availability: {
-        currentLoad: 0.6,
-        estimatedWaitTime: 800,
-        region: 'us-west'
-      }
-    });
-
-    // Google Models
-    this.costModels.set('google_gemini_1_5_pro', {
-      provider: 'Google',
-      model: 'gemini-1.5-pro',
-      pricing: {
-        inputTokens: 0.00125,
-        outputTokens: 0.005,
-        baseCost: 0.005,
-        premiumMultiplier: 1.1
-      },
-      performance: {
-        latency: 1800,
-        throughput: 15,
-        reliability: 0.97,
-        quality: 0.92
-      },
-      availability: {
-        currentLoad: 0.4,
-        estimatedWaitTime: 300,
-        region: 'us-central'
+        currentLoad: 0.2,
+        estimatedWaitTime: 100,
+        region: 'global'
       }
     });
 
@@ -223,7 +155,8 @@ class RealCostOptimizationEngine {
    * Initialize pricing history for trend analysis
    */
   private initializePricingHistory(): void {
-    const providers = ['openai_gpt4o', 'anthropic_claude_3_5_sonnet', 'google_gemini_1_5_pro'];
+    // ONLY REAL AVAILABLE MODELS
+    const providers = ['perplexity_llama3_1', 'ollama_gemma3_4b'];
     
     providers.forEach(provider => {
       // Generate realistic pricing history
@@ -242,7 +175,8 @@ class RealCostOptimizationEngine {
    * Initialize demand patterns for predictive pricing
    */
   private initializeDemandPatterns(): void {
-    const providers = ['openai_gpt4o', 'anthropic_claude_3_5_sonnet', 'google_gemini_1_5_pro'];
+    // ONLY REAL AVAILABLE MODELS
+    const providers = ['perplexity_llama3_1', 'ollama_gemma3_4b'];
     
     providers.forEach(provider => {
       this.demandPatterns.set(provider, {
@@ -592,7 +526,15 @@ class RealCostOptimizationEngine {
   }
 
   private calculateCostScore(cost: number, budgetRemaining: number): number {
-    if (budgetRemaining <= 0) return 0;
+    // Free models get the highest cost score
+    if (cost === 0) return 1.0;
+    
+    // For users with budget, calculate based on remaining budget
+    if (budgetRemaining <= 0) {
+      // Free users prefer free models, but still consider low-cost options
+      return Math.max(0, 1 - (cost / 0.01)); // Normalize against $0.01
+    }
+    
     return Math.max(0, 1 - (cost / budgetRemaining));
   }
 

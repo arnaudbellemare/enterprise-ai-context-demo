@@ -6,7 +6,7 @@
  * Tests the complete integrated system to ensure everything works together
  */
 
-const BASE_URL = 'http://localhost:3004';
+const BASE_URL = 'http://localhost:3005';
 
 async function testEndpoint(endpoint, method = 'GET', data = null) {
   try {
