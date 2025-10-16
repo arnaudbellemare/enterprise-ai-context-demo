@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     
     let routingDecision;
     try {
-      const routingResponse = await fetch('http://localhost:3002/api/smart-routing', {
+      const routingResponse = await fetch('http://localhost:3000/api/smart-routing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,7 +98,8 @@ export async function POST(req: NextRequest) {
       });
 
       if (routingResponse.ok) {
-        routingDecision = await routingResponse.json();
+        const routingData = await routingResponse.json();
+        routingDecision = routingData.routingDecision;
         console.log(`   ✅ Smart Routing Decision: ${routingDecision.primary_component} (${routingDecision.reasoning})`);
       } else {
         throw new Error('Smart routing failed');
@@ -165,7 +166,7 @@ export async function POST(req: NextRequest) {
       switch (routingDecision.primary_component) {
         case 'TRM Engine':
           console.log(`   🔧 Calling TRM Engine...`);
-          const trmResponse = await fetch('http://localhost:3002/api/trm-engine', {
+          const trmResponse = await fetch('http://localhost:3000/api/trm-engine', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -189,7 +190,7 @@ export async function POST(req: NextRequest) {
           
         case 'ACE Framework':
           console.log(`   🧠 Calling ACE Framework...`);
-          const aceResponse = await fetch('http://localhost:3002/api/ace/enhanced', {
+          const aceResponse = await fetch('http://localhost:3000/api/ace/enhanced', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -211,7 +212,7 @@ export async function POST(req: NextRequest) {
           
         case 'GEPA Optimizer':
           console.log(`   ⚡ Calling GEPA Optimizer...`);
-          const gepaResponse = await fetch('http://localhost:3002/api/gepa-optimization', {
+          const gepaResponse = await fetch('http://localhost:3000/api/gepa-optimization', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -258,7 +259,7 @@ export async function POST(req: NextRequest) {
         try {
           switch (routingDecision.fallback_component) {
             case 'TRM Engine':
-              const fallbackTrmResponse = await fetch('http://localhost:3002/api/trm-engine', {
+              const fallbackTrmResponse = await fetch('http://localhost:3000/api/trm-engine', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -279,7 +280,7 @@ export async function POST(req: NextRequest) {
               break;
               
             case 'ACE Framework':
-              const fallbackAceResponse = await fetch('http://localhost:3002/api/ace/enhanced', {
+              const fallbackAceResponse = await fetch('http://localhost:3000/api/ace/enhanced', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -369,7 +370,7 @@ export async function POST(req: NextRequest) {
       // Get additional context if needed
       let retrievedContext = '';
       try {
-        const retrievalResponse = await fetch('http://localhost:3002/api/real-retrieval', {
+        const retrievalResponse = await fetch('http://localhost:3000/api/real-retrieval', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
