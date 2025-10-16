@@ -105,9 +105,9 @@ class RealCostOptimizationEngine {
    */
   private initializeCostModels(): void {
     // ONLY REAL AVAILABLE MODELS - Perplexity AI - Our actual teacher model
-    this.costModels.set('perplexity_llama3_1', {
+    this.costModels.set('perplexity_sonar_pro', {
       provider: 'Perplexity',
-      model: 'llama-3.1-sonar-large-128k-online',
+      model: 'sonar-pro',
       pricing: {
         inputTokens: 0.001,
         outputTokens: 0.001,
@@ -156,7 +156,7 @@ class RealCostOptimizationEngine {
    */
   private initializePricingHistory(): void {
     // ONLY REAL AVAILABLE MODELS
-    const providers = ['perplexity_llama3_1', 'ollama_gemma3_4b'];
+    const providers = ['perplexity_sonar_pro', 'ollama_gemma3_4b'];
     
     providers.forEach(provider => {
       // Generate realistic pricing history
@@ -176,7 +176,7 @@ class RealCostOptimizationEngine {
    */
   private initializeDemandPatterns(): void {
     // ONLY REAL AVAILABLE MODELS
-    const providers = ['perplexity_llama3_1', 'ollama_gemma3_4b'];
+    const providers = ['perplexity_sonar_pro', 'ollama_gemma3_4b'];
     
     providers.forEach(provider => {
       this.demandPatterns.set(provider, {
@@ -405,7 +405,22 @@ class RealCostOptimizationEngine {
       const performanceScore = this.calculatePerformanceScore(option);
       const userTierScore = this.calculateUserTierScore(option, request.context.userTier);
       
-      const totalScore = costScore * 0.4 + performanceScore * 0.4 + userTierScore * 0.2;
+      // Adjust weights based on user tier - free users prioritize cost heavily
+      let costWeight = 0.4;
+      let performanceWeight = 0.4;
+      let tierWeight = 0.2;
+      
+      if (request.context.userTier === 'free') {
+        costWeight = 0.8; // Free users prioritize cost heavily
+        performanceWeight = 0.1;
+        tierWeight = 0.1;
+      } else if (request.context.userTier === 'enterprise') {
+        costWeight = 0.2; // Enterprise users prioritize performance
+        performanceWeight = 0.6;
+        tierWeight = 0.2;
+      }
+      
+      const totalScore = costScore * costWeight + performanceScore * performanceWeight + userTierScore * tierWeight;
 
       return {
         ...option,
@@ -635,6 +650,173 @@ class RealCostOptimizationEngine {
     const variance = prices.reduce((sum, price) => sum + Math.pow(price - mean, 2), 0) / prices.length;
     
     return Math.sqrt(variance) / mean;
+  }
+
+  /**
+   * Main cost optimization method
+   */
+  async optimizeCost(request: CostOptimizationRequest): Promise<CostOptimizationResult> {
+    const startTime = Date.now();
+    
+    console.log(`💰 Starting REAL Cost Optimization for: ${request.query.substring(0, 50)}...`);
+    
+    // Estimate token usage
+    const estimatedTokens = this.estimateTokenUsage(request.query);
+    console.log(`   📊 Estimated tokens: ${estimatedTokens.input} input, ${estimatedTokens.output} output`);
+    
+    // Calculate costs for all available models
+    const calculations = [];
+    for (const [modelId, model] of this.costModels) {
+      const cost = this.calculateCost(model, estimatedTokens);
+      const dynamicPricing = this.applyDynamicPricing(model, cost);
+      
+      calculations.push({
+        provider: model.provider,
+        model: model.model,
+        cost: dynamicPricing.cost,
+        latency: model.performance.latency,
+        quality: model.performance.quality,
+        reliability: model.performance.reliability,
+        costBreakdown: dynamicPricing.costBreakdown,
+        dynamicPricing: dynamicPricing.dynamicPricing
+      });
+    }
+    
+    console.log(`   💵 Calculated costs for ${calculations.length} models`);
+    
+    // Apply dynamic pricing adjustments
+    const updatedCalculations = await this.applyDynamicPricingAdjustments(calculations);
+    console.log(`   📈 Applied dynamic pricing adjustments`);
+    
+    // Filter by requirements
+    const viableOptions = this.filterByRequirements(updatedCalculations, request.requirements);
+    console.log(`   🔍 Filtered to ${viableOptions.length} viable options`);
+    
+    if (viableOptions.length === 0) {
+      throw new Error('No viable options found for the given requirements');
+    }
+    
+    // Optimize selection
+    const result = await this.optimizeSelection(viableOptions, request);
+    
+    // Find the selected option for logging
+    const selectedOption = viableOptions.find(opt => 
+      opt.provider === result.selectedProvider && opt.model === result.selectedModel
+    );
+    
+    console.log(`   🎯 Selected optimal option: ${result.selectedProvider}/${result.selectedModel}`);
+    console.log(`   💰 Estimated cost: $${result.estimatedCost.toFixed(6)}`);
+    console.log(`   ⏱️ Estimated latency: ${result.estimatedLatency}ms`);
+    console.log(`   🎯 Cost efficiency: ${(result.optimizationMetrics.costEfficiency || 0).toFixed(1)}%`);
+    
+    const duration = Date.now() - startTime;
+    console.log(`   ✅ Cost optimization completed in ${duration}ms`);
+    
+    return result;
+  }
+
+  private estimateTokenUsage(query: string): { input: number; output: number } {
+    // Real token estimation based on query length and complexity
+    const wordCount = query.split(' ').length;
+    const complexityMultiplier = this.calculateQueryComplexity(query);
+    
+    const inputTokens = Math.ceil(wordCount * 1.3 * (1 + complexityMultiplier));
+    const outputTokens = Math.ceil(inputTokens * 0.8 * (1 + complexityMultiplier * 0.5));
+    
+    return { input: inputTokens, output: outputTokens };
+  }
+
+  private calculateCost(model: CostModel, tokens: { input: number; output: number }): number {
+    const inputCost = (tokens.input / 1000) * model.pricing.inputTokens;
+    const outputCost = (tokens.output / 1000) * model.pricing.outputTokens;
+    const totalCost = inputCost + outputCost + model.pricing.baseCost;
+    
+    return totalCost;
+  }
+
+  private applyDynamicPricing(model: CostModel, baseCost: number): any {
+    // Apply dynamic pricing based on demand and time
+    const demandMultiplier = this.getCurrentDemandMultiplier(model.provider);
+    const timeMultiplier = this.getTimeBasedMultiplier();
+    const dynamicMultiplier = demandMultiplier * timeMultiplier;
+    
+    const adjustedCost = baseCost * dynamicMultiplier;
+    
+    return {
+      cost: adjustedCost,
+      costBreakdown: {
+        baseCost: model.pricing.baseCost,
+        premiumMultiplier: dynamicMultiplier,
+        totalCost: adjustedCost
+      },
+      dynamicPricing: {
+        demandMultiplier,
+        timeMultiplier,
+        finalMultiplier: dynamicMultiplier
+      }
+    };
+  }
+
+  private getCurrentDemandMultiplier(provider: string): number {
+    const demand = this.demandPatterns.get(provider);
+    if (!demand) return 1.0;
+    
+    const currentDemand = demand.currentDemand || 0.5;
+    // Higher demand = higher multiplier (1.0 to 2.0)
+    return 1.0 + currentDemand;
+  }
+
+  private getTimeBasedMultiplier(): number {
+    const hour = new Date().getHours();
+    // Peak hours (9-11 AM, 2-4 PM, 8-10 PM) have higher costs
+    if ((hour >= 9 && hour <= 11) || (hour >= 14 && hour <= 16) || (hour >= 20 && hour <= 22)) {
+      return 1.2;
+    }
+    // Off-peak hours (12-6 AM) have lower costs
+    if (hour >= 0 && hour <= 6) {
+      return 0.8;
+    }
+    // Normal hours
+    return 1.0;
+  }
+
+  private async applyDynamicPricingAdjustments(calculations: any[]): Promise<any[]> {
+    // Apply additional dynamic pricing adjustments
+    return calculations.map(calculation => {
+      const priceTrend = this.getPriceTrend(calculation.provider);
+      const demandMultiplier = this.getCurrentDemandMultiplier(calculation.provider);
+      
+      const dynamicMultiplier = demandMultiplier * (1 + priceTrend * 0.1);
+      const updatedCost = calculation.cost * dynamicMultiplier;
+      
+      return {
+        ...calculation,
+        cost: updatedCost,
+        costBreakdown: {
+          ...calculation.costBreakdown,
+          premiumMultiplier: dynamicMultiplier,
+          totalCost: updatedCost
+        },
+        dynamicPricing: {
+          demandMultiplier,
+          priceTrend,
+          finalMultiplier: dynamicMultiplier
+        }
+      };
+    });
+  }
+
+  private getPriceTrend(provider: string): number {
+    const history = this.pricingHistory.get(provider);
+    if (!history || history.length < 10) return 0;
+    
+    const recent = history.slice(-5);
+    const older = history.slice(-10, -5);
+    
+    const recentAvg = recent.reduce((sum, price) => sum + price, 0) / recent.length;
+    const olderAvg = older.reduce((sum, price) => sum + price, 0) / older.length;
+    
+    return (recentAvg - olderAvg) / olderAvg;
   }
 }
 
