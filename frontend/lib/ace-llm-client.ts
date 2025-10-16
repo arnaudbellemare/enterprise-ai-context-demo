@@ -168,9 +168,18 @@ export class ACELLMClient {
                             prompt.includes('optimization') ||
                             prompt.includes('algorithm') ||
                             prompt.includes('muon') ||
-                            prompt.includes('adamw');
+                            prompt.includes('adamw') ||
+                            prompt.includes('analysis') ||
+                            prompt.includes('evaluate') ||
+                            prompt.includes('comprehensive') ||
+                            prompt.includes('risk-return') ||
+                            prompt.includes('portfolio') ||
+                            prompt.includes('investment') ||
+                            prompt.includes('market') ||
+                            prompt.includes('technical') ||
+                            prompt.includes('fundamental');
       
-      const timeoutDuration = isComplexQuery ? 30000 : 5000; // 30s for complex, 5s for simple
+      const timeoutDuration = isComplexQuery ? 120000 : 15000; // 2 minutes for complex, 15s for simple
       
       console.log(`🤖 Ollama timeout: ${timeoutDuration/1000}s (${isComplexQuery ? 'complex' : 'simple'} query)`);
       

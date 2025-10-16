@@ -3,8 +3,43 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+interface BenchmarkResult {
+  domain: string;
+  query: string;
+  permutation: {
+    quality: number;
+    duration: number;
+    tokens: number;
+    success: boolean;
+  };
+  baseline: {
+    quality: number;
+    duration: number;
+    tokens: number;
+    success: boolean;
+    error?: string;
+  };
+  improvement: number;
+  timestamp: string;
+}
+
+interface BenchmarkSummary {
+  totalTests: number;
+  successfulTests: number;
+  avgPermutationQuality: number;
+  avgBaselineQuality: number;
+  avgImprovement: number;
+  avgPermutationDuration: number;
+  avgBaselineDuration: number;
+  timestamp: string;
+}
+
 export default function BenchmarksPage() {
   const [currentTime, setCurrentTime] = useState('');
+  const [benchmarkResults, setBenchmarkResults] = useState<BenchmarkResult[]>([]);
+  const [benchmarkSummary, setBenchmarkSummary] = useState<BenchmarkSummary | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
+  const [lastRun, setLastRun] = useState<string | null>(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -15,7 +50,6 @@ export default function BenchmarksPage() {
         minute: '2-digit',
         second: '2-digit'
       });
-      console.log('🕐 Benchmarks time update:', timeString);
       setCurrentTime(timeString);
     };
 
@@ -25,62 +59,58 @@ export default function BenchmarksPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const benchmarkData = [
-    {
-      domain: 'Financial',
-      tests: [
-        { name: 'S&P 500 ROI Calculation', baseline: 85, permutation: 100, improvement: '+18%' },
-        { name: 'Portfolio Optimization', baseline: 78, permutation: 97, improvement: '+24%' },
-        { name: 'Risk Assessment', baseline: 82, permutation: 95, improvement: '+16%' },
-        { name: 'Market Analysis', baseline: 80, permutation: 98, improvement: '+23%' }
-      ]
-    },
-    {
-      domain: 'Crypto',
-      tests: [
-        { name: 'Bitcoin Liquidations', baseline: 70, permutation: 100, improvement: '+43%' },
-        { name: 'DeFi Protocol Analysis', baseline: 75, permutation: 96, improvement: '+28%' },
-        { name: 'Token Price Prediction', baseline: 68, permutation: 94, improvement: '+38%' },
-        { name: 'Yield Farming Optimization', baseline: 72, permutation: 97, improvement: '+35%' }
-      ]
-    },
-    {
-      domain: 'Real Estate',
-      tests: [
-        { name: 'Property Valuation', baseline: 80, permutation: 100, improvement: '+25%' },
-        { name: 'Market Trend Analysis', baseline: 77, permutation: 95, improvement: '+23%' },
-        { name: 'Investment ROI', baseline: 79, permutation: 96, improvement: '+22%' },
-        { name: 'Location Analysis', baseline: 81, permutation: 98, improvement: '+21%' }
-      ]
-    },
-    {
-      domain: 'Legal',
-      tests: [
-        { name: 'Contract Analysis', baseline: 85, permutation: 95, improvement: '+12%' },
-        { name: 'Compliance Checking', baseline: 83, permutation: 94, improvement: '+13%' },
-        { name: 'Document Processing', baseline: 87, permutation: 96, improvement: '+10%' },
-        { name: 'Case Research', baseline: 80, permutation: 93, improvement: '+16%' }
-      ]
-    },
-    {
-      domain: 'Healthcare',
-      tests: [
-        { name: 'Clinical Data Analysis', baseline: 88, permutation: 98, improvement: '+11%' },
-        { name: 'Diagnosis Support', baseline: 85, permutation: 96, improvement: '+13%' },
-        { name: 'Drug Interaction Check', baseline: 90, permutation: 99, improvement: '+10%' },
-        { name: 'Patient Risk Assessment', baseline: 82, permutation: 95, improvement: '+16%' }
-      ]
-    },
-    {
-      domain: 'Manufacturing',
-      tests: [
-        { name: 'Quality Control', baseline: 78, permutation: 97, improvement: '+24%' },
-        { name: 'Supply Chain Optimization', baseline: 76, permutation: 95, improvement: '+25%' },
-        { name: 'Predictive Maintenance', baseline: 74, permutation: 96, improvement: '+30%' },
-        { name: 'Production Planning', baseline: 80, permutation: 98, improvement: '+23%' }
-      ]
+  const runRealBenchmarks = async () => {
+    setIsRunning(true);
+    try {
+      console.log('🚀 Starting real benchmark run...');
+      const response = await fetch('/api/benchmark/run-real', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📊 Real benchmark results:', data);
+      
+      setBenchmarkResults(data.results || []);
+      setBenchmarkSummary(data.summary || null);
+      setLastRun(new Date().toLocaleString());
+    } catch (error) {
+      console.error('❌ Benchmark run failed:', error);
+      alert(`Benchmark failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsRunning(false);
     }
-  ];
+  };
+
+  const getDomainIcon = (domain: string) => {
+    switch (domain.toLowerCase()) {
+      case 'financial': return '💰';
+      case 'crypto': return '₿';
+      case 'real_estate': return '🏠';
+      case 'legal': return '⚖️';
+      case 'healthcare': return '🏥';
+      default: return '📊';
+    }
+  };
+
+  const getQualityColor = (quality: number) => {
+    if (quality >= 90) return 'text-green-400';
+    if (quality >= 80) return 'text-yellow-400';
+    if (quality >= 70) return 'text-orange-400';
+    return 'text-red-400';
+  };
+
+  const getImprovementColor = (improvement: number) => {
+    if (improvement > 0) return 'text-green-400';
+    if (improvement === 0) return 'text-yellow-400';
+    return 'text-red-400';
+  };
 
   return (
     <div className="min-h-screen bg-black text-cyan-400 font-mono p-4">
@@ -95,8 +125,8 @@ export default function BenchmarksPage() {
           <div className="text-xs">PERMUTATION TERMINAL v1.0.0</div>
         </div>
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-cyan-400 mb-2">BENCHMARKS</h1>
-          <div className="text-sm text-green-400">PERMUTATION vs Baseline Performance</div>
+          <h1 className="text-3xl font-bold text-cyan-400 mb-2">REAL BENCHMARKS</h1>
+          <div className="text-sm text-green-400">PERMUTATION vs Ollama Baseline (Real Data)</div>
         </div>
       </div>
 
@@ -125,79 +155,173 @@ export default function BenchmarksPage() {
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="border border-cyan-400 p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-400">24</div>
-          <div className="text-xs">Tests Run</div>
+      {/* Benchmark Controls */}
+      <div className="border border-cyan-400 mb-4 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-cyan-400">BENCHMARK CONTROLS</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={runRealBenchmarks}
+              disabled={isRunning}
+              className={`px-4 py-2 border border-cyan-400 font-mono text-sm transition-colors ${
+                isRunning
+                  ? 'bg-yellow-400 text-black cursor-not-allowed'
+                  : 'bg-cyan-400 text-black hover:bg-cyan-300'
+              }`}
+            >
+              {isRunning ? '🔄 RUNNING...' : '🚀 RUN REAL BENCHMARKS'}
+            </button>
+          </div>
         </div>
-        <div className="border border-cyan-400 p-4 text-center">
-          <div className="text-2xl font-bold text-cyan-400">+21%</div>
-          <div className="text-xs">Avg Improvement</div>
-        </div>
-        <div className="border border-cyan-400 p-4 text-center">
-          <div className="text-2xl font-bold text-green-400">100%</div>
-          <div className="text-xs">Success Rate</div>
-        </div>
-        <div className="border border-cyan-400 p-4 text-center">
-          <div className="text-2xl font-bold text-purple-400">6</div>
-          <div className="text-xs">Domains</div>
-        </div>
+        
+        {lastRun && (
+          <div className="text-sm text-green-400">
+            Last run: {lastRun}
+          </div>
+        )}
       </div>
 
-      {/* Benchmark Results */}
-      <div className="space-y-6">
-        {benchmarkData.map((domain, domainIdx) => (
-          <div 
-            key={domainIdx} 
-            className="border border-cyan-400 p-4"
-          >
-            <div className="text-center mb-4">
-              <h2 className="text-xl font-bold text-green-400 border-b-2 border-green-400 pb-2 inline-block">
-                {domain.domain.toUpperCase()}
-              </h2>
+      {/* Summary Stats */}
+      {benchmarkSummary && (
+        <div className="border border-cyan-400 mb-4 p-4">
+          <h2 className="text-xl font-bold text-cyan-400 mb-4">SUMMARY STATISTICS</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-400">{benchmarkSummary.totalTests}</div>
+              <div className="text-sm text-cyan-400">Tests Run</div>
             </div>
+            <div className="text-center">
+              <div className={`text-2xl font-bold ${getImprovementColor(benchmarkSummary.avgImprovement)}`}>
+                {benchmarkSummary.avgImprovement > 0 ? '+' : ''}{benchmarkSummary.avgImprovement}%
+              </div>
+              <div className="text-sm text-cyan-400">Avg Improvement</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-400">{Math.round((benchmarkSummary.successfulTests / benchmarkSummary.totalTests) * 100)}%</div>
+              <div className="text-sm text-cyan-400">Success Rate</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-cyan-400">{benchmarkSummary.successfulTests}</div>
+              <div className="text-sm text-cyan-400">Domains</div>
+            </div>
+          </div>
+        </div>
+      )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {domain.tests.map((test, testIdx) => (
-                <div 
-                  key={testIdx} 
-                  className="bg-gray-900/50 border border-gray-700 p-3"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-cyan-400">{test.name}</span>
-                    <span className="text-xs text-green-400 font-bold">{test.improvement}</span>
-                  </div>
-                  
-                  <div className="space-y-1 text-xs">
+      {/* Benchmark Results */}
+      {benchmarkResults.length > 0 ? (
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-cyan-400 mb-4">DETAILED RESULTS</h2>
+          {benchmarkResults.map((result, index) => (
+            <div key={index} className="border border-cyan-400 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">{getDomainIcon(result.domain)}</span>
+                <h3 className="text-lg font-bold text-cyan-400">{result.domain.toUpperCase()}</h3>
+                <span className="text-sm text-gray-400">
+                  {new Date(result.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+              
+              <div className="mb-3">
+                <div className="text-sm text-gray-400 mb-2">Query:</div>
+                <div className="text-sm bg-gray-900 p-2 rounded border">
+                  {result.query.substring(0, 200)}...
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* PERMUTATION Results */}
+                <div className="border border-green-400 p-3">
+                  <div className="text-green-400 font-bold mb-2">🤖 PERMUTATION</div>
+                  <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span>├─ Baseline:</span>
-                      <span className="text-gray-400">{test.baseline}%</span>
+                      <span>Quality:</span>
+                      <span className={getQualityColor(result.permutation.quality)}>
+                        {result.permutation.quality}%
+                      </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>└─ PERMUTATION:</span>
-                      <span className="text-green-400 font-bold">{test.permutation}%</span>
+                      <span>Duration:</span>
+                      <span>{(result.permutation.duration / 1000).toFixed(1)}s</span>
                     </div>
-                  </div>
-
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-800 h-2 rounded">
-                      <div 
-                        className="bg-gradient-to-r from-cyan-400 to-green-400 h-2 rounded"
-                        style={{ width: `${test.permutation}%` }}
-                      ></div>
+                    <div className="flex justify-between">
+                      <span>Tokens:</span>
+                      <span>{result.permutation.tokens}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Status:</span>
+                      <span className={result.permutation.success ? 'text-green-400' : 'text-red-400'}>
+                        {result.permutation.success ? '✅ Success' : '❌ Failed'}
+                      </span>
                     </div>
                   </div>
                 </div>
-              ))}
+
+                {/* Baseline Results */}
+                <div className="border border-blue-400 p-3">
+                  <div className="text-blue-400 font-bold mb-2">🔵 BASELINE (Ollama)</div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Quality:</span>
+                      <span className={getQualityColor(result.baseline.quality)}>
+                        {result.baseline.quality}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Duration:</span>
+                      <span>{(result.baseline.duration / 1000).toFixed(1)}s</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tokens:</span>
+                      <span>{result.baseline.tokens}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Status:</span>
+                      <span className={result.baseline.success ? 'text-green-400' : 'text-red-400'}>
+                        {result.baseline.success ? '✅ Success' : '❌ Failed'}
+                      </span>
+                    </div>
+                    {result.baseline.error && (
+                      <div className="text-red-400 text-xs mt-2">
+                        Error: {result.baseline.error}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Improvement */}
+              <div className="mt-3 p-3 border border-yellow-400">
+                <div className="text-center">
+                  <div className="text-yellow-400 font-bold mb-1">IMPROVEMENT</div>
+                  <div className={`text-2xl font-bold ${getImprovementColor(result.improvement)}`}>
+                    {result.improvement > 0 ? '+' : ''}{result.improvement}%
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    PERMUTATION vs Baseline
+                  </div>
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
+      ) : (
+        <div className="border border-cyan-400 p-8 text-center">
+          <div className="text-xl text-cyan-400 mb-4">NO BENCHMARK DATA</div>
+          <div className="text-gray-400 mb-4">
+            Click "RUN REAL BENCHMARKS" to start testing the system
           </div>
-        ))}
-      </div>
+          <div className="text-sm text-gray-500">
+            This will run actual queries against both PERMUTATION and Ollama baseline
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
-      <div className="text-center mt-8 text-xs text-gray-600">
-        <div>PERMUTATION BENCHMARKS | OCR + IRT Validation | All Domains Tested</div>
+      <div className="border border-cyan-400 mt-8 p-4 text-center">
+        <div className="text-sm text-gray-400">
+          PERMUTATION BENCHMARKS | Real Data Only | No Mock Results
+        </div>
       </div>
     </div>
   );

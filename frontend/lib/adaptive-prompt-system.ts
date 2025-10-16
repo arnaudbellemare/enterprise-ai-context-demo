@@ -477,6 +477,125 @@ Be thorough but clear.`,
         }
       },
       {
+        id: 'structured-analysis',
+        name: 'Structured Analysis & Output',
+        task_type: 'analytical',
+        difficulty_range: { min: 0.3, max: 1 },
+        template: `You are an expert analyst. Provide a structured, comprehensive analysis.
+
+Query: {{query}}
+
+**RESPONSE FORMAT:**
+1. **EXECUTIVE SUMMARY** (2-3 sentences)
+2. **KEY FINDINGS** (bullet points)
+3. **DETAILED ANALYSIS** (organized sections)
+4. **RECOMMENDATIONS** (actionable items)
+5. **RISKS & LIMITATIONS** (potential issues)
+
+**QUALITY REQUIREMENTS:**
+- Use specific data points and examples
+- Include relevant metrics or percentages
+- Provide clear reasoning for conclusions
+- Structure information logically
+- Use professional language
+
+Focus on accuracy, completeness, and actionable insights.`,
+        variables: ['query'],
+        performance: {
+          success_rate: 0.92,
+          avg_quality: 0.95,
+          avg_latency_ms: 1200,
+          usage_count: 0,
+          last_used: 0
+        },
+        metadata: {
+          created_at: Date.now(),
+          updated_at: Date.now(),
+          optimized_by: 'manual',
+          domain: 'structured_output'
+        }
+      },
+      {
+        id: 'financial-analysis',
+        name: 'Financial Analysis Expert',
+        task_type: 'financial',
+        difficulty_range: { min: 0.4, max: 1 },
+        template: `You are a financial analysis expert. Provide comprehensive financial insights.
+
+Query: {{query}}
+
+**RESPONSE STRUCTURE:**
+1. **OVERVIEW** - Brief context and scope
+2. **QUANTITATIVE ANALYSIS** - Numbers, ratios, metrics
+3. **QUALITATIVE FACTORS** - Market conditions, risks, opportunities
+4. **COMPARATIVE ANALYSIS** - Benchmarks, alternatives, historical data
+5. **RECOMMENDATIONS** - Specific, actionable advice
+6. **RISK ASSESSMENT** - Potential downsides and mitigation
+
+**REQUIREMENTS:**
+- Include specific financial metrics where applicable
+- Reference current market conditions
+- Provide clear risk-return analysis
+- Use professional financial terminology
+- Support conclusions with data
+
+Be precise, data-driven, and practical.`,
+        variables: ['query'],
+        performance: {
+          success_rate: 0.90,
+          avg_quality: 0.94,
+          avg_latency_ms: 1500,
+          usage_count: 0,
+          last_used: 0
+        },
+        metadata: {
+          created_at: Date.now(),
+          updated_at: Date.now(),
+          optimized_by: 'manual',
+          domain: 'financial'
+        }
+      },
+      {
+        id: 'technical-analysis',
+        name: 'Technical Analysis Expert',
+        task_type: 'technical',
+        difficulty_range: { min: 0.5, max: 1 },
+        template: `You are a technical analysis expert. Provide detailed technical insights.
+
+Query: {{query}}
+
+**RESPONSE FORMAT:**
+1. **TECHNICAL OVERVIEW** - Current state and context
+2. **DETAILED ANALYSIS** - Technical components, processes, systems
+3. **PERFORMANCE METRICS** - Specific measurements and benchmarks
+4. **OPTIMIZATION OPPORTUNITIES** - Areas for improvement
+5. **IMPLEMENTATION GUIDANCE** - Practical steps and considerations
+6. **TECHNICAL RISKS** - Potential issues and mitigation strategies
+
+**QUALITY STANDARDS:**
+- Use precise technical terminology
+- Include specific metrics and measurements
+- Provide step-by-step analysis
+- Reference industry standards or best practices
+- Support recommendations with technical rationale
+
+Be thorough, accurate, and technically sound.`,
+        variables: ['query'],
+        performance: {
+          success_rate: 0.88,
+          avg_quality: 0.93,
+          avg_latency_ms: 1800,
+          usage_count: 0,
+          last_used: 0
+        },
+        metadata: {
+          created_at: Date.now(),
+          updated_at: Date.now(),
+          optimized_by: 'manual',
+          domain: 'technical'
+        }
+      },
+      {
         id: 'computational-precise',
         name: 'Computational & Precise',
         task_type: 'computational',

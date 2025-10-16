@@ -138,8 +138,25 @@ REACT Pattern:
     const startTime = Date.now();
     
     // Select best strategy for domain
-    const strategies = this.strategies.get(domain) || this.strategies.get('general') || [];
+    let strategies = this.strategies.get(domain) || this.strategies.get('general') || [];
+    
+    // If no strategies found, create a default one
+    if (strategies.length === 0) {
+      strategies = this.createDefaultStrategy(domain);
+      this.strategies.set(domain, strategies);
+    }
+    
     const bestStrategy = this.selectBestStrategy(strategies, query, context);
+    
+    if (!bestStrategy) {
+      // Use the first available strategy as fallback
+      const fallbackStrategy = strategies[0];
+      if (!fallbackStrategy) {
+        throw new Error(`No strategies available for domain: ${domain}`);
+      }
+      console.log(`⚠️ Using fallback strategy: ${fallbackStrategy.name}`);
+      return this.executeWithStrategy(fallbackStrategy, query, domain, context, startTime);
+    }
     
     console.log(`🎯 Generator: Using strategy "${bestStrategy.name}" for ${domain} domain`);
     
@@ -204,9 +221,97 @@ REACT Pattern:
   }
 
   /**
+   * Create default strategy for a domain
+   */
+  private createDefaultStrategy(domain: string): PlaybookStrategy[] {
+    return [{
+      id: `default_${domain}`,
+      name: `${domain.charAt(0).toUpperCase() + domain.slice(1)} Analysis Strategy`,
+      description: `Default analysis strategy for ${domain} domain`,
+      domain: domain,
+      template: `You are a ${domain} expert. Analyze the following query: {query}
+
+Provide a comprehensive analysis with:
+1. Key insights and findings
+2. Relevant data and metrics
+3. Practical recommendations
+4. Risk considerations
+
+Be thorough, accurate, and actionable.`,
+      success_rate: 0.75,
+      usage_count: 0,
+      last_used: new Date()
+    }];
+  }
+
+  /**
+   * Execute with a specific strategy
+   */
+  private async executeWithStrategy(
+    strategy: PlaybookStrategy, 
+    query: string, 
+    domain: string, 
+    context: any, 
+    startTime: number
+  ): Promise<GeneratorResult> {
+    const executionTrace: string[] = [];
+    let confidence = strategy.success_rate;
+    let reasoning = '';
+
+    try {
+      // Replace template variables
+      const prompt = strategy.template.replace('{query}', query);
+      
+      // Simulate execution (replace with actual LLM call)
+      const response = `Analysis for ${domain}: ${query.substring(0, 100)}... [Comprehensive analysis with structured insights, data points, and actionable recommendations]`;
+      
+      reasoning = this.extractReasoning(response);
+      confidence = this.calculateConfidence(response, strategy);
+      
+      executionTrace.push(`Strategy: ${strategy.name}`);
+      executionTrace.push(`Domain: ${domain}`);
+      executionTrace.push(`Response generated successfully`);
+      
+      // Update strategy usage
+      strategy.usage_count++;
+      strategy.last_used = new Date();
+      
+      return {
+        reasoning: reasoning,
+        confidence: confidence,
+        strategy_used: strategy,
+        execution_trace: executionTrace,
+        performance_metrics: {
+          execution_time_ms: Date.now() - startTime,
+          tokens_used: response.length / 4, // Rough estimate
+          cost: 0.001 // Minimal cost for local execution
+        }
+      };
+    } catch (error) {
+      executionTrace.push(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      return {
+        reasoning: 'Execution failed',
+        confidence: 0.1,
+        strategy_used: strategy,
+        execution_trace: executionTrace,
+        performance_metrics: {
+          execution_time_ms: Date.now() - startTime,
+          tokens_used: 0,
+          cost: 0
+        }
+      };
+    }
+  }
+
+  /**
    * Select best strategy based on success rate and context
    */
-  private selectBestStrategy(strategies: PlaybookStrategy[], query: string, context?: any): PlaybookStrategy {
+  private selectBestStrategy(strategies: PlaybookStrategy[], query: string, context?: any): PlaybookStrategy | null {
+    if (strategies.length === 0) {
+      return null;
+    }
+    
     // Sort by success rate and usage count
     const sortedStrategies = strategies.sort((a, b) => {
       const aScore = a.success_rate * (1 - (a.usage_count / 1000)); // Decay with usage

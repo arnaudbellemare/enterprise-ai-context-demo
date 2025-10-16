@@ -478,3 +478,4 @@ export async function retrieveMemories(query: string, domain: string, limit?: nu
   const bank = createReasoningBank();
   return await bank.retrieveSimilar(query, domain, limit);
 }
+
