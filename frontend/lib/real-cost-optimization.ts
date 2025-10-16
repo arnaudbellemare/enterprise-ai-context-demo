@@ -163,7 +163,7 @@ class RealCostOptimizationEngine {
       const history = Array.from({ length: 100 }, (_, i) => {
         const basePrice = this.costModels.get(provider)?.pricing.inputTokens || 0.001;
         const trend = Math.sin(i / 10) * 0.1; // Cyclical trend
-        const noise = (Math.random() - 0.5) * 0.05; // Random noise
+        const noise = 0.025; // Fixed noise value
         return basePrice * (1 + trend + noise);
       });
       
@@ -183,66 +183,18 @@ class RealCostOptimizationEngine {
         hourlyPattern: this.generateHourlyDemandPattern(),
         weeklyPattern: this.generateWeeklyDemandPattern(),
         seasonalTrend: this.generateSeasonalTrend(),
-        currentDemand: 0.5 + Math.random() * 0.3
+        currentDemand: 0.65 // Fixed demand value
       });
     });
   }
 
-  /**
-   * Optimize cost for a given request
-   */
-  public async optimizeCost(request: CostOptimizationRequest): Promise<CostOptimizationResult> {
-    const startTime = Date.now();
-    console.log(`💰 Starting REAL Cost Optimization for: ${request.query.substring(0, 50)}...`);
-
-    // Check cache first
-    const cacheKey = this.generateCacheKey(request);
-    if (this.optimizationCache.has(cacheKey)) {
-      console.log('   ✅ Using cached optimization result');
-      return this.optimizationCache.get(cacheKey)!;
-    }
-
-    // Estimate token usage
-    const tokenEstimate = await this.estimateTokenUsage(request.query);
-    console.log(`   📊 Estimated tokens: ${tokenEstimate.input} input, ${tokenEstimate.output} output`);
-
-    // Calculate costs for all available models
-    const costCalculations = await this.calculateCostsForAllModels(tokenEstimate, request);
-    console.log(`   💵 Calculated costs for ${costCalculations.length} models`);
-
-    // Apply dynamic pricing
-    const dynamicPricing = await this.applyDynamicPricing(costCalculations);
-    console.log(`   📈 Applied dynamic pricing adjustments`);
-
-    // Filter by requirements
-    const filteredOptions = this.filterByRequirements(dynamicPricing, request.requirements);
-    console.log(`   🔍 Filtered to ${filteredOptions.length} viable options`);
-
-    // Optimize selection
-    const optimizationResult = await this.optimizeSelection(filteredOptions, request);
-    console.log(`   🎯 Selected optimal option: ${optimizationResult.selectedProvider}/${optimizationResult.selectedModel}`);
-
-    // Calculate optimization metrics
-    const optimizationMetrics = this.calculateOptimizationMetrics(optimizationResult, request);
-    optimizationResult.optimizationMetrics = optimizationMetrics;
-
-    // Cache result
-    this.optimizationCache.set(cacheKey, optimizationResult);
-
-    console.log(`   ✅ Cost optimization completed in ${Date.now() - startTime}ms`);
-    console.log(`   💰 Estimated cost: $${optimizationResult.estimatedCost.toFixed(6)}`);
-    console.log(`   ⏱️ Estimated latency: ${optimizationResult.estimatedLatency}ms`);
-    console.log(`   🎯 Cost efficiency: ${(optimizationMetrics.costEfficiency * 100).toFixed(1)}%`);
-
-    return optimizationResult;
-  }
 
   /**
    * Estimate token usage for a query
    */
   private async estimateTokenUsage(query: string): Promise<{ input: number; output: number }> {
     // Real token estimation using multiple methods
-    await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
+    await new Promise(resolve => setTimeout(resolve, 100)); // Fixed delay, no random
 
     // Method 1: Character-based estimation (rough)
     const charBasedEstimate = Math.ceil(query.length / 4);
@@ -263,7 +215,7 @@ class RealCostOptimizationEngine {
     );
 
     // Estimate output tokens (typically 2-5x input for most queries)
-    const outputMultiplier = 2 + Math.random() * 3;
+    const outputMultiplier = 3.5; // Fixed multiplier, no random
     const outputTokens = Math.ceil(inputTokens * outputMultiplier);
 
     return { input: inputTokens, output: outputTokens };
@@ -312,60 +264,6 @@ class RealCostOptimizationEngine {
     return calculations;
   }
 
-  /**
-   * Apply dynamic pricing based on demand and patterns
-   */
-  private async applyDynamicPricing(costCalculations: any[]): Promise<any[]> {
-    const updatedCalculations = [];
-
-    for (const calculation of costCalculations) {
-      const demandPattern = this.demandPatterns.get(calculation.modelId);
-      const pricingHistory = this.pricingHistory.get(calculation.modelId);
-
-      if (demandPattern && pricingHistory) {
-        // Calculate demand multiplier
-        const currentHour = new Date().getHours();
-        const hourlyDemand = demandPattern.hourlyPattern[currentHour];
-        const weeklyDemand = demandPattern.weeklyPattern[new Date().getDay()];
-        const seasonalDemand = demandPattern.seasonalTrend;
-        const currentDemand = demandPattern.currentDemand;
-
-        const demandMultiplier = 1 + (
-          hourlyDemand * 0.3 +
-          weeklyDemand * 0.2 +
-          seasonalDemand * 0.1 +
-          currentDemand * 0.4
-        );
-
-        // Calculate price trend
-        const recentPrices = pricingHistory.slice(-10);
-        const priceTrend = this.calculatePriceTrend(recentPrices);
-
-        // Apply dynamic pricing
-        const dynamicMultiplier = demandMultiplier * (1 + priceTrend);
-        const updatedCost = calculation.cost * dynamicMultiplier;
-
-        updatedCalculations.push({
-          ...calculation,
-          cost: updatedCost,
-          costBreakdown: {
-            ...calculation.costBreakdown,
-            premiumMultiplier: dynamicMultiplier,
-            totalCost: updatedCost
-          },
-          dynamicPricing: {
-            demandMultiplier,
-            priceTrend,
-            finalMultiplier: dynamicMultiplier
-          }
-        });
-      } else {
-        updatedCalculations.push(calculation);
-      }
-    }
-
-    return updatedCalculations;
-  }
 
   /**
    * Filter options by requirements
@@ -480,39 +378,20 @@ class RealCostOptimizationEngine {
 
   // Helper methods for real implementations
 
-  private calculateQueryComplexity(query: string): number {
-    const complexityFactors = {
-      questionMarks: (query.match(/\?/g) || []).length,
-      exclamationMarks: (query.match(/!/g) || []).length,
-      wordCount: query.split(' ').length,
-      sentenceCount: query.split(/[.!?]+/).length,
-      specialChars: (query.match(/[^a-zA-Z0-9\s]/g) || []).length
-    };
-
-    const complexityScore = (
-      complexityFactors.questionMarks * 0.1 +
-      complexityFactors.exclamationMarks * 0.05 +
-      Math.min(complexityFactors.wordCount / 50, 1) * 0.3 +
-      Math.min(complexityFactors.sentenceCount / 5, 1) * 0.2 +
-      Math.min(complexityFactors.specialChars / 20, 1) * 0.35
-    );
-
-    return Math.min(complexityScore, 1);
-  }
 
   private generateHourlyDemandPattern(): number[] {
     // Real hourly demand pattern (0-23 hours)
     return Array.from({ length: 24 }, (_, hour) => {
       // Peak hours: 9-11 AM, 2-4 PM, 8-10 PM
       if ((hour >= 9 && hour <= 11) || (hour >= 14 && hour <= 16) || (hour >= 20 && hour <= 22)) {
-        return 0.8 + Math.random() * 0.2;
+        return 0.9; // Fixed high performance
       }
       // Off-peak hours: 12-6 AM
       if (hour >= 0 && hour <= 6) {
-        return 0.2 + Math.random() * 0.2;
+        return 0.3; // Fixed low performance
       }
       // Normal hours
-      return 0.4 + Math.random() * 0.3;
+      return 0.55; // Fixed normal performance
     });
   }
 
@@ -608,7 +487,7 @@ class RealCostOptimizationEngine {
 
   private calculateAverageCostSavings(): number {
     // Calculate average cost savings from optimization
-    return 0.15 + Math.random() * 0.1; // 15-25% average savings
+    return 0.2; // Fixed 20% average savings
   }
 
   private getTopPerformingModels(): any[] {
@@ -653,7 +532,7 @@ class RealCostOptimizationEngine {
   }
 
   /**
-   * Main cost optimization method
+   * Main cost optimization method with teacher-student pattern
    */
   async optimizeCost(request: CostOptimizationRequest): Promise<CostOptimizationResult> {
     const startTime = Date.now();
@@ -661,8 +540,153 @@ class RealCostOptimizationEngine {
     console.log(`💰 Starting REAL Cost Optimization for: ${request.query.substring(0, 50)}...`);
     
     // Estimate token usage
-    const estimatedTokens = this.estimateTokenUsage(request.query);
+    const estimatedTokens = await this.estimateTokenUsage(request.query);
     console.log(`   📊 Estimated tokens: ${estimatedTokens.input} input, ${estimatedTokens.output} output`);
+    
+    // Determine if we should use teacher-student pattern based on query complexity and domain
+    const shouldUseTeacherStudent = this.shouldUseTeacherStudentPattern(request);
+    console.log(`   🎓 Teacher-Student Pattern: ${shouldUseTeacherStudent ? 'YES' : 'NO'}`);
+    
+    if (shouldUseTeacherStudent) {
+      return await this.optimizeTeacherStudentPattern(request, estimatedTokens, startTime);
+    } else {
+      return await this.optimizeSingleModelPattern(request, estimatedTokens, startTime);
+    }
+  }
+
+  /**
+   * Determine if we should use teacher-student pattern
+   */
+  private shouldUseTeacherStudentPattern(request: CostOptimizationRequest): boolean {
+    const queryComplexity = this.calculateQueryComplexity(request.query);
+    
+    // Use teacher-student for:
+    // 1. Complex queries (complexity > 0.5) - lowered threshold
+    // 2. Enterprise users with any quality requirements
+    // 3. High quality requirements (> 0.85) - lowered threshold
+    // 4. Long queries (> 30 words) - lowered threshold
+    // 5. Premium users with complex queries
+    
+    const wordCount = request.query.split(' ').length;
+    const isComplex = queryComplexity > 0.5; // Lowered from 0.7
+    const isEnterprise = request.context.userTier === 'enterprise';
+    const isPremium = request.context.userTier === 'premium';
+    const isHighQuality = request.requirements.minQuality && request.requirements.minQuality > 0.85; // Lowered from 0.9
+    const isLongQuery = wordCount > 30; // Lowered from 50
+    
+    const shouldUse = isComplex || (isEnterprise && isHighQuality) || isLongQuery || (isPremium && isComplex);
+    
+    console.log(`   🔍 Teacher-Student Decision Factors:`);
+    console.log(`      Query Complexity: ${queryComplexity.toFixed(3)} (threshold: 0.5)`);
+    console.log(`      Word Count: ${wordCount} (threshold: 30)`);
+    console.log(`      User Tier: ${request.context.userTier}`);
+    console.log(`      Min Quality: ${request.requirements.minQuality || 'none'}`);
+    console.log(`      Is Complex: ${isComplex}`);
+    console.log(`      Is Long: ${isLongQuery}`);
+    console.log(`      Is Enterprise + High Quality: ${isEnterprise && isHighQuality}`);
+    console.log(`      Is Premium + Complex: ${isPremium && isComplex}`);
+    console.log(`      Decision: ${shouldUse ? 'TEACHER-STUDENT' : 'SINGLE-MODEL'}`);
+    
+    return shouldUse;
+  }
+
+  /**
+   * Optimize using teacher-student pattern
+   */
+  private async optimizeTeacherStudentPattern(
+    request: CostOptimizationRequest, 
+    estimatedTokens: any, 
+    startTime: number
+  ): Promise<CostOptimizationResult> {
+    console.log(`   🎓 Implementing Teacher-Student Pattern...`);
+    
+    // Teacher model (Perplexity) for guidance
+    const teacherModel = this.costModels.get('perplexity_sonar_pro')!;
+    const teacherCost = this.calculateCost(teacherModel, estimatedTokens);
+    const teacherPricing = this.applyDynamicPricing(teacherModel, teacherCost);
+    
+    // Student model (Ollama) for final output
+    const studentModel = this.costModels.get('ollama_gemma3_4b')!;
+    const studentCost = this.calculateCost(studentModel, estimatedTokens);
+    const studentPricing = this.applyDynamicPricing(studentModel, studentCost);
+    
+    // Teacher-student total cost (teacher guides, student executes)
+    const totalCost = teacherCost * 0.3 + studentCost; // Teacher does 30% of work, student does 70%
+    const totalLatency = Math.max(teacherModel.performance.latency, studentModel.performance.latency) + 200; // +200ms for coordination
+    
+    console.log(`   👨‍🏫 Teacher (Perplexity): $${teacherCost.toFixed(6)}`);
+    console.log(`   👨‍🎓 Student (Ollama): $${studentCost.toFixed(6)}`);
+    console.log(`   🎯 Combined Cost: $${totalCost.toFixed(6)}`);
+    
+    // Create teacher-student option
+    const teacherStudentOption = {
+      provider: 'Teacher-Student',
+      model: 'perplexity-guides-ollama',
+      cost: totalCost,
+      latency: totalLatency,
+      quality: Math.min(teacherModel.performance.quality, studentModel.performance.quality + 0.1), // Student gets teacher boost
+      reliability: Math.min(teacherModel.performance.reliability, studentModel.performance.reliability),
+      costBreakdown: {
+        teacherCost: teacherCost * 0.3,
+        studentCost: studentCost,
+        coordinationCost: 0.0001,
+        totalCost: totalCost
+      },
+      dynamicPricing: {
+        pattern: 'teacher-student',
+        teacherMultiplier: 0.3,
+        studentMultiplier: 1.0,
+        coordinationOverhead: 0.0001
+      }
+    };
+    
+    // Check if teacher-student meets requirements
+    const meetsRequirements = this.meetsRequirements(teacherStudentOption, request.requirements);
+    
+    if (meetsRequirements) {
+      console.log(`   ✅ Teacher-Student pattern selected!`);
+      console.log(`   🎯 Estimated cost: $${totalCost.toFixed(6)}`);
+      console.log(`   ⏱️ Estimated latency: ${totalLatency}ms`);
+      
+      const duration = Date.now() - startTime;
+      console.log(`   ✅ Teacher-Student optimization completed in ${duration}ms`);
+      
+      return {
+        selectedProvider: 'Teacher-Student',
+        selectedModel: 'perplexity-guides-ollama',
+        estimatedCost: totalCost,
+        estimatedLatency: totalLatency,
+        estimatedQuality: teacherStudentOption.quality,
+        costBreakdown: {
+          inputTokens: estimatedTokens.input,
+          outputTokens: estimatedTokens.output,
+          baseCost: teacherStudentOption.costBreakdown.teacherCost + teacherStudentOption.costBreakdown.studentCost,
+          premiumMultiplier: 1.0,
+          totalCost: teacherStudentOption.costBreakdown.totalCost
+        },
+        alternatives: [],
+        optimizationMetrics: {
+          costEfficiency: 0,
+          performanceScore: 0,
+          budgetUtilization: 0,
+          roi: 0
+        }
+      };
+    } else {
+      console.log(`   ⚠️ Teacher-Student doesn't meet requirements, falling back to single model`);
+      return await this.optimizeSingleModelPattern(request, estimatedTokens, startTime);
+    }
+  }
+
+  /**
+   * Optimize using single model pattern
+   */
+  private async optimizeSingleModelPattern(
+    request: CostOptimizationRequest, 
+    estimatedTokens: any, 
+    startTime: number
+  ): Promise<CostOptimizationResult> {
+    console.log(`   🎯 Using Single Model Pattern...`);
     
     // Calculate costs for all available models
     const calculations = [];
@@ -699,32 +723,70 @@ class RealCostOptimizationEngine {
     // Optimize selection
     const result = await this.optimizeSelection(viableOptions, request);
     
-    // Find the selected option for logging
-    const selectedOption = viableOptions.find(opt => 
-      opt.provider === result.selectedProvider && opt.model === result.selectedModel
-    );
-    
     console.log(`   🎯 Selected optimal option: ${result.selectedProvider}/${result.selectedModel}`);
     console.log(`   💰 Estimated cost: $${result.estimatedCost.toFixed(6)}`);
     console.log(`   ⏱️ Estimated latency: ${result.estimatedLatency}ms`);
-    console.log(`   🎯 Cost efficiency: ${(result.optimizationMetrics.costEfficiency || 0).toFixed(1)}%`);
     
     const duration = Date.now() - startTime;
-    console.log(`   ✅ Cost optimization completed in ${duration}ms`);
+    console.log(`   ✅ Single model optimization completed in ${duration}ms`);
     
     return result;
   }
 
-  private estimateTokenUsage(query: string): { input: number; output: number } {
-    // Real token estimation based on query length and complexity
-    const wordCount = query.split(' ').length;
-    const complexityMultiplier = this.calculateQueryComplexity(query);
-    
-    const inputTokens = Math.ceil(wordCount * 1.3 * (1 + complexityMultiplier));
-    const outputTokens = Math.ceil(inputTokens * 0.8 * (1 + complexityMultiplier * 0.5));
-    
-    return { input: inputTokens, output: outputTokens };
+  /**
+   * Check if option meets requirements
+   */
+  private meetsRequirements(option: any, requirements: any): boolean {
+    if (requirements.maxLatency && option.latency > requirements.maxLatency) {
+      return false;
+    }
+    if (requirements.minQuality && option.quality < requirements.minQuality) {
+      return false;
+    }
+    if (requirements.maxCost && option.cost > requirements.maxCost) {
+      return false;
+    }
+    return true;
   }
+
+  /**
+   * Calculate query complexity for teacher-student decision
+   */
+  private calculateQueryComplexity(query: string): number {
+    if (!query) return 0;
+    
+    const wordCount = query.split(' ').length;
+    const sentenceCount = query.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+    const avgWordsPerSentence = wordCount / Math.max(sentenceCount, 1);
+    
+    // Complexity factors
+    const lengthComplexity = Math.min(wordCount / 100, 1); // 0-1 based on word count
+    const structureComplexity = Math.min(avgWordsPerSentence / 20, 1); // 0-1 based on sentence structure
+    const technicalComplexity = this.calculateTechnicalComplexity(query);
+    
+    // Weighted average
+    const complexity = (lengthComplexity * 0.3 + structureComplexity * 0.3 + technicalComplexity * 0.4);
+    return Math.max(0, Math.min(1, complexity));
+  }
+
+  /**
+   * Calculate technical complexity based on keywords
+   */
+  private calculateTechnicalComplexity(query: string): number {
+    const technicalKeywords = [
+      'algorithm', 'machine learning', 'artificial intelligence', 'neural network',
+      'deep learning', 'optimization', 'analytics', 'prediction', 'model',
+      'implementation', 'architecture', 'framework', 'methodology',
+      'quantum', 'blockchain', 'distributed', 'scalable', 'efficient',
+      'performance', 'benchmark', 'evaluation', 'assessment'
+    ];
+    
+    const queryLower = query.toLowerCase();
+    const matches = technicalKeywords.filter(keyword => queryLower.includes(keyword)).length;
+    
+    return Math.min(matches / 5, 1); // 0-1 based on technical keyword density
+  }
+
 
   private calculateCost(model: CostModel, tokens: { input: number; output: number }): number {
     const inputCost = (tokens.input / 1000) * model.pricing.inputTokens;

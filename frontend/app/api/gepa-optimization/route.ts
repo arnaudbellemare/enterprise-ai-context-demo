@@ -293,7 +293,7 @@ async function applyImprovements(prompt: string, improvements: string[]): Promis
 
 async function testPrompt(prompt: string, domain: string): Promise<any> {
   // Real prompt testing using evaluation metrics
-  await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+  await new Promise(resolve => setTimeout(resolve, 150)); // Fixed delay, no random
   
   // Re-evaluate the improved prompt
   const evaluation = await evaluatePrompt(prompt, domain);
