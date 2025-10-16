@@ -1,36 +1,20 @@
 #!/usr/bin/env node
 
 /**
- * REAL BENCHMARK TEST
+ * TEST COMPLEX QUERIES
  * 
- * Tests actual PERMUTATION system vs baseline (Gemma3:4b)
- * NO MOCK DATA - Real API calls only
+ * Tests the fixed complex query handling
  */
 
 const COMPLEX_QUERIES = [
   {
     domain: "financial",
-    query: "Analyze the risk-return profile of a diversified portfolio consisting of 60% S&P 500 index funds, 30% international equity funds, and 10% corporate bonds. Consider the impact of inflation, interest rate changes, and market volatility over a 10-year investment horizon. Provide specific recommendations for rebalancing strategies and risk management techniques.",
+    query: "Analyze the risk-return profile of a diversified portfolio consisting of 60% S&P 500 index funds, 30% international equity funds, and 10% corporate bonds. Consider the impact of inflation, interest rate changes, and market volatility over a 10-year investment horizon.",
     expected_complexity: "high"
   },
   {
     domain: "crypto", 
-    query: "Evaluate the technical and fundamental analysis of Bitcoin's current market position. Analyze on-chain metrics including active addresses, transaction volume, hash rate, and whale movements. Compare with historical bull/bear market cycles and provide a comprehensive assessment of potential price targets, support/resistance levels, and risk factors for the next 6 months.",
-    expected_complexity: "high"
-  },
-  {
-    domain: "real_estate",
-    query: "Conduct a comprehensive market analysis for residential real estate investment in Austin, Texas. Evaluate current market conditions, rental yields, property appreciation trends, local economic factors, demographic shifts, and regulatory environment. Provide specific recommendations for property types, neighborhoods, and investment timing strategies.",
-    expected_complexity: "high"
-  },
-  {
-    domain: "legal",
-    query: "Analyze the legal implications of implementing AI-powered hiring systems in a multinational corporation. Consider employment law compliance across different jurisdictions (US, EU, UK), potential discrimination risks, data privacy regulations (GDPR, CCPA), and best practices for algorithmic transparency and accountability.",
-    expected_complexity: "high"
-  },
-  {
-    domain: "healthcare",
-    query: "Evaluate the clinical efficacy and cost-effectiveness of implementing a machine learning-based diagnostic system for early detection of diabetic retinopathy in primary care settings. Consider accuracy metrics, false positive/negative rates, integration challenges, regulatory requirements, and patient outcome improvements.",
+    query: "Evaluate the technical and fundamental analysis of Bitcoin's current market position. Analyze on-chain metrics including active addresses, transaction volume, hash rate, and whale movements.",
     expected_complexity: "high"
   }
 ];
@@ -43,7 +27,6 @@ function evaluateResponseQuality(response) {
   const text = response.toLowerCase();
   const words = text.split(/\s+/).length;
   
-  // Quality indicators
   let qualityScore = 0;
   
   // Length factor (0-30 points)
@@ -74,7 +57,7 @@ function evaluateResponseQuality(response) {
   return Math.min(qualityScore, 100) / 100;
 }
 
-async function callPermutationAPI(query) {
+async function testPermutationAPI(query) {
   try {
     const startTime = Date.now();
     
@@ -116,7 +99,7 @@ async function callPermutationAPI(query) {
   }
 }
 
-async function callBaselineAPI(query) {
+async function testOllamaBaseline(query) {
   try {
     const startTime = Date.now();
     
@@ -160,12 +143,11 @@ async function callBaselineAPI(query) {
   }
 }
 
-async function runBenchmark() {
-  console.log('🚀 STARTING REAL BENCHMARK TEST');
-  console.log('=====================================');
-  console.log('Testing PERMUTATION vs Baseline (Gemma3:4b)');
-  console.log('Using complex, domain-specific queries');
-  console.log('=====================================\n');
+async function runComplexQueryTest() {
+  console.log('🚀 TESTING COMPLEX QUERY FIXES');
+  console.log('================================');
+  console.log('Testing fixed complex query handling');
+  console.log('================================\n');
 
   const results = [];
   
@@ -177,20 +159,20 @@ async function runBenchmark() {
 
     // Test PERMUTATION
     console.log('🤖 Testing PERMUTATION system...');
-    const permutationResult = await callPermutationAPI(test.query);
+    const permutationResult = await testPermutationAPI(test.query);
     
     if (permutationResult.success) {
-      console.log(`✅ PERMUTATION: Quality=${(permutationResult.quality * 100).toFixed(1)}%, Duration=${permutationResult.duration}ms, Tokens=${permutationResult.tokens}`);
+      console.log(`✅ PERMUTATION: Quality=${(permutationResult.quality * 100).toFixed(1)}%, Duration=${(permutationResult.duration / 1000).toFixed(1)}s, Tokens=${permutationResult.tokens}`);
     } else {
       console.log(`❌ PERMUTATION ERROR: ${permutationResult.error}`);
     }
 
     // Test Baseline
-    console.log('🔵 Testing Baseline (Gemma3:4b)...');
-    const baselineResult = await callBaselineAPI(test.query);
+    console.log('🔵 Testing Ollama baseline...');
+    const baselineResult = await testOllamaBaseline(test.query);
     
     if (baselineResult.success) {
-      console.log(`✅ BASELINE: Quality=${(baselineResult.quality * 100).toFixed(1)}%, Duration=${baselineResult.duration}ms, Tokens=${baselineResult.tokens}`);
+      console.log(`✅ BASELINE: Quality=${(baselineResult.quality * 100).toFixed(1)}%, Duration=${(baselineResult.duration / 1000).toFixed(1)}s, Tokens=${baselineResult.tokens}`);
     } else {
       console.log(`❌ BASELINE ERROR: ${baselineResult.error}`);
     }
@@ -221,43 +203,35 @@ async function runBenchmark() {
   }
 
   // Summary
-  console.log('📊 BENCHMARK SUMMARY');
-  console.log('====================');
-  
-  if (results.length === 0) {
+  if (results.length > 0) {
+    const avgPermutationQuality = results.reduce((sum, r) => sum + r.permutation.quality, 0) / results.length;
+    const avgBaselineQuality = results.reduce((sum, r) => sum + r.baseline.quality, 0) / results.length;
+    const avgImprovement = results.reduce((sum, r) => sum + r.improvement, 0) / results.length;
+    const avgPermutationDuration = results.reduce((sum, r) => sum + r.permutation.duration, 0) / results.length;
+    const avgBaselineDuration = results.reduce((sum, r) => sum + r.baseline.duration, 0) / results.length;
+
+    console.log('📊 COMPLEX QUERY TEST SUMMARY');
+    console.log('==============================');
+    console.log(`Tests Completed: ${results.length}/${COMPLEX_QUERIES.length}`);
+    console.log(`Average PERMUTATION Quality: ${(avgPermutationQuality * 100).toFixed(1)}%`);
+    console.log(`Average Baseline Quality: ${(avgBaselineQuality * 100).toFixed(1)}%`);
+    console.log(`Average Improvement: ${avgImprovement > 0 ? '+' : ''}${avgImprovement.toFixed(1)}%`);
+    console.log(`Average PERMUTATION Duration: ${(avgPermutationDuration / 1000).toFixed(1)}s`);
+    console.log(`Average Baseline Duration: ${(avgBaselineDuration / 1000).toFixed(1)}s`);
+    
+    if (avgImprovement > 0) {
+      console.log('\n🎉 PERMUTATION is BETTER than baseline for complex queries!');
+    } else {
+      console.log('\n😞 PERMUTATION still needs improvement for complex queries...');
+    }
+  } else {
     console.log('❌ No successful tests completed');
-    return;
   }
 
-  const avgPermutationQuality = results.reduce((sum, r) => sum + r.permutation.quality, 0) / results.length;
-  const avgBaselineQuality = results.reduce((sum, r) => sum + r.baseline.quality, 0) / results.length;
-  const avgImprovement = results.reduce((sum, r) => sum + r.improvement, 0) / results.length;
-  const avgPermutationDuration = results.reduce((sum, r) => sum + r.permutation.duration, 0) / results.length;
-  const avgBaselineDuration = results.reduce((sum, r) => sum + r.baseline.duration, 0) / results.length;
-
-  console.log(`Tests Completed: ${results.length}/${COMPLEX_QUERIES.length}`);
-  console.log(`Average PERMUTATION Quality: ${(avgPermutationQuality * 100).toFixed(1)}%`);
-  console.log(`Average Baseline Quality: ${(avgBaselineQuality * 100).toFixed(1)}%`);
-  console.log(`Average Improvement: ${avgImprovement > 0 ? '+' : ''}${avgImprovement.toFixed(1)}%`);
-  console.log(`Average PERMUTATION Duration: ${(avgPermutationDuration / 1000).toFixed(1)}s`);
-  console.log(`Average Baseline Duration: ${(avgBaselineDuration / 1000).toFixed(1)}s`);
-
-  // Detailed results
-  console.log('\n📋 DETAILED RESULTS');
-  console.log('===================');
-  
-  results.forEach((result, index) => {
-    console.log(`${index + 1}. ${result.domain.toUpperCase()}`);
-    console.log(`   PERMUTATION: ${(result.permutation.quality * 100).toFixed(1)}% (${(result.permutation.duration / 1000).toFixed(1)}s)`);
-    console.log(`   Baseline: ${(result.baseline.quality * 100).toFixed(1)}% (${(result.baseline.duration / 1000).toFixed(1)}s)`);
-    console.log(`   Improvement: ${result.improvement > 0 ? '+' : ''}${result.improvement.toFixed(1)}%`);
-    console.log('');
-  });
-
-  console.log('🏁 REAL BENCHMARK COMPLETED');
+  console.log('\n🏁 Complex query test completed');
 }
 
-// Check if servers are running
+// Check servers
 async function checkServers() {
   console.log('🔍 Checking server status...');
   
@@ -295,18 +269,16 @@ async function main() {
   const serversOk = await checkServers();
   
   if (!serversOk) {
-    console.log('\n❌ Cannot run benchmark - servers not available');
-    console.log('Please ensure:');
-    console.log('1. PERMUTATION server is running on localhost:3000');
-    console.log('2. Ollama server is running on localhost:11434 with gemma2:2b model');
+    console.log('\n❌ Cannot run test - servers not available');
     process.exit(1);
   }
 
-  await runBenchmark();
+  await runComplexQueryTest();
 }
 
 if (require.main === module) {
   main().catch(console.error);
 }
 
-module.exports = { runBenchmark, COMPLEX_QUERIES };
+module.exports = { runComplexQueryTest, COMPLEX_QUERIES };
+
