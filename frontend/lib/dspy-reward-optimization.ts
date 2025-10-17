@@ -72,8 +72,11 @@ export class DSPyRewardOptimizer {
 
   private rewardWeights: Record<string, number> = {};
 
-  constructor(taskType: 'summarization' | 'presentation' | 'creative') {
-    this.setDefaultWeights(taskType);
+  constructor(taskType: string) {
+    // Map any task type to a supported type
+    const supportedTypes = ['summarization', 'presentation', 'creative'];
+    const mappedType = supportedTypes.includes(taskType) ? taskType : 'summarization';
+    this.setDefaultWeights(mappedType as 'summarization' | 'presentation' | 'creative');
   }
 
   /**
@@ -174,7 +177,18 @@ Provide reasoning for your scores and suggestions for improvement.`;
 Provide reasoning for your scores and suggestions for improvement.`;
 
       default:
-        throw new Error(`Unknown task type: ${taskType}`);
+        // Map unknown task types to summarization for compatibility
+        console.log(`⚠️ Unknown task type '${taskType}', using summarization evaluation criteria`);
+        return basePrompt + `
+Evaluate the following output based on these criteria:
+
+- Coherence (0.0-1.0): Logical flow and structure
+- Completeness (0.0-1.0): Coverage of key points
+- Conciseness (0.0-1.0): Brevity without losing meaning
+- Readability (0.0-1.0): Clarity and accessibility
+- Factual Accuracy (0.0-1.0): Truthfulness of claims
+
+Provide reasoning for your scores and suggestions for improvement.`;
     }
   }
 
@@ -216,6 +230,15 @@ Provide reasoning for your scores and suggestions for improvement.`;
         scores.coherence = Math.min(0.9, 0.6 + Math.random() * 0.2);
         scores.emotional_impact = Math.min(0.9, 0.4 + Math.random() * 0.4);
         scores.technical_quality = Math.min(0.9, 0.6 + Math.random() * 0.2);
+        break;
+        
+      default:
+        // Default to summarization criteria for unknown task types
+        scores.coherence = Math.min(0.9, 0.6 + (hasStructure ? 0.2 : 0) + Math.random() * 0.1);
+        scores.completeness = Math.min(0.9, 0.5 + (hasDetails ? 0.3 : 0) + Math.random() * 0.1);
+        scores.conciseness = Math.min(0.9, 0.7 - (outputLength > 500 ? 0.2 : 0) + Math.random() * 0.1);
+        scores.readability = Math.min(0.9, 0.6 + Math.random() * 0.2);
+        scores.factual_accuracy = Math.min(0.9, 0.7 + Math.random() * 0.2);
         break;
     }
 
@@ -413,8 +436,16 @@ Provide reasoning for your scores and suggestions for improvement.`;
 /**
  * Factory function to create reward optimizer for different tasks
  */
-export function createRewardOptimizer(taskType: 'summarization' | 'presentation' | 'creative'): DSPyRewardOptimizer {
-  return new DSPyRewardOptimizer(taskType);
+export function createRewardOptimizer(taskType: string): DSPyRewardOptimizer {
+  // Map any task type to a supported type for maximum flexibility
+  const supportedTypes = ['summarization', 'presentation', 'creative'];
+  const mappedType = supportedTypes.includes(taskType) ? taskType : 'summarization';
+  
+  if (!supportedTypes.includes(taskType)) {
+    console.log(`⚠️ Task type '${taskType}' mapped to 'summarization' for compatibility`);
+  }
+  
+  return new DSPyRewardOptimizer(mappedType as 'summarization' | 'presentation' | 'creative');
 }
 
 /**

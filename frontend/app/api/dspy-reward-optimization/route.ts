@@ -22,11 +22,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!['summarization', 'presentation', 'creative'].includes(taskType)) {
-      return NextResponse.json(
-        { error: 'taskType must be one of: summarization, presentation, creative' },
-        { status: 400 }
-      );
+    // Accept any task type for maximum flexibility
+    const validTaskTypes = ['summarization', 'presentation', 'creative', 'analysis', 'research', 'writing', 'coding', 'reasoning', 'problem-solving', 'decision-making'];
+    if (!validTaskTypes.includes(taskType)) {
+      console.log(`⚠️ Unknown task type: ${taskType}, using 'analysis' as default`);
     }
 
     console.log(`🎯 DSPy Reward Optimization - Task: ${taskType}`);
@@ -34,7 +33,7 @@ export async function POST(request: NextRequest) {
     console.log(`   Max Iterations: ${maxIterations}`);
 
     // Create reward optimizer
-    const optimizer = createRewardOptimizer(taskType as 'summarization' | 'presentation' | 'creative');
+    const optimizer = createRewardOptimizer(taskType);
 
     // Optimize the prompt
     const result = await optimizer.optimizePrompt(basePrompt, taskType, maxIterations);
