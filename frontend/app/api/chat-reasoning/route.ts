@@ -130,41 +130,39 @@ export async function POST(request: NextRequest) {
         confidence = 0.95;
         console.log(`   ⚡ Simple response: ${response.length} chars`);
       } else {
-        // Medium/Complex queries - use REAL PERMUTATION with timeout
-        console.log(`   🎯 Using REAL PERMUTATION system with 8-second timeout...`);
+        // Medium/Complex queries - use FAST BRAIN SYSTEM
+        console.log(`   🧠 Using FAST BRAIN SYSTEM with subconscious memory...`);
         
         const optimizedPrompt = gepaData.optimizedPrompt || query;
-        const permutationPromise = fetch('http://localhost:3000/api/chat/permutation', {
+        const brainPromise = fetch('http://localhost:3000/api/brain', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            message: optimizedPrompt,
-            messages: [{ role: 'user', content: optimizedPrompt }],
-            fastMode: true,
-            useTeacherStudent: true,
-            gepaOptimization: gepaImprovement,
-            ragData: ragData
+            query: optimizedPrompt,
+            domain: domain,
+            budget: 0.01,
+            quality: 0.8
           })
         });
         
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('PERMUTATION timeout')), 300000) // 5 minutes timeout
+          setTimeout(() => reject(new Error('Brain timeout')), 150000) // 2.5 minutes timeout
         );
         
         try {
-          const permutationResponse = await Promise.race([permutationPromise, timeoutPromise]) as Response;
-          if (permutationResponse.ok) {
-            const permutationData = await permutationResponse.json();
-            response = permutationData.response || permutationData.answer || 'PERMUTATION response';
-            componentsUsed.push('RealPermutation');
-            qualityScore = 0.95;
-            confidence = 0.9;
-            console.log(`   ✅ REAL PERMUTATION: ${response.length} chars`);
+          const brainResponse = await Promise.race([brainPromise, timeoutPromise]) as Response;
+          if (brainResponse.ok) {
+            const brainData = await brainResponse.json();
+            response = brainData.response || 'Brain response';
+            componentsUsed.push('FastBrain');
+            qualityScore = 0.9;
+            confidence = 0.85;
+            console.log(`   ✅ FAST BRAIN: ${response.length} chars`);
           } else {
-            throw new Error('PERMUTATION failed');
+            throw new Error('Brain system failed');
           }
         } catch (timeoutError) {
-          console.log(`   ⚠️ PERMUTATION timeout, using enhanced synthesis...`);
+          console.log(`   ⚠️ Brain timeout, using enhanced synthesis...`);
           response = await generateFastEnhancedContent(query, domain, ragData, gepaImprovement, complexityAnalysis);
           componentsUsed.push('EnhancedSynthesis');
           qualityScore = 0.8;
