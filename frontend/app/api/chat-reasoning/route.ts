@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
         });
         
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Brain timeout')), 150000) // 2.5 minutes timeout
+          setTimeout(() => reject(new Error('Brain timeout')), 180000) // 3 minutes timeout
         );
         
         try {
