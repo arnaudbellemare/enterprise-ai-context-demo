@@ -134,6 +134,9 @@ async function createRoutingDecision(query: string, task: TaskType): Promise<Rou
     const complexity = complexityAnalysis.level;
     const confidence = domainAnalysis.confidence;
     
+    // Check for real-time data requirements
+    const needsRealTime = /\b(latest|recent|current|today|now|2025|trending|discussions|news)\b/i.test(query);
+    
     // High complexity queries need advanced processing
     if (complexity === 'high' || confidence > 0.8) {
       if (domain === 'finance' || domain === 'crypto') {
@@ -146,6 +149,17 @@ async function createRoutingDecision(query: string, task: TaskType): Promise<Rou
           estimated_cost: 0.001,
           estimated_latency_ms: 1200,
           reasoning: `TRM Engine for ${domain} domain with high complexity analysis`
+        };
+      } else if (domain === 'technology' || needsRealTime) {
+        return {
+          primary_component: 'TRM Engine',
+          fallback_component: 'Teacher Model (Perplexity)',
+          use_cache: true,
+          cache_key: `${domain}_${query.substring(0, 20)}`,
+          cache_ttl_seconds: 1800,
+          estimated_cost: 0.002,
+          estimated_latency_ms: 2000,
+          reasoning: `TRM Engine for ${domain} domain with real-time data requirements`
         };
       } else if (domain === 'healthcare') {
         return {
@@ -194,18 +208,18 @@ async function createRoutingDecision(query: string, task: TaskType): Promise<Rou
       }
     }
     
-    // Medium complexity queries
-    if (complexity === 'medium') {
-      if (domain === 'finance' || domain === 'technology' || domain === 'legal') {
+    // Medium complexity queries or real-time data needs
+    if (complexity === 'medium' || needsRealTime) {
+      if (domain === 'finance' || domain === 'technology' || domain === 'legal' || needsRealTime) {
         return {
           primary_component: 'TRM Engine',
-          fallback_component: 'Ollama Student',
+          fallback_component: 'Teacher Model (Perplexity)',
           use_cache: true,
           cache_key: `${domain}_${query.substring(0, 20)}`,
-          cache_ttl_seconds: 3600,
-          estimated_cost: 0.001,
-          estimated_latency_ms: 1200,
-          reasoning: `TRM Engine for ${domain} domain with medium complexity`
+          cache_ttl_seconds: needsRealTime ? 1800 : 3600,
+          estimated_cost: needsRealTime ? 0.002 : 0.001,
+          estimated_latency_ms: needsRealTime ? 2000 : 1200,
+          reasoning: needsRealTime ? `TRM Engine for real-time data in ${domain} domain` : `TRM Engine for ${domain} domain with medium complexity`
         };
       } else if (domain === 'healthcare') {
         return {

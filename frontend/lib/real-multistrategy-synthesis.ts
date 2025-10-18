@@ -411,7 +411,7 @@ class RealMultiStrategySynthesisEngine {
     await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
     
     const weightedContent = sources.map((s, i) => 
-      `[${weights[i].toFixed(2)}] ${(s.content || 'No content').substring(0, 50)}...`
+      `[${(weights[i] || 0.33).toFixed(2)}] ${(s.content || 'No content').substring(0, 50)}...`
     ).join(' + ');
     
     return `Weighted ensemble: ${weightedContent}`;
@@ -491,7 +491,7 @@ class RealMultiStrategySynthesisEngine {
   private calculateWeightedContributions(sources: SynthesisSource[], weights: number[]): any[] {
     return sources.map((source, i) => ({
       sourceId: source.id,
-      contribution: weights[i],
+      contribution: weights[i] || 0.33, // Default to equal weight if undefined
       reasoning: `Weighted contribution based on confidence ${source.confidence.toFixed(2)}`
     }));
   }

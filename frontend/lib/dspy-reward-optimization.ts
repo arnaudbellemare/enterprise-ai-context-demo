@@ -304,8 +304,8 @@ Provide reasoning for your scores and suggestions for improvement.`;
       // If this is the last iteration, don't optimize further
       if (iteration === maxIterations - 1) break;
 
-      // Optimize prompt based on evaluation
-      currentPrompt = await this.optimizePromptBasedOnReward(
+      // Use GEPA optimization for prompt improvement
+      currentPrompt = await this.optimizeWithGEPA(
         currentPrompt, 
         evaluation, 
         taskType
@@ -349,14 +349,80 @@ Provide reasoning for your scores and suggestions for improvement.`;
   }
 
   /**
-   * Optimize prompt based on reward evaluation
+   * Map task type to valid GEPA domain
+   */
+  private mapTaskTypeToDomain(taskType: string): string {
+    const domainMap: Record<string, string> = {
+      'summarization': 'general',
+      'presentation': 'creative',
+      'creative': 'creative',
+      'analysis': 'technology',
+      'research': 'technology',
+      'writing': 'creative',
+      'coding': 'technology',
+      'reasoning': 'technology',
+      'problem-solving': 'technology',
+      'decision-making': 'general'
+    };
+    
+    return domainMap[taskType] || 'general';
+  }
+
+  /**
+   * Optimize prompt using GEPA optimization from Ax LLM
+   */
+  private async optimizeWithGEPA(
+    currentPrompt: string, 
+    evaluation: RewardEvaluation,
+    taskType: string
+  ): Promise<string> {
+    console.log(`   🧠 Using GEPA optimization for prompt improvement...`);
+    
+    try {
+      // Call GEPA optimization API
+      const gepaResponse = await fetch('http://localhost:3000/api/gepa-optimization', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: currentPrompt,
+          domain: this.mapTaskTypeToDomain(taskType),
+          maxIterations: 2, // Quick optimization for reward-based iteration
+          optimizationType: 'comprehensive'
+        })
+      });
+
+      if (!gepaResponse.ok) {
+        throw new Error(`GEPA optimization failed: ${gepaResponse.statusText}`);
+      }
+
+      const gepaResult = await gepaResponse.json();
+      
+      if (gepaResult.success && gepaResult.optimizedPrompt) {
+        console.log(`   ✅ GEPA optimization completed`);
+        console.log(`   📈 GEPA improvement: ${gepaResult.metrics.improvementPercentage}%`);
+        return gepaResult.optimizedPrompt;
+      } else {
+        throw new Error('GEPA optimization returned invalid result');
+      }
+    } catch (error: any) {
+      console.log(`   ⚠️ GEPA optimization failed: ${error.message || 'Unknown error'}, falling back to internal optimization`);
+      
+      // Fallback to internal optimization
+      return await this.optimizePromptBasedOnReward(currentPrompt, evaluation, taskType);
+    }
+  }
+
+  /**
+   * Optimize prompt based on reward evaluation (fallback method)
    */
   private async optimizePromptBasedOnReward(
     currentPrompt: string, 
     evaluation: RewardEvaluation,
     taskType: string
   ): Promise<string> {
-    console.log(`   🧠 Analyzing reward feedback for optimization...`);
+    console.log(`   🧠 Using internal optimization fallback...`);
     
     // Simulate optimization processing
     await new Promise(resolve => setTimeout(resolve, 100));

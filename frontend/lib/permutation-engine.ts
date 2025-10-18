@@ -1978,23 +1978,37 @@ Final Answer:`;
         }
       }
       
-      // Method 3: Basic Student Model (always works as fallback)
+      // Method 3: Teacher-Student Pattern (Perplexity + Gemma3:4b)
       if (!finalAnswer) {
-        console.log('📝 Using basic Student Model synthesis...');
+        console.log('📝 Using Teacher-Student Pattern synthesis...');
         try {
-          const response = await this.llmClient?.generate(fullPrompt, false) || { text: '' };
+          // Try student model first (Gemma3:4b)
+          const studentResponse = await this.llmClient?.generate(fullPrompt, false) || { text: '' };
           
           // Filter out debug responses
-          const isDebugResponse = response.text.includes('Determining playbook') || 
-                                 response.text.includes('Analyzing execution trace');
+          const isDebugResponse = studentResponse.text.includes('Determining playbook') || 
+                                 studentResponse.text.includes('Analyzing execution trace');
           
-          if (response.text && response.text.trim().length > 50 && !isDebugResponse) {
-            finalAnswer = response.text;
-            synthesisMethod = 'Student Model';
-            console.log('✅ Basic synthesis successful');
+          if (studentResponse.text && studentResponse.text.trim().length > 50 && !isDebugResponse) {
+            finalAnswer = studentResponse.text;
+            synthesisMethod = 'Student Model (Gemma3:4b)';
+            console.log('✅ Student Model synthesis successful');
+          } else {
+            // Fallback to teacher model (Perplexity)
+            console.log('🔄 Student model failed, trying teacher model...');
+            try {
+              const teacherResponse = await this.llmClient?.generate(fullPrompt, true) || { text: '' };
+              if (teacherResponse.text && teacherResponse.text.trim().length > 50) {
+                finalAnswer = teacherResponse.text;
+                synthesisMethod = 'Teacher Model (Perplexity)';
+                console.log('✅ Teacher Model synthesis successful');
+              }
+            } catch (teacherError) {
+              console.log('⚠️ Teacher model also failed:', teacherError);
+            }
           }
         } catch (error) {
-          console.log('⚠️ Basic synthesis failed, using fallback...');
+          console.log('⚠️ Teacher-Student synthesis failed, using fallback...');
         }
       }
       
@@ -2012,8 +2026,19 @@ Final Answer:`;
       return finalAnswer;
     }
     
-    // For non-realtime queries, use simple prompt
-    const simplePrompt = `Answer this query accurately: ${query}`;
+    // For non-realtime queries, use simple prompt with length control
+    const isSimpleQuery = query.length < 100 && 
+                         !query.includes('analyze') && 
+                         !query.includes('explain') && 
+                         !query.includes('compare') &&
+                         !query.includes('trending') &&
+                         !query.includes('discussions') &&
+                         (query.includes('2+2') || query.includes('capital of') || query.includes('what is'));
+    
+    const simplePrompt = isSimpleQuery 
+      ? `Answer this question directly and concisely in 1-2 sentences: ${query}`
+      : `Answer this query accurately: ${query}`;
+    
     const response = await this.llmClient?.generate(simplePrompt, false) || { text: '', model: 'fallback', tokens: 0, cost: 0 };
     return response.text || `Unable to generate answer for: ${query}`;
   }

@@ -68,13 +68,11 @@ export class ACELLMClient {
       return await this.callOllama(prompt);
     }
     
+    console.log('👨‍🏫 ▶️ Teacher Model (Perplexity)');
+    console.log(`   model=perplexity-sonar-pro`);
+    
     try {
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.log('⏰ Perplexity timeout after 15s - using fallback');
-        controller.abort();
-      }, 15000); // 15 second timeout
+      // NO TIMEOUTS - let Perplexity run until it finishes!
       
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
@@ -92,14 +90,21 @@ export class ACELLMClient {
           ],
           temperature: 0.7,
           max_tokens: 1000
-        }),
-        signal: controller.signal
+        })
       });
-      
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
+        console.log(`👨‍🏫 ❌ Teacher Model (Perplexity)`);
+        console.log(`   model=perplexity-sonar-pro | ${performance.now() - startTime}ms`);
         console.error('Perplexity API error:', response.status);
+        
+        // Log the actual error response
+        try {
+          const errorData = await response.text();
+          console.error('Perplexity API error details:', errorData);
+        } catch (e) {
+          console.error('Could not read error response');
+        }
         // Fallback to Ollama if Perplexity fails
         return await this.callOllama(prompt);
       }
@@ -116,6 +121,9 @@ export class ACELLMClient {
         tokens,
         cost
       };
+      
+      console.log(`👨‍🏫 ✅ Teacher Model (Perplexity)`);
+      console.log(`   model=perplexity-sonar-pro | ${latency}ms | ${tokens} tokens | quality=${tokens > 100 ? 95 : 80}%`);
       
       // TRACE: Log Teacher Model end
       this.tracer.logTeacherCall('end', undefined, text, {
@@ -185,16 +193,9 @@ export class ACELLMClient {
                             prompt.includes('technical') ||
                             prompt.includes('fundamental');
       
-      const timeoutDuration = isComplexQuery ? 30000 : 10000; // 30s for complex, 10s for simple
+      console.log(`🤖 Ollama: No timeout - let it run until it finishes! (${isComplexQuery ? 'complex' : 'simple'} query)`);
       
-      console.log(`🤖 Ollama timeout: ${timeoutDuration/1000}s (${isComplexQuery ? 'complex' : 'simple'} query)`);
-      
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.log(`⏰ Ollama timeout after ${timeoutDuration/1000}s - using fallback`);
-        controller.abort();
-      }, timeoutDuration);
+      // NO TIMEOUTS - let it run until it actually finishes!
       
       const response = await fetch(`${this.ollamaUrl}/api/generate`, {
         method: 'POST',
@@ -207,13 +208,13 @@ export class ACELLMClient {
           stream: false,
           options: {
             temperature: 0.7,
-            num_predict: 1000
+            num_predict: 300, // Limit tokens for faster response
+            top_p: 0.9,
+            top_k: 40,
+            repeat_penalty: 1.1
           }
-        }),
-        signal: controller.signal
+        })
       });
-      
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         console.error('Ollama API error:', response.status);

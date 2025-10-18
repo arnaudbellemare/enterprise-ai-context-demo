@@ -91,8 +91,7 @@ export class AxLLMDSPyTeacherStudent {
           ],
           max_tokens: 2000,
           temperature: 0.7,
-          top_p: 0.9,
-          response_format: { type: "json_object" }
+          top_p: 0.9
         })
       });
 
