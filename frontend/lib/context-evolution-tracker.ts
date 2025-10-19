@@ -108,7 +108,43 @@ export class ContextEvolutionTracker {
     const driftWarnings = this.evolutionHistory.filter(e => e.content.includes('drift')).length;
     
     const evolutionPatterns = this.identifyPatterns();
-    const recommendations = this.generateRecommendations();
+    
+    // Calculate recommendations directly to avoid recursion
+    const recommendations: string[] = [];
+    const totalEvents = this.evolutionHistory.length;
+    
+    // Context window recommendations
+    if (eventDistribution.compress > totalEvents * 0.2) {
+      recommendations.push('Consider increasing context window size to reduce compression frequency');
+    }
+
+    // Quality recommendations
+    if (driftWarnings > 0) {
+      recommendations.push('Implement context quality monitoring to prevent drift');
+    }
+
+    // Pattern-based recommendations
+    if (evolutionPatterns.includes('Frequent context compression')) {
+      recommendations.push('Optimize context bullet relevance scoring to reduce compression needs');
+    }
+
+    if (evolutionPatterns.includes('Quality degradation detected')) {
+      recommendations.push('Review context management strategy and bullet selection criteria');
+    }
+
+    // Diversity recommendations
+    const typeDistribution = this.getTypeDistribution();
+    const typeEntries = Object.entries(typeDistribution);
+    
+    if (typeEntries.length > 0) {
+      const dominantType = typeEntries.reduce((a, b) => 
+        typeDistribution[a[0]] > typeDistribution[b[0]] ? a : b
+      );
+
+      if (typeDistribution[dominantType[0]] > 0.6) {
+        recommendations.push(`Diversify context bullet types - currently dominated by ${dominantType[0]}`);
+      }
+    }
 
     return {
       totalEvents: this.evolutionHistory.length,
