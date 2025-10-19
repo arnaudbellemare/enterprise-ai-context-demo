@@ -652,6 +652,16 @@ function analyzeQueryComplexity(query: string): { score: number; level: string; 
     factors.push('complex');
   }
   
+  // Legal domain detection (force complex for legal queries)
+  if (lowerQuery.includes('legal') || lowerQuery.includes('attorney') || lowerQuery.includes('lawyer') || 
+      lowerQuery.includes('court') || lowerQuery.includes('liability') || lowerQuery.includes('compliance') ||
+      lowerQuery.includes('confidential') || lowerQuery.includes('privilege') || lowerQuery.includes('malpractice') ||
+      lowerQuery.includes('copyright') || lowerQuery.includes('intellectual property') || lowerQuery.includes('gdpr') ||
+      lowerQuery.includes('regulatory') || lowerQuery.includes('jurisdiction') || lowerQuery.includes('breach')) {
+    score += 4;
+    factors.push('legal');
+  }
+  
   // Question type
   if (lowerQuery.includes('what is') && !lowerQuery.includes('explain')) {
     score += 1;
