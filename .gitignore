@@ -171,3 +171,4 @@ PERPLEXITY_API_KEY.txt
 .env.local
 frontend/.env.local
 
+omni-benchmark/

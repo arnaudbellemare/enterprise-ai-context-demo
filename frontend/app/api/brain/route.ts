@@ -95,6 +95,17 @@ export async function POST(request: NextRequest) {
           console.log('   💰 Cost Optimization: Subconscious activation');
           return await executeCostOptimization(query, context);
         }
+      },
+      
+      // Kimi K2 - Advanced reasoning model
+      kimiK2: {
+        name: 'Kimi K2 Reasoning',
+        description: 'Advanced reasoning with MoonshotAI Kimi K2 model',
+        activation: (context: any) => context.needsAdvancedReasoning || context.domain === 'legal' || context.complexity > 7,
+        execute: async (query: string, context: any) => {
+          console.log('   🤖 Kimi K2: Subconscious activation');
+          return await executeKimiK2(query, context);
+        }
       }
     };
 
@@ -431,6 +442,60 @@ async function executeCostOptimization(query: string, context: any): Promise<any
     }
   } catch (error: any) {
     return { success: false, error: error.message || 'Unknown error', fallback: 'Cost optimization unavailable' };
+  }
+}
+
+async function executeKimiK2(query: string, context: any): Promise<any> {
+  try {
+    // Prioritize best performing models based on testing
+    const models = [
+      'alibaba/tongyi-deepresearch-30b-a3b:free',  // Best: 100/100 quality, 1472ms
+      'nvidia/nemotron-nano-9b-v2:free',           // 2nd: 90/100 quality, 735ms (fastest)
+      'meituan/longcat-flash-chat:free',           // 3rd: 90/100 quality, 1469ms
+      'moonshotai/kimi-dev-72b:free',              // 4th: 90/100 quality, 1171ms
+      'google/gemma-2-9b-it:free',                 // 5th: 35/100 quality, 805ms (fallback)
+      'z-ai/glm-4.6',                              // Paid: Very cheap, requires credits
+      'moonshotai/kimi-k2:free',                   // Original Kimi K2 free
+      'moonshotai/kimi-k2'                         // Original Kimi K2 paid
+    ];
+    
+    for (const model of models) {
+      try {
+        const response = await fetch('http://localhost:3000/api/kimi-k2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query,
+            model,
+            max_tokens: 2000
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            console.log(`   ✅ Using ${model} (${data.processingTimeMs}ms)`);
+            return { 
+              success: true, 
+              model: model,
+              response: data.response,
+              processingTime: data.processingTimeMs,
+              usage: data.usage
+            };
+          }
+        }
+      } catch (modelError: any) {
+        console.log(`   ⚠️ Model ${model} failed: ${modelError.message}`);
+        continue;
+      }
+    }
+    
+    // If all models fail, fallback to Teacher-Student
+    console.log('   🔄 All student models failed, falling back to Teacher-Student');
+    return await executeTeacherStudent(query, context);
+    
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Unknown error', fallback: 'Student models unavailable' };
   }
 }
 
