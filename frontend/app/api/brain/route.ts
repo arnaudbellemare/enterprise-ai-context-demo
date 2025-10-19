@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AdvancedContextSystem } from '../../../lib/advanced-context-system';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+// Initialize the advanced context system
+const contextSystem = new AdvancedContextSystem();
 
 /**
  * Unified Brain API
@@ -11,7 +15,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
   try {
-    const { query, domain = 'general' } = await request.json();
+    const { query, domain = 'general', sessionId = 'default' } = await request.json();
 
     if (!query) {
       return NextResponse.json(
@@ -22,8 +26,21 @@ export async function POST(request: NextRequest) {
 
     console.log(`🧠 Brain Processing: ${query.substring(0, 50)}...`);
     console.log(`   Domain: ${domain}`);
+    console.log(`   Session: ${sessionId}`);
 
     const startTime = Date.now();
+
+    // =================================================================
+    // ADVANCED CONTEXT MANAGEMENT
+    // =================================================================
+    
+    // Process query with full context management
+    const contextResult = await contextSystem.processQuery(sessionId, query);
+    console.log(`📚 Context: ${contextResult.context.length} bullets, Quality: ${contextResult.quality.relevance.toFixed(3)}`);
+    
+    // Get context analytics
+    const contextAnalytics = await contextSystem.getContextAnalytics(sessionId);
+    console.log(`📊 Context Analytics: ${contextAnalytics.recommendations.length} recommendations`);
 
     // =================================================================
     // SUBCONSCIOUS MEMORY SYSTEM

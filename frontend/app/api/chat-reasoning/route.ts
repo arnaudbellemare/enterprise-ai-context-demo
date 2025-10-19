@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AdvancedContextSystem } from '../../../lib/advanced-context-system';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+// Initialize the advanced context system
+const contextSystem = new AdvancedContextSystem();
 
 /**
  * Chat Reasoning API
@@ -12,7 +16,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, domain = 'general' } = await request.json();
+    const { query, domain = 'general', sessionId = 'default' } = await request.json();
 
     if (!query) {
       return NextResponse.json(
@@ -23,6 +27,19 @@ export async function POST(request: NextRequest) {
 
     console.log(`🧠 Chat Reasoning - Query: ${query.substring(0, 50)}...`);
     console.log(`   Domain: ${domain}`);
+    console.log(`   Session: ${sessionId}`);
+
+    // =================================================================
+    // ADVANCED CONTEXT MANAGEMENT
+    // =================================================================
+    
+    // Process query with full context management
+    const contextResult = await contextSystem.processQuery(sessionId, query);
+    console.log(`📚 Context: ${contextResult.context.length} bullets, Quality: ${contextResult.quality.relevance.toFixed(3)}`);
+    
+    // Get context analytics
+    const contextAnalytics = await contextSystem.getContextAnalytics(sessionId);
+    console.log(`📊 Context Analytics: ${contextAnalytics.recommendations.length} recommendations`);
 
     // COMPREHENSIVE FAST PERMUTATION: Leverage ALL components efficiently
     console.log(`   🚀 COMPREHENSIVE FAST PERMUTATION: Using all PERMUTATION capabilities...`);
@@ -226,6 +243,24 @@ export async function POST(request: NextRequest) {
             cost_optimization: costOptimization,
             rag_sources_used: ragSourcesUsed,
             parallel_execution_time: parallelTime
+          },
+          context_management: {
+            context_bullets: contextResult.context.length,
+            context_quality: contextResult.quality,
+            context_optimizations: contextResult.optimizations.length,
+            context_analytics: {
+              recommendations: contextAnalytics.recommendations,
+              evolution_summary: contextAnalytics.evolution,
+              quality_grade: contextResult.quality.relevance > 0.8 ? 'A' : contextResult.quality.relevance > 0.6 ? 'B' : 'C'
+            },
+            session_id: sessionId,
+            context_features: [
+              'Dynamic Context Window Management',
+              'Long-term Conversation Memory',
+              'Context Evolution Tracking',
+              'Automatic Context Optimization',
+              'Context Quality Monitoring'
+            ]
           }
         }
       });
