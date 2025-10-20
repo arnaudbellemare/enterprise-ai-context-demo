@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AdvancedContextSystem } from '../../../lib/advanced-context-system';
 import { brainZodIntegration } from '../../../lib/ax-zod-real-integration';
 import { enhancedBrainZodIntegration } from '../../../lib/ax-llm-zod-integration';
+import { brainEvaluationSystem } from '../../../lib/brain-evaluation-system';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -139,15 +140,24 @@ export async function POST(request: NextRequest) {
       },
       
       // Creative Reasoning - Human-like thinking patterns
-      creativeReasoning: {
-        name: 'Creative Reasoning',
-        description: 'Human-like thinking patterns and creative problem-solving',
-        activation: (context: any) => context.hasCreativePrompts || context.needsAlternativePerspective || context.requiresMetaCognition,
-        execute: async (query: string, context: any) => {
-          console.log('   🧠 Creative Reasoning: Subconscious activation');
-          return await executeCreativeReasoning(query, context);
-        }
+    creativeReasoning: {
+      name: 'Creative Reasoning',
+      description: 'Human-like thinking patterns and creative problem-solving',
+      activation: (context: any) => context.hasCreativePrompts || context.needsAlternativePerspective || context.requiresMetaCognition,
+      execute: async (query: string, context: any) => {
+        console.log('   🧠 Creative Reasoning: Subconscious activation');
+        return await executeCreativeReasoning(query, context);
       }
+    },
+    evaluation: {
+      name: 'Quality Evaluation',
+      description: 'Real-time quality assessment using open-evals framework',
+      activation: (context: any) => context.needsEvaluation || context.quality < 0.8 || context.domain === 'legal' || context.domain === 'technology',
+      execute: async (query: string, context: any) => {
+        console.log('   📊 Quality Evaluation: Subconscious activation');
+        return await executeQualityEvaluation(query, context);
+      }
+    }
     };
 
     // =================================================================
@@ -1780,6 +1790,84 @@ Based on the situation, here's my strategic thinking:
       processing_time: 0.1,
       method: 'creative_reasoning_fallback',
       human_like_cognition: true
+    };
+  }
+}
+
+/**
+ * Execute quality evaluation using open-evals framework
+ */
+async function executeQualityEvaluation(query: string, context: any): Promise<any> {
+  try {
+    console.log('   📊 Quality Evaluation: Starting comprehensive evaluation...');
+    
+    const startTime = Date.now();
+    
+    // Create evaluation sample
+    const evaluationSample = {
+      query: query,
+      response: context.response || 'No response generated yet',
+      domain: context.domain || 'general',
+      reasoningMode: context.reasoningMode || 'standard',
+      patternsActivated: context.patternsActivated || [],
+      metadata: {
+        complexity: context.complexity || 1,
+        processingTime: context.processingTime || 0,
+        skillsActivated: context.skillsActivated || []
+      }
+    };
+
+    // Perform comprehensive evaluation
+    const evaluation = await brainEvaluationSystem.evaluateBrainResponse(evaluationSample);
+    
+    const processingTime = (Date.now() - startTime) / 1000;
+    
+    console.log(`   ✅ Quality Evaluation: Completed (${processingTime}s) - Score: ${(evaluation.overallScore * 100).toFixed(1)}%`);
+
+    return {
+      success: true,
+      result: {
+        overallScore: evaluation.overallScore,
+        domainScores: evaluation.domainScores,
+        recommendations: evaluation.recommendations,
+        evaluationTime: processingTime
+      },
+      processing_time: processingTime,
+      method: 'quality_evaluation',
+      quality_metrics: {
+        overall_score: evaluation.overallScore,
+        domain_breakdown: evaluation.domainScores.reduce((acc: any, score: any) => {
+          acc[score.name] = score.score;
+          return acc;
+        }, {}),
+        recommendations_count: evaluation.recommendations.length,
+        evaluation_framework: 'open-evals'
+      }
+    };
+
+  } catch (error: any) {
+    console.error('   ❌ Quality Evaluation error:', error);
+    
+    // Fallback evaluation with basic metrics
+    return {
+      success: true,
+      result: {
+        overallScore: 0.7, // Default good score
+        domainScores: [{
+          name: 'fallback_evaluation',
+          score: 0.7,
+          reason: 'Using fallback evaluation due to error'
+        }],
+        recommendations: ['Improve system reliability', 'Enhance error handling'],
+        evaluationTime: 0.1
+      },
+      processing_time: 0.1,
+      method: 'quality_evaluation_fallback',
+      quality_metrics: {
+        overall_score: 0.7,
+        fallback_mode: true,
+        error: error.message
+      }
     };
   }
 }
