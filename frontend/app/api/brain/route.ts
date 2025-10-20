@@ -3,6 +3,7 @@ import { AdvancedContextSystem } from '../../../lib/advanced-context-system';
 import { brainZodIntegration } from '../../../lib/ax-zod-real-integration';
 import { enhancedBrainZodIntegration } from '../../../lib/ax-llm-zod-integration';
 import { brainEvaluationSystem } from '../../../lib/brain-evaluation-system';
+import { multilingualBusinessIntelligence } from '../../../lib/multilingual-business-intelligence';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -157,6 +158,15 @@ export async function POST(request: NextRequest) {
         console.log('   📊 Quality Evaluation: Subconscious activation');
         return await executeQualityEvaluation(query, context);
       }
+    },
+    multilingualBusiness: {
+      name: 'Multilingual Business Intelligence',
+      description: 'Enhanced reasoning for complex multilingual business queries with constraint understanding',
+      activation: (context: any) => context.needsMultilingualAnalysis || context.hasBusinessConstraints || context.requiresSpecializedKnowledge || context.multilingualContext,
+      execute: async (query: string, context: any) => {
+        console.log('   🌍 Multilingual Business Intelligence: Subconscious activation');
+        return await executeMultilingualBusinessIntelligence(query, context);
+      }
     }
     };
 
@@ -247,6 +257,19 @@ async function analyzeContext(query: string, domain: string): Promise<any> {
   const hasCreativePrompts = Object.values(creativePatterns).some(Boolean);
   const needsAlternativePerspective = creativePatterns.thinkDifferently || creativePatterns.notSeeing;
   const requiresMetaCognition = creativePatterns.notSeeing || creativePatterns.reallyAsking;
+
+  // Detect multilingual and business intelligence patterns
+  const multilingualPatterns = {
+    nonEnglish: /[^\x00-\x7F]/.test(query), // Non-ASCII characters
+    businessLanguage: /\b(legal|finance|sales|operations|compliance|regulatory|contract|agreement|negotiation|partnership)\b/i.test(query),
+    constraintLanguage: /\b(deadline|timeline|budget|constraint|limitation|requirement|mandatory|compliance|regulation)\b/i.test(query),
+    culturalContext: /\b(cultural|regional|local|custom|tradition|protocol|etiquette)\b/i.test(query)
+  };
+
+  const needsMultilingualAnalysis = Object.values(multilingualPatterns).some(Boolean);
+  const hasBusinessConstraints = multilingualPatterns.constraintLanguage;
+  const requiresSpecializedKnowledge = multilingualPatterns.businessLanguage;
+  const multilingualContext = multilingualPatterns.nonEnglish || multilingualPatterns.culturalContext;
   
   return {
     complexity: calculateComplexity(query),
@@ -265,7 +288,13 @@ async function analyzeContext(query: string, domain: string): Promise<any> {
     hasCreativePrompts,
     needsAlternativePerspective,
     requiresMetaCognition,
-    creativePatterns
+    creativePatterns,
+    // Multilingual business intelligence patterns
+    needsMultilingualAnalysis,
+    hasBusinessConstraints,
+    requiresSpecializedKnowledge,
+    multilingualContext,
+    multilingualPatterns
   };
 }
 
@@ -1867,6 +1896,113 @@ async function executeQualityEvaluation(query: string, context: any): Promise<an
         overall_score: 0.7,
         fallback_mode: true,
         error: error.message
+      }
+    };
+  }
+}
+
+/**
+ * Execute multilingual business intelligence analysis
+ */
+async function executeMultilingualBusinessIntelligence(query: string, context: any): Promise<any> {
+  try {
+    console.log('   🌍 Multilingual Business Intelligence: Starting comprehensive analysis...');
+    
+    const startTime = Date.now();
+    
+    // Perform multilingual business intelligence analysis
+    const analysis = await multilingualBusinessIntelligence.detectLanguageAndBusiness(query);
+    
+    // Analyze complex constraints
+    const constraintAnalysis = await multilingualBusinessIntelligence.analyzeComplexConstraints(query, context);
+    
+    // Integrate RAG capabilities
+    const ragIntegration = await multilingualBusinessIntelligence.integrateRAGCapabilities(query, [
+      'legal_knowledge_base',
+      'financial_documents',
+      'sales_reports',
+      'operational_manuals',
+      'multilingual_corpus'
+    ]);
+    
+    const processingTime = (Date.now() - startTime) / 1000;
+    
+    console.log(`   ✅ Multilingual Business Intelligence: Completed (${processingTime}s)`);
+    console.log(`   🌍 Language: ${analysis.language.detectedLanguage} (${(analysis.language.confidence * 100).toFixed(1)}% confidence)`);
+    console.log(`   🏢 Business Domain: ${analysis.business.primaryDomain} - ${analysis.business.subDomain}`);
+    console.log(`   ⚡ Constraints: ${constraintAnalysis.constraintTypes.length} types identified`);
+    console.log(`   📚 Knowledge Stores: ${ragIntegration.relevantStores.length} relevant stores`);
+
+    return {
+      success: true,
+      result: {
+        languageAnalysis: analysis.language,
+        businessDomain: analysis.business,
+        constraintAnalysis: constraintAnalysis,
+        ragIntegration: ragIntegration,
+        processingTime: processingTime
+      },
+      processing_time: processingTime,
+      method: 'multilingual_business_intelligence',
+      intelligence_metrics: {
+        language_detected: analysis.language.detectedLanguage,
+        business_domain: analysis.business.primaryDomain,
+        constraint_complexity: analysis.constraints.constraintComplexity,
+        specialized_knowledge_required: analysis.business.requiresSpecializedKnowledge,
+        multilingual_context: analysis.business.multilingualContext,
+        data_compatibility: analysis.dataCompatibility.supportedDataTypes,
+        knowledge_stores_activated: ragIntegration.relevantStores.length
+      }
+    };
+
+  } catch (error: any) {
+    console.error('   ❌ Multilingual Business Intelligence error:', error);
+    
+    // Fallback analysis
+    return {
+      success: true,
+      result: {
+        languageAnalysis: {
+          detectedLanguage: 'en',
+          confidence: 0.5,
+          businessLanguage: true,
+          regionalVariants: [],
+          scriptType: 'latin'
+        },
+        businessDomain: {
+          primaryDomain: 'general',
+          subDomain: 'general',
+          industryContext: 'general',
+          complexity: 'moderate',
+          requiresSpecializedKnowledge: false,
+          multilingualContext: false
+        },
+        constraintAnalysis: {
+          constraintTypes: ['general'],
+          reasoningApproach: 'standard',
+          specializedKnowledge: ['general_business'],
+          multilingualConsiderations: [],
+          businessProcessImpact: ['standard_processing']
+        },
+        ragIntegration: {
+          relevantStores: ['general_knowledge_base'],
+          consolidationStrategy: 'basic_merge',
+          retrievalOptimization: ['semantic_search'],
+          knowledgeSynthesis: 'standard_synthesis'
+        },
+        processingTime: 0.1
+      },
+      processing_time: 0.1,
+      method: 'multilingual_business_intelligence_fallback',
+      intelligence_metrics: {
+        language_detected: 'en',
+        business_domain: 'general',
+        constraint_complexity: 'low',
+        specialized_knowledge_required: false,
+        multilingual_context: false,
+        data_compatibility: ['document'],
+        knowledge_stores_activated: 1,
+        fallback_mode: true
       }
     };
   }
