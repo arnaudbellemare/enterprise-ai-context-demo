@@ -1,8 +1,11 @@
 /**
  * Zod-Enhanced Validation System
  * 
- * Based on Ax LLM PR #388 improvements for better type safety and validation
+ * Based on Ax LLM PR #394 improvements for better type safety and validation
  * in the PERMUTATION system
+ * 
+ * @see https://github.com/ax-llm/ax/pull/394 - Deepen Zod integration in Ax (In Progress)
+ * Note: Direct Zod schema integration in Ax is not yet available in v14.0.30
  */
 
 import { z } from 'zod';
@@ -272,3 +275,175 @@ export class ZodEnhancedValidator {
 
 // Export singleton instance
 export const zodValidator = ZodEnhancedValidator.getInstance();
+
+// Ax LLM Integration with Zod Schemas
+// Based on PR #394: https://github.com/ax-llm/ax/pull/394 (In Progress)
+
+/**
+ * Ax LLM + Zod Integration Architecture
+ * 
+ * PR #394 introduces a sophisticated integration where Zod schemas travel with Ax signatures
+ * from definition to runtime enforcement through a multi-component pipeline:
+ * 
+ * 1. Zod Schema Registration → AxZodRegistry (schema cache)
+ * 2. AxSignatureFactory builds AxSignature with zodMeta
+ * 3. AxAssertion Pipeline auto-generates ZodAssertionAdapter
+ * 4. Runtime validation through Streaming Validator
+ * 5. ValidationResult with success/errors/telemetry
+ * 
+ * When PR #394 merges, we'll be able to use:
+ * 
+ * ```typescript
+ * import { ax } from '@ax-llm/ax';
+ * 
+ * const financeGenerator = ax(DomainSchemas.finance, {
+ *   description: 'Expert finance domain analysis',
+ *   zod: {
+ *     assertionLevel: 'strict',  // strict | lenient | none
+ *     mode: 'parse'              // parse | safeParse
+ *   }
+ * });
+ * 
+ * // The schema travels through the entire pipeline:
+ * // Zod Schema → AxZodRegistry → AxSignature → AxAssertion → Runtime Validation
+ * ```
+ * 
+ * For now, we use our ZodEnhancedValidator for validation
+ * and standard Ax signatures for generation.
+ */
+
+/**
+ * Future Ax + Zod Integration Implementation
+ * 
+ * This shows how our existing Zod schemas will integrate with the new architecture
+ */
+export class FutureAxZodIntegration {
+  
+  /**
+   * Convert our Zod schemas to Ax signatures (current approach)
+   * This bridges our existing schemas with current Ax capabilities
+   */
+  static createAxSignatureFromZod(domain: keyof typeof DomainSchemas): string {
+    const schema = DomainSchemas[domain];
+    
+    // Extract field information from Zod schema
+    const fields = this.extractFieldsFromZodSchema(schema, domain);
+    
+    // Convert to Ax signature format
+    const inputFields = fields.inputs.map(f => `${f.name}:${f.type}`).join(', ');
+    const outputFields = fields.outputs.map(f => `${f.name}:${f.type}`).join(', ');
+    
+    return `${inputFields} -> ${outputFields}`;
+  }
+  
+  /**
+   * Extract field information from Zod schema
+   * This prepares our schemas for the future Ax integration
+   */
+  private static extractFieldsFromZodSchema(schema: any, domain: string = 'general'): {
+    inputs: Array<{ name: string; type: string }>;
+    outputs: Array<{ name: string; type: string }>;
+  } {
+    // This is a simplified extraction - in reality, we'd need to traverse the Zod schema
+    // For now, we'll return the expected structure for our domain schemas
+    
+    const domainInputs = {
+      finance: [
+        { name: 'query', type: 'string' },
+        { name: 'complexity', type: 'string' },
+        { name: 'requiresRealTimeData', type: 'boolean' },
+        { name: 'riskTolerance', type: 'string' },
+        { name: 'timeHorizon', type: 'string' }
+      ],
+      legal: [
+        { name: 'query', type: 'string' },
+        { name: 'complexity', type: 'string' },
+        { name: 'requiresRealTimeData', type: 'boolean' },
+        { name: 'jurisdiction', type: 'string' },
+        { name: 'practiceArea', type: 'string' }
+      ],
+      healthcare: [
+        { name: 'query', type: 'string' },
+        { name: 'complexity', type: 'string' },
+        { name: 'requiresRealTimeData', type: 'boolean' },
+        { name: 'clinicalContext', type: 'string' },
+        { name: 'urgency', type: 'string' }
+      ],
+      technology: [
+        { name: 'query', type: 'string' },
+        { name: 'complexity', type: 'string' },
+        { name: 'requiresRealTimeData', type: 'boolean' },
+        { name: 'architecture', type: 'string' },
+        { name: 'scale', type: 'string' }
+      ],
+      education: [
+        { name: 'query', type: 'string' },
+        { name: 'complexity', type: 'string' },
+        { name: 'requiresRealTimeData', type: 'boolean' },
+        { name: 'gradeLevel', type: 'string' },
+        { name: 'subject', type: 'string' }
+      ],
+      general: [
+        { name: 'query', type: 'string' },
+        { name: 'complexity', type: 'string' },
+        { name: 'requiresRealTimeData', type: 'boolean' }
+      ]
+    };
+    
+    return {
+      inputs: domainInputs[domain as keyof typeof domainInputs] || domainInputs.general,
+      outputs: [
+        { name: 'analysis', type: 'string' },
+        { name: 'recommendations', type: 'string[]' },
+        { name: 'confidence', type: 'number' },
+        { name: 'sources', type: 'string[]' }
+      ]
+    };
+  }
+  
+  /**
+   * Create Ax signature strings for all our domain schemas
+   * This shows how our Zod schemas map to Ax signatures
+   */
+  static generateAllAxSignatures(): Record<string, string> {
+    const signatures: Record<string, string> = {};
+    
+    Object.keys(DomainSchemas).forEach(domain => {
+      signatures[domain] = this.createAxSignatureFromZod(domain as keyof typeof DomainSchemas);
+    });
+    
+    return signatures;
+  }
+}
+
+/**
+ * Current Ax Signatures (working now)
+ * These are the signatures we use with our current Ax implementation
+ */
+export const currentAxSignatures = {
+  finance: 'query:string, complexity:string, requiresRealTimeData:boolean, riskTolerance:string, timeHorizon:string -> analysis:string, recommendations:string[], confidence:number, sources:string[]',
+  legal: 'query:string, complexity:string, requiresRealTimeData:boolean, jurisdiction:string, practiceArea:string -> analysis:string, recommendations:string[], confidence:number, sources:string[]',
+  healthcare: 'query:string, complexity:string, requiresRealTimeData:boolean, clinicalContext:string, urgency:string -> analysis:string, recommendations:string[], confidence:number, sources:string[]',
+  technology: 'query:string, complexity:string, requiresRealTimeData:boolean, architecture:string, scale:string -> analysis:string, recommendations:string[], confidence:number, sources:string[]',
+  education: 'query:string, complexity:string, requiresRealTimeData:boolean, gradeLevel:string, subject:string -> analysis:string, recommendations:string[], confidence:number, sources:string[]',
+  general: 'query:string, complexity:string, requiresRealTimeData:boolean -> analysis:string, recommendations:string[], confidence:number, sources:string[]'
+};
+
+/**
+ * Future Ax + Zod Integration (when PR #394 merges)
+ * This shows how our Zod schemas will integrate with the new architecture
+ */
+export const futureAxZodIntegration = {
+  // Our Zod schemas will be used directly:
+  schemas: DomainSchemas,
+  
+  // With the new Ax integration:
+  // ax(DomainSchemas.finance, { zod: { assertionLevel: 'strict', mode: 'parse' } })
+  
+  // The pipeline will be:
+  // 1. Zod Schema → AxZodRegistry (schema cache)
+  // 2. AxSignatureFactory builds AxSignature with zodMeta
+  // 3. AxAssertion Pipeline auto-generates ZodAssertionAdapter
+  // 4. Runtime validation through Streaming Validator
+  // 5. ValidationResult with success/errors/telemetry
+};

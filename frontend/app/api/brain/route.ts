@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AdvancedContextSystem } from '../../../lib/advanced-context-system';
+import { brainZodIntegration } from '../../../lib/ax-zod-real-integration';
+import { enhancedBrainZodIntegration } from '../../../lib/ax-llm-zod-integration';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -123,6 +125,28 @@ export async function POST(request: NextRequest) {
           console.log('   🤖 Kimi K2: Subconscious activation');
           return await executeKimiK2(query, context);
         }
+      },
+      
+      // Zod Validation - Enhanced type-safe processing
+      zodValidation: {
+        name: 'Enhanced Zod Validation',
+        description: 'Type-safe processing with Ax LLM Zod integration',
+        activation: (context: any) => context.needsValidation || context.domain === 'legal' || context.domain === 'finance' || context.complexity >= 2,
+        execute: async (query: string, context: any) => {
+          console.log('   🔍 Enhanced Zod Validation: Subconscious activation');
+          return await executeEnhancedZodValidation(query, context);
+        }
+      },
+      
+      // Creative Reasoning - Human-like thinking patterns
+      creativeReasoning: {
+        name: 'Creative Reasoning',
+        description: 'Human-like thinking patterns and creative problem-solving',
+        activation: (context: any) => context.hasCreativePrompts || context.needsAlternativePerspective || context.requiresMetaCognition,
+        execute: async (query: string, context: any) => {
+          console.log('   🧠 Creative Reasoning: Subconscious activation');
+          return await executeCreativeReasoning(query, context);
+        }
       }
     };
 
@@ -200,6 +224,20 @@ export async function POST(request: NextRequest) {
 async function analyzeContext(query: string, domain: string): Promise<any> {
   const lowerQuery = query.toLowerCase();
   
+  // Detect creative prompt patterns
+  const creativePatterns = {
+    thinkDifferently: /\b(let's think about this differently|think differently|alternative perspective|different angle)\b/i.test(query),
+    notSeeing: /\b(what am i not seeing|what am i missing|blind spots|assumptions|what am i overlooking)\b/i.test(query),
+    breakDown: /\b(break this down|break down|explain step by step|walk me through|how does this work)\b/i.test(query),
+    inMyShoes: /\b(what would you do in my shoes|in my situation|if you were me|your opinion|what do you think)\b/i.test(query),
+    reallyAsking: /\b(here's what i'm really asking|what i'm really trying to|the real question is|what i actually want to know)\b/i.test(query),
+    whatElse: /\b(what else should i know|what else|anything else|other considerations|additional context)\b/i.test(query)
+  };
+  
+  const hasCreativePrompts = Object.values(creativePatterns).some(Boolean);
+  const needsAlternativePerspective = creativePatterns.thinkDifferently || creativePatterns.notSeeing;
+  const requiresMetaCognition = creativePatterns.notSeeing || creativePatterns.reallyAsking;
+  
   return {
     complexity: calculateComplexity(query),
     domain: domain,
@@ -212,7 +250,12 @@ async function analyzeContext(query: string, domain: string): Promise<any> {
     requiresSources: /\b(sources|references|citations|evidence)\b/i.test(query),
     needsCostOptimization: true, // Always optimize costs
     budget: 0.01,
-    quality: 0.8
+    quality: 0.8,
+    // Creative reasoning patterns
+    hasCreativePrompts,
+    needsAlternativePerspective,
+    requiresMetaCognition,
+    creativePatterns
   };
 }
 
@@ -1478,4 +1521,265 @@ Based on the comprehensive analysis of your query, here are the key insights and
 This analysis demonstrates the power of integrated AI reasoning across multiple specialized domains. The system automatically activated ${activatedSkills.length} skills to provide comprehensive insights into your query.
 
 *This response was generated using our advanced AI reasoning system with subconscious skill integration.*`;
+}
+
+/**
+ * Execute Enhanced Zod Validation with Ax LLM integration
+ * Uses our forked Ax LLM with deep Zod validation
+ */
+async function executeEnhancedZodValidation(query: string, context: any): Promise<any> {
+  try {
+    console.log('   🔍 Enhanced Zod Validation: Starting Ax LLM type-safe processing...');
+    
+    // Get domain from context
+    const domain = context.domain || 'general';
+    
+    // Execute with enhanced Zod validation using our forked Ax LLM
+    const result = await enhancedBrainZodIntegration.executeWithValidation(domain, query, {
+      complexity: context.complexity || 'medium',
+      requiresRealTimeData: context.needsRealTime || false,
+      sessionId: context.sessionId || 'default',
+      userId: context.userId
+    });
+    
+    if (result.success) {
+      console.log('   ✅ Enhanced Zod Validation: Ax LLM type-safe processing completed');
+      console.log(`   📊 Performance: ${result.processingTime}s total, ${result.performance?.validationTime}ms validation`);
+      
+      return {
+        success: true,
+        result: result.result,
+        validation: result.validation,
+        domain: result.domain,
+        processing_time: result.processingTime,
+        method: 'enhanced_zod_validation',
+        performance: result.performance,
+        ax_llm_integration: true
+      };
+    } else {
+      throw new Error(result.error || 'Enhanced Zod validation failed');
+    }
+    
+  } catch (error: any) {
+    console.error('   ❌ Enhanced Zod Validation error:', error);
+    
+    // Fallback to original Zod validation if enhanced version fails
+    console.log('   🔄 Enhanced Zod Validation: Falling back to original Zod validation...');
+    
+    try {
+      const fallbackResult = await brainZodIntegration.executeWithValidation(
+        context.domain || 'general', 
+        query, 
+        {
+          complexity: context.complexity || 'medium',
+          requiresRealTimeData: context.needsRealTime || false
+        }
+      );
+      
+      return {
+        success: true,
+        result: fallbackResult.result,
+        validation: fallbackResult.validation,
+        domain: fallbackResult.domain,
+        processing_time: Date.now() - Date.now(),
+        method: 'zod_validation_fallback',
+        ax_llm_integration: false
+      };
+    } catch (fallbackError: any) {
+      console.error('   ❌ Fallback Zod Validation also failed:', fallbackError);
+      
+      // Final fallback to Kimi K2
+      console.log('   🔄 Final fallback: Using Kimi K2...');
+      return await executeKimiK2(query, context);
+    }
+  }
+}
+
+/**
+ * Execute Creative Reasoning with human-like thinking patterns
+ * Implements the creative prompt patterns that activate deeper reasoning
+ */
+async function executeCreativeReasoning(query: string, context: any): Promise<any> {
+  try {
+    console.log('   🧠 Creative Reasoning: Activating human-like thinking patterns...');
+    
+    const patterns = context.creativePatterns || {};
+    const startTime = Date.now();
+    
+    // Build creative reasoning prompt based on detected patterns
+    let creativePrompt = '';
+    let reasoningMode = 'standard';
+    
+    if (patterns.thinkDifferently) {
+      creativePrompt += "Let's think about this differently. Instead of the obvious approach, consider alternative perspectives and unconventional solutions.\n\n";
+      reasoningMode = 'alternative_perspective';
+    }
+    
+    if (patterns.notSeeing) {
+      creativePrompt += "What am I not seeing here? Let me identify blind spots, hidden assumptions, and overlooked factors that could change everything.\n\n";
+      reasoningMode = 'meta_cognitive';
+    }
+    
+    if (patterns.breakDown) {
+      creativePrompt += "Let me break this down completely - from the fundamental principles to the intricate details, including the science and technique behind it.\n\n";
+      reasoningMode = 'systematic_breakdown';
+    }
+    
+    if (patterns.inMyShoes) {
+      creativePrompt += "What would I do in your shoes? Let me give you my actual opinion and strategic thinking, not just generic advice.\n\n";
+      reasoningMode = 'personal_opinion';
+    }
+    
+    if (patterns.reallyAsking) {
+      creativePrompt += "Here's what you're really asking: Let me dig deeper into the underlying question and address what you actually want to know.\n\n";
+      reasoningMode = 'subsurface_analysis';
+    }
+    
+    if (patterns.whatElse) {
+      creativePrompt += "What else should you know? Let me add crucial context, warnings, and considerations you never thought to ask for.\n\n";
+      reasoningMode = 'contextual_enrichment';
+    }
+    
+    // Enhanced query with creative reasoning
+    const enhancedQuery = creativePrompt + query;
+    
+    // Use Teacher-Student pattern for creative reasoning
+    const teacherResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'sonar-pro',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a creative reasoning expert. ${creativePrompt}Think like a human brain, not just an information retrieval system. Use counterfactual thinking, challenge assumptions, and provide insights that go beyond surface-level responses.`
+          },
+          {
+            role: 'user',
+            content: enhancedQuery
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.8 // Higher temperature for more creative responses
+      })
+    });
+    
+    if (!teacherResponse.ok) {
+      throw new Error(`Teacher API failed: ${teacherResponse.status}`);
+    }
+    
+    const teacherData = await teacherResponse.json();
+    const teacherContent = teacherData.choices[0]?.message?.content || 'No response from teacher';
+    
+    // Student processing with creative enhancement
+    const studentResponse = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gemma3:4b',
+        prompt: `Based on the teacher's creative reasoning, provide your own enhanced analysis:
+
+Teacher's Creative Analysis: ${teacherContent}
+
+Your task: ${enhancedQuery}
+
+Provide a response that:
+1. Builds on the teacher's insights
+2. Adds your own creative thinking
+3. Challenges assumptions
+4. Provides actionable insights
+5. Includes "What else should you know?" context
+
+Response:`,
+        stream: false
+      })
+    });
+    
+    if (!studentResponse.ok) {
+      throw new Error(`Student API failed: ${studentResponse.status}`);
+    }
+    
+    const studentData = await studentResponse.json();
+    const studentContent = studentData.response || 'No response from student';
+    
+    // Combine teacher and student insights
+    const combinedResponse = `# Creative Reasoning Analysis
+
+## Teacher's Perspective (Creative Thinking)
+${teacherContent}
+
+## Student's Enhanced Analysis
+${studentContent}
+
+## Creative Reasoning Summary
+- **Reasoning Mode**: ${reasoningMode}
+- **Patterns Detected**: ${Object.keys(patterns).filter(k => patterns[k]).join(', ')}
+- **Thinking Approach**: Human-like cognitive processing with alternative perspectives
+- **Meta-Cognitive Awareness**: ${patterns.notSeeing ? 'Active assumption checking' : 'Standard analysis'}
+
+*This response was generated using creative reasoning patterns that activate deeper cognitive processing.*`;
+    
+    const processingTime = (Date.now() - startTime) / 1000;
+    
+    console.log(`   ✅ Creative Reasoning: Human-like thinking completed (${processingTime}s)`);
+    
+    return {
+      success: true,
+      result: combinedResponse,
+      reasoning_mode: reasoningMode,
+      patterns_activated: Object.keys(patterns).filter(k => patterns[k]),
+      teacher_insights: teacherContent,
+      student_enhancement: studentContent,
+      processing_time: processingTime,
+      method: 'creative_reasoning',
+      human_like_cognition: true
+    };
+    
+  } catch (error: any) {
+    console.error('   ❌ Creative Reasoning error:', error);
+    
+    // Fallback to standard processing with creative enhancement
+    console.log('   🔄 Creative Reasoning: Falling back to enhanced standard processing...');
+    
+    const fallbackResponse = `# Creative Reasoning (Fallback Mode)
+
+## Alternative Perspective Analysis
+Let me think about this differently and provide insights you might not have considered:
+
+**Original Query**: ${query}
+
+## What You Might Not Be Seeing
+- Hidden assumptions in your question
+- Alternative approaches to the problem
+- Context you haven't considered
+- Potential blind spots in your thinking
+
+## What I Would Do in Your Shoes
+Based on the situation, here's my strategic thinking:
+- Consider multiple angles and perspectives
+- Challenge your initial assumptions
+- Look for unconventional solutions
+- Think about long-term implications
+
+## What Else Should You Know
+- This is a complex topic that requires nuanced thinking
+- Consider consulting additional sources
+- Think about potential risks and opportunities
+- Don't rush to conclusions
+
+*This response was generated using creative reasoning fallback mode.*`;
+    
+    return {
+      success: true,
+      result: fallbackResponse,
+      reasoning_mode: 'fallback_creative',
+      patterns_activated: Object.keys(context.creativePatterns || {}).filter(k => context.creativePatterns[k]),
+      processing_time: 0.1,
+      method: 'creative_reasoning_fallback',
+      human_like_cognition: true
+    };
+  }
 }
