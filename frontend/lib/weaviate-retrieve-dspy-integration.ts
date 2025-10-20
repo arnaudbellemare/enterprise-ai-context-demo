@@ -1,10 +1,9 @@
 /**
  * Weaviate Retrieve-DSPy Integration for PERMUTATION System
  * 
- * This module integrates advanced compound retrieval systems from:
- * https://github.com/weaviate/retrieve-dspy
+ * Basic vector search and retrieval integration
  * 
- * Provides 26+ advanced retrieval strategies for enhanced RAG performance
+ * Provides standard retrieval strategies for RAG performance
  */
 
 export interface WeaviateRetrieverConfig {
@@ -42,9 +41,9 @@ export interface HybridSearchResult {
 }
 
 /**
- * Advanced Query Expansion Systems
+ * Basic Query Expansion Systems
  */
-export class AdvancedQueryExpansion {
+export class BasicQueryExpansion {
   private config: WeaviateRetrieverConfig;
 
   constructor(config: WeaviateRetrieverConfig = {}) {
@@ -205,9 +204,9 @@ export class AdvancedQueryExpansion {
 }
 
 /**
- * Advanced Reranking Systems
+ * Basic Reranking Systems
  */
-export class AdvancedReranking {
+export class BasicReranking {
   private config: WeaviateRetrieverConfig;
 
   constructor(config: WeaviateRetrieverConfig = {}) {
@@ -282,9 +281,9 @@ export class AdvancedReranking {
 }
 
 /**
- * Hybrid Search Systems
+ * Basic Hybrid Search Systems
  */
-export class HybridSearchSystem {
+export class BasicHybridSearchSystem {
   private config: WeaviateRetrieverConfig;
 
   constructor(config: WeaviateRetrieverConfig = {}) {
@@ -352,16 +351,16 @@ export class HybridSearchSystem {
  * Main Weaviate Retrieve-DSPy Integration Class
  */
 export class WeaviateRetrieveDSPyIntegration {
-  public queryExpansion: AdvancedQueryExpansion;
-  public reranking: AdvancedReranking;
-  public hybridSearch: HybridSearchSystem;
+  public queryExpansion: BasicQueryExpansion;
+  public reranking: BasicReranking;
+  public hybridSearch: BasicHybridSearchSystem;
   private config: WeaviateRetrieverConfig;
 
   constructor(config: WeaviateRetrieverConfig = {}) {
     this.config = config;
-    this.queryExpansion = new AdvancedQueryExpansion(config);
-    this.reranking = new AdvancedReranking(config);
-    this.hybridSearch = new HybridSearchSystem(config);
+    this.queryExpansion = new BasicQueryExpansion(config);
+    this.reranking = new BasicReranking(config);
+    this.hybridSearch = new BasicHybridSearchSystem(config);
   }
 
   /**

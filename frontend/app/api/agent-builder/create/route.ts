@@ -658,8 +658,8 @@ function selectOptimalNodes(analysis: any, request: string): any[] {
            requestLower.includes('treatment') || requestLower.includes('health')) {
     selectedNodes.push({
       ...TOOL_LIBRARY.custom_agent,
-      role: 'Healthcare Assistant',
-      stage: 'medical_analysis'
+      role: 'General Assistant',
+      stage: 'general_analysis'
     });
   } 
   
@@ -1321,8 +1321,8 @@ function planWorkflowStructure(analysis: any, request: string) {
     });
   } else if (analysis.domain === 'healthcare') {
     plan.stages.push({
-      role: 'Healthcare Researcher',
-      purpose: 'Medical research and healthcare data analysis',
+      role: 'General Researcher',
+      purpose: 'General research and data analysis',
       endpoint: 'ai_agent'
     });
   } else if (analysis.domain === 'technology') {

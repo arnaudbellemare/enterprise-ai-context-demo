@@ -42,16 +42,25 @@ class SimpleCache {
   }
 
   async getStats() {
+    // Calculate real stats from actual cache data
+    const now = Date.now();
+    let validEntries = 0;
+    let expiredEntries = 0;
+    
+    for (const [key, entry] of this.cache.entries()) {
+      if (now > entry.expires) {
+        expiredEntries++;
+      } else {
+        validEntries++;
+      }
+    }
+    
     return {
       total_entries: this.cache.size,
-      hit_rate: 0.85, // Simulated
-      miss_rate: 0.15,
-      total_hits: 100, // Simulated
-      total_misses: 18,
-      cost_saved: 0.045,
-      latency_saved_ms: 2500,
+      valid_entries: validEntries,
+      expired_entries: expiredEntries,
       cache_size_bytes: this.cache.size * 1000, // Rough estimate
-      eviction_count: 5
+      last_cleanup: new Date().toISOString()
     };
   }
 }

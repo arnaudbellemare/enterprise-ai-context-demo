@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
       const llmClient = new RealLLMClient();
       const gepaOptimizer = new GEPAReflectiveOptimizer(llmClient);
       
-      // Prepare system modules with industry-specific optimization
+      // Prepare system modules with general optimization
       const industryContext = context?.toLowerCase() || '';
       let systemModules;
       
@@ -196,9 +196,9 @@ export async function POST(request: NextRequest) {
         };
       } else if (industryContext.includes('healthcare') || industryContext.includes('medical')) {
         systemModules = {
-          'query_analyzer': `Analyze the healthcare query and extract key patient care information, medical protocols, and optimization opportunities`,
-          'context_processor': `Process healthcare context including patient data, medical protocols, quality metrics, and operational constraints`,
-          'response_generator': `Generate comprehensive healthcare optimization response with specific strategies, metrics, and implementation roadmap`
+          'query_analyzer': `Analyze the query and extract key information and optimization opportunities`,
+          'context_processor': `Process context including relevant data, metrics, and operational constraints`,
+          'response_generator': `Generate comprehensive response with specific strategies, metrics, and implementation roadmap`
         };
       } else if (industryContext.includes('finance') || industryContext.includes('banking')) {
         systemModules = {
