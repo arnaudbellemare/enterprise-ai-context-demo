@@ -131,6 +131,7 @@ export class MoESkillRouter {
     this.experts.set(expert.id, expert);
     this.metrics.expertUtilization[expert.id] = 0;
     console.log(`🧠 MoE Router: Registered expert "${expert.name}" (${expert.domain})`);
+    console.log(`🧠 MoE Router: Total experts: ${this.experts.size}`);
   }
 
   /**
@@ -141,10 +142,13 @@ export class MoESkillRouter {
     this.metrics.totalRequests++;
 
     console.log(`🧠 MoE Router: Processing query "${request.query.substring(0, 50)}..."`);
+    console.log(`🧠 MoE Router: Available experts: ${this.experts.size}`);
 
     try {
       // 1. Calculate relevance scores for all experts
+      console.log(`🧠 MoE Router: About to calculate relevance scores...`);
       const relevanceScores = await this.calculateRelevanceScores(request);
+      console.log(`🧠 MoE Router: Relevance scores calculated:`, relevanceScores);
       
       // 2. Filter experts by relevance threshold
       const candidateExperts = this.filterByRelevance(relevanceScores);
@@ -197,6 +201,9 @@ export class MoESkillRouter {
   private async calculateRelevanceScores(request: MoERequest): Promise<{ [expertId: string]: number }> {
     const scores: { [expertId: string]: number } = {};
 
+    console.log(`🧠 MoE Router: Calculating relevance scores for ${this.experts.size} experts`);
+    console.log(`🧠 MoE Router: Request domain: ${request.domain}, complexity: ${request.complexity}`);
+
     for (const [expertId, expert] of this.experts) {
       let score = 0;
 
@@ -226,8 +233,10 @@ export class MoESkillRouter {
       score += performanceScore * 0.1;
 
       scores[expertId] = Math.min(1.0, score);
+      console.log(`🧠 MoE Router: Expert ${expertId} (${expert.domain}) scored ${scores[expertId]}`);
     }
 
+    console.log(`🧠 MoE Router: Final scores object:`, JSON.stringify(scores));
     return scores;
   }
 

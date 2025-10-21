@@ -265,3 +265,4 @@ if (require.main === module) {
 
 module.exports = { runSimpleBenchmark, SIMPLE_QUERIES };
 
+

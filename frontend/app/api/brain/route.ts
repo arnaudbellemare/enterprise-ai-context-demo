@@ -99,6 +99,7 @@ const initializeMoERouter = () => {
   });
 
   console.log(`🧠 MoE Router: Initialized with ${brainSkills.length} expert skills`);
+  console.log(`🧠 MoE Router: Total experts registered: ${moeSkillRouter['experts'].size}`);
 };
 
 // Initialize MoE router
@@ -494,7 +495,11 @@ async function analyzeContext(query: string, domain: string): Promise<any> {
     hasBusinessConstraints,
     requiresSpecializedKnowledge,
     multilingualContext,
-    multilingualPatterns
+    multilingualPatterns,
+    // MoE Skill Router flags
+    needsMoERouting: calculateComplexity(query) > 3 || /\b(analysis|evaluate|assess|comprehensive|detailed|complex|sophisticated|advanced|technical|optimization|implementation|architecture)\b/i.test(query),
+    hasComplexRequirements: /\b(requirements|framework|compliance|analysis|evaluation|assessment|comprehensive)\b/i.test(query),
+    requiresOptimalSkillSelection: calculateComplexity(query) > 2 || domain === 'legal' || domain === 'finance'
   };
 }
 
