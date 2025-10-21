@@ -202,7 +202,7 @@ export class ACECurator {
       // Get all bullets for the domain
       const { data: bullets, error } = await this.supabase
         .from('ace_playbook_bullets')
-        .select('*')
+        .select('id, content, domain, helpful_count, harmful_count, usage_count, embedding, created_at')
         .eq('domain', domain)
         .not('embedding', 'is', null);
 
@@ -342,7 +342,7 @@ export class ACECurator {
     try {
       const { data, error } = await this.supabase
         .from('ace_playbook_bullets')
-        .select('*')
+        .select('id, content, domain, helpful_count, harmful_count, neutral_count, usage_count, embedding, created_at, updated_at')
         .eq('domain', domain)
         .order('usage_count', { ascending: false })
         .order('helpful_count', { ascending: false })
@@ -381,8 +381,8 @@ export class ACECurator {
     }
 
     try {
-      let query = this.supabase.from('ace_playbook_bullets').select('*');
-      
+      let query = this.supabase.from('ace_playbook_bullets').select('id, helpful_count, harmful_count, neutral_count, usage_count');
+
       if (domain) {
         query = query.eq('domain', domain);
       }

@@ -479,3 +479,4 @@ export async function retrieveMemories(query: string, domain: string, limit?: nu
   return await bank.retrieveSimilar(query, domain, limit);
 }
 
+

@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
         // Load entire playbook from Supabase
         const { data: bullets, error } = await supabase
           .from('ace_playbook')
-          .select('*')
+          .select('id, bullet_id, content, helpful_count, harmful_count, last_used, created_at, tags, sections, updated_at')
           .order('helpful_count', { ascending: false });
 
         if (error) {
@@ -190,7 +190,7 @@ export async function GET(req: NextRequest) {
     // Load playbook from Supabase
     const { data: bullets, error } = await supabase
       .from('ace_playbook')
-      .select('*')
+      .select('bullet_id, content, helpful_count, harmful_count, last_used, created_at, tags, sections')
       .order('helpful_count', { ascending: false });
 
     if (error) {

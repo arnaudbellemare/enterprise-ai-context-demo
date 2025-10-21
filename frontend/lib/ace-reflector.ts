@@ -307,16 +307,16 @@ export class ACEReflector {
     if (!this.supabase) return [];
 
     try {
-      let query = this.supabase.from('ace_insights').select('*');
-      
+      let query = this.supabase.from('ace_insights').select('id, query, domain, insight_type, insight_text, confidence, components_used, execution_metadata, created_at, helpful_count, harmful_count, neutral_count');
+
       if (domain) {
         query = query.eq('domain', domain);
       }
-      
+
       if (insightType) {
         query = query.eq('insight_type', insightType);
       }
-      
+
       query = query.order('created_at', { ascending: false }).limit(100);
       
       const { data, error } = await query;

@@ -358,7 +358,7 @@ Provide a detailed, accurate answer with proper context and explanations.`;
       if (this.supabase) {
         const { data } = await this.supabase
           .from('learning_sessions')
-          .select('*')
+          .select('id, query, learning_effectiveness, domain, created_at')
           .eq('domain', domain || 'general')
           .limit(5);
 
@@ -475,7 +475,7 @@ I don't have much experience with this yet, but here's what I think:`;
       if (this.supabase) {
         const { data } = await this.supabase
           .from('learning_sessions')
-          .select('*');
+          .select('id, domain, learning_effectiveness, teacher_response, student_response, created_at');
 
         if (data) {
           const totalSessions = data.length;

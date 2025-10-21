@@ -1,6 +1,6 @@
 /**
  * Tool Calling System
- * 
+ *
  * Dynamic function calling capabilities for PERMUTATION:
  * - Tool discovery and registration
  * - Dynamic tool execution
@@ -8,6 +8,8 @@
  * - Tool chaining and composition
  * - Domain-specific tool routing
  */
+
+import { Parser } from 'expr-eval';
 
 export interface Tool {
   name: string;
@@ -288,11 +290,13 @@ export class ToolCallingSystem {
       },
       execute: async (params: { expression: string }) => {
         try {
-          // Safe evaluation of mathematical expressions
-          const result = eval(params.expression.replace(/[^0-9+\-*/().\s]/g, ''));
+          // Safe evaluation using expr-eval parser (no eval/Function)
+          const parser = new Parser();
+          const expr = parser.parse(params.expression);
+          const result = expr.evaluate({});
           return { result, expression: params.expression };
         } catch (error) {
-          throw new Error(`Invalid expression: ${params.expression}`);
+          throw new Error(`Invalid mathematical expression: ${params.expression}. Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       },
       domain: ['financial', 'general'],
@@ -490,4 +494,5 @@ export function getToolCallingSystem(): ToolCallingSystem {
   }
   return toolSystemInstance;
 }
+
 

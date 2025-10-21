@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
     // Query feedback
     let query = supabase
       .from('user_feedback')
-      .select('*')
+      .select('id, bullet_id, user_id, is_helpful, comment, context, created_at')
       .order('created_at', { ascending: false })
       .limit(limit);
 

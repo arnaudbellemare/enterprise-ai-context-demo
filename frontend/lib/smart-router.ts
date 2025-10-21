@@ -11,6 +11,7 @@
 
 import { kvCacheManager } from './kv-cache-manager';
 import { getRealBenchmarkSystem } from './real-benchmark-system';
+import { logger } from './logger';
 
 export interface TaskType {
   type: 'ocr' | 'irt' | 'reasoning' | 'optimization' | 'query_expansion' | 'synthesis' | 'general';
@@ -186,21 +187,21 @@ export class SmartRouter {
   private componentLoadBalancer: Map<string, number> = new Map();
 
   constructor() {
-    console.log('🧠 Smart Router initialized with benchmark-driven optimization');
+    logger.info('🧠 Smart Router initialized with benchmark-driven optimization');
   }
 
   /**
    * PHASE 1: Smart Routing based on task type
    */
   public route(task: TaskType, query: string): RoutingDecision {
-    console.log(`🔀 Smart Router: Routing ${task.type} task with ${task.priority} priority`);
+    logger.info(`🔀 Smart Router: Routing ${task.type} task with ${task.priority} priority`);
 
     // PHASE 1: Check KV Cache first
     const cacheKey = this.generateCacheKey(task, query);
     const cached = kvCacheManager.get(cacheKey);
     
     if (cached && task.priority !== 'critical') {
-      console.log('💾 Cache hit! Using cached result');
+      logger.info('💾 Cache hit! Using cached result');
       return {
         primary_component: 'KV Cache',
         use_cache: true,
@@ -370,7 +371,7 @@ export class SmartRouter {
    */
   private applyCostOptimization(decision: RoutingDecision, task: TaskType): RoutingDecision {
     if (decision.estimated_cost > task.requirements.max_cost) {
-      console.log(`💰 Cost optimization: ${decision.primary_component} ($${decision.estimated_cost}) exceeds budget ($${task.requirements.max_cost})`);
+      logger.info(`💰 Cost optimization: ${decision.primary_component} ($${decision.estimated_cost}) exceeds budget ($${task.requirements.max_cost})`);
       
       // Find cheaper alternative with similar capabilities
       const component = COMPONENT_CAPABILITIES.find(c => c.component === decision.primary_component);
@@ -385,7 +386,7 @@ export class SmartRouter {
 
         if (alternatives.length > 0) {
           const alternative = alternatives[0];
-          console.log(`✅ Using cost-effective alternative: ${alternative.component} ($${alternative.cost})`);
+          logger.info(`✅ Using cost-effective alternative: ${alternative.component} ($${alternative.cost})`);
           return {
             ...decision,
             primary_component: alternative.component,
@@ -408,7 +409,7 @@ export class SmartRouter {
     const MAX_LOAD = 10; // Maximum concurrent requests per component
 
     if (currentLoad >= MAX_LOAD && decision.fallback_component) {
-      console.log(`⚖️ Load balancing: ${decision.primary_component} at capacity, using ${decision.fallback_component}`);
+      logger.info(`⚖️ Load balancing: ${decision.primary_component} at capacity, using ${decision.fallback_component}`);
       
       const fallbackComponent = COMPONENT_CAPABILITIES.find(c => c.component === decision.fallback_component);
       if (fallbackComponent) {
@@ -453,7 +454,7 @@ export class SmartRouter {
     // Auto-optimization: adjust routing based on performance
     const successRate = metrics.filter(m => m > 0).length / metrics.length;
     if (successRate < 0.8) {
-      console.log(`⚠️ Auto-optimization: ${component} success rate ${(successRate * 100).toFixed(1)}% - considering alternatives`);
+      logger.info(`⚠️ Auto-optimization: ${component} success rate ${(successRate * 100).toFixed(1)}% - considering alternatives`);
     }
   }
 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { logger } from './logger';
 
 // Model capabilities and characteristics
 export interface ModelProfile {
@@ -218,7 +219,7 @@ class ModelRouter {
     scoredModels.sort((a, b) => b.score - a.score);
     const selected = scoredModels[0];
     
-    console.log(`🎯 Selected model: ${selected.key} (score: ${selected.score.toFixed(2)})`);
+    logger.info(`🎯 Selected model: ${selected.key} (score: ${selected.score.toFixed(2)})`);
     
     return `${selected.profile.provider}/${selected.profile.model}`;
   }
