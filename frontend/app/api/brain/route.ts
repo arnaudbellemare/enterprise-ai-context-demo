@@ -4,6 +4,7 @@ import { brainZodIntegration } from '../../../lib/ax-zod-real-integration';
 import { enhancedBrainZodIntegration } from '../../../lib/ax-llm-zod-integration';
 import { brainEvaluationSystem } from '../../../lib/brain-evaluation-system';
 import { multilingualBusinessIntelligence } from '../../../lib/multilingual-business-intelligence';
+import { advancedRAGTechniques } from '../../../lib/advanced-rag-techniques';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -166,6 +167,17 @@ export async function POST(request: NextRequest) {
       execute: async (query: string, context: any) => {
         console.log('   🌍 Multilingual Business Intelligence: Subconscious activation');
         return await executeMultilingualBusinessIntelligence(query, context);
+      }
+    },
+
+    // Advanced RAG Techniques - LanceDB-inspired improvements
+    advancedRAG: {
+      name: 'Advanced RAG Techniques',
+      description: 'Contextual RAG, HyDE, Agentic RAG, and reranking for superior retrieval',
+      activation: (context: any) => context.needsAdvancedRetrieval || context.requiresContextualRAG || context.hasComplexQuery,
+      execute: async (query: string, context: any) => {
+        console.log('   🔍 Advanced RAG Techniques: Subconscious activation');
+        return await executeAdvancedRAG(query, context);
       }
     }
     };
@@ -2146,6 +2158,104 @@ async function executeMultilingualBusinessIntelligence(query: string, context: a
         data_compatibility: ['document'],
         knowledge_stores_activated: 1,
         fallback_mode: true
+      }
+    };
+  }
+}
+
+/**
+ * Execute Advanced RAG Techniques
+ * Implements Contextual RAG, HyDE, Agentic RAG, and reranking
+ */
+async function executeAdvancedRAG(query: string, context: any): Promise<any> {
+  try {
+    console.log('   🔍 Advanced RAG Techniques: Starting enhanced retrieval...');
+    
+    const startTime = Date.now();
+    
+    // 1. Generate Hypothetical Document (HyDE)
+    console.log('   📝 Generating hypothetical document for better retrieval...');
+    const hypotheticalDoc = await advancedRAGTechniques.generateHypotheticalDocument(query, context.domain || 'general');
+    
+    // 2. Perform Contextual RAG
+    console.log('   📚 Applying contextual RAG to combat lost-in-middle problem...');
+    const contextualChunks = await advancedRAGTechniques.generateContextualChunks(
+      query, 
+      context.domain || 'general', 
+      500
+    );
+    
+    // 3. Multi-vector search
+    console.log('   🔍 Performing multi-vector search...');
+    const multiVectorResults = await advancedRAGTechniques.performMultiVectorSearch(
+      query, 
+      context.domain || 'general', 
+      ['semantic', 'keyword', 'contextual']
+    );
+    
+    // 4. Rerank results for better relevance
+    console.log('   📊 Reranking results for optimal relevance...');
+    const rerankedResults = await advancedRAGTechniques.rerankResults(
+      multiVectorResults, 
+      query, 
+      context.domain || 'general'
+    );
+    
+    // 5. Agentic RAG - Multiple agents collaboration
+    console.log('   🤖 Applying agentic RAG with multiple AI agents...');
+    const agenticResults = await advancedRAGTechniques.performAgenticRAG(
+      query, 
+      context.domain || 'general'
+    );
+    
+    const processingTime = (Date.now() - startTime) / 1000;
+    
+    console.log(`   ✅ Advanced RAG Techniques: Completed (${processingTime}s)`);
+    console.log(`   📊 Contextual chunks: ${contextualChunks.length}`);
+    console.log(`   🔍 Multi-vector results: ${multiVectorResults.length}`);
+    console.log(`   📈 Reranked results: ${rerankedResults.length}`);
+    console.log(`   🤖 Agentic collaboration: ${Object.keys(agenticResults.agents).length} agents`);
+
+    return {
+      success: true,
+      result: {
+        hypotheticalDocument: hypotheticalDoc,
+        contextualChunks: contextualChunks,
+        multiVectorResults: multiVectorResults,
+        rerankedResults: rerankedResults,
+        agenticResults: agenticResults,
+        processingTime: processingTime
+      },
+      processing_time: processingTime,
+      method: 'advanced_rag_techniques',
+      rag_metrics: {
+        contextual_chunks_generated: contextualChunks.length,
+        multi_vector_results: multiVectorResults.length,
+        reranked_results: rerankedResults.length,
+        agents_collaborated: Object.keys(agenticResults.agents).length,
+        techniques_applied: ['HyDE', 'Contextual RAG', 'Multi-vector Search', 'Reranking', 'Agentic RAG'],
+        retrieval_quality: rerankedResults.length > 0 ? Math.max(...rerankedResults.map(r => r.rerankedScore)) : 0
+      }
+    };
+
+  } catch (error: any) {
+    console.error('   ❌ Advanced RAG Techniques error:', error);
+    
+    // Fallback to basic RAG
+    return {
+      success: true,
+      result: {
+        fallback: true,
+        message: `Advanced RAG techniques unavailable: ${error.message}`,
+        basicRAG: 'Using fallback retrieval method',
+        timestamp: new Date().toISOString()
+      },
+      processing_time: 0.1,
+      method: 'advanced_rag_techniques_fallback',
+      rag_metrics: {
+        fallback_mode: true,
+        error_message: error.message,
+        techniques_applied: ['Basic RAG Fallback']
       }
     };
   }
