@@ -162,12 +162,9 @@ export async function POST(request: NextRequest) {
           })
         });
         
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Brain timeout')), 180000) // 3 minutes timeout
-        );
-        
+        // No timeout - let the brain system work its magic!
         try {
-          const brainResponse = await Promise.race([brainPromise, timeoutPromise]) as Response;
+          const brainResponse = await brainPromise;
           if (brainResponse.ok) {
             const brainData = await brainResponse.json();
             response = brainData.response || 'Brain response';
@@ -178,8 +175,9 @@ export async function POST(request: NextRequest) {
           } else {
             throw new Error('Brain system failed');
           }
-        } catch (timeoutError) {
-          console.log(`   ⚠️ Brain timeout, using Teacher-Student fallback with Perplexity...`);
+        } catch (brainError) {
+          console.log(`   ❌ Brain system error: ${brainError}`);
+          console.log(`   🔄 Using Teacher-Student fallback with Perplexity...`);
           response = await generateTeacherStudentFallback(query, domain, gepaImprovement, complexityAnalysis);
           componentsUsed.push('TeacherStudentFallback');
           qualityScore = 0.85;
