@@ -212,8 +212,18 @@ export class MoESkillRouter {
         score += 0.4;
         console.log(`🧠 MoE Router: ${expertId} domain match: +0.4`);
       } else if (request.domain && expert.domain !== request.domain) {
-        score += 0.1; // Cross-domain bonus
-        console.log(`🧠 MoE Router: ${expertId} cross-domain: +0.1`);
+        // Enhanced cross-domain matching for common domains
+        if (request.domain === 'technology' && ['retrieval', 'reasoning', 'evaluation', 'learning'].includes(expert.domain)) {
+          score += 0.3; // Higher bonus for tech-related skills
+          console.log(`🧠 MoE Router: ${expertId} tech cross-domain: +0.3`);
+        } else {
+          score += 0.1; // Standard cross-domain bonus
+          console.log(`🧠 MoE Router: ${expertId} cross-domain: +0.1`);
+        }
+      } else {
+        // No domain specified, give base score
+        score += 0.2;
+        console.log(`🧠 MoE Router: ${expertId} no domain specified: +0.2`);
       }
 
       // 2. Capability matching

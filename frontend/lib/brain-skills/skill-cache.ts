@@ -6,12 +6,14 @@
  *
  * Features:
  * - LRU cache with TTL
- * - Query similarity detection
+ * - Query similarity detection with semantic optimization
  * - Per-skill cache configuration
  * - Cache hit metrics
+ * - Optimized key generation for better hit rates
  */
 
 import { SkillResult, SkillCacheEntry } from './types';
+import { getCacheKeyOptimizer } from './cache-key-optimizer';
 
 export interface SkillCacheConfig {
   maxSize: number;
@@ -26,6 +28,7 @@ export class SkillCache {
   private config: SkillCacheConfig;
   private hitCount: number = 0;
   private missCount: number = 0;
+  private optimizer = getCacheKeyOptimizer();
 
   constructor(config?: Partial<SkillCacheConfig>) {
     this.cache = new Map();
@@ -39,34 +42,25 @@ export class SkillCache {
   }
 
   /**
-   * Generate cache key for skill + query + context
+   * Generate optimized cache key for skill + query + context
    */
-  private generateCacheKey(skillName: string, query: string, contextHash?: string): string {
-    const normalizedQuery = query.toLowerCase().trim();
-    const baseKey = `${skillName}:${normalizedQuery}`;
-    return contextHash ? `${baseKey}:${contextHash}` : baseKey;
+  private generateCacheKey(skillName: string, query: string, context?: any): string {
+    // Use optimizer for better key generation
+    return this.optimizer.generateKey(skillName, query, context);
   }
 
   /**
-   * Hash context object for cache key
+   * Hash context object for cache key (delegated to optimizer)
    */
   private hashContext(context: any): string {
-    // Create a stable hash of important context fields
-    const relevantFields = {
-      domain: context.domain,
-      complexity: context.complexity,
-      needsReasoning: context.needsReasoning,
-      needsOptimization: context.needsOptimization
-    };
-    return JSON.stringify(relevantFields);
+    return this.optimizer.hashContext(context);
   }
 
   /**
    * Get cached result if available and valid
    */
   get(skillName: string, query: string, context?: any, ttl?: number): SkillResult | null {
-    const contextHash = context ? this.hashContext(context) : undefined;
-    const key = this.generateCacheKey(skillName, query, contextHash);
+    const key = this.generateCacheKey(skillName, query, context);
     const cached = this.cache.get(key);
 
     if (!cached) {
@@ -106,8 +100,7 @@ export class SkillCache {
    * Store result in cache
    */
   set(skillName: string, query: string, result: SkillResult, context?: any): void {
-    const contextHash = context ? this.hashContext(context) : undefined;
-    const key = this.generateCacheKey(skillName, query, contextHash);
+    const key = this.generateCacheKey(skillName, query, context);
 
     // Enforce cache size limit (LRU eviction)
     if (this.cache.size >= this.config.maxSize && !this.cache.has(key)) {

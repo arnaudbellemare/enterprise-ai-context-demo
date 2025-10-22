@@ -77,6 +77,15 @@ const initializeMoERouter = () => {
       capabilities: ['quality_assessment', 'performance_metrics', 'evaluation_framework'],
       performance: { accuracy: 0.94, speed: 0.7, reliability: 0.96, cost: 0.25 },
       metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.94, avgResponseTime: 1.5 }
+    },
+    {
+      id: 'legal_analysis',
+      name: 'Legal Analysis Expert',
+      description: 'Comprehensive legal analysis and regulatory compliance assessment',
+      domain: 'legal',
+      capabilities: ['legal_analysis', 'regulatory_compliance', 'contract_review', 'legal_research'],
+      performance: { accuracy: 0.93, speed: 0.6, reliability: 0.95, cost: 0.4 },
+      metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.93, avgResponseTime: 4.2 }
     }
   ];
 

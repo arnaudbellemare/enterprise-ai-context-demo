@@ -414,7 +414,7 @@ export class SkillResourceManager {
         const health = await client.healthCheck();
         results[skillName] = { status: 'healthy', ...health };
       } catch (error) {
-        results[skillName] = { status: 'unhealthy', error: error.message };
+        results[skillName] = { status: 'unhealthy', error: error instanceof Error ? error.message : String(error) };
       }
     }
     

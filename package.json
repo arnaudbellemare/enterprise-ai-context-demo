@@ -14,7 +14,11 @@
     "benchmark:gepa": "cd benchmarking && python gepa_optimizer_full_system.py",
     "example:basic": "npx tsx examples/basic-query.ts",
     "example:multi-domain": "npx tsx examples/multi-domain.ts",
-    "example:config": "npx tsx examples/custom-config.ts"
+    "example:config": "npx tsx examples/custom-config.ts",
+    "warm-cache": "npx tsx scripts/warm-cache.ts",
+    "warm-cache:parallel": "npx tsx scripts/warm-cache.ts --parallel --concurrency=5",
+    "warm-cache:sequential": "npx tsx scripts/warm-cache.ts --sequential",
+    "test:cache": "node test-cache-warming.js"
   },
   "keywords": [
     "ai",

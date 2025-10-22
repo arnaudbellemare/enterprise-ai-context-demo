@@ -163,7 +163,7 @@ export class QueryBatcher {
           // Return empty results for failed skill
           return {
             skillName: name,
-            results: batch.queries.map(() => ({ success: false, error: error.message })),
+            results: batch.queries.map(() => ({ success: false, error: error instanceof Error ? error.message : String(error) })),
             metadata: {
               batchSize: batch.queries.length,
               processingTime: Date.now() - skillStartTime,

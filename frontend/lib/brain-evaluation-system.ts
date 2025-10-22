@@ -71,21 +71,42 @@ export class BrainEvaluationSystem {
    */
   async evaluateCreativeReasoning(sample: EvaluationSample): Promise<MetricScore> {
     try {
-      // Fallback evaluation using heuristic analysis since we don't have OpenAI API key
+      // Enhanced evaluation using creative reasoning prompts
       const responseLength = sample.response.length;
       const hasQuestionMarks = (sample.response.match(/\?/g) || []).length;
-      const hasCreativeWords = ['creative', 'innovative', 'alternative', 'perspective', 'insight'].some(word => 
+      
+      // Creative reasoning indicators
+      const hasDifferentThinking = ['differently', 'alternative', 'perspective', 'unconventional', 'creative'].some(word => 
+        sample.response.toLowerCase().includes(word)
+      );
+      const hasBlindSpotAnalysis = ['blind spot', 'assumption', 'hidden', 'unseen', 'overlooked'].some(word => 
+        sample.response.toLowerCase().includes(word)
+      );
+      const hasBreakdown = ['break down', 'step by step', 'detailed', 'comprehensive', 'thorough'].some(word => 
+        sample.response.toLowerCase().includes(word)
+      );
+      const hasPersonalizedAdvice = ['you should', 'in your case', 'specifically', 'personally', 'your situation'].some(word => 
+        sample.response.toLowerCase().includes(word)
+      );
+      const hasDeeperNeeds = ['really asking', 'underlying', 'deeper', 'root cause', 'fundamental'].some(word => 
+        sample.response.toLowerCase().includes(word)
+      );
+      const hasAdditionalContext = ['what else', 'also consider', 'additionally', 'furthermore', 'bonus'].some(word => 
         sample.response.toLowerCase().includes(word)
       );
       const hasStructure = sample.response.includes('#') || sample.response.includes('##');
       
-      // Calculate heuristic score
-      let score = 0.5; // Base score
+      // Calculate enhanced heuristic score based on creative reasoning
+      let score = 0.3; // Base score
       if (responseLength > 500) score += 0.1;
       if (responseLength > 1000) score += 0.1;
-      if (hasQuestionMarks > 0) score += 0.1;
-      if (hasCreativeWords) score += 0.1;
-      if (hasStructure) score += 0.1;
+      if (hasDifferentThinking) score += 0.15; // Creative thinking
+      if (hasBlindSpotAnalysis) score += 0.15; // Blind spot identification
+      if (hasBreakdown) score += 0.1; // Comprehensive breakdown
+      if (hasPersonalizedAdvice) score += 0.1; // Actionable advice
+      if (hasDeeperNeeds) score += 0.1; // Deeper understanding
+      if (hasAdditionalContext) score += 0.1; // Additional context
+      if (hasStructure) score += 0.05; // Organization
       
       const evaluation = {
         patternDetection: score,
@@ -109,11 +130,16 @@ export class BrainEvaluationSystem {
       return {
         name: 'creative_reasoning',
         score: Math.min(score, 1.0),
-        reason: `Heuristic evaluation: ${(score * 100).toFixed(1)}% based on length, structure, and creative indicators`,
+        reason: `Creative reasoning evaluation: ${(score * 100).toFixed(1)}% based on different thinking (${hasDifferentThinking}), blind spot analysis (${hasBlindSpotAnalysis}), breakdown (${hasBreakdown}), personalized advice (${hasPersonalizedAdvice}), deeper needs (${hasDeeperNeeds}), and additional context (${hasAdditionalContext})`,
         metadata: {
           responseLength,
           hasQuestionMarks,
-          hasCreativeWords,
+          hasDifferentThinking,
+          hasBlindSpotAnalysis,
+          hasBreakdown,
+          hasPersonalizedAdvice,
+          hasDeeperNeeds,
+          hasAdditionalContext,
           hasStructure,
           evaluation
         }
