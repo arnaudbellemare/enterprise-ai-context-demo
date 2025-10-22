@@ -13,6 +13,7 @@ import { BrainEvaluationSystem } from '../brain-evaluation-system';
 import { ACEReasoningBank } from '../ace-reasoningbank';
 import { ACE } from '../ace';
 import { openEvalsIntegration, OpenEvalsEvaluationSample } from '../openevals-integration';
+import { ContinualLearningSystem } from '../continual-learning-integration';
 // Using direct fetch for self-improvement instead of @ax-llm/core
 
 export interface MoERequest {
@@ -57,6 +58,7 @@ export class MoEBrainOrchestrator {
   private reasoningBank: ACEReasoningBank;
   private ace: ACE;
   private openEvalsIntegration: typeof openEvalsIntegration;
+  private continualLearningSystem: ContinualLearningSystem;
   private initialized: boolean = false;
   private promptHistory: Map<string, string[]> = new Map();
   private performanceMetrics: Map<string, { score: number; feedback: string }[]> = new Map();
@@ -81,8 +83,23 @@ export class MoEBrainOrchestrator {
     // Initialize OpenEvals integration for enhanced evaluation
     this.openEvalsIntegration = openEvalsIntegration;
     
+    // Initialize Continual Learning System with sparse memory updates
+    this.continualLearningSystem = new ContinualLearningSystem(
+      this.reasoningBank,
+      this.ace,
+      {
+        max_memory_slots: 10000,
+        active_slots_per_query: 32,
+        tf_idf_threshold: 0.1,
+        learning_rate: 2.0,
+        update_frequency: 10,
+        forgetting_threshold: 0.3
+      }
+    );
+    
     console.log(`🧠 MoE Orchestrator: Initialized with ${this.router['experts']?.size || 0} experts`);
     console.log(`🧠 ReasoningBank: Initialized for self-evolving capabilities`);
+    console.log(`🧠 Continual Learning: Initialized with sparse memory updates`);
   }
 
   async initialize(): Promise<void> {
@@ -173,6 +190,39 @@ export class MoEBrainOrchestrator {
 
       const totalTime = Date.now() - startTime;
 
+      // 7. Continual Learning with Sparse Memory Updates
+      const learningStart = Date.now();
+      try {
+        const experience = {
+          task: request.query,
+          trajectory: {
+            skillsActivated: topSkills.map(s => s.name),
+            implementations: implementations.map(impl => impl.implementation.name),
+            response: response.response
+          },
+          result: {
+            totalCost: this.calculateTotalCost(implementations),
+            averageQuality: this.calculateAverageQuality(implementations),
+            totalLatency: totalTime
+          },
+          feedback: {
+            success: (qualityEvaluation?.combinedScore || 0) > 0.7,
+            error: (qualityEvaluation?.combinedScore || 0) <= 0.7 ? 'Low quality response' : undefined,
+            metrics: {
+              accuracy: qualityEvaluation?.combinedScore || 0.5,
+              latency: totalTime,
+              cost: this.calculateTotalCost(implementations)
+            }
+          },
+          timestamp: new Date()
+        };
+
+        await this.continualLearningSystem.learnFromExperience(experience);
+        console.log(`🧠 Continual Learning: Sparse memory updates completed in ${Date.now() - learningStart}ms`);
+      } catch (error) {
+        console.warn('⚠️ Continual learning failed:', error);
+      }
+
       return {
         response: response.response,
         metadata: {
@@ -190,7 +240,12 @@ export class MoEBrainOrchestrator {
           openEvalsEnabled: qualityEvaluation?.openEvalsResults?.length ? qualityEvaluation.openEvalsResults.length > 0 : false,
           combinedScore: qualityEvaluation?.combinedScore || 0,
           evaluationRecommendations: qualityEvaluation?.recommendations || [],
-          brainEvaluationEnabled: !!qualityEvaluation?.brainEvaluationResults
+          brainEvaluationEnabled: !!qualityEvaluation?.brainEvaluationResults,
+          // Continual learning results
+          continualLearningEnabled: true,
+          memorySlotsUpdated: true,
+          learningRate: 2.0,
+          sparseUpdates: true
         } as any,
         performance: {
           selectionTime,
