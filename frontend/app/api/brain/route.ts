@@ -8,6 +8,7 @@ import { advancedRAGTechniques } from '../../../lib/advanced-rag-techniques';
 import { advancedRerankingTechniques } from '../../../lib/advanced-reranking-techniques';
 import { moeSkillRouter, SkillExpert } from '../../../lib/moe-skill-router';
 import { moeABTestingFramework } from '../../../lib/moe-ab-testing';
+import { getMoEBrainOrchestrator } from '../../../lib/brain-skills/moe-orchestrator';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -113,7 +114,7 @@ initializeMoERouter();
  */
 export async function POST(request: NextRequest) {
   try {
-    const { query, domain = 'general', sessionId = 'default' } = await request.json();
+    const { query, domain = 'general', sessionId = 'default', useMoE = true } = await request.json();
 
     if (!query) {
       return NextResponse.json(
@@ -139,6 +140,51 @@ export async function POST(request: NextRequest) {
     // Get context analytics
     const contextAnalytics = await contextSystem.getContextAnalytics(sessionId);
     console.log(`📊 Context Analytics: ${contextAnalytics.recommendations.length} recommendations`);
+
+    // =================================================================
+    // MOE ORCHESTRATOR INTEGRATION (if enabled)
+    // =================================================================
+    
+    if (useMoE) {
+      try {
+        console.log('🚀 Using MoE Brain Orchestrator for optimal performance');
+        const orchestrator = getMoEBrainOrchestrator(moeSkillRouter);
+        
+        const moeResponse = await orchestrator.executeQuery({
+          query,
+          context: {
+            ...contextResult,
+            domain,
+            sessionId
+          },
+          sessionId,
+          priority: 'normal',
+          budget: 0.05,
+          maxLatency: 30000,
+          requiredQuality: 0.8
+        });
+
+        console.log(`✅ MoE Brain: Completed in ${moeResponse.performance.totalTime}ms`);
+        console.log(`   Skills: ${moeResponse.metadata.skillsActivated.join(', ')}`);
+        console.log(`   Cost: $${moeResponse.metadata.totalCost.toFixed(4)}`);
+        console.log(`   Quality: ${moeResponse.metadata.averageQuality.toFixed(2)}`);
+
+        return NextResponse.json({
+          success: true,
+          response: moeResponse.response,
+          metadata: {
+            ...moeResponse.metadata,
+            moeOptimized: true,
+            totalTime: moeResponse.performance.totalTime
+          },
+          performance: moeResponse.performance,
+          sessionId
+        });
+      } catch (moeError: any) {
+        console.warn('⚠️ MoE Orchestrator failed, falling back to traditional brain:', moeError.message);
+        // Continue with traditional processing
+      }
+    }
 
     // =================================================================
     // SUBCONSCIOUS MEMORY SYSTEM
