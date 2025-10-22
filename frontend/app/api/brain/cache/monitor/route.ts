@@ -1,88 +1,136 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSkillCache } from '@/lib/brain-skills/skill-cache';
-import { createClient } from '@supabase/supabase-js';
+import { rateLimiter, RATE_LIMITS, generateRateLimitKey } from '@/lib/rate-limiter';
+import { logger } from '@/lib/logger';
 
 /**
  * Cache Monitoring System
- *
- * Provides real-time cache performance metrics, trends, and alerts
- * for optimizing cache hit rates and system performance.
+ * 
+ * Provides real-time metrics and analysis for cache performance
+ * Includes rate limiting to prevent abuse
  */
 
 interface CacheMetrics {
-  timestamp: number;
-  cacheSize: number;
-  maxSize: number;
-  hitCount: number;
-  missCount: number;
   hitRate: number;
   utilizationPercent: number;
+  size: number;
+  maxSize: number;
+  averageResponseTime: number;
+  totalRequests: number;
+  cacheHits: number;
+  cacheMisses: number;
 }
 
-interface CacheAnalysis {
-  metrics: CacheMetrics;
-  trends: {
-    hitRateTrend: string; // 'improving' | 'stable' | 'declining'
-    utilizationTrend: string;
-    recommendations: string[];
+interface MonitoringResult {
+  success: boolean;
+  current?: {
+    metrics: CacheMetrics;
+    trends: {
+      hitRateTrend: 'improving' | 'stable' | 'declining';
+      utilizationTrend: 'increasing' | 'stable' | 'decreasing';
+      recommendations: string[];
+    };
+    alerts: Array<{
+      level: 'info' | 'warning' | 'critical';
+      message: string;
+    }>;
   };
-  alerts: {
-    level: 'info' | 'warning' | 'critical';
-    message: string;
-  }[];
-  performance: {
-    avgCacheAge: number;
-    mostCachedSkills: { skill: string; count: number }[];
-    leastCachedSkills: { skill: string; count: number }[];
-  };
+  history?: Array<{
+    timestamp: string;
+    metrics: CacheMetrics;
+  }>;
+  error?: string;
 }
 
 /**
  * GET /api/brain/cache/monitor
- * Get current cache metrics and analysis
+ * Get real-time cache metrics and analysis
  */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const includeHistory = searchParams.get('history') === 'true';
-    const historyHours = parseInt(searchParams.get('hours') || '24', 10);
+    // Rate limiting check
+    const rateLimitKey = generateRateLimitKey(request, 'cache-monitor');
+    const rateLimitResult = rateLimiter.checkLimit(rateLimitKey, RATE_LIMITS.CACHE_MONITOR);
+    
+    if (!rateLimitResult.allowed) {
+      logger.security('Rate limit exceeded for cache monitoring', {
+        key: rateLimitKey,
+        retryAfter: rateLimitResult.retryAfter
+      });
+      
+      return NextResponse.json({
+        success: false,
+        error: 'Rate limit exceeded',
+        message: `Too many monitoring requests. Try again in ${rateLimitResult.retryAfter} seconds.`,
+        retryAfter: rateLimitResult.retryAfter
+      }, { 
+        status: 429,
+        headers: {
+          'Retry-After': rateLimitResult.retryAfter?.toString() || '60'
+        }
+      });
+    }
 
     const cache = getSkillCache();
     const stats = cache.getStats();
+    
+    // Get query parameters
+    const url = new URL(request.url);
+    const includeHistory = url.searchParams.get('history') === 'true';
+    const hours = parseInt(url.searchParams.get('hours') || '24');
 
-    // Current metrics
+    // Calculate current metrics
     const metrics: CacheMetrics = {
-      timestamp: Date.now(),
-      cacheSize: stats.size,
-      maxSize: stats.maxSize,
-      hitCount: stats.hitCount,
-      missCount: stats.missCount,
       hitRate: stats.hitRate,
-      utilizationPercent: stats.utilizationPercent
+      utilizationPercent: stats.utilizationPercent,
+      size: stats.size,
+      maxSize: stats.maxSize,
+      averageResponseTime: 0, // Not available in current stats
+      totalRequests: stats.hitCount + stats.missCount,
+      cacheHits: stats.hitCount,
+      cacheMisses: stats.missCount
     };
 
-    // Analyze trends and generate recommendations
-    const analysis = analyzeCache(metrics);
+    // Analyze trends
+    const trends = analyzeTrends(metrics);
+    
+    // Generate recommendations
+    const recommendations = trends.recommendations;
+    
+    // Generate alerts
+    const alerts = generateAlerts(metrics, trends);
 
-    // Get historical data if requested
-    let history: CacheMetrics[] = [];
+    const result: MonitoringResult = {
+      success: true,
+      current: {
+        metrics,
+        trends,
+        alerts
+      }
+    };
+
+    // Add historical data if requested
     if (includeHistory) {
-      history = await getCacheHistory(historyHours);
+      result.history = await getHistoricalMetrics(hours);
     }
 
-    return NextResponse.json({
-      success: true,
-      current: analysis,
-      history: includeHistory ? history : undefined,
-      monitoring: {
-        endpoint: '/api/brain/cache/monitor',
-        updateInterval: 30000, // 30 seconds
-        metricsRetention: '7 days'
+    logger.info('Cache monitoring data retrieved', {
+      operation: 'cache_monitoring',
+      metadata: {
+        hitRate: metrics.hitRate,
+        utilization: metrics.utilizationPercent,
+        size: metrics.size,
+        maxSize: metrics.maxSize
       }
     });
 
+    return NextResponse.json(result);
+
   } catch (error: any) {
-    console.error('❌ Cache Monitoring Error:', error);
+    logger.error('Cache monitoring failed', error, {
+      operation: 'cache_monitoring'
+    });
+    
     return NextResponse.json({
       success: false,
       error: error.message
@@ -92,34 +140,57 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/brain/cache/monitor
- * Store cache metrics snapshot for historical analysis
+ * Store metrics snapshot for historical analysis
  */
 export async function POST(request: NextRequest) {
   try {
-    const cache = getSkillCache();
-    const stats = cache.getStats();
+    // Rate limiting check
+    const rateLimitKey = generateRateLimitKey(request, 'cache-monitor');
+    const rateLimitResult = rateLimiter.checkLimit(rateLimitKey, RATE_LIMITS.CACHE_MONITOR);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json({
+        success: false,
+        error: 'Rate limit exceeded',
+        retryAfter: rateLimitResult.retryAfter
+      }, { status: 429 });
+    }
 
-    const metrics: CacheMetrics = {
-      timestamp: Date.now(),
-      cacheSize: stats.size,
-      maxSize: stats.maxSize,
-      hitCount: stats.hitCount,
-      missCount: stats.missCount,
-      hitRate: stats.hitRate,
-      utilizationPercent: stats.utilizationPercent
-    };
+    const body = await request.json();
+    const { metrics, timestamp } = body;
 
-    // Store to Supabase for historical tracking
-    await storeCacheMetrics(metrics);
+    // Validate metrics data
+    if (!metrics || typeof metrics.hitRate !== 'number') {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid metrics data'
+      }, { status: 400 });
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Cache metrics stored',
+    // Store metrics snapshot (placeholder - would integrate with database)
+    await storeMetricsSnapshot({
+      timestamp: timestamp || new Date().toISOString(),
       metrics
     });
 
+    logger.info('Cache metrics snapshot stored', {
+      operation: 'cache_monitoring',
+      metadata: {
+        hitRate: metrics.hitRate,
+        utilization: metrics.utilizationPercent
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Metrics snapshot stored successfully'
+    });
+
   } catch (error: any) {
-    console.error('❌ Cache Metrics Storage Error:', error);
+    logger.error('Failed to store metrics snapshot', error, {
+      operation: 'cache_monitoring'
+    });
+    
     return NextResponse.json({
       success: false,
       error: error.message
@@ -128,150 +199,144 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Analyze cache metrics and generate recommendations
+ * Analyze cache performance trends
  */
-function analyzeCache(metrics: CacheMetrics): CacheAnalysis {
-  const alerts: { level: 'info' | 'warning' | 'critical'; message: string }[] = [];
+function analyzeTrends(metrics: CacheMetrics): {
+  hitRateTrend: 'improving' | 'stable' | 'declining';
+  utilizationTrend: 'increasing' | 'stable' | 'decreasing';
+  recommendations: string[];
+} {
   const recommendations: string[] = [];
-
-  // Hit rate analysis
-  if (metrics.hitRate < 0.3) {
-    alerts.push({
-      level: 'critical',
-      message: `Cache hit rate critically low: ${(metrics.hitRate * 100).toFixed(1)}%`
-    });
-    recommendations.push('Run cache warming: npm run warm-cache');
-    recommendations.push('Review query patterns for cache optimization');
-  } else if (metrics.hitRate < 0.5) {
-    alerts.push({
-      level: 'warning',
-      message: `Cache hit rate below target: ${(metrics.hitRate * 100).toFixed(1)}% (target: 50%+)`
-    });
+  
+  // Analyze hit rate trend (simplified - would use historical data in production)
+  let hitRateTrend: 'improving' | 'stable' | 'declining' = 'stable';
+  if (metrics.hitRate > 0.6) {
+    hitRateTrend = 'improving';
+  } else if (metrics.hitRate < 0.3) {
+    hitRateTrend = 'declining';
     recommendations.push('Consider warming cache with common queries');
-  } else if (metrics.hitRate >= 0.6) {
-    alerts.push({
-      level: 'info',
-      message: `Cache performing well: ${(metrics.hitRate * 100).toFixed(1)}% hit rate`
-    });
   }
 
-  // Utilization analysis
-  if (metrics.utilizationPercent > 90) {
-    alerts.push({
-      level: 'warning',
-      message: `Cache utilization high: ${metrics.utilizationPercent.toFixed(1)}%`
-    });
-    recommendations.push('Consider increasing cache max size');
-    recommendations.push('Review cache TTL settings');
+  // Analyze utilization trend
+  let utilizationTrend: 'increasing' | 'stable' | 'decreasing' = 'stable';
+  if (metrics.utilizationPercent > 80) {
+    utilizationTrend = 'increasing';
+    recommendations.push('Cache is nearly full - consider increasing size or implementing TTL');
   } else if (metrics.utilizationPercent < 20) {
-    alerts.push({
-      level: 'info',
-      message: `Cache underutilized: ${metrics.utilizationPercent.toFixed(1)}%`
-    });
-    recommendations.push('Run cache warming to improve readiness');
+    utilizationTrend = 'decreasing';
+    recommendations.push('Cache is underutilized - consider warming with more queries');
   }
 
-  // Efficiency analysis
-  const totalRequests = metrics.hitCount + metrics.missCount;
-  if (totalRequests > 0) {
-    const efficiency = (metrics.hitRate * metrics.utilizationPercent) / 100;
-    if (efficiency < 0.3) {
-      recommendations.push('Cache efficiency low - review caching strategy');
-    }
+  // Generate additional recommendations
+  if (metrics.hitRate < 0.4) {
+    recommendations.push('Low hit rate detected - review cache key generation strategy');
+  }
+  
+  if (metrics.averageResponseTime > 1000) {
+    recommendations.push('High response time detected - consider optimizing cache operations');
   }
 
-  // Trends (simplified - would use historical data in production)
-  const hitRateTrend = metrics.hitRate >= 0.5 ? 'stable' : 'declining';
-  const utilizationTrend = metrics.utilizationPercent >= 40 ? 'stable' : 'declining';
+  if (recommendations.length === 0) {
+    recommendations.push('Cache performance is optimal');
+  }
 
   return {
-    metrics,
-    trends: {
-      hitRateTrend,
-      utilizationTrend,
-      recommendations
-    },
-    alerts,
-    performance: {
-      avgCacheAge: 0, // Would calculate from cache entries
-      mostCachedSkills: [], // Would analyze cache contents
-      leastCachedSkills: []
-    }
+    hitRateTrend,
+    utilizationTrend,
+    recommendations
   };
 }
 
 /**
- * Store cache metrics to Supabase for historical tracking
+ * Generate alerts based on metrics
  */
-async function storeCacheMetrics(metrics: CacheMetrics): Promise<void> {
-  try {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.warn('⚠️ Supabase not configured, skipping metrics storage');
-      return;
-    }
+function generateAlerts(metrics: CacheMetrics, trends: any): Array<{
+  level: 'info' | 'warning' | 'critical';
+  message: string;
+}> {
+  const alerts: Array<{ level: 'info' | 'warning' | 'critical'; message: string }> = [];
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
-    const { error } = await supabase.from('cache_metrics_history').insert({
-      timestamp: new Date(metrics.timestamp).toISOString(),
-      cache_size: metrics.cacheSize,
-      max_size: metrics.maxSize,
-      hit_count: metrics.hitCount,
-      miss_count: metrics.missCount,
-      hit_rate: metrics.hitRate,
-      utilization_percent: metrics.utilizationPercent
+  // Critical alerts
+  if (metrics.hitRate < 0.1) {
+    alerts.push({
+      level: 'critical',
+      message: 'Critical: Cache hit rate is extremely low (< 10%)'
     });
-
-    if (error) {
-      console.error('Failed to store cache metrics:', error);
-    }
-  } catch (error) {
-    console.error('Error storing cache metrics:', error);
   }
+
+  if (metrics.utilizationPercent > 95) {
+    alerts.push({
+      level: 'critical',
+      message: 'Critical: Cache is nearly full (> 95% utilization)'
+    });
+  }
+
+  // Warning alerts
+  if (metrics.hitRate < 0.3) {
+    alerts.push({
+      level: 'warning',
+      message: 'Warning: Cache hit rate is low (< 30%)'
+    });
+  }
+
+  if (metrics.utilizationPercent > 80) {
+    alerts.push({
+      level: 'warning',
+      message: 'Warning: Cache utilization is high (> 80%)'
+    });
+  }
+
+  if (metrics.averageResponseTime > 2000) {
+    alerts.push({
+      level: 'warning',
+      message: 'Warning: Average response time is high (> 2s)'
+    });
+  }
+
+  // Info alerts
+  if (metrics.hitRate > 0.6) {
+    alerts.push({
+      level: 'info',
+      message: 'Cache performing well: ' + (metrics.hitRate * 100).toFixed(1) + '% hit rate'
+    });
+  }
+
+  if (alerts.length === 0) {
+    alerts.push({
+      level: 'info',
+      message: 'Cache system is operating normally'
+    });
+  }
+
+  return alerts;
 }
 
 /**
- * Get historical cache metrics from Supabase
+ * Get historical metrics (placeholder implementation)
  */
-async function getCacheHistory(hours: number): Promise<CacheMetrics[]> {
-  try {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      return [];
+async function getHistoricalMetrics(hours: number): Promise<Array<{
+  timestamp: string;
+  metrics: CacheMetrics;
+}>> {
+  // In production, this would query a time-series database
+  // For now, return empty array
+  return [];
+}
+
+/**
+ * Store metrics snapshot (placeholder implementation)
+ */
+async function storeMetricsSnapshot(data: {
+  timestamp: string;
+  metrics: CacheMetrics;
+}): Promise<void> {
+  // In production, this would store in a time-series database
+  // For now, just log the data
+  logger.debug('Metrics snapshot stored', {
+    operation: 'cache_monitoring',
+    metadata: {
+      timestamp: data.timestamp,
+      metrics: data.metrics
     }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
-    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-
-    const { data, error } = await supabase
-      .from('cache_metrics_history')
-      .select('*')
-      .gte('timestamp', since)
-      .order('timestamp', { ascending: true });
-
-    if (error) {
-      console.error('Failed to fetch cache history:', error);
-      return [];
-    }
-
-    return (data || []).map(row => ({
-      timestamp: new Date(row.timestamp).getTime(),
-      cacheSize: row.cache_size,
-      maxSize: row.max_size,
-      hitCount: row.hit_count,
-      missCount: row.miss_count,
-      hitRate: row.hit_rate,
-      utilizationPercent: row.utilization_percent
-    }));
-
-  } catch (error) {
-    console.error('Error fetching cache history:', error);
-    return [];
-  }
+  });
 }

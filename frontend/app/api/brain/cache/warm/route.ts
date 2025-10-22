@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSkillCache } from '@/lib/brain-skills/skill-cache';
 import { getSkillRegistry } from '@/lib/brain-skills';
+import { rateLimiter, RATE_LIMITS, generateRateLimitKey } from '@/lib/rate-limiter';
+import { logger } from '@/lib/logger';
 
 /**
  * Cache Warming System
@@ -107,6 +109,109 @@ const COMMON_QUERIES: WarmingQuery[] = [
 ];
 
 /**
+ * Input validation for cache warming queries
+ */
+function validateWarmingInput(body: any): { valid: boolean; error?: string; sanitized?: WarmingConfig } {
+  // Check if body is valid JSON object
+  if (!body || typeof body !== 'object') {
+    return { valid: false, error: 'Request body must be a valid JSON object' };
+  }
+
+  // Validate queries array if provided
+  if (body.queries) {
+    if (!Array.isArray(body.queries)) {
+      return { valid: false, error: 'Queries must be an array' };
+    }
+
+    if (body.queries.length > 50) {
+      return { valid: false, error: 'Maximum 50 queries allowed per request' };
+    }
+
+    // Validate each query
+    for (let i = 0; i < body.queries.length; i++) {
+      const query = body.queries[i];
+      
+      if (!query || typeof query !== 'object') {
+        return { valid: false, error: `Query ${i + 1} must be an object` };
+      }
+
+      if (!query.query || typeof query.query !== 'string') {
+        return { valid: false, error: `Query ${i + 1} must have a valid query string` };
+      }
+
+      // Sanitize query string
+      const sanitizedQuery = query.query.trim();
+      if (sanitizedQuery.length === 0) {
+        return { valid: false, error: `Query ${i + 1} cannot be empty` };
+      }
+
+      if (sanitizedQuery.length > 1000) {
+        return { valid: false, error: `Query ${i + 1} exceeds maximum length of 1000 characters` };
+      }
+
+      // Validate domain if provided
+      if (query.domain && typeof query.domain !== 'string') {
+        return { valid: false, error: `Query ${i + 1} domain must be a string` };
+      }
+
+      // Validate complexity if provided
+      if (query.complexity !== undefined) {
+        if (typeof query.complexity !== 'number' || query.complexity < 1 || query.complexity > 10) {
+          return { valid: false, error: `Query ${i + 1} complexity must be a number between 1 and 10` };
+        }
+      }
+
+      // Validate skills array if provided
+      if (query.skills) {
+        if (!Array.isArray(query.skills)) {
+          return { valid: false, error: `Query ${i + 1} skills must be an array` };
+        }
+        
+        if (query.skills.length > 10) {
+          return { valid: false, error: `Query ${i + 1} cannot have more than 10 skills` };
+        }
+
+        for (const skill of query.skills) {
+          if (typeof skill !== 'string' || skill.length === 0) {
+            return { valid: false, error: `Query ${i + 1} skills must be non-empty strings` };
+          }
+        }
+      }
+    }
+  }
+
+  // Validate other parameters
+  if (body.parallel !== undefined && typeof body.parallel !== 'boolean') {
+    return { valid: false, error: 'Parallel must be a boolean' };
+  }
+
+  if (body.maxConcurrency !== undefined) {
+    if (typeof body.maxConcurrency !== 'number' || body.maxConcurrency < 1 || body.maxConcurrency > 10) {
+      return { valid: false, error: 'Max concurrency must be a number between 1 and 10' };
+    }
+  }
+
+  if (body.skipExisting !== undefined && typeof body.skipExisting !== 'boolean') {
+    return { valid: false, error: 'Skip existing must be a boolean' };
+  }
+
+  // Create sanitized config
+  const sanitized: WarmingConfig = {
+    queries: body.queries?.map((q: any) => ({
+      query: q.query.trim(),
+      domain: q.domain?.trim() || undefined,
+      complexity: q.complexity || undefined,
+      skills: q.skills?.map((s: string) => s.trim()) || undefined
+    })) || COMMON_QUERIES,
+    parallel: body.parallel ?? true,
+    maxConcurrency: body.maxConcurrency || 3,
+    skipExisting: body.skipExisting ?? true
+  };
+
+  return { valid: true, sanitized };
+}
+
+/**
  * POST /api/brain/cache/warm
  * Warm cache with common queries
  */
@@ -114,17 +219,59 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
+    // Rate limiting check
+    const rateLimitKey = generateRateLimitKey(request, 'cache-warming');
+    const rateLimitResult = rateLimiter.checkLimit(rateLimitKey, RATE_LIMITS.CACHE_WARMING);
+    
+    if (!rateLimitResult.allowed) {
+      logger.security('Rate limit exceeded for cache warming', {
+        key: rateLimitKey,
+        retryAfter: rateLimitResult.retryAfter
+      });
+      
+      return NextResponse.json({
+        success: false,
+        error: 'Rate limit exceeded',
+        message: `Too many cache warming requests. Try again in ${rateLimitResult.retryAfter} seconds.`,
+        retryAfter: rateLimitResult.retryAfter
+      }, { 
+        status: 429,
+        headers: {
+          'Retry-After': rateLimitResult.retryAfter?.toString() || '300'
+        }
+      });
+    }
+
     const body = await request.json() as Partial<WarmingConfig>;
+    
+    // Validate input
+    const validation = validateWarmingInput(body);
+    if (!validation.valid) {
+      logger.security('Invalid cache warming input', {
+        error: validation.error,
+        key: rateLimitKey
+      });
+      
+      return NextResponse.json({
+        success: false,
+        error: validation.error,
+        queriesWarmed: 0,
+        queriesSkipped: 0,
+        queriesFailed: 0,
+        duration: Date.now() - startTime
+      }, { status: 400 });
+    }
 
-    const config: WarmingConfig = {
-      queries: body.queries || COMMON_QUERIES,
-      parallel: body.parallel ?? true,
-      maxConcurrency: body.maxConcurrency || 3,
-      skipExisting: body.skipExisting ?? true
-    };
+    const config = validation.sanitized!;
 
-    console.log(`🔥 Cache Warming: Starting with ${config.queries.length} queries`);
-    console.log(`   Parallel: ${config.parallel}, Max Concurrency: ${config.maxConcurrency}`);
+    logger.info('Cache warming started', {
+      operation: 'cache_warming',
+      metadata: {
+        queryCount: config.queries.length,
+        parallel: config.parallel,
+        maxConcurrency: config.maxConcurrency
+      }
+    });
 
     const cache = getSkillCache();
     const registry = getSkillRegistry();
@@ -186,15 +333,31 @@ export async function POST(request: NextRequest) {
       errors: errors.length > 0 ? errors : undefined
     };
 
-    console.log(`🔥 Cache Warming: Complete`);
-    console.log(`   Warmed: ${warmedCount}, Skipped: ${skippedCount}, Failed: ${failedCount}`);
-    console.log(`   Duration: ${duration}ms`);
-    console.log(`   Cache Stats: ${cacheStats.size}/${cacheStats.maxSize} (${cacheStats.hitRate.toFixed(2)} hit rate)`);
+    logger.info('Cache warming completed', {
+      operation: 'cache_warming',
+      metadata: {
+        warmed: warmedCount,
+        skipped: skippedCount,
+        failed: failedCount,
+        duration,
+        cacheStats: {
+          size: cacheStats.size,
+          maxSize: cacheStats.maxSize,
+          hitRate: cacheStats.hitRate
+        }
+      }
+    });
 
     return NextResponse.json(result);
 
   } catch (error: any) {
-    console.error('❌ Cache Warming Error:', error);
+    logger.error('Cache warming failed', error, {
+      operation: 'cache_warming',
+      metadata: {
+        duration: Date.now() - startTime
+      }
+    });
+    
     return NextResponse.json({
       success: false,
       error: error.message,
@@ -234,7 +397,10 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Cache Status Error:', error);
+    logger.error('Cache status check failed', error, {
+      operation: 'cache_status'
+    });
+    
     return NextResponse.json({
       success: false,
       error: error.message
@@ -255,7 +421,14 @@ export async function DELETE(request: NextRequest) {
 
     const afterStats = cache.getStats();
 
-    console.log(`🗑️ Cache Cleared: ${beforeStats.size} entries removed`);
+    logger.info('Cache cleared', {
+      operation: 'cache_clear',
+      metadata: {
+        entriesRemoved: beforeStats.size,
+        beforeStats,
+        afterStats
+      }
+    });
 
     return NextResponse.json({
       success: true,
@@ -266,7 +439,10 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Cache Clear Error:', error);
+    logger.error('Cache clear failed', error, {
+      operation: 'cache_clear'
+    });
+    
     return NextResponse.json({
       success: false,
       error: error.message
@@ -333,7 +509,13 @@ async function warmSingleQuery(
       for (const skillName of skills) {
         const cached = cache.get(skillName, query, { domain, complexity });
         if (cached) {
-          console.log(`   ⏭️ Skipping "${query.substring(0, 40)}..." (already cached)`);
+          logger.debug('Skipping cached query', {
+            operation: 'cache_warming',
+            metadata: {
+              query: query.substring(0, 40) + '...',
+              reason: 'already_cached'
+            }
+          });
           return { success: true, skipped: true };
         }
       }
@@ -348,14 +530,30 @@ async function warmSingleQuery(
     };
 
     // Execute through registry to populate cache
-    console.log(`   🔥 Warming: "${query.substring(0, 40)}..."`);
+    logger.debug('Warming query', {
+      operation: 'cache_warming',
+      metadata: {
+        query: query.substring(0, 40) + '...',
+        domain,
+        complexity,
+        skills
+      }
+    });
 
     await registry.executeActivatedSkills(query, context);
 
     return { success: true };
 
   } catch (error: any) {
-    console.error(`   ❌ Failed to warm query: ${warmingQuery.query.substring(0, 40)}...`, error.message);
+    logger.error('Failed to warm query', error, {
+      operation: 'cache_warming',
+      metadata: {
+        query: warmingQuery.query.substring(0, 40) + '...',
+        domain: warmingQuery.domain,
+        complexity: warmingQuery.complexity
+      }
+    });
+    
     return { success: false, error: error.message };
   }
 }
