@@ -634,31 +634,62 @@ export class MoEBrainOrchestrator {
               studentAnalysis = teacherAnalysis; // Fallback to teacher
             }
 
-            // Step 3: Judge (Best free OpenRouter model) - Quality evaluation with Ollama fallback
-            let judgeEvaluation = '';
-            try {
-              const judgeResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                  'Content-Type': 'application/json',
+        // Step 3: Judge (Best free OpenRouter model) - Quality evaluation with PromptMII + Ollama fallback
+        let judgeEvaluation = '';
+        try {
+          // First, use PromptMII to generate task-specific judge instructions
+          const promptMIIJudgeResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'google/gemma-2-9b-it:free',
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are PromptMII (Meta-Learning Instruction Induction). Generate task-specific instructions that help a judge model produce superior evaluation by learning from expert reasoning patterns.'
                 },
-                body: JSON.stringify({
-                  model: 'alibaba/tongyi-deepresearch-30b-a3b:free',
-                  messages: [
-                    {
-                      role: 'system',
-                      content: 'You are an expert judge specializing in creative reasoning evaluation. Use advanced prompting techniques to uncover deeper insights and provide comprehensive feedback.'
-                    },
-                    {
-                      role: 'user',
-                      content: `Judge these responses for query "${query}":\n\nTeacher: ${teacherAnalysis}\n\nStudent: ${studentAnalysis}\n\nUse these evaluation techniques:\n\n1. Start with "Let's think about this differently" - Does the response break out of cookie-cutter patterns?\n2. Ask "What am I not seeing here?" - Does it identify blind spots and hidden assumptions?\n3. Say "Break this down for me" - Is the analysis comprehensive and detailed?\n4. Ask "What would you do in my shoes?" - Does it provide actionable, personalized advice?\n5. Use "Here's what I'm really asking" - Does it address the deeper, unstated needs?\n6. End with "What else should I know?" - Does it provide additional context and warnings?\n\nProvide scores (1-10) for each technique and overall feedback.`
-                    }
-                  ],
-                  max_tokens: 600,
-                  temperature: 0.1
-                })
-              });
+                {
+                  role: 'user',
+                  content: `Generate specific judge instructions for evaluating these responses:\n\nQuery: "${query}"\n\nTeacher Analysis: "${teacherAnalysis.substring(0, 200)}..."\n\nStudent Analysis: "${studentAnalysis.substring(0, 200)}..."\n\nCreate instructions that will help a judge model learn to produce superior evaluation beyond simple binary classification, using advanced reasoning techniques.`
+                }
+              ],
+              max_tokens: 300,
+              temperature: 0.2
+            })
+          });
+
+          let promptMIIJudgeInstructions = '';
+          if (promptMIIJudgeResponse.ok) {
+            const promptMIIData = await promptMIIJudgeResponse.json();
+            promptMIIJudgeInstructions = promptMIIData.choices[0].message.content;
+          }
+
+          // Now use the Judge model with PromptMII instructions
+          const judgeResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'alibaba/tongyi-deepresearch-30b-a3b:free',
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are an expert judge specializing in creative reasoning evaluation. ${promptMIIJudgeInstructions}\n\nUse advanced prompting techniques to uncover deeper insights and provide comprehensive feedback beyond simple binary classification.`
+                },
+                {
+                  role: 'user',
+                  content: `Judge these responses for query "${query}":\n\nTeacher: ${teacherAnalysis}\n\nStudent: ${studentAnalysis}\n\nUse these evaluation techniques:\n\n1. Start with "Let's think about this differently" - Does the response break out of cookie-cutter patterns?\n2. Ask "What am I not seeing here?" - Does it identify blind spots and hidden assumptions?\n3. Say "Break this down for me" - Is the analysis comprehensive and detailed?\n4. Ask "What would you do in my shoes?" - Does it provide actionable, personalized advice?\n5. Use "Here's what I'm really asking" - Does it address the deeper, unstated needs?\n6. End with "What else should I know?" - Does it provide additional context and warnings?\n\nProvide scores (1-10) for each technique and overall feedback.`
+                }
+              ],
+              max_tokens: 600,
+              temperature: 0.1
+            })
+          });
 
               if (judgeResponse.ok) {
                 const judgeData = await judgeResponse.json();
@@ -670,16 +701,16 @@ export class MoEBrainOrchestrator {
                   console.warn('OpenRouter rate limit exceeded for Judge, falling back to Ollama');
                 }
                 
-                // Fallback to local Ollama for Judge evaluation
-                const ollamaJudgeResponse = await fetch(`${process.env.OLLAMA_URL || 'http://localhost:11434'}/api/generate`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    model: 'gemma3:4b',
-                    prompt: `You are an expert judge specializing in creative reasoning evaluation. Judge these responses for query "${query}":\n\nTeacher: ${teacherAnalysis}\n\nStudent: ${studentAnalysis}\n\nUse these evaluation techniques:\n\n1. "Let's think about this differently" - Does the response break out of cookie-cutter patterns? (1-10)\n2. "What am I not seeing here?" - Does it identify blind spots and hidden assumptions? (1-10)\n3. "Break this down for me" - Is the analysis comprehensive and detailed? (1-10)\n4. "What would you do in my shoes?" - Does it provide actionable, personalized advice? (1-10)\n5. "Here's what I'm really asking" - Does it address the deeper, unstated needs? (1-10)\n6. "What else should I know?" - Does it provide additional context and warnings? (1-10)\n\nProvide scores (1-10) for each technique and overall feedback.`,
-                    stream: false
-                  })
-                });
+            // Fallback to local Ollama for Judge evaluation (with PromptMII)
+            const ollamaJudgeResponse = await fetch(`${process.env.OLLAMA_URL || 'http://localhost:11434'}/api/generate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'gemma3:4b',
+                prompt: `You are an expert judge specializing in creative reasoning evaluation. ${promptMIIJudgeInstructions}\n\nJudge these responses for query "${query}":\n\nTeacher: ${teacherAnalysis}\n\nStudent: ${studentAnalysis}\n\nUse these evaluation techniques:\n\n1. "Let's think about this differently" - Does the response break out of cookie-cutter patterns? (1-10)\n2. "What am I not seeing here?" - Does it identify blind spots and hidden assumptions? (1-10)\n3. "Break this down for me" - Is the analysis comprehensive and detailed? (1-10)\n4. "What would you do in my shoes?" - Does it provide actionable, personalized advice? (1-10)\n5. "Here's what I'm really asking" - Does it address the deeper, unstated needs? (1-10)\n6. "What else should I know?" - Does it provide additional context and warnings? (1-10)\n\nProvide scores (1-10) for each technique and overall feedback.`,
+                stream: false
+              })
+            });
                 
                 if (ollamaJudgeResponse.ok) {
                   const ollamaJudgeData = await ollamaJudgeResponse.json();
@@ -698,7 +729,19 @@ export class MoEBrainOrchestrator {
             
             // 🧠 ReasoningBank Integration: Learn from Teacher-Student interaction
             try {
-              const success = !judgeEvaluation.includes('Fallback') && judgeEvaluation.includes('8/10') || judgeEvaluation.includes('9/10');
+              // Enhanced success detection with PromptMII reasoning
+              const hasHighScores = judgeEvaluation.includes('8/10') || judgeEvaluation.includes('9/10') || judgeEvaluation.includes('10/10');
+              const hasCreativeReasoning = judgeEvaluation.includes('think about this differently') || judgeEvaluation.includes('not seeing here');
+              const hasComprehensiveAnalysis = judgeEvaluation.includes('break down') || judgeEvaluation.includes('comprehensive');
+              const hasActionableInsights = judgeEvaluation.includes('in my shoes') || judgeEvaluation.includes('actionable');
+              const hasDeepUnderstanding = judgeEvaluation.includes('really asking') || judgeEvaluation.includes('deeper');
+              const hasAdditionalContext = judgeEvaluation.includes('else should I know') || judgeEvaluation.includes('additional context');
+              
+              // Multi-dimensional success assessment (not just binary)
+              const success = !judgeEvaluation.includes('Fallback') && 
+                (hasHighScores && hasCreativeReasoning && hasComprehensiveAnalysis && 
+                 hasActionableInsights && hasDeepUnderstanding && hasAdditionalContext);
+              
               const experience = {
                 task: query,
                 trajectory: {
@@ -734,13 +777,15 @@ export class MoEBrainOrchestrator {
             }
             
             return { 
-              data: `## Teacher-Student Analysis (with PromptMII + ReasoningBank)\n\n### Teacher Analysis (Perplexity Sonar-Pro)\n${teacherAnalysis}\n\n### Student Analysis (OpenRouter/Ollama + PromptMII)\n${studentAnalysis}\n\n### Judge Evaluation\n${judgeEvaluation}`,
+              data: `## Teacher-Student Analysis (with PromptMII + ReasoningBank)\n\n### Teacher Analysis (Perplexity Sonar-Pro)\n${teacherAnalysis}\n\n### Student Analysis (OpenRouter/Ollama + PromptMII)\n${studentAnalysis}\n\n### Judge Evaluation (Enhanced with PromptMII)\n${judgeEvaluation}`,
               metadata: {
                 teacher_model: 'sonar-pro',
                 student_model: studentAnalysis.includes('professional-quality') ? 'openrouter-gemma' : 'ollama-gemma3',
                 judge_model: judgeEvaluation.includes('Fallback') ? 'ollama-gemma3' : 'openrouter-tongyi',
                 promptmii_enabled: true,
+                promptmii_judge_enabled: true,
                 reasoningbank_enabled: true,
+                enhanced_judge_reasoning: true,
                 fallback_used: studentAnalysis.includes('professional-quality') ? false : true,
                 teacher_tokens: teacherData.usage?.total_tokens || 0,
                 cost: (teacherData.usage?.total_tokens || 0) * 0.00003
