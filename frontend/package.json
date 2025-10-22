@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "promptmii:preprocess": "node scripts/promptmii-preprocessing.js",
+    "promptmii:postprocess": "node scripts/promptmii-postprocessing.js",
+    "promptmii:train": "node scripts/promptmii-training.js",
+    "promptmii:pipeline": "./scripts/run-promptmii-pipeline.sh"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.23",
