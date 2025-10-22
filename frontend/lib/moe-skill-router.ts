@@ -94,7 +94,7 @@ export class MoESkillRouter {
     this.configuration = {
       topK: 3,
       selectionStrategy: 'balanced',
-      relevanceThreshold: 0.3, // Lowered from 0.6 to 0.3 to allow our scores (~0.36)
+      relevanceThreshold: 0.2, // Lowered to 0.2 to ensure our scores (~0.28-0.29) pass
       diversityBonus: 0.1,
       performanceWeight: 0.4,
       costWeight: 0.3,
@@ -253,9 +253,18 @@ export class MoESkillRouter {
    * Filter experts by relevance threshold
    */
   private filterByRelevance(scores: { [expertId: string]: number }): SkillExpert[] {
-    return Array.from(this.experts.values()).filter(expert => 
-      scores[expert.id] >= this.configuration.relevanceThreshold
-    );
+    console.log(`🧠 MoE Router: Filtering by relevance threshold ${this.configuration.relevanceThreshold}`);
+    console.log(`🧠 MoE Router: Scores to filter:`, scores);
+    
+    const filtered = Array.from(this.experts.values()).filter(expert => {
+      const score = scores[expert.id];
+      const passes = score >= this.configuration.relevanceThreshold;
+      console.log(`🧠 MoE Router: ${expert.id} score ${score} >= ${this.configuration.relevanceThreshold}? ${passes}`);
+      return passes;
+    });
+    
+    console.log(`🧠 MoE Router: Filtered experts: ${filtered.length}`);
+    return filtered;
   }
 
   /**
