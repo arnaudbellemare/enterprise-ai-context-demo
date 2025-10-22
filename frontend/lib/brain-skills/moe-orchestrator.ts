@@ -14,6 +14,7 @@ import { ACEReasoningBank } from '../ace-reasoningbank';
 import { ACE } from '../ace';
 import { openEvalsIntegration, OpenEvalsEvaluationSample } from '../openevals-integration';
 import { ContinualLearningSystem } from '../continual-learning-integration';
+import { behavioralEvaluationSystem, BehavioralEvaluationSample } from '../behavioral-evaluation-system';
 // Using direct fetch for self-improvement instead of @ax-llm/core
 
 export interface MoERequest {
@@ -59,6 +60,7 @@ export class MoEBrainOrchestrator {
   private ace: ACE;
   private openEvalsIntegration: typeof openEvalsIntegration;
   private continualLearningSystem: ContinualLearningSystem;
+  private behavioralEvaluationSystem: typeof behavioralEvaluationSystem;
   private initialized: boolean = false;
   private promptHistory: Map<string, string[]> = new Map();
   private performanceMetrics: Map<string, { score: number; feedback: string }[]> = new Map();
@@ -97,9 +99,13 @@ export class MoEBrainOrchestrator {
       }
     );
     
+    // Initialize Behavioral Evaluation System for product behavior alignment
+    this.behavioralEvaluationSystem = behavioralEvaluationSystem;
+    
     console.log(`🧠 MoE Orchestrator: Initialized with ${this.router['experts']?.size || 0} experts`);
     console.log(`🧠 ReasoningBank: Initialized for self-evolving capabilities`);
     console.log(`🧠 Continual Learning: Initialized with sparse memory updates`);
+    console.log(`🧠 Behavioral Evaluation: Initialized for product behavior alignment`);
   }
 
   async initialize(): Promise<void> {
@@ -188,6 +194,32 @@ export class MoEBrainOrchestrator {
         console.warn('⚠️ Quality evaluation failed:', error);
       }
 
+      // 6.5. Behavioral Evaluation for Product Behavior Alignment
+      const behavioralStart = Date.now();
+      let behavioralEvaluation = null;
+      try {
+        const behavioralSample: BehavioralEvaluationSample = {
+          query: request.query,
+          response: response.response,
+          context: {
+            userProfile: request.context?.userProfile,
+            brandGuidelines: request.context?.brandGuidelines,
+            safetyRequirements: request.context?.safetyRequirements,
+            culturalContext: request.context?.culturalContext
+          },
+          expectedBehavior: {
+            tone: request.context?.expectedTone || 'professional',
+            style: request.context?.expectedStyle || 'detailed',
+            focus: request.context?.expectedFocus || 'problem-solving'
+          }
+        };
+
+        behavioralEvaluation = await this.behavioralEvaluationSystem.evaluateBehavioralAlignment(behavioralSample);
+        console.log(`🧠 Behavioral Evaluation: Product behavior alignment completed in ${Date.now() - behavioralStart}ms`);
+      } catch (error) {
+        console.warn('⚠️ Behavioral evaluation failed:', error);
+      }
+
       const totalTime = Date.now() - startTime;
 
       // 7. Continual Learning with Sparse Memory Updates
@@ -241,6 +273,15 @@ export class MoEBrainOrchestrator {
           combinedScore: qualityEvaluation?.combinedScore || 0,
           evaluationRecommendations: qualityEvaluation?.recommendations || [],
           brainEvaluationEnabled: !!qualityEvaluation?.brainEvaluationResults,
+          // Behavioral evaluation results
+          behavioralEvaluationEnabled: !!behavioralEvaluation,
+          behavioralScore: behavioralEvaluation?.overallScore || 0,
+          behavioralDimensions: behavioralEvaluation?.dimensionScores?.map(d => ({
+            dimension: d.dimension,
+            score: d.score
+          })) || [],
+          behavioralInsights: behavioralEvaluation?.behavioralInsights || [],
+          improvementRecommendations: behavioralEvaluation?.improvementRecommendations || [],
           // Continual learning results
           continualLearningEnabled: true,
           memorySlotsUpdated: true,
