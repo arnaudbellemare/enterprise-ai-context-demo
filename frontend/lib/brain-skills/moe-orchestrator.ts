@@ -10,6 +10,8 @@ import { getSkillResourceManager } from './resource-manager';
 import { getDynamicSkillRouter } from './dynamic-router';
 import { moeSkillRouter } from '../moe-skill-router';
 import { BrainEvaluationSystem } from '../brain-evaluation-system';
+import { ACEReasoningBank } from '../ace-reasoningbank';
+import { ACE } from '../ace';
 // Using direct fetch for self-improvement instead of @ax-llm/core
 
 export interface MoERequest {
@@ -51,6 +53,8 @@ export class MoEBrainOrchestrator {
   private resourceManager: ReturnType<typeof getSkillResourceManager>;
   private dynamicRouter: ReturnType<typeof getDynamicSkillRouter>;
   private evaluationSystem: BrainEvaluationSystem;
+  private reasoningBank: ACEReasoningBank;
+  private ace: ACE;
   private initialized: boolean = false;
   private promptHistory: Map<string, string[]> = new Map();
   private performanceMetrics: Map<string, { score: number; feedback: string }[]> = new Map();
@@ -64,7 +68,16 @@ export class MoEBrainOrchestrator {
     this.dynamicRouter = getDynamicSkillRouter();
     this.evaluationSystem = new BrainEvaluationSystem();
     
+    // Initialize ReasoningBank for self-evolving capabilities
+    this.ace = new ACE();
+    this.reasoningBank = new ACEReasoningBank(this.ace, {
+      max_experiences: 1000,
+      enable_ace_optimization: true,
+      auto_refine_interval: 10
+    });
+    
     console.log(`🧠 MoE Orchestrator: Initialized with ${this.router['experts']?.size || 0} experts`);
+    console.log(`🧠 ReasoningBank: Initialized for self-evolving capabilities`);
   }
 
   async initialize(): Promise<void> {
@@ -94,6 +107,21 @@ export class MoEBrainOrchestrator {
     console.log(`🧠 MoE Orchestrator: Processing query "${request.query.substring(0, 50)}..."`);
 
     try {
+      // 0. ReasoningBank Context Injection
+      const contextStart = Date.now();
+      const relevantMemories = await this.getRelevantMemories(request.query, 3);
+      const contextTime = Date.now() - contextStart;
+      
+      if (relevantMemories.length > 0) {
+        console.log(`🧠 ReasoningBank: Injected ${relevantMemories.length} relevant memories for enhanced context`);
+        // Add memories to context for skill execution
+        request.context = {
+          ...request.context,
+          reasoningBankMemories: relevantMemories,
+          memoryCount: relevantMemories.length
+        };
+      }
+
       // 1. Top-K Skill Selection
       const selectionStart = Date.now();
       const topSkills = await this.selectTopKSkills(request);
@@ -665,13 +693,51 @@ export class MoEBrainOrchestrator {
               judgeEvaluation = `## Judge Evaluation (Fallback - API Error)\n\n**Evaluation Summary:**\n- Teacher Analysis Quality: High (comprehensive, expert-level)\n- Student Analysis Quality: ${studentAnalysis.length > 500 ? 'High' : 'Medium'} (${studentAnalysis.length > 500 ? 'detailed' : 'concise'})\n- Overall Assessment: Both responses provide valuable insights\n\n**Creative Reasoning Scores:**\n1. "Let's think about this differently" - 8/10 (both show analytical thinking)\n2. "What am I not seeing here?" - 7/10 (good depth of analysis)\n3. "Break this down for me" - 8/10 (comprehensive breakdowns)\n4. "What would you do in my shoes?" - 7/10 (actionable insights)\n5. "Here's what I'm really asking" - 7/10 (addresses core questions)\n6. "What else should I know?" - 6/10 (additional context provided)\n\n**Overall Score: 7.2/10**\n\n**Note:** This evaluation was performed using fallback heuristics due to API errors.`;
             }
             
+            // 🧠 ReasoningBank Integration: Learn from Teacher-Student interaction
+            try {
+              const success = !judgeEvaluation.includes('Fallback') && judgeEvaluation.includes('8/10') || judgeEvaluation.includes('9/10');
+              const experience = {
+                task: query,
+                trajectory: {
+                  teacher: teacherAnalysis,
+                  student: studentAnalysis,
+                  judge: judgeEvaluation
+                },
+                result: {
+                  teacher_tokens: teacherData.usage?.total_tokens || 0,
+                  cost: (teacherData.usage?.total_tokens || 0) * 0.00003,
+                  models_used: {
+                    teacher: 'sonar-pro',
+                    student: studentAnalysis.includes('professional-quality') ? 'openrouter-gemma' : 'ollama-gemma3',
+                    judge: judgeEvaluation.includes('Fallback') ? 'ollama-gemma3' : 'openrouter-tongyi'
+                  }
+                },
+                feedback: {
+                  success,
+                  error: success ? undefined : 'Judge evaluation indicates suboptimal performance',
+                  metrics: {
+                    accuracy: success ? 0.9 : 0.7,
+                    latency: (teacherData.usage?.total_tokens || 0) * 0.1,
+                    cost: (teacherData.usage?.total_tokens || 0) * 0.00003
+                  }
+                },
+                timestamp: new Date()
+              };
+              
+              await this.reasoningBank.learnFromExperience(experience);
+              console.log(`🧠 ReasoningBank: Learned from Teacher-Student interaction (success: ${success})`);
+            } catch (reasoningError) {
+              console.warn('⚠️ ReasoningBank learning failed:', reasoningError);
+            }
+            
             return { 
-              data: `## Teacher-Student Analysis (with PromptMII)\n\n### Teacher Analysis (Perplexity Sonar-Pro)\n${teacherAnalysis}\n\n### Student Analysis (OpenRouter/Ollama + PromptMII)\n${studentAnalysis}\n\n### Judge Evaluation\n${judgeEvaluation}`,
+              data: `## Teacher-Student Analysis (with PromptMII + ReasoningBank)\n\n### Teacher Analysis (Perplexity Sonar-Pro)\n${teacherAnalysis}\n\n### Student Analysis (OpenRouter/Ollama + PromptMII)\n${studentAnalysis}\n\n### Judge Evaluation\n${judgeEvaluation}`,
               metadata: {
                 teacher_model: 'sonar-pro',
                 student_model: studentAnalysis.includes('professional-quality') ? 'openrouter-gemma' : 'ollama-gemma3',
                 judge_model: judgeEvaluation.includes('Fallback') ? 'ollama-gemma3' : 'openrouter-tongyi',
                 promptmii_enabled: true,
+                reasoningbank_enabled: true,
                 fallback_used: studentAnalysis.includes('professional-quality') ? false : true,
                 teacher_tokens: teacherData.usage?.total_tokens || 0,
                 cost: (teacherData.usage?.total_tokens || 0) * 0.00003
@@ -944,12 +1010,53 @@ export class MoEBrainOrchestrator {
             const data = await response.json();
             const evaluation = data.choices[0].message.content;
             
+            // 🧠 ReasoningBank Integration: Learn from quality evaluation
+            try {
+              const success = evaluation.includes('8/10') || evaluation.includes('9/10') || evaluation.includes('10/10');
+              const experience = {
+                task: `Quality evaluation for: ${query}`,
+                trajectory: {
+                  query,
+                  evaluation,
+                  reasoning_techniques: [
+                    'creative_reasoning',
+                    'blind_spot_analysis', 
+                    'comprehensive_breakdown',
+                    'actionable_advice',
+                    'deeper_needs',
+                    'additional_context'
+                  ]
+                },
+                result: {
+                  tokens: data.usage?.total_tokens || 0,
+                  cost: (data.usage?.total_tokens || 0) * 0.00001,
+                  model: 'alibaba/tongyi-deepresearch-30b-a3b:free'
+                },
+                feedback: {
+                  success,
+                  error: success ? undefined : 'Quality evaluation indicates suboptimal performance',
+                  metrics: {
+                    accuracy: success ? 0.9 : 0.7,
+                    latency: (data.usage?.total_tokens || 0) * 0.1,
+                    cost: (data.usage?.total_tokens || 0) * 0.00001
+                  }
+                },
+                timestamp: new Date()
+              };
+              
+              await this.reasoningBank.learnFromExperience(experience);
+              console.log(`🧠 ReasoningBank: Learned from quality evaluation (success: ${success})`);
+            } catch (reasoningError) {
+              console.warn('⚠️ ReasoningBank learning failed:', reasoningError);
+            }
+            
             return { 
-              data: `## Quality Evaluation\n\n${evaluation}`,
+              data: `## Quality Evaluation (with ReasoningBank)\n\n${evaluation}`,
               metadata: {
                 model: 'alibaba/tongyi-deepresearch-30b-a3b:free',
                 tokens: data.usage?.total_tokens || 0,
-                cost: (data.usage?.total_tokens || 0) * 0.00001
+                cost: (data.usage?.total_tokens || 0) * 0.00001,
+                reasoningbank_enabled: true
               }
             };
           } catch (error) {
@@ -1381,6 +1488,20 @@ export class MoEBrainOrchestrator {
       loadBalancerStatus: this.loadBalancer.getAllMetrics(),
       batcherStatus: this.batcher.getBatchStats()
     };
+  }
+
+  /**
+   * Retrieve relevant memories from ReasoningBank for context injection
+   */
+  private async getRelevantMemories(query: string, k: number = 3): Promise<any[]> {
+    try {
+      const memories = await this.reasoningBank.retrieveRelevant(query, k);
+      console.log(`🧠 ReasoningBank: Retrieved ${memories.length} relevant memories for context injection`);
+      return memories;
+    } catch (error) {
+      console.warn('⚠️ ReasoningBank memory retrieval failed:', error);
+      return [];
+    }
   }
 
   /**
