@@ -12,6 +12,7 @@ import { moeSkillRouter } from '../moe-skill-router';
 import { BrainEvaluationSystem } from '../brain-evaluation-system';
 import { ACEReasoningBank } from '../ace-reasoningbank';
 import { ACE } from '../ace';
+import { openEvalsIntegration, OpenEvalsEvaluationSample } from '../openevals-integration';
 // Using direct fetch for self-improvement instead of @ax-llm/core
 
 export interface MoERequest {
@@ -55,6 +56,7 @@ export class MoEBrainOrchestrator {
   private evaluationSystem: BrainEvaluationSystem;
   private reasoningBank: ACEReasoningBank;
   private ace: ACE;
+  private openEvalsIntegration: typeof openEvalsIntegration;
   private initialized: boolean = false;
   private promptHistory: Map<string, string[]> = new Map();
   private performanceMetrics: Map<string, { score: number; feedback: string }[]> = new Map();
@@ -75,6 +77,9 @@ export class MoEBrainOrchestrator {
       enable_ace_optimization: true,
       auto_refine_interval: 10
     });
+    
+    // Initialize OpenEvals integration for enhanced evaluation
+    this.openEvalsIntegration = openEvalsIntegration;
     
     console.log(`🧠 MoE Orchestrator: Initialized with ${this.router['experts']?.size || 0} experts`);
     console.log(`🧠 ReasoningBank: Initialized for self-evolving capabilities`);
@@ -156,6 +161,16 @@ export class MoEBrainOrchestrator {
       const response = await this.synthesizeResults(results, topSkills, request);
       const synthesisTime = Date.now() - synthesisStart;
 
+      // 6. Enhanced Quality Evaluation with OpenEvals
+      const evaluationStart = Date.now();
+      let qualityEvaluation = null;
+      try {
+        qualityEvaluation = await this.evaluateResponseQuality(request.query, response.response, request.context?.domain);
+        console.log(`🧠 OpenEvals: Quality evaluation completed in ${Date.now() - evaluationStart}ms`);
+      } catch (error) {
+        console.warn('⚠️ Quality evaluation failed:', error);
+      }
+
       const totalTime = Date.now() - startTime;
 
       return {
@@ -170,14 +185,20 @@ export class MoEBrainOrchestrator {
           moeOptimized: true,
           batchOptimized: shouldBatch,
           loadBalanced: true,
-          resourceOptimized: true
-        },
+          resourceOptimized: true,
+          // OpenEvals evaluation results
+          openEvalsEnabled: qualityEvaluation?.openEvalsResults?.length ? qualityEvaluation.openEvalsResults.length > 0 : false,
+          combinedScore: qualityEvaluation?.combinedScore || 0,
+          evaluationRecommendations: qualityEvaluation?.recommendations || [],
+          brainEvaluationEnabled: !!qualityEvaluation?.brainEvaluationResults
+        } as any,
         performance: {
           selectionTime,
           executionTime,
           synthesisTime,
-          totalTime
-        }
+          totalTime,
+          evaluationTime: Date.now() - evaluationStart
+        } as any
       };
 
     } catch (error) {
@@ -1549,6 +1570,50 @@ export class MoEBrainOrchestrator {
     } catch (error) {
       console.warn('⚠️ ReasoningBank memory retrieval failed:', error);
       return [];
+    }
+  }
+
+  /**
+   * Evaluate response quality using OpenEvals + BrainEvaluationSystem
+   */
+  private async evaluateResponseQuality(query: string, response: string, domain?: string): Promise<{
+    openEvalsResults: any[];
+    brainEvaluationResults: any;
+    combinedScore: number;
+    recommendations: string[];
+  }> {
+    try {
+      const sample: OpenEvalsEvaluationSample = {
+        inputs: query,
+        outputs: response,
+        domain: domain,
+        metadata: {
+          timestamp: new Date().toISOString(),
+          system: 'moe-orchestrator'
+        }
+      };
+
+      const evaluation = await this.openEvalsIntegration.evaluateWithOpenEvals(sample);
+      console.log(`🧠 OpenEvals: Enhanced evaluation completed with combined score: ${evaluation.combinedScore.toFixed(3)}`);
+      
+      return evaluation;
+    } catch (error) {
+      console.warn('⚠️ OpenEvals evaluation failed, using fallback:', error);
+      
+      // Fallback to brain evaluation system
+      const brainEvaluation = await this.evaluationSystem.evaluateBrainResponse({
+        query,
+        response,
+        domain,
+        metadata: { fallback: true }
+      });
+
+      return {
+        openEvalsResults: [],
+        brainEvaluationResults: brainEvaluation,
+        combinedScore: brainEvaluation.overallScore,
+        recommendations: brainEvaluation.recommendations
+      };
     }
   }
 
