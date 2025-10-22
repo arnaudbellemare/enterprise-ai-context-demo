@@ -293,13 +293,32 @@ Focus on whether this response is INCLUSIVE and RESPECTFUL to all users.`,
           }
 
         } catch (rateLimitError) {
-          console.warn(`⚠️ Rate-limited evaluation failed for ${dimension.name}:`, rateLimitError);
-          dimensionScores.push({
-            dimension: dimension.name,
-            score: 0.5,
-            reasoning: 'All evaluation methods failed',
-            improvementSuggestions: ['Retry evaluation']
-          });
+          console.warn(`⚠️ Rate-limited evaluation failed for ${dimension.name}, trying direct Ollama fallback:`, rateLimitError);
+          // Try direct Ollama fallback before defaulting to 0.5
+          try {
+            const ollamaResult = await this.performDirectOllamaBehavioralEvaluation(
+              dimension.name,
+              sample.query,
+              sample.response,
+              sample.context
+            );
+            dimensionScores.push(ollamaResult);
+            
+            // Generate behavioral insights
+            if (ollamaResult.score >= 0.8) {
+              behavioralInsights.push(`✅ Strong ${dimension.name}: ${ollamaResult.reasoning.substring(0, 100)}...`);
+            } else if (ollamaResult.score < 0.6) {
+              behavioralInsights.push(`⚠️ Needs improvement in ${dimension.name}: ${ollamaResult.reasoning.substring(0, 100)}...`);
+            }
+          } catch (ollamaError) {
+            console.warn(`⚠️ Direct Ollama also failed for ${dimension.name}:`, ollamaError);
+            dimensionScores.push({
+              dimension: dimension.name,
+              score: 0.5,
+              reasoning: 'All evaluation methods failed',
+              improvementSuggestions: ['Retry evaluation']
+            });
+          }
         }
 
       } catch (error) {
@@ -331,6 +350,53 @@ Focus on whether this response is INCLUSIVE and RESPECTFUL to all users.`,
       behavioralInsights,
       improvementRecommendations
     };
+  }
+
+  /**
+   * Direct Ollama behavioral evaluation fallback
+   */
+  private async performDirectOllamaBehavioralEvaluation(
+    dimensionName: string,
+    query: string,
+    response: string,
+    context?: any
+  ): Promise<BehavioralScore> {
+    try {
+      console.log(`🔄 Using direct Ollama fallback for ${dimensionName} behavioral evaluation...`);
+      
+      const prompt = this.getDimensionPrompt(dimensionName);
+      
+      const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemma3:4b',
+          prompt: `You are an expert behavioral evaluator. ${prompt}\n\nEvaluate this response on ${dimensionName} dimension (provide score 0.0-1.0 and reasoning):\nQuery: ${query}\nResponse: ${response}`,
+          stream: false
+        })
+      });
+
+      if (ollamaResponse.ok) {
+        const data = await ollamaResponse.json();
+        const evaluation = data.response;
+        console.log(`✅ Direct Ollama behavioral evaluation completed for ${dimensionName}`);
+        
+        const score = this.extractScoreFromEvaluation(evaluation);
+        const reasoning = this.extractReasoningFromEvaluation(evaluation);
+        
+        return {
+          dimension: dimensionName,
+          score,
+          reasoning,
+          improvementSuggestions: this.generateImprovementSuggestions(dimensionName, score, reasoning)
+        };
+      } else {
+        throw new Error(`Ollama failed: ${ollamaResponse.status}`);
+      }
+    } catch (error) {
+      console.error(`❌ Direct Ollama behavioral evaluation failed for ${dimensionName}:`, error);
+      throw error;
+    }
   }
 
   /**

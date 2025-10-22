@@ -1231,8 +1231,14 @@ export class MoEBrainOrchestrator {
             try {
               return await this.performRateLimitedQualityEvaluation(query, context.query || query, context);
             } catch (rateLimitError) {
-              console.warn('Rate limiter also failed, using basic fallback:', rateLimitError);
-              return this.performFallbackQualityEvaluation(query, context);
+              console.warn('Rate limiter also failed, trying direct Ollama fallback:', rateLimitError);
+              // Try direct Ollama fallback before heuristics
+              try {
+                return await this.performDirectOllamaQualityEvaluation(query, context.query || query, context);
+              } catch (ollamaError) {
+                console.warn('Direct Ollama also failed, using basic fallback:', ollamaError);
+                return this.performFallbackQualityEvaluation(query, context);
+              }
             }
           }
         },
@@ -1793,22 +1799,29 @@ export class MoEBrainOrchestrator {
         console.log(`🧠 Rate-limited API evaluation completed with combined score: ${rateLimitedEvaluation.combinedScore.toFixed(3)}`);
         return rateLimitedEvaluation;
       } catch (rateLimitError) {
-        console.warn('⚠️ Rate-limited API evaluation failed, using brain evaluation fallback:', rateLimitError);
+        console.warn('⚠️ Rate-limited API evaluation failed, trying direct Ollama fallback:', rateLimitError);
         
-        // Fallback to brain evaluation system
-        const brainEvaluation = await this.evaluationSystem.evaluateBrainResponse({
-          query,
-          response,
-          domain,
-          metadata: { fallback: true }
-        });
+        // Try direct Ollama fallback before brain evaluation
+        try {
+          return await this.performDirectOllamaQualityEvaluation(query, response, { domain });
+        } catch (ollamaError) {
+          console.warn('⚠️ Direct Ollama also failed, using brain evaluation fallback:', ollamaError);
+          
+          // Fallback to brain evaluation system
+          const brainEvaluation = await this.evaluationSystem.evaluateBrainResponse({
+            query,
+            response,
+            domain,
+            metadata: { fallback: true }
+          });
 
-        return {
-          openEvalsResults: [],
-          brainEvaluationResults: brainEvaluation,
-          combinedScore: brainEvaluation.overallScore,
-          recommendations: brainEvaluation.recommendations
-        };
+          return {
+            openEvalsResults: [],
+            brainEvaluationResults: brainEvaluation,
+            combinedScore: brainEvaluation.overallScore,
+            recommendations: brainEvaluation.recommendations
+          };
+        }
       }
     }
   }
@@ -2040,6 +2053,47 @@ ${improvements.map(imp => `- ${imp}`).join('\n')}
           error: true
         }
       };
+    }
+  }
+
+  /**
+   * Direct Ollama quality evaluation fallback
+   */
+  private async performDirectOllamaQualityEvaluation(query: string, response: string, context: any): Promise<any> {
+    try {
+      console.log('🔄 Using direct Ollama fallback for quality evaluation...');
+      
+      const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemma3:4b',
+          prompt: `Evaluate this response quality (1-10 scale):\nQuery: ${query}\nResponse: ${response}`,
+          stream: false
+        })
+      });
+
+      if (ollamaResponse.ok) {
+        const data = await ollamaResponse.json();
+        const evaluation = data.response;
+        console.log('✅ Direct Ollama quality evaluation completed');
+        
+        return {
+          openEvalsResults: [],
+          brainEvaluationResults: {
+            overallScore: this.extractScoreFromEvaluation(evaluation),
+            evaluation: evaluation,
+            provider: 'Ollama Gemma3:4b (Direct)'
+          },
+          combinedScore: this.extractScoreFromEvaluation(evaluation),
+          recommendations: this.extractRecommendationsFromEvaluation(evaluation)
+        };
+      } else {
+        throw new Error(`Ollama failed: ${ollamaResponse.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Direct Ollama quality evaluation failed:', error);
+      throw error;
     }
   }
 
