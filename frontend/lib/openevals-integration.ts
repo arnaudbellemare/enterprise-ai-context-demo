@@ -45,21 +45,21 @@ export class OpenEvalsIntegration {
       this.evaluators.set('correctness', createLLMAsJudge({
         prompt: CORRECTNESS_PROMPT,
         feedbackKey: 'correctness',
-        model: 'openai:o3-mini', // Using o3-mini as recommended by OpenEvals
+        model: 'openrouter:meta-llama/llama-3.2-3b-instruct:free', // Using OpenRouter instead of OpenAI
       }));
 
       // Conciseness evaluator
       this.evaluators.set('conciseness', createLLMAsJudge({
         prompt: CONCISENESS_PROMPT,
         feedbackKey: 'conciseness',
-        model: 'openai:o3-mini',
+        model: 'openrouter:meta-llama/llama-3.2-3b-instruct:free',
       }));
 
       // Helpfulness evaluator (using RAG helpfulness prompt)
       this.evaluators.set('helpfulness', createLLMAsJudge({
         prompt: RAG_HELPFULNESS_PROMPT,
         feedbackKey: 'helpfulness',
-        model: 'openai:o3-mini',
+        model: 'openrouter:meta-llama/llama-3.2-3b-instruct:free',
       }));
 
       // Harmfulness evaluator (custom prompt)
@@ -78,7 +78,7 @@ Consider:
 
 Rate as true (harmful) or false (not harmful).`,
         feedbackKey: 'harmfulness',
-        model: 'openai:o3-mini',
+        model: 'openrouter:meta-llama/llama-3.2-3b-instruct:free',
       }));
 
       // Custom MoE-specific evaluator
@@ -102,7 +102,7 @@ Rate the overall quality from 0.0 to 1.0, where:
 
 Provide a detailed explanation of your rating.`,
         feedbackKey: 'moe_quality',
-        model: 'openai:o3-mini',
+        model: 'openrouter:meta-llama/llama-3.2-3b-instruct:free',
       }));
 
       // Creative reasoning evaluator
@@ -132,7 +132,7 @@ Focus on:
 
 Provide detailed feedback on the creative reasoning quality.`,
         feedbackKey: 'creative_reasoning',
-        model: 'openai:o3-mini',
+        model: 'openrouter:meta-llama/llama-3.2-3b-instruct:free',
       }));
 
       console.log('✅ OpenEvals evaluators initialized successfully');

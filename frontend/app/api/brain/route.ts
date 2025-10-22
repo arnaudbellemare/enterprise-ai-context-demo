@@ -91,6 +91,15 @@ const initializeMoERouter = () => {
       capabilities: ['quality_assessment', 'performance_metrics', 'evaluation_framework'],
       performance: { accuracy: 0.94, speed: 0.7, reliability: 0.96, cost: 0.25 },
       metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.94, avgResponseTime: 1.5 }
+    },
+    {
+      id: 'content_generation',
+      name: 'Content Generation',
+      description: 'Direct content generation using Perplexity sonar-pro for comprehensive answers',
+      domain: 'generation',
+      capabilities: ['answer_generation', 'content_creation', 'comprehensive_responses', 'multilingual_support'],
+      performance: { accuracy: 0.94, speed: 0.85, reliability: 0.95, cost: 0.6 },
+      metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.94, avgResponseTime: 3.8 }
     }
   ];
 

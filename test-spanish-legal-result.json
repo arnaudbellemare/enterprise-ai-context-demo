@@ -1,0 +1,93 @@
+{
+  "query": "Analiza el siguiente caso jurídico complejo:\n\nUna empresa multinacional española firmó un contrato de distribución exclusiva\ncon una compañía mexicana por 5 años. Después de 2 años, la empresa española\ndescubrió que la distribuidora mexicana estaba vendiendo productos similares de\nun competidor directo, violando la cláusula de exclusividad.\n\nLa empresa española quiere terminar el contrato inmediatamente y reclamar daños\npor pérdida de ventas estimada en €2 millones. Sin embargo, el contrato estipula\nque las disputas deben resolverse mediante arbitraje en la Cámara de Comercio\nInternacional de París, aplicando la Convención de las Naciones Unidas sobre los\nContratos de Compraventa Internacional de Mercaderías (CISG).\n\nLa distribuidora mexicana argumenta que:\n1. La cláusula de exclusividad es demasiado amplia y anticompetitiva\n2. La empresa española incumplió primero al no entregar productos a tiempo\n3. Los daños reclamados son especulativos y excesivos\n\nPreguntas:\n1. ¿Qué ley aplicaría en este arbitraje internacional?\n2. ¿Tiene validez la cláusula de exclusividad bajo CISG?\n3. ¿Puede la empresa española terminar el contrato unilateralmente?\n4. ¿Cómo se calcularían los daños en este caso?\n5. ¿Qué defensas tiene la distribuidora mexicana?",
+  "result": {
+    "success": true,
+    "response": "\n\n### quality_evaluation (weight: 0.33)\n## Quality Evaluation (Fallback - Rate Limited)\n\n**Query Analysis:**\n- Length: 1255 characters\n- Has question: Yes\n- Complex terms: No\n- Technical terms: No\n- Business terms: No\n\n**Quality Assessment:**\n- **Overall Quality Score: 8.0/10**\n- **Query Complexity: High**\n- **Expected Response Quality: High**\n\n**Creative Reasoning Evaluation:**\n1. **\"Let's think about this differently\"** - 6/10 - Standard approach\n2. **\"What am I not seeing here?\"** - 5/10 - Surface-level inquiry\n3. **\"Break this down for me\"** - 8/10 - Detailed query structure\n4. **\"What would you do in my shoes?\"** - 5/10 - Generic inquiry\n5. **\"Here's what I'm really asking\"** - 7/10 - Clear question format\n6. **\"What else should I know?\"** - 6/10 - Basic information request\n\n**Recommendations:**\n- High-quality query with good complexity and context\n- Expect detailed, comprehensive response\n- Consider multi-expert analysis\n\n**Note:** This evaluation was performed using fallback heuristics due to API rate limiting. For more detailed analysis, please try again later when rate limits reset.\n\n### gepa_optimization (weight: 0.33)\n## GEPA Optimization\n\n1. **Enhanced Version of the Query**\n\nAnaliza detalladamente el siguiente caso jurídico internacional y responde con precisión, citando normativa y doctrina relevante, a cada pregunta planteada. Contexto:  \n- Una empresa multinacional española y una distribuidora mexicana firmaron un contrato de distribución exclusiva por 5 años, con cláusula de arbitraje en la Cámara de Comercio Internacional de París y aplicación expresa de la CISG (Convención de Viena).  \n- Tras 2 años, la empresa española detecta que la distribuidora mexicana comercializa productos similares de un competidor, presuntamente violando la exclusividad.  \n- La empresa española busca: (a) terminación inmediata del contrato y (b) indemnización por €2 millones en ventas perdidas.  \n- La distribuidora mexicana alega:  \n  1. La cláusula de exclusividad es excesiva y anticompetitiva.  \n  2. La empresa española incumplió primero por retrasos en la entrega.  \n  3. Los daños reclamados son especulativos y desproporcionados.  \n\nResponde de forma estructurada y exhaustiva:  \n1. ¿Qué ley rige el arbitraje y la interpretación del contrato?  \n2. ¿Es válida y exigible la cláusula de exclusividad bajo la CISG y el derecho aplicable?  \n3. ¿Puede la empresa española resolver unilateralmente el contrato por este incumplimiento?  \n4. ¿Cómo se determinan y cuantifican los daños bajo la CISG y la práctica arbitral internacional?  \n5. ¿Qué defensas jurídicas puede invocar la distribuidora mexicana, considerando la CISG y posibles normas de competencia?  \nIncluye análisis doctrinal, referencias a artículos relevantes de la CISG, y, si corresponde, menciona posibles límites derivados del derecho de competencia internacional o local.\n\n2. **Specific Improvements Made**\n\n- **Claridad y estructura:** Se solicita una respuesta estructurada, exhaustiva y con referencias normativas y doctrinales, evitando respuestas genéricas[2].\n- **Contexto legal preciso:** Se especifica el marco legal (CISG, arbitraje internacional, derecho de competencia), lo que orienta al modelo a buscar fuentes y argumentos relevantes[2][3].\n- **Preguntas desglosadas:** Cada pregunta está claramente separada y formulada para evitar ambigüedad y asegurar respuestas directas a cada aspecto del caso[2].\n- **Solicita análisis doctrinal y referencias:** Se pide citar artículos de la CISG y doctrina, lo que mejora la profundidad y precisión de la respuesta[2][3].\n- **Incluye matices de derecho de competencia:** Se introduce la posibilidad de analizar la validez de la exclusividad bajo normas de competencia, ampliando el enfoque jurídico.\n- **Evita información innecesaria:** Elimina repeticiones y detalles narrativos no esenciales, centrándose en los hechos jurídicamente relevantes.\n\n3. **Expected Performance Gains**\n\n- **Mayor precisión y profundidad:** El modelo identificará y aplicará normas y doctrina relevantes, evitando respuestas superficiales[2][3].\n- **Menos ambigüedad:** La estructura clara y las preguntas específicas minimizan interpretaciones erróneas o respuestas incompletas[2].\n- **Mejor uso de fuentes legales:** Al pedir referencias normativas y doctrinales, el modelo tenderá a citar artículos y precedentes pertinentes, aumentando la calidad de la respuesta[2][3].\n- **Análisis más útil para profesionales:** El resultado será más útil para abogados o juristas, pues se orienta a un análisis jurídico riguroso y aplicable a la práctica profesional[2][3][5].\n\n4. **Alternative Phrasings if Applicable**\n\n- \"Redacta un dictamen jurídico exhaustivo sobre el caso descrito, abordando cada una de las siguientes cuestiones con fundamento en la CISG, laudos arbitrales internacionales y doctrina relevante...\"\n- \"Actúa como un abogado experto en arbitraje internacional y analiza el caso, respondiendo de forma estructurada y fundamentada a las siguientes preguntas, citando artículos de la CISG y considerando posibles implicaciones de derecho de competencia...\"\n- \"Desglosa y responde detalladamente, con referencias legales y doctrinales, a las siguientes preguntas sobre el caso de distribución internacional planteado, bajo el marco de la CISG y el arbitraje internacional...\"\n\nEstas alternativas mantienen el enfoque en la precisión, exhaustividad y fundamentación jurídica, optimizando la consulta para obtener respuestas de alto nivel profesional[2][3].\n\n### advanced_reranking (weight: 0.34)\n## Advanced Reranking Analysis\n\nFor advanced reranking optimization of the complex legal query provided, the following analysis addresses each requested aspect:\n\n---\n\n**1. Relevance Scoring Methodology**\n\nTo optimize reranking for this multi-part legal query, implement a **multi-dimensional relevance scoring** system that evaluates each retrieved document or passage based on:\n\n- **Legal Specificity:** Score higher if the content directly addresses international distribution contracts, exclusivity clauses, CISG applicability, arbitration, or calculation of damages[1][3][5].\n- **Jurisdictional Relevance:** Prioritize sources discussing Spanish, Mexican, or international law, especially CISG and ICC arbitration[1][2].\n- **Argument Coverage:** Assign scores for coverage of each sub-question (applicable law, exclusivity validity, unilateral termination, damages calculation, distributor defenses).\n- **Authority & Recency:** Weight sources by legal authority (e.g., academic journals, law firm analyses) and publication date.\n- **Depth of Analysis:** Prefer sources with detailed legal reasoning over superficial mentions.\n\nExample scoring formula:\n\\[\n\\text{Relevance Score} = w_1 \\cdot \\text{Legal Specificity} + w_2 \\cdot \\text{Jurisdictional Relevance} + w_3 \\cdot \\text{Argument Coverage} + w_4 \\cdot \\text{Authority} + w_5 \\cdot \\text{Depth}\n\\]\nwhere \\(w_i\\) are tunable weights based on user priorities.\n\n---\n\n**2. Ranking Algorithm Recommendations**\n\nFor this query, use a **hybrid reranking algorithm** combining:\n\n- **BM25 or Dense Retrieval** for initial candidate selection.\n- **Cross-Encoder Reranker** (e.g., BERT-based) fine-tuned on legal QA pairs to score passages for semantic relevance to each sub-question.\n- **Multi-Task Reranking:** Split the query into its five sub-questions and rerank results for each, then aggregate or present top results per sub-question.\n- **Legal Entity Recognition:** Integrate NER to boost passages mentioning key entities (CISG, ICC, exclusivity, damages, defenses).\n\nPipeline example:\n1. Retrieve top-N candidates using BM25/dense retrieval.\n2. For each candidate, compute cross-encoder scores for each sub-question.\n3. Aggregate scores using weighted sum or max pooling.\n4. Present top-ranked passages per sub-question or overall.\n\n---\n\n**3. Performance Optimization Strategies**\n\n- **Query Decomposition:** Automatically split the complex query into its five sub-questions for targeted retrieval and reranking.\n- **Passage Chunking:** Index and rerank at the paragraph or sentence level to improve granularity.\n- **Legal Domain Adaptation:** Fine-tune reranker models on legal corpora, especially international contract law and arbitration cases.\n- **Caching & Preprocessing:** Cache frequent legal queries and preprocess documents to extract and tag legal concepts for faster reranking.\n- **Parallel Reranking:** Use parallel processing for each sub-question to reduce latency.\n\n---\n\n**4. Quality Metrics for Evaluation**\n\nEvaluate reranking quality using:\n\n- **Sub-Question Coverage:** Percentage of sub-questions answered by top-k results.\n- **Jurisdictional Accuracy:** Rate at which top results correctly identify applicable law (e.g., CISG, ICC arbitration)[1][2].\n- **Legal Reasoning Depth:** Average depth of legal analysis in top-ranked passages (measured by argument count or citation density).\n- **Expert Judgment:** Human legal experts rate relevance and correctness for each sub-question.\n- **User Satisfaction:** Collect feedback on clarity, completeness, and usefulness of answers.\n\nExample metrics:\n- **Precision@k** for each sub-question.\n- **Coverage Score:** Fraction of sub-questions with at least one highly relevant answer in top-k.\n- **Legal Authority Score:** Weighted average of source authority in top results.\n\n---\n\n**Summary Table: Reranking Optimization for Legal Query**\n\n| Aspect                  | Strategy/Metric                                                                 |\n|-------------------------|--------------------------------------------------------------------------------|\n| Relevance Scoring       | Multi-dimensional: specificity, jurisdiction, coverage, authority, depth       |\n| Ranking Algorithm       | Hybrid: BM25/dense retrieval + cross-encoder reranker, multi-task per sub-Q    |\n| Performance Optimization| Query decomposition, passage chunking, legal domain adaptation, caching        |\n| Quality Metrics         | Sub-question coverage, jurisdictional accuracy, reasoning depth, expert rating |\n\nThis approach ensures that the reranking system delivers highly relevant, authoritative, and granular answers to each legal sub-question, optimizing both retrieval quality and user satisfaction.",
+    "metadata": {
+      "skillsActivated": [
+        "quality_evaluation",
+        "gepa_optimization",
+        "advanced_reranking"
+      ],
+      "skillScores": {
+        "quality_evaluation": 0.2866666666666667,
+        "gepa_optimization": 0.2816666666666667,
+        "advanced_reranking": 0.28800000000000003
+      },
+      "implementations": {},
+      "totalCost": 0.005,
+      "averageQuality": 0.91,
+      "totalLatency": 15912,
+      "moeOptimized": true,
+      "batchOptimized": true,
+      "loadBalanced": true,
+      "resourceOptimized": true,
+      "openEvalsEnabled": false,
+      "combinedScore": 1,
+      "evaluationRecommendations": [],
+      "brainEvaluationEnabled": true,
+      "behavioralEvaluationEnabled": true,
+      "behavioralScore": 0.5,
+      "behavioralDimensions": [
+        {
+          "dimension": "user_experience",
+          "score": 0.5
+        },
+        {
+          "dimension": "brand_voice",
+          "score": 0.5
+        },
+        {
+          "dimension": "safety_trust",
+          "score": 0.5
+        },
+        {
+          "dimension": "engagement_helpfulness",
+          "score": 0.5
+        },
+        {
+          "dimension": "professional_standards",
+          "score": 0.5
+        },
+        {
+          "dimension": "cultural_sensitivity",
+          "score": 0.5
+        }
+      ],
+      "behavioralInsights": [],
+      "improvementRecommendations": [
+        "Retry evaluation",
+        "Retry evaluation",
+        "Retry evaluation",
+        "Retry evaluation",
+        "Retry evaluation",
+        "Retry evaluation"
+      ],
+      "continualLearningEnabled": true,
+      "memorySlotsUpdated": true,
+      "learningRate": 2,
+      "sparseUpdates": true,
+      "totalTime": 15912
+    },
+    "performance": {
+      "selectionTime": 2,
+      "executionTime": 15874,
+      "synthesisTime": 6,
+      "totalTime": 15912,
+      "evaluationTime": 32
+    },
+    "sessionId": "default"
+  },
+  "metrics": {
+    "executionTime": 19177,
+    "spanishScore": 1,
+    "qualityChecks": {
+      "hasLegalAnalysis": true,
+      "addressesAllQuestions": true,
+      "mentionsCISG": true,
+      "mentionsArbitration": true,
+      "providesStructuredAnswer": false
+    },
+    "successRate": 80
+  }
+}

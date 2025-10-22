@@ -1,0 +1,105 @@
+{
+  "query": "Analiza el siguiente caso jurídico complejo y proporciona respuestas estructuradas\ny numeradas a cada pregunta:\n\n**CONTEXTO DEL CASO:**\nUna empresa multinacional española firmó un contrato de distribución exclusiva\ncon una compañía mexicana por 5 años. Después de 2 años, la empresa española\ndescubrió que la distribuidora mexicana estaba vendiendo productos similares de\nun competidor directo, violando la cláusula de exclusividad.\n\nLa empresa española quiere terminar el contrato inmediatamente y reclamar daños\npor pérdida de ventas estimada en €2 millones. Sin embargo, el contrato estipula\nque las disputas deben resolverse mediante arbitraje en la Cámara de Comercio\nInternacional de París, aplicando la Convención de las Naciones Unidas sobre los\nContratos de Compraventa Internacional de Mercaderías (CISG).\n\n**ALEGACIONES DE LA DISTRIBUIDORA MEXICANA:**\n1. La cláusula de exclusividad es demasiado amplia y anticompetitiva\n2. La empresa española incumplió primero al no entregar productos a tiempo\n3. Los daños reclamados son especulativos y excesivos\n\n**INSTRUCCIONES:**\nProporciona un análisis legal estructurado respondiendo DIRECTAMENTE a cada\npregunta en el siguiente formato:\n\n## ANÁLISIS LEGAL COMPLETO\n\n### 1. LEY APLICABLE\n¿Qué ley aplicaría en este arbitraje internacional? Explica el marco legal.\n\n### 2. VALIDEZ DE LA CLÁUSULA\n¿Tiene validez la cláusula de exclusividad bajo CISG? Fundamenta tu respuesta.\n\n### 3. TERMINACIÓN CONTRACTUAL\n¿Puede la empresa española terminar el contrato unilateralmente? Analiza los requisitos.\n\n### 4. CÁLCULO DE DAÑOS\n¿Cómo se calcularían los daños en este caso? Proporciona metodología.\n\n### 5. DEFENSAS DISPONIBLES\n¿Qué defensas tiene la distribuidora mexicana? Lista y explica cada una.\n\n**FORMATO REQUERIDO:**\n- Usa encabezados claros (###) para cada pregunta\n- Numera las respuestas (1-5)\n- Proporciona sub-puntos con viñetas (•) cuando sea apropiado\n- Cita artículos relevantes de CISG cuando aplique\n- Incluye un resumen ejecutivo al final",
+  "result": {
+    "success": true,
+    "response": "\n\n### quality_evaluation (weight: 0.33)\n## Quality Evaluation (Fallback - Rate Limited)\n\n**Query Analysis:**\n- Length: 2001 characters\n- Has question: Yes\n- Complex terms: No\n- Technical terms: No\n- Business terms: No\n\n**Quality Assessment:**\n- **Overall Quality Score: 8.0/10**\n- **Query Complexity: High**\n- **Expected Response Quality: High**\n\n**Creative Reasoning Evaluation:**\n1. **\"Let's think about this differently\"** - 6/10 - Standard approach\n2. **\"What am I not seeing here?\"** - 5/10 - Surface-level inquiry\n3. **\"Break this down for me\"** - 8/10 - Detailed query structure\n4. **\"What would you do in my shoes?\"** - 5/10 - Generic inquiry\n5. **\"Here's what I'm really asking\"** - 7/10 - Clear question format\n6. **\"What else should I know?\"** - 6/10 - Basic information request\n\n**Recommendations:**\n- High-quality query with good complexity and context\n- Expect detailed, comprehensive response\n- Consider multi-expert analysis\n\n**Note:** This evaluation was performed using fallback heuristics due to API rate limiting. For more detailed analysis, please try again later when rate limits reset.\n\n### gepa_optimization (weight: 0.33)\n## GEPA Optimization\n\n1. **Enhanced Version of the Query**\n\nAnaliza detalladamente el siguiente caso jurídico internacional y responde de forma estructurada y precisa a cada pregunta, siguiendo el formato solicitado:\n\n---\n\n**CASO:**\nUna empresa multinacional española y una compañía mexicana firmaron un contrato de distribución exclusiva por 5 años. Tras 2 años, la empresa española detectó que la distribuidora mexicana vendía productos similares de un competidor, infringiendo la cláusula de exclusividad.\n\nLa empresa española busca rescindir el contrato de inmediato y reclamar daños por pérdida de ventas estimada en €2 millones. El contrato exige que las disputas se resuelvan por arbitraje ante la Cámara de Comercio Internacional de París, aplicando la CISG (Convención de Viena).\n\n**Alegaciones de la distribuidora mexicana:**\n1. La cláusula de exclusividad es excesivamente amplia y anticompetitiva.\n2. La empresa española incumplió primero al retrasar entregas.\n3. Los daños reclamados son especulativos y desproporcionados.\n\n---\n\n**INSTRUCCIONES PARA LA RESPUESTA:**\n\n- Realiza un análisis jurídico exhaustivo y directo, respondiendo cada pregunta en formato estructurado.\n- Usa encabezados claros (###) para cada sección.\n- Numera las respuestas (1-5) según las preguntas.\n- Incluye subpuntos con viñetas (•) cuando sea necesario.\n- Cita artículos relevantes de la CISG en cada respuesta aplicable.\n- Proporciona un resumen ejecutivo conciso al final, destacando las conclusiones clave.\n- Mantén la respuesta precisa, fundamentada y orientada a la práctica arbitral internacional.\n\n---\n\n**Preguntas a responder:**\n\n### 1. Ley aplicable\n¿Qué ley rige el arbitraje internacional en este caso? Explica el marco legal y la interacción entre la CISG y otras normas relevantes.\n\n### 2. Validez de la cláusula de exclusividad\n¿Es válida la cláusula de exclusividad bajo la CISG y el derecho internacional? Fundamenta con artículos y doctrina.\n\n### 3. Terminación contractual\n¿Puede la empresa española rescindir el contrato unilateralmente? Analiza los requisitos y procedimientos bajo la CISG.\n\n### 4. Cálculo de daños\n¿Cómo se calculan los daños en este contexto? Expón la metodología y criterios de la CISG.\n\n### 5. Defensas disponibles\n¿Qué defensas puede invocar la distribuidora mexicana? Enumera y explica cada una, citando la CISG y principios de arbitraje internacional.\n\n---\n\n**Formato requerido:**\n- Encabezados (###) para cada pregunta.\n- Respuestas numeradas (1-5).\n- Subpuntos con viñetas (•) cuando corresponda.\n- Citas de artículos de la CISG.\n- Resumen ejecutivo final.\n\n---\n\n2. **Specific Improvements Made**\n\n- **Clarified context and instructions:** Se especifica el marco arbitral y la aplicación de la CISG, evitando ambigüedades sobre jurisdicción y ley aplicable[2].\n- **Explicit structure and format:** Se detallan los requisitos de formato y citación, facilitando respuestas precisas y organizadas[2].\n- **Direct, actionable prompts:** Se solicita fundamentación jurídica y referencias a artículos, lo que orienta a la IA a respuestas más técnicas y útiles[2].\n- **Executive summary:** Se exige un resumen ejecutivo, optimizando la utilidad para usuarios profesionales.\n- **Removed redundancy:** Se eliminan frases genéricas y se concentra el foco en los aspectos jurídicos relevantes.\n\n3. **Expected Performance Gains**\n\n- **Greater precision and relevance:** La IA generará respuestas más ajustadas al contexto legal internacional y arbitral[2][4].\n- **Improved structure and readability:** El formato solicitado facilita la comprensión y el uso profesional de la respuesta[2].\n- **Enhanced citation and legal grounding:** Al pedir citas de la CISG y doctrina, se eleva la calidad y autoridad de la respuesta[2][4].\n- **Reduced ambiguity:** La claridad en las instrucciones minimiza respuestas vagas o irrelevantes[2].\n\n4. **Alternative Phrasings**\n\n- “Redacta un dictamen jurídico internacional sobre el caso descrito, respondiendo cada pregunta en formato estructurado, citando artículos de la CISG y concluyendo con un resumen ejecutivo.”\n- “Analiza el caso conforme a la CISG y el procedimiento arbitral internacional, respondiendo cada pregunta con fundamentación legal, estructura numerada y resumen ejecutivo.”\n- “Proporciona un análisis jurídico detallado del caso, con respuestas numeradas, citas legales y resumen ejecutivo, siguiendo las mejores prácticas de arbitraje internacional.”\n\nEstas alternativas mantienen la claridad, especificidad y estructura, optimizando la interacción con sistemas de IA legales avanzados[2][4].\n\n### advanced_reranking (weight: 0.34)\n## Advanced Reranking Analysis\n\nTo optimize reranking for this advanced legal query, the system must prioritize sources that directly address international contract law, CISG application, distributorship agreements, exclusivity clauses, termination, damages calculation, and defenses. Below is a detailed analysis and recommendations for reranking optimization:\n\n---\n\n## 1. Relevance Scoring Methodology\n\n**Key criteria for relevance scoring:**\n\n- **Direct coverage of CISG and international distributorship contracts:** Sources must discuss the CISG’s application to distributorship agreements, exclusivity clauses, and dispute resolution in international contexts[2][3][5][6][7].\n- **Specificity to legal issues raised:** Preference for sources that analyze exclusivity, termination, damages, and defenses under CISG or similar frameworks[2][6].\n- **Jurisdictional and procedural context:** Sources referencing arbitration, the ICC, or comparative law between Spain and Mexico are highly relevant[5].\n- **Citation of CISG articles and legal opinions:** Sources that cite or interpret specific CISG articles (e.g., Art. 6, 11, 19, 46) should score higher[2][6].\n- **Recency and authority:** More recent, peer-reviewed, or official documents (e.g., UNCITRAL digests, CISG Advisory Council opinions) receive higher scores[2][4][7][9].\n\n**Sample scoring rubric (0–5):**\n\n- 5: Direct, authoritative analysis of CISG and distributorship contracts, with article citations and jurisdictional context.\n- 4: Detailed discussion of CISG principles or international contract law, with partial coverage of the query’s subtopics.\n- 3: General coverage of CISG or international sales law, but lacking specificity to distributorship or exclusivity.\n- 2: Peripheral relevance (e.g., domestic law, tangential contract principles).\n- 1: Minimal relevance (e.g., unrelated commercial law, outdated or non-authoritative sources).\n\n---\n\n## 2. Ranking Algorithm Recommendations\n\n**Recommended reranking algorithms:**\n\n- **BM25 with domain-specific boosting:** Use BM25 for initial retrieval, then boost scores for documents containing CISG article references, distributorship contract analysis, and arbitration context.\n- **Learning-to-Rank (LTR) with feature engineering:** Train an LTR model using features such as:\n  - Frequency of CISG article mentions.\n  - Presence of distributorship/exclusivity/termination/damages keywords.\n  - Source authority (e.g., UNCITRAL, CISG Advisory Council).\n  - Document recency.\n- **Semantic reranking with transformer-based models:** Apply a legal-domain BERT or similar model fine-tuned on international contract law queries to capture nuanced relevance beyond keyword matching.\n- **Hybrid reranking:** Combine lexical (BM25) and semantic (BERT) scores, with weighted aggregation favoring authoritative legal sources.\n\n---\n\n## 3. Performance Optimization Strategies\n\n- **Query decomposition:** Split the query into sub-questions (law applicable, clause validity, termination, damages, defenses) and rerank results for each, then aggregate top-ranked sources per subtopic.\n- **Contextual expansion:** Use query expansion to include synonyms and related legal terms (e.g., “exclusive distribution,” “breach,” “remedies,” “arbitration”).\n- **Authority filtering:** Pre-filter sources by publisher (e.g., UNCITRAL, CISG Advisory Council, peer-reviewed journals) before reranking.\n- **Dynamic weighting:** Adjust feature weights based on user feedback or click-through data for similar queries.\n- **Caching and indexing:** Cache high-authority legal sources and index by CISG article and contract type for faster retrieval.\n\n---\n\n## 4. Quality Metrics for Evaluation\n\n- **Precision@K:** Percentage of top-K results directly answering each sub-question with authoritative legal analysis.\n- **Mean Reciprocal Rank (MRR):** Measures how quickly the first highly relevant result appears for each sub-question.\n- **Normalized Discounted Cumulative Gain (nDCG):** Evaluates ranking quality by assigning higher scores to more relevant, authoritative sources at higher ranks.\n- **Coverage:** Proportion of sub-questions (1–5) for which at least one top-ranked result provides a direct, structured answer.\n- **Citation accuracy:** Rate at which top results correctly cite CISG articles and legal opinions relevant to the query.\n- **User satisfaction (where available):** Feedback or ratings from legal professionals on the usefulness and accuracy of retrieved answers.\n\n---\n\n**Summary:**  \nFor this complex legal query, reranking should prioritize sources that provide structured, authoritative analysis of CISG in the context of international distributorship contracts, with explicit coverage of exclusivity, termination, damages, and defenses. Use a combination of lexical, semantic, and authority-based features, and evaluate with precision, coverage, and citation accuracy metrics for optimal performance.",
+    "metadata": {
+      "skillsActivated": [
+        "quality_evaluation",
+        "gepa_optimization",
+        "advanced_reranking"
+      ],
+      "skillScores": {
+        "quality_evaluation": 0.2866666666666667,
+        "gepa_optimization": 0.2816666666666667,
+        "advanced_reranking": 0.28800000000000003
+      },
+      "implementations": {},
+      "totalCost": 0.005,
+      "averageQuality": 0.91,
+      "totalLatency": 18139,
+      "moeOptimized": true,
+      "batchOptimized": true,
+      "loadBalanced": true,
+      "resourceOptimized": true,
+      "openEvalsEnabled": false,
+      "combinedScore": 1,
+      "evaluationRecommendations": [],
+      "brainEvaluationEnabled": true,
+      "behavioralEvaluationEnabled": true,
+      "behavioralScore": 0.5,
+      "behavioralDimensions": [
+        {
+          "dimension": "user_experience",
+          "score": 0.5
+        },
+        {
+          "dimension": "brand_voice",
+          "score": 0.5
+        },
+        {
+          "dimension": "safety_trust",
+          "score": 0.5
+        },
+        {
+          "dimension": "engagement_helpfulness",
+          "score": 0.5
+        },
+        {
+          "dimension": "professional_standards",
+          "score": 0.5
+        },
+        {
+          "dimension": "cultural_sensitivity",
+          "score": 0.5
+        }
+      ],
+      "behavioralInsights": [],
+      "improvementRecommendations": [
+        "Retry evaluation",
+        "Retry evaluation",
+        "Retry evaluation",
+        "Retry evaluation",
+        "Retry evaluation",
+        "Retry evaluation"
+      ],
+      "continualLearningEnabled": true,
+      "memorySlotsUpdated": true,
+      "learningRate": 2,
+      "sparseUpdates": true,
+      "totalTime": 18139
+    },
+    "performance": {
+      "selectionTime": 2,
+      "executionTime": 18121,
+      "synthesisTime": 4,
+      "totalTime": 18139,
+      "evaluationTime": 14
+    },
+    "sessionId": "default"
+  },
+  "metrics": {
+    "executionTime": 18208,
+    "structureScore": 87.5,
+    "terminologyScore": 60,
+    "overallScore": 76.5,
+    "structureChecks": {
+      "hasMarkdownHeaders": true,
+      "hasNumberedSections": true,
+      "hasBulletPoints": true,
+      "hasAllFiveQuestions": false,
+      "hasCISGReferences": true,
+      "hasExecutiveSummary": true,
+      "hasParagraphBreaks": true,
+      "hasLegalCitations": true
+    },
+    "foundTerms": [
+      "contrato",
+      "arbitraje",
+      "CISG",
+      "cláusula",
+      "exclusividad",
+      "daños"
+    ]
+  }
+}

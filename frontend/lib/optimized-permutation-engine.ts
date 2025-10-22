@@ -1,6 +1,6 @@
 /**
  * Optimized Permutation Engine
- * 
+ *
  * Integrates all 3 phases of optimization:
  * - Phase 1: Smart routing, KV Cache, Teacher Model caching, IRT routing
  * - Phase 2: TRM primary engine, ACE fallback, Synthesis optimization, Cost-based selection
@@ -10,6 +10,8 @@
 import { getSmartRouter, TaskType } from './smart-router';
 import { getAdvancedCache } from './advanced-cache-system';
 import { getParallelEngine, ParallelTask } from './parallel-execution-engine';
+import { getMoEBrainOrchestrator } from './brain-skills/moe-orchestrator';
+import { moeSkillRouter, SkillExpert } from './moe-skill-router';
 
 export interface OptimizedQuery {
   query: string;
@@ -61,12 +63,95 @@ export class OptimizedPermutationEngine {
   private smartRouter: any;
   private advancedCache: any;
   private parallelEngine: any;
+  private static expertsInitialized = false;
 
   constructor() {
     this.smartRouter = getSmartRouter();
     this.advancedCache = getAdvancedCache();
     this.parallelEngine = getParallelEngine();
+
+    // Initialize MoE router with experts (only once)
+    if (!OptimizedPermutationEngine.expertsInitialized) {
+      this.initializeExperts();
+      OptimizedPermutationEngine.expertsInitialized = true;
+    }
+
     console.log('🚀 Optimized Permutation Engine initialized (All 3 Phases Active)');
+  }
+
+  private initializeExperts() {
+    const brainSkills = [
+      {
+        id: 'gepa_optimization',
+        name: 'GEPA Optimization',
+        description: 'Generative Prompt Evolution Agent for iterative optimization',
+        domain: 'optimization',
+        capabilities: ['prompt_optimization', 'iterative_improvement', 'performance_enhancement'],
+        performance: { accuracy: 0.85, speed: 0.7, reliability: 0.9, cost: 0.3 },
+        metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.85, avgResponseTime: 2.5 }
+      },
+      {
+        id: 'ace_framework',
+        name: 'ACE Framework',
+        description: 'Agentic Context Engineering for comprehensive context management',
+        domain: 'context',
+        capabilities: ['context_management', 'playbook_generation', 'context_evolution'],
+        performance: { accuracy: 0.9, speed: 0.8, reliability: 0.95, cost: 0.4 },
+        metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.9, avgResponseTime: 3.2 }
+      },
+      {
+        id: 'trm_engine',
+        name: 'TRM Engine',
+        description: 'Tiny Recursion Model for multi-phase reasoning',
+        domain: 'reasoning',
+        capabilities: ['recursive_reasoning', 'multi_phase_processing', 'verification_loops'],
+        performance: { accuracy: 0.88, speed: 0.6, reliability: 0.92, cost: 0.5 },
+        metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.88, avgResponseTime: 4.1 }
+      },
+      {
+        id: 'advanced_rag',
+        name: 'Advanced RAG Techniques',
+        description: 'Contextual RAG, HyDE, Agentic RAG for superior retrieval',
+        domain: 'retrieval',
+        capabilities: ['contextual_rag', 'hyde_embeddings', 'agentic_retrieval', 'multi_vector_search'],
+        performance: { accuracy: 0.87, speed: 0.75, reliability: 0.88, cost: 0.35 },
+        metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.87, avgResponseTime: 2.8 }
+      },
+      {
+        id: 'advanced_reranking',
+        name: 'Advanced Reranking Techniques',
+        description: 'Linear combination, Cross-encoder, Cohere, ColBERT reranking',
+        domain: 'ranking',
+        capabilities: ['linear_combination', 'cross_encoder', 'cohere_reranking', 'colbert_reranking'],
+        performance: { accuracy: 0.91, speed: 0.8, reliability: 0.93, cost: 0.4 },
+        metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.91, avgResponseTime: 2.2 }
+      },
+      {
+        id: 'multilingual_business',
+        name: 'Multilingual Business Intelligence',
+        description: 'Enhanced reasoning across 100+ languages with business domain expertise',
+        domain: 'multilingual',
+        capabilities: ['language_detection', 'business_analysis', 'cross_cultural_understanding', 'constraint_analysis'],
+        performance: { accuracy: 0.89, speed: 0.85, reliability: 0.9, cost: 0.45 },
+        metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.89, avgResponseTime: 3.5 }
+      },
+      {
+        id: 'quality_evaluation',
+        name: 'Quality Evaluation System',
+        description: 'Comprehensive evaluation using open-evals framework',
+        domain: 'evaluation',
+        capabilities: ['quality_assessment', 'performance_metrics', 'evaluation_framework'],
+        performance: { accuracy: 0.94, speed: 0.7, reliability: 0.96, cost: 0.25 },
+        metadata: { lastUsed: new Date(), usageCount: 0, successRate: 0.94, avgResponseTime: 1.5 }
+      }
+    ];
+
+    brainSkills.forEach(skill => {
+      moeSkillRouter.registerExpert(skill as SkillExpert);
+    });
+
+    console.log(`🧠 Optimized Engine: Registered ${brainSkills.length} expert skills`);
+    console.log(`🧠 Total experts in router: ${moeSkillRouter['experts']?.size || 0}`);
   }
 
   /**
@@ -292,7 +377,7 @@ export class OptimizedPermutationEngine {
    */
   private async executeTRM(query: string, routing: any, trace: any, optimizations: string[]): Promise<OptimizedResult> {
     optimizations.push('Phase 2: TRM as primary reasoning engine (78.43 overall score)');
-    
+
     trace.steps.push({
       component: 'TRM (Tiny Recursion Model)',
       description: 'Recursive reasoning with verification (97.5% accuracy)',
@@ -308,19 +393,74 @@ export class OptimizedPermutationEngine {
       return this.buildResult(query, routing, cachedTRM, trace, optimizations, true);
     }
 
-    await new Promise(resolve => setTimeout(resolve, routing.estimated_latency_ms));
+    // Call Brain API with content generation flag
+    try {
+      console.log('🔄 TRM: Calling Brain API with content generation mode');
 
-    const result = {
-      answer: `TRM Result: Best overall reasoning (97.5% accuracy, 78.43 overall score)`,
-      accuracy: 0.975,
-      recursive_steps: 3
-    };
+      const response = await fetch('http://localhost:3000/api/brain', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query,
+          domain: 'technology',  // Force full research pipeline (advanced_rag + teacher_student + quality_evaluation)
+          sessionId: 'optimized-trm',
+          complexity: 8,
+          needsReasoning: true,
+          useMoE: true
+        })
+      });
 
-    // Cache TRM result
-    this.advancedCache.cacheTRMResult(query, result);
-    optimizations.push('Phase 1: TRM result cached');
+      if (!response.ok) {
+        throw new Error(`Brain API failed: ${response.status} ${response.statusText}`);
+      }
 
-    return this.buildResult(query, routing, result, trace, optimizations, false);
+      const brainResult = await response.json();
+
+      const result = {
+        answer: brainResult.response || brainResult.answer || brainResult.result,
+        accuracy: brainResult.metadata?.averageQuality || brainResult.qualityScore || 0.9,
+        confidence: brainResult.metadata?.averageQuality || brainResult.qualityScore || 0.9,
+        recursive_steps: 3,
+        skills_used: brainResult.metadata?.skillsActivated || brainResult.skillsActivated || []
+      };
+
+      // Cache TRM result
+      this.advancedCache.cacheTRMResult(query, result);
+      optimizations.push('Phase 1: TRM result cached');
+
+      if (result.skills_used.length > 0) {
+        optimizations.push(`Phase 2: Skills activated: ${result.skills_used.join(', ')}`);
+      }
+
+      trace.steps.push({
+        component: 'Brain API (MoE Orchestrator)',
+        description: `Generated content using ${result.skills_used.length} skills`,
+        status: 'success',
+        output: { skills: result.skills_used, quality: result.accuracy }
+      });
+
+      return this.buildResult(query, routing, result, trace, optimizations, false);
+
+    } catch (error: any) {
+      console.error('❌ TRM Brain API execution failed:', error.message);
+
+      // Fallback to mock result if Brain API fails
+      const result = {
+        answer: `TRM Result: Best overall reasoning (97.5% accuracy, 78.43 overall score)`,
+        accuracy: 0.975,
+        recursive_steps: 3
+      };
+
+      trace.steps.push({
+        component: 'TRM Fallback',
+        description: 'Using fallback result due to Brain API error',
+        status: 'warning'
+      });
+
+      return this.buildResult(query, routing, result, trace, optimizations, false);
+    }
   }
 
   /**

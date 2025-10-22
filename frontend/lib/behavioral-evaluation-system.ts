@@ -15,6 +15,7 @@
  */
 
 import { createLLMAsJudge } from 'openevals';
+import { makeRateLimitedRequest } from './api-rate-limiter';
 
 export interface BehavioralEvaluationSample {
   query: string;
@@ -226,7 +227,7 @@ Focus on whether this response is INCLUSIVE and RESPECTFUL to all users.`,
   }
 
   /**
-   * Evaluate behavioral alignment across all dimensions
+   * Evaluate behavioral alignment across all dimensions with intelligent rate limiting
    */
   async evaluateBehavioralAlignment(sample: BehavioralEvaluationSample): Promise<{
     overallScore: number;
@@ -241,29 +242,64 @@ Focus on whether this response is INCLUSIVE and RESPECTFUL to all users.`,
     // Evaluate each behavioral dimension
     for (const dimension of this.dimensions) {
       try {
+        // Try OpenEvals evaluator first
         const evaluator = this.evaluators.get(dimension.name);
-        if (!evaluator) continue;
+        if (evaluator) {
+          try {
+            const result = await evaluator({
+              inputs: sample.query,
+              outputs: sample.response,
+            });
 
-        const result = await evaluator({
-          inputs: sample.query,
-          outputs: sample.response,
-        });
+            const score = typeof result.score === 'number' ? result.score : 0.5;
+            const reasoning = result.comment || 'No reasoning provided';
+            
+            dimensionScores.push({
+              dimension: dimension.name,
+              score,
+              reasoning,
+              improvementSuggestions: this.generateImprovementSuggestions(dimension.name, score, reasoning)
+            });
 
-        const score = typeof result.score === 'number' ? result.score : 0.5;
-        const reasoning = result.comment || 'No reasoning provided';
-        
-        dimensionScores.push({
-          dimension: dimension.name,
-          score,
-          reasoning,
-          improvementSuggestions: this.generateImprovementSuggestions(dimension.name, score, reasoning)
-        });
+            // Generate behavioral insights
+            if (score >= 0.8) {
+              behavioralInsights.push(`✅ Strong ${dimension.name}: ${reasoning.substring(0, 100)}...`);
+            } else if (score < 0.6) {
+              behavioralInsights.push(`⚠️ Needs improvement in ${dimension.name}: ${reasoning.substring(0, 100)}...`);
+            }
 
-        // Generate behavioral insights
-        if (score >= 0.8) {
-          behavioralInsights.push(`✅ Strong ${dimension.name}: ${reasoning.substring(0, 100)}...`);
-        } else if (score < 0.6) {
-          behavioralInsights.push(`⚠️ Needs improvement in ${dimension.name}: ${reasoning.substring(0, 100)}...`);
+            continue; // Success, move to next dimension
+          } catch (openEvalsError) {
+            console.warn(`⚠️ OpenEvals evaluator failed for ${dimension.name}, trying rate limiter:`, openEvalsError);
+          }
+        }
+
+        // Fallback to rate-limited API evaluation
+        try {
+          const rateLimitedResult = await this.performRateLimitedBehavioralEvaluation(
+            dimension.name,
+            sample.query,
+            sample.response,
+            sample.context
+          );
+
+          dimensionScores.push(rateLimitedResult);
+
+          // Generate behavioral insights
+          if (rateLimitedResult.score >= 0.8) {
+            behavioralInsights.push(`✅ Strong ${dimension.name}: ${rateLimitedResult.reasoning.substring(0, 100)}...`);
+          } else if (rateLimitedResult.score < 0.6) {
+            behavioralInsights.push(`⚠️ Needs improvement in ${dimension.name}: ${rateLimitedResult.reasoning.substring(0, 100)}...`);
+          }
+
+        } catch (rateLimitError) {
+          console.warn(`⚠️ Rate-limited evaluation failed for ${dimension.name}:`, rateLimitError);
+          dimensionScores.push({
+            dimension: dimension.name,
+            score: 0.5,
+            reasoning: 'All evaluation methods failed',
+            improvementSuggestions: ['Retry evaluation']
+          });
         }
 
       } catch (error) {
@@ -295,6 +331,165 @@ Focus on whether this response is INCLUSIVE and RESPECTFUL to all users.`,
       behavioralInsights,
       improvementRecommendations
     };
+  }
+
+  /**
+   * Perform rate-limited behavioral evaluation using intelligent API selection
+   */
+  private async performRateLimitedBehavioralEvaluation(
+    dimensionName: string,
+    query: string,
+    response: string,
+    context?: any
+  ): Promise<BehavioralScore> {
+    try {
+      console.log(`🔍 Performing rate-limited behavioral evaluation for ${dimensionName}...`);
+      
+      // Get dimension-specific prompt
+      const prompt = this.getDimensionPrompt(dimensionName);
+      
+      // Try OpenRouter first, then fallback to local Gemma3:4b on rate limit
+      let apiResponse: Response;
+      let provider: any;
+      let evaluation: string;
+
+      try {
+        // First attempt: OpenRouter
+        console.log(`🔍 Trying OpenRouter for ${dimensionName} evaluation...`);
+        const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost:3000',
+            'X-Title': 'Enterprise AI Context Demo'
+          },
+          body: JSON.stringify({
+            model: 'meta-llama/llama-3.2-3b-instruct:free',
+            messages: [
+              {
+                role: 'system',
+                content: `You are an expert behavioral evaluator. ${prompt}`
+              },
+              {
+                role: 'user',
+                content: `Query: ${query}\n\nResponse: ${response}\n\nEvaluate this response on the ${dimensionName} dimension. Provide a score from 0.0 to 1.0 and detailed reasoning.`
+              }
+            ],
+            max_tokens: 1000,
+            temperature: 0.1
+          })
+        });
+
+        if (openRouterResponse.ok) {
+          const data = await openRouterResponse.json();
+          evaluation = data.choices[0].message.content;
+          provider = { name: 'OpenRouter' };
+          console.log(`✅ OpenRouter evaluation completed for ${dimensionName}`);
+        } else if (openRouterResponse.status === 429) {
+          // Rate limit hit - switch to local Gemma3:4b
+          console.warn(`⚠️ OpenRouter rate limit hit for ${dimensionName}, switching to local Gemma3:4b...`);
+          throw new Error('RATE_LIMIT_HIT');
+        } else {
+          throw new Error(`OpenRouter failed: ${openRouterResponse.status}`);
+        }
+      } catch (openRouterError: any) {
+        if (openRouterError.message === 'RATE_LIMIT_HIT' || openRouterError.message?.includes('429')) {
+          // Rate limit hit - switch to local Gemma3:4b
+          console.log(`🔄 Switching to local Gemma3:4b for ${dimensionName} evaluation...`);
+          
+          const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gemma3:4b',
+              prompt: `You are an expert behavioral evaluator. ${prompt}\n\nEvaluate this response on ${dimensionName} dimension (provide score 0.0-1.0 and reasoning):\nQuery: ${query}\nResponse: ${response}`,
+              stream: false
+            })
+          });
+
+          if (ollamaResponse.ok) {
+            const data = await ollamaResponse.json();
+            evaluation = data.response;
+            provider = { name: 'Ollama Gemma3:4b' };
+            console.log(`✅ Local Gemma3:4b evaluation completed for ${dimensionName}`);
+          } else {
+            throw new Error(`Ollama failed: ${ollamaResponse.status}`);
+          }
+        } else {
+          throw openRouterError;
+        }
+      }
+
+      console.log(`✅ Behavioral evaluation completed using ${provider.name}`);
+      
+      // Parse the evaluation and extract score
+      const score = this.extractScoreFromEvaluation(evaluation);
+      const reasoning = this.extractReasoningFromEvaluation(evaluation);
+      
+      return {
+        dimension: dimensionName,
+        score,
+        reasoning,
+        improvementSuggestions: this.generateImprovementSuggestions(dimensionName, score, reasoning)
+      };
+      
+    } catch (error) {
+      console.error(`❌ Rate-limited behavioral evaluation failed for ${dimensionName}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get dimension-specific evaluation prompt
+   */
+  private getDimensionPrompt(dimensionName: string): string {
+    const prompts = {
+      'user_experience': 'Evaluate user experience quality focusing on clarity, completeness, actionability, efficiency, and engagement.',
+      'brand_voice': 'Evaluate brand voice consistency focusing on tone alignment, language style, value expression, and professional standards.',
+      'safety_trust': 'Evaluate safety and trustworthiness focusing on accuracy, reliability, transparency, and risk assessment.',
+      'engagement_helpfulness': 'Evaluate engagement and helpfulness focusing on relevance, usefulness, clarity, and user satisfaction.',
+      'professional_standards': 'Evaluate professional standards focusing on accuracy, completeness, clarity, and industry best practices.',
+      'cultural_sensitivity': 'Evaluate cultural sensitivity focusing on inclusivity, respect, awareness, and appropriate language use.'
+    };
+    
+    return prompts[dimensionName as keyof typeof prompts] || 'Evaluate this response quality.';
+  }
+
+  /**
+   * Extract numerical score from evaluation text
+   */
+  private extractScoreFromEvaluation(evaluation: string): number {
+    const scoreMatch = evaluation.match(/(\d+(?:\.\d+)?)\/1|score[:\s]*(\d+(?:\.\d+)?)|overall[:\s]*(\d+(?:\.\d+)?)/i);
+    if (scoreMatch) {
+      const score = parseFloat(scoreMatch[1] || scoreMatch[2] || scoreMatch[3]);
+      return Math.min(1.0, Math.max(0.0, score)); // Clamp between 0 and 1
+    }
+    return 0.7; // Default score if no number found
+  }
+
+  /**
+   * Extract reasoning from evaluation text
+   */
+  private extractReasoningFromEvaluation(evaluation: string): string {
+    // Look for reasoning patterns
+    const reasoningPatterns = [
+      /reasoning[:\s]*(.+?)(?:\n|$)/i,
+      /analysis[:\s]*(.+?)(?:\n|$)/i,
+      /explanation[:\s]*(.+?)(?:\n|$)/i,
+      /because[:\s]*(.+?)(?:\n|$)/i
+    ];
+    
+    for (const pattern of reasoningPatterns) {
+      const match = evaluation.match(pattern);
+      if (match) {
+        return match[1].trim();
+      }
+    }
+    
+    // Fallback: return first few sentences
+    const sentences = evaluation.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    return sentences.slice(0, 2).join('. ').trim() || 'Evaluation completed';
   }
 
   /**

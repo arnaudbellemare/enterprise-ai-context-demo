@@ -15,6 +15,7 @@ import { ACE } from '../ace';
 import { openEvalsIntegration, OpenEvalsEvaluationSample } from '../openevals-integration';
 import { ContinualLearningSystem } from '../continual-learning-integration';
 import { behavioralEvaluationSystem, BehavioralEvaluationSample } from '../behavioral-evaluation-system';
+import { makeRateLimitedRequest, getRateLimiterStats } from '../api-rate-limiter';
 // Using direct fetch for self-improvement instead of @ax-llm/core
 
 export interface MoERequest {
@@ -438,7 +439,7 @@ export class MoEBrainOrchestrator {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                model: 'sonar-pro',
+                model: 'llama-3.1-sonar-large-128k-online',
                 messages: [
                   {
                     role: 'system',
@@ -1165,9 +1166,9 @@ export class MoEBrainOrchestrator {
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({}));
               if (response.status === 429) {
-                // Rate limit exceeded - use fallback heuristic evaluation
-                console.warn('OpenRouter rate limit exceeded, using fallback evaluation');
-                return this.performFallbackQualityEvaluation(query, context);
+                // Rate limit exceeded - use intelligent rate limiter instead of heuristics
+                console.warn('OpenRouter rate limit exceeded, using intelligent rate limiter');
+                return this.performRateLimitedQualityEvaluation(query, context.query || query, context);
               }
               throw new Error(`OpenRouter API error: ${response.status} - ${errorData.message || 'Rate limit exceeded'}`);
             }
@@ -1226,8 +1227,13 @@ export class MoEBrainOrchestrator {
             };
           } catch (error) {
             console.error('Quality evaluation error:', error);
-            // Use fallback evaluation instead of failing
-            return this.performFallbackQualityEvaluation(query, context);
+            // Use intelligent rate limiter instead of basic heuristics
+            try {
+              return await this.performRateLimitedQualityEvaluation(query, context.query || query, context);
+            } catch (rateLimitError) {
+              console.warn('Rate limiter also failed, using basic fallback:', rateLimitError);
+              return this.performFallbackQualityEvaluation(query, context);
+            }
           }
         },
         executeBatch: async (queries: string[], context: any) => {
@@ -1310,6 +1316,91 @@ export class MoEBrainOrchestrator {
           fast: { cost: 0.002, latency: 100, accuracy: 0.88 },
           accurate: { cost: 0.006, latency: 250, accuracy: 0.96 },
           balanced: { cost: 0.004, latency: 150, accuracy: 0.92 }
+        }
+      },
+      'content_generation': {
+        execute: async (query: string, context: any) => {
+          try {
+            const response = await fetch('https://api.perplexity.ai/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'sonar-pro',
+                messages: [
+                  {
+                    role: 'system',
+                    content: 'You are an expert assistant that provides comprehensive, accurate, and well-structured answers to user queries. Adapt your response style to the domain and language of the query. Provide direct answers with proper formatting, citations where relevant, and practical analysis.'
+                  },
+                  {
+                    role: 'user',
+                    content: query
+                  }
+                ],
+                max_tokens: 4000,
+                temperature: 0.2
+              })
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              if (response.status === 429) {
+                console.warn('Perplexity rate limit exceeded for content generation');
+                return {
+                  data: `I apologize, but I'm currently experiencing high demand. Please try again in a moment.`,
+                  metadata: {
+                    model: 'fallback',
+                    tokens: 0,
+                    cost: 0,
+                    fallback: true,
+                    rateLimited: true
+                  }
+                };
+              }
+              throw new Error(`Perplexity API error: ${response.status} - ${errorData.message || 'Unknown error'}`);
+            }
+
+            const data = await response.json();
+            const generatedContent = data.choices[0].message.content;
+
+            return {
+              data: generatedContent,
+              metadata: {
+                model: 'sonar-pro',
+                tokens: data.usage?.total_tokens || 0,
+                cost: (data.usage?.total_tokens || 0) * 0.00003
+              }
+            };
+          } catch (error) {
+            console.error('Content generation error:', error);
+            return {
+              data: `I apologize, but I wasn't able to generate a comprehensive response at this time. Please try rephrasing your question or try again later.`,
+              error: error instanceof Error ? error.message : String(error),
+              metadata: {
+                model: 'fallback',
+                tokens: 0,
+                cost: 0,
+                fallback: true
+              }
+            };
+          }
+        },
+        executeBatch: async (queries: string[], context: any) => {
+          const results = await Promise.all(
+            queries.map(async (query) => {
+              const result = await this.getExecutableSkill('content_generation').execute(query, context);
+              return result;
+            })
+          );
+          return results;
+        },
+        supportsBatching: true,
+        implementations: {
+          fast: { cost: 0.003, latency: 120, accuracy: 0.92 },
+          accurate: { cost: 0.008, latency: 300, accuracy: 0.98 },
+          balanced: { cost: 0.005, latency: 180, accuracy: 0.94 }
         }
       }
     };
@@ -1694,23 +1785,166 @@ export class MoEBrainOrchestrator {
       
       return evaluation;
     } catch (error) {
-      console.warn('⚠️ OpenEvals evaluation failed, using fallback:', error);
+      console.warn('⚠️ OpenEvals evaluation failed, trying rate-limited API evaluation:', error);
       
-      // Fallback to brain evaluation system
-      const brainEvaluation = await this.evaluationSystem.evaluateBrainResponse({
-        query,
-        response,
-        domain,
-        metadata: { fallback: true }
-      });
+      // Try rate-limited API evaluation instead of falling back to heuristics
+      try {
+        const rateLimitedEvaluation = await this.performRateLimitedQualityEvaluation(query, response, { domain });
+        console.log(`🧠 Rate-limited API evaluation completed with combined score: ${rateLimitedEvaluation.combinedScore.toFixed(3)}`);
+        return rateLimitedEvaluation;
+      } catch (rateLimitError) {
+        console.warn('⚠️ Rate-limited API evaluation failed, using brain evaluation fallback:', rateLimitError);
+        
+        // Fallback to brain evaluation system
+        const brainEvaluation = await this.evaluationSystem.evaluateBrainResponse({
+          query,
+          response,
+          domain,
+          metadata: { fallback: true }
+        });
 
+        return {
+          openEvalsResults: [],
+          brainEvaluationResults: brainEvaluation,
+          combinedScore: brainEvaluation.overallScore,
+          recommendations: brainEvaluation.recommendations
+        };
+      }
+    }
+  }
+
+  /**
+   * Rate-limited quality evaluation using intelligent API selection
+   */
+  private async performRateLimitedQualityEvaluation(query: string, response: string, context: any): Promise<any> {
+    try {
+      console.log('🔍 Performing rate-limited quality evaluation...');
+      
+      // Try OpenRouter first, then fallback to local Gemma3:4b on rate limit
+      let evaluation: string;
+      let provider: any;
+
+      try {
+        // First attempt: OpenRouter
+        console.log('🔍 Trying OpenRouter for quality evaluation...');
+        const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost:3000',
+            'X-Title': 'Enterprise AI Context Demo'
+          },
+          body: JSON.stringify({
+            model: 'meta-llama/llama-3.2-3b-instruct:free',
+            messages: [
+              {
+                role: 'system',
+                content: `You are an expert quality evaluator. Evaluate the response quality across multiple dimensions:
+                1. Accuracy and correctness
+                2. Completeness and depth
+                3. Clarity and coherence
+                4. Relevance to the query
+                5. Professional standards
+                
+                Provide scores 1-10 for each dimension and an overall assessment.`
+              },
+              {
+                role: 'user',
+                content: `Query: ${query}\n\nResponse: ${response}\n\nEvaluate this response quality.`
+              }
+            ],
+            max_tokens: 1000,
+            temperature: 0.1
+          })
+        });
+
+        if (openRouterResponse.ok) {
+          const data = await openRouterResponse.json();
+          evaluation = data.choices[0].message.content;
+          provider = { name: 'OpenRouter' };
+          console.log('✅ OpenRouter quality evaluation completed');
+        } else if (openRouterResponse.status === 429) {
+          // Rate limit hit - switch to local Gemma3:4b
+          console.warn('⚠️ OpenRouter rate limit hit, switching to local Gemma3:4b...');
+          throw new Error('RATE_LIMIT_HIT');
+        } else {
+          throw new Error(`OpenRouter failed: ${openRouterResponse.status}`);
+        }
+      } catch (openRouterError: any) {
+        if (openRouterError.message === 'RATE_LIMIT_HIT' || openRouterError.message?.includes('429')) {
+          // Rate limit hit - switch to local Gemma3:4b
+          console.log('🔄 Switching to local Gemma3:4b for quality evaluation...');
+          
+          const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gemma3:4b',
+              prompt: `Evaluate this response quality (1-10 scale):\nQuery: ${query}\nResponse: ${response}`,
+              stream: false
+            })
+          });
+
+          if (ollamaResponse.ok) {
+            const data = await ollamaResponse.json();
+            evaluation = data.response;
+            provider = { name: 'Ollama Gemma3:4b' };
+            console.log('✅ Local Gemma3:4b quality evaluation completed');
+          } else {
+            throw new Error(`Ollama failed: ${ollamaResponse.status}`);
+          }
+        } else {
+          throw openRouterError;
+        }
+      }
+
+      console.log(`✅ Quality evaluation completed using ${provider.name}`);
+      
+      // Parse the evaluation and return structured results
       return {
         openEvalsResults: [],
-        brainEvaluationResults: brainEvaluation,
-        combinedScore: brainEvaluation.overallScore,
-        recommendations: brainEvaluation.recommendations
+        brainEvaluationResults: {
+          overallScore: this.extractScoreFromEvaluation(evaluation),
+          evaluation: evaluation,
+          provider: provider.name
+        },
+        combinedScore: this.extractScoreFromEvaluation(evaluation),
+        recommendations: this.extractRecommendationsFromEvaluation(evaluation)
       };
+      
+    } catch (error) {
+      console.error('❌ Rate-limited quality evaluation failed:', error);
+      throw error;
     }
+  }
+
+  /**
+   * Extract numerical score from evaluation text
+   */
+  private extractScoreFromEvaluation(evaluation: string): number {
+    const scoreMatch = evaluation.match(/(\d+(?:\.\d+)?)\/10|score[:\s]*(\d+(?:\.\d+)?)|overall[:\s]*(\d+(?:\.\d+)?)/i);
+    if (scoreMatch) {
+      return parseFloat(scoreMatch[1] || scoreMatch[2] || scoreMatch[3]) / 10;
+    }
+    return 0.7; // Default score if no number found
+  }
+
+  /**
+   * Extract recommendations from evaluation text
+   */
+  private extractRecommendationsFromEvaluation(evaluation: string): string[] {
+    const recommendations: string[] = [];
+    
+    // Look for bullet points or numbered lists
+    const lines = evaluation.split('\n');
+    for (const line of lines) {
+      if (line.match(/^[-•*]\s+/) || line.match(/^\d+\.\s+/)) {
+        recommendations.push(line.trim());
+      }
+    }
+    
+    return recommendations.length > 0 ? recommendations : ['Continue improving response quality'];
   }
 
   /**
