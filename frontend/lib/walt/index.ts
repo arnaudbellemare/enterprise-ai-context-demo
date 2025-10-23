@@ -52,3 +52,42 @@ export {
 
 // ACE Integration
 export { getWALTACEIntegration, WALTACEIntegration } from './ace-integration';
+
+// Infrastructure (Production-Ready)
+export { createLogger, loggers } from './logger';
+export type { Logger, LogLevel, LogContext } from './logger';
+
+export {
+  WALTError,
+  WALTDiscoveryError,
+  WALTStorageError,
+  WALTRedisError,
+  WALTTimeoutError,
+  WALTValidationError,
+  isWALTError,
+  getErrorMessage,
+  getErrorDetails
+} from './errors';
+
+export {
+  validateDiscoveryUrl,
+  sanitizeGoal,
+  validateMaxTools,
+  validateToolName,
+  validateRedisUrl,
+  validateEnvironment
+} from './validation';
+export type { EnvironmentValidation } from './validation';
+
+export { CacheManager, DiscoveryCacheManager, discoveryCache } from './cache-manager';
+export type { CacheEntry, CacheOptions, CacheStats, DiscoveryCacheEntry } from './cache-manager';
+
+export {
+  calculateLLMCost,
+  calculateBrowserCost,
+  estimateToolExecutionCost,
+  calculateDiscoveryCost,
+  formatCost,
+  calculateCostSummary
+} from './cost-calculator';
+export type { CostBreakdown, CostSummary } from './cost-calculator';
