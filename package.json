@@ -18,7 +18,15 @@
     "warm-cache": "npx tsx scripts/warm-cache.ts",
     "warm-cache:parallel": "npx tsx scripts/warm-cache.ts --parallel --concurrency=5",
     "warm-cache:sequential": "npx tsx scripts/warm-cache.ts --sequential",
-    "test:cache": "node test-cache-warming.js"
+    "test:cache": "node test-cache-warming.js",
+    "walt:setup": "./scripts/setup-walt.sh",
+    "walt:start": "./scripts/start-walt.sh",
+    "walt:redis:start": "./scripts/start-walt-redis-workers.sh",
+    "walt:redis:stop": "./scripts/stop-walt-redis-workers.sh",
+    "walt:redis:status": "./scripts/status-walt-redis-workers.sh",
+    "test:walt": "npx tsx test-walt-basic.ts",
+    "test:walt:complete": "npx tsx test-walt-complete.ts",
+    "test:walt:native": "npx tsx test-walt-native.ts"
   },
   "keywords": [
     "ai",
