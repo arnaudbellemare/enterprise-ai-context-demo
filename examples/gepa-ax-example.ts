@@ -92,8 +92,8 @@ async function runGEPAOptimization() {
     elitismCount: 2,
 
     llmConfig: {
-      model: 'gpt-4o-mini',
-      apiKey: process.env.OPENAI_API_KEY || '',
+      model: 'sonar-pro',  // Perplexity premium model (consistent with TRM teacher)
+      apiKey: process.env.PERPLEXITY_API_KEY || process.env.OPENAI_API_KEY || '',
       temperature: 0.7,
       maxTokens: 2000
     },
@@ -209,9 +209,12 @@ async function runGEPAOptimization() {
 // ============================================================================
 
 if (require.main === module) {
-  if (!process.env.OPENAI_API_KEY) {
-    console.error('❌ Error: OPENAI_API_KEY environment variable is required');
-    console.error('   Set it with: export OPENAI_API_KEY=sk-...');
+  if (!process.env.PERPLEXITY_API_KEY && !process.env.OPENAI_API_KEY) {
+    console.error('❌ Error: PERPLEXITY_API_KEY or OPENAI_API_KEY environment variable is required');
+    console.error('   Set one with:');
+    console.error('   export PERPLEXITY_API_KEY=pplx-... (recommended)');
+    console.error('   OR');
+    console.error('   export OPENAI_API_KEY=sk-...');
     process.exit(1);
   }
 

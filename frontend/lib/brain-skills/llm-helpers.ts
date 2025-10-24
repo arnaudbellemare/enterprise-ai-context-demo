@@ -23,6 +23,7 @@ export interface LLMOptions {
   maxTokens?: number;
   model?: string;
   stream?: boolean;
+  timeout?: number;  // Request timeout in milliseconds
 }
 
 export interface LLMResponse {
