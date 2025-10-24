@@ -10,7 +10,7 @@
  * - DSPy principles for programmatic LLM composition
  */
 
-import { AxAI } from '@ax-llm/ax';
+import { ai } from '@ax-llm/ax';
 import { z } from 'zod';
 import { createLogger } from './walt/logger';
 
@@ -128,20 +128,7 @@ export class GEPAEngine {
 
   constructor(config: GEPAConfig) {
     this.config = config;
-
-    // Initialize Ax LLM - Temporarily disabled
-    // Mock AxAI for now to get system working
-    this.ax = {
-      gen: async (prompt: string, options: any) => {
-        return {
-          object: {
-            mutated_prompt: prompt + ' [optimized]',
-            reasoning: 'Mock optimization',
-            offspring_prompt: prompt + ' [crossover]'
-          }
-        };
-      }
-    };
+    this.ax = null; // Will be initialized in initializeAxLLM
 
     logger.info('GEPA Engine initialized', {
       populationSize: config.populationSize,
@@ -151,9 +138,23 @@ export class GEPAEngine {
   }
 
   /**
+   * Initialize Ax LLM (call after construction)
+   */
+  async initialize(): Promise<void> {
+    if (!this.ax) {
+      this.ax = await this.initializeAxLLM(this.config);
+      logger.info('Ax LLM initialization complete');
+    }
+  }
+
+  /**
    * Run GEPA optimization
    */
   async optimize(initialPrompts: string[]): Promise<GEPAResult> {
+    // Ensure Ax LLM is initialized
+    if (!this.ax) {
+      await this.initialize();
+    }
     logger.info('Starting GEPA optimization', {
       initialPrompts: initialPrompts.length,
       benchmarks: this.config.evaluationBenchmarks.length
@@ -331,6 +332,81 @@ export class GEPAEngine {
       latency,
       tokenEfficiency: tokenEfficiency.toFixed(6)
     });
+  }
+
+  /**
+   * Initialize Ax LLM with production-grade error handling
+   */
+  private async initializeAxLLM(config: GEPAConfig): Promise<any> {
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Try Perplexity first
+        const perplexityAx = ai({
+          name: 'openai',
+          apiKey: config.llmConfig.apiKey || process.env.PERPLEXITY_API_KEY || '',
+          baseURL: 'https://api.perplexity.ai'
+        });
+        
+        // Test the connection
+        await this.testAxConnection(perplexityAx);
+        
+        logger.info('Real Ax LLM initialized with Perplexity successfully', { attempt });
+        return perplexityAx;
+        
+      } catch (error) {
+        logger.warn('Perplexity failed, trying Ollama fallback', { 
+          attempt, 
+          error: error instanceof Error ? error.message : String(error) 
+        });
+        
+        try {
+          // Fallback to Ollama
+          const ollamaAx = ai({
+            name: 'ollama',
+            apiKey: 'ollama-local'
+          });
+          
+          // Test the connection
+          await this.testAxConnection(ollamaAx);
+          
+          logger.info('Ax LLM initialized with Ollama fallback successfully', { attempt });
+          return ollamaAx;
+          
+        } catch (fallbackError) {
+          logger.error('Both Perplexity and Ollama failed', { 
+            attempt, 
+            error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError) 
+          });
+          
+          if (attempt === maxRetries) {
+            throw new Error(`Failed to initialize any LLM provider after ${maxRetries} attempts`);
+          }
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+        }
+      }
+    }
+    
+    throw new Error('Failed to initialize Ax LLM after all retries');
+  }
+  
+  /**
+   * Test Ax LLM connection
+   */
+  private async testAxConnection(ax: any): Promise<void> {
+    try {
+      // Test with a simple prompt
+      const testResult = await ax.gen('Test connection', { maxTokens: 10 });
+      if (!testResult || !testResult.object) {
+        throw new Error('Invalid response from Ax LLM');
+      }
+    } catch (error) {
+      throw new Error(`Ax LLM connection test failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   /**
