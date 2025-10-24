@@ -144,7 +144,8 @@ PERMUTATION uses a layered architecture where each query flows through:
 - Pareto frontier tracking for non-dominated solutions
 
 **DSPy Integration** (`frontend/lib/dspy-observability.ts`, `frontend/lib/dspy-refine-with-feedback.ts`):
-- Programmatic LLM composition with learnable parameters
+- **SCOPE**: Basic observability and feedback collection
+- **LIMITATION**: Not full DSPy implementation - uses Ax LLM for orchestration
 - Structured output generation (supports Zod schemas)
 - Feedback-driven refinement loops
 - Integration with Ax LLM orchestrator (`@ax-llm/ax` package)
@@ -161,8 +162,9 @@ PERMUTATION uses a layered architecture where each query flows through:
 - Pattern recognition and solution retrieval
 - Auto-learning from successful executions
 
-**TRM Verification** (`frontend/lib/trm.ts`):
-- Tiny Recursive Model for answer verification
+**RVS (Recursive Verification System)** (`frontend/lib/trm.ts`):
+- **IMPORTANT**: This is NOT the TRM paper's 7M neural network
+- **APPROACH**: LLM-based recursive verification inspired by TRM concept
 - Recursive refinement with confidence thresholds
 - Adaptive computation time (ACT)
 - Multi-scale reasoning with verification loops
@@ -355,7 +357,7 @@ Key integrations to understand:
 - GEPA: "Genetic-Pareto Prompt Evolution" (arXiv:2507.19457)
 - DSPy: "Declarative Self-improving Python" (dspy.ai)
 - IRT: Item Response Theory (2PL model for difficulty calibration)
-- TRM: "Tiny Recursive Models for Reasoning"
+- RVS: "Recursive Verification System" (inspired by TRM paper, but LLM-based implementation)
 - LoRA: "Low-Rank Adaptation of Large Language Models"
 
 When modifying components based on these papers, maintain fidelity to the original research unless explicitly implementing an extension.

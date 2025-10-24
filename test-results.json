@@ -1,11 +1,11 @@
 {
-  "timestamp": "2025-10-23T23:33:10.838Z",
+  "timestamp": "2025-10-24T04:40:31.570Z",
   "summary": {
     "total": 33,
     "passed": 21,
-    "failed": 5,
+    "failed": 6,
     "warned": 6,
-    "skipped": 1
+    "skipped": 0
   },
   "results": [
     {
@@ -200,7 +200,7 @@
       "component": "Code Quality",
       "test": "Console Usage (moe-orchestrator.ts)",
       "status": "WARN",
-      "message": "83 console statements found",
+      "message": "92 console statements found",
       "recommendation": "Replace console.log with createLogger() for production-ready logging"
     },
     {
@@ -214,7 +214,7 @@
       "component": "Code Quality",
       "test": "TypeScript Compilation",
       "status": "FAIL",
-      "message": "15 TypeScript errors found",
+      "message": "1 TypeScript errors found",
       "details": {
         "errorOutput": ""
       },
@@ -222,10 +222,9 @@
     },
     {
       "component": "Server Tests",
-      "test": "Server Availability",
-      "status": "SKIP",
-      "message": "Server not running on localhost:3000",
-      "recommendation": "Start server with \"npm run dev\" in frontend/ to test API endpoints"
+      "test": "Brain API",
+      "status": "FAIL",
+      "message": "Brain API error: The operation was aborted due to timeout"
     }
   ]
 }

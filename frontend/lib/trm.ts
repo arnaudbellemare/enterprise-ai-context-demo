@@ -1,17 +1,24 @@
 /**
- * TRM (Tiny Recursive Model) Implementation
- * 
- * Implements recursive reasoning with verification loop
- * Based on the TRM paper: "Tiny Recursive Models for Reasoning"
- * 
+ * RVS (Recursive Verification System)
+ *
+ * IMPORTANT: This is NOT an implementation of the TRM paper's 7M neural network.
+ * This is an LLM-based recursive verification system INSPIRED BY the TRM paper concept.
+ *
+ * Paper Reference: "Less is More: Recursive Reasoning with Tiny Networks" (arXiv:2510.04871)
+ * Paper Approach: 7M parameter neural network trained on reasoning tasks
+ * Our Approach: LLM-based iterative verification with recursive refinement
+ *
  * Features:
- * - Recursive refinement with verification
+ * - Recursive refinement with verification loop (inspired by TRM concept)
  * - Adaptive computation time (ACT)
  * - Exponential moving average (EMA) for confidence
- * - Multi-scale reasoning
+ * - Multi-scale reasoning via LLM calls
+ *
+ * Why Different: The paper's TRM is a trained neural network. This system uses
+ * LLM calls for each iteration, making it more flexible but architecturally different.
  */
 
-export interface TRMStep {
+export interface RVSStep {
   step: number;
   action: string;
   tool: string;
@@ -20,12 +27,12 @@ export interface TRMStep {
   confidence?: number;
 }
 
-export interface TRMResult {
+export interface RVSResult {
   answer: string;
   iterations: number;
   confidence: number;
   verified: boolean;
-  steps: TRMStep[];
+  steps: RVSStep[];
   final_reasoning: string;
   performance_metrics: {
     total_time_ms: number;
@@ -35,7 +42,7 @@ export interface TRMResult {
   };
 }
 
-export interface TRMConfig {
+export interface RVSConfig {
   max_iterations: number;
   confidence_threshold: number;
   verification_required: boolean;
@@ -44,13 +51,13 @@ export interface TRMConfig {
 }
 
 /**
- * TRM (Tiny Recursive Model) Implementation
+ * RVS (Recursive Verification System) - TRM-Inspired Implementation
  */
-export class TRM {
-  private config: TRMConfig;
+export class RVS {
+  private config: RVSConfig;
   private llmClient: any;
   
-  constructor(config?: Partial<TRMConfig>) {
+  constructor(config?: Partial<RVSConfig>) {
     this.config = {
       max_iterations: 5,
       confidence_threshold: 0.8,
@@ -65,31 +72,31 @@ export class TRM {
   }
   
   /**
-   * Set LLM client for TRM operations
+   * Set LLM client for RVS operations
    */
   setLLMClient(client: any): void {
     this.llmClient = client;
   }
   
   /**
-   * Process query with TRM recursive refinement
+   * Process query with RVS recursive refinement
    */
-  async processQuery(query: string, initialSteps: TRMStep[]): Promise<TRMResult> {
+  async processQuery(query: string, initialSteps: RVSStep[]): Promise<RVSResult> {
     const startTime = Date.now();
-    console.log(`🔄 TRM: Starting recursive refinement for query: "${query.substring(0, 50)}..."`);
-    
+    console.log(`🔄 RVS: Starting recursive refinement for query: "${query.substring(0, 50)}..."`);
+
     let currentAnswer = '';
     let iterations = 0;
     let confidence = 0;
     let verified = false;
-    const steps: TRMStep[] = [...initialSteps];
+    const steps: RVSStep[] = [...initialSteps];
     let verificationPasses = 0;
     let refinementCycles = 0;
     
-    // TRM Recursive Loop
+    // RVS Recursive Loop
     while (iterations < this.config.max_iterations && confidence < this.config.confidence_threshold) {
       iterations++;
-      console.log(`🔄 TRM: Iteration ${iterations}/${this.config.max_iterations}`);
+      console.log(`🔄 RVS: Iteration ${iterations}/${this.config.max_iterations}`);
       
       // Step 1: Generate reasoning for current step
       const currentStep = steps[iterations - 1] || steps[steps.length - 1];
@@ -109,9 +116,9 @@ export class TRM {
           const verificationResult = await this.verifyStep(currentStep, currentAnswer, query);
           if (verificationResult.passed) {
             verificationPasses++;
-            console.log(`✅ TRM: Verification passed (${verificationPasses}/${iterations})`);
+            console.log(`✅ RVS: Verification passed (${verificationPasses}/${iterations})`);
           } else {
-            console.log(`❌ TRM: Verification failed, refining...`);
+            console.log(`❌ RVS: Verification failed, refining...`);
             refinementCycles++;
             
             // Refine the step
@@ -122,13 +129,13 @@ export class TRM {
         
         // Step 3: Calculate confidence using EMA
         confidence = this.calculateEMAConfidence(steps, iterations);
-        console.log(`📊 TRM: Confidence: ${(confidence * 100).toFixed(1)}%`);
+        console.log(`📊 RVS: Confidence: ${(confidence * 100).toFixed(1)}%`);
         
         // Step 4: Adaptive computation time
         if (this.config.adaptive_computation) {
           const shouldContinue = await this.shouldContinueReasoning(query, currentAnswer, confidence, iterations);
           if (!shouldContinue) {
-            console.log(`🛑 TRM: Adaptive computation suggests stopping at iteration ${iterations}`);
+            console.log(`🛑 RVS: Adaptive computation suggests stopping at iteration ${iterations}`);
             break;
           }
         }
@@ -146,8 +153,8 @@ export class TRM {
     
     const totalTime = Date.now() - startTime;
     const avgStepTime = totalTime / iterations;
-    
-    console.log(`✅ TRM: Completed in ${iterations} iterations, ${(confidence * 100).toFixed(1)}% confidence`);
+
+    console.log(`✅ RVS: Completed in ${iterations} iterations, ${(confidence * 100).toFixed(1)}% confidence`);
     
     return {
       answer: currentAnswer,
@@ -166,9 +173,9 @@ export class TRM {
   }
   
   /**
-   * Execute a single TRM step
+   * Execute a single RVS step
    */
-  private async executeStep(query: string, step: TRMStep, currentAnswer: string): Promise<{
+  private async executeStep(query: string, step: RVSStep, currentAnswer: string): Promise<{
     reasoning: string;
     result: string;
     confidence: number;
@@ -203,9 +210,9 @@ export class TRM {
   }
   
   /**
-   * Verify a TRM step
+   * Verify a RVS step
    */
-  private async verifyStep(step: TRMStep, currentAnswer: string, originalQuery: string): Promise<{
+  private async verifyStep(step: RVSStep, currentAnswer: string, originalQuery: string): Promise<{
     passed: boolean;
     feedback: string;
     score: number;
@@ -245,7 +252,7 @@ Rate the quality (0-1) and provide feedback:
   /**
    * Refine a step based on verification feedback
    */
-  private async refineStep(step: TRMStep, feedback: string): Promise<TRMStep> {
+  private async refineStep(step: RVSStep, feedback: string): Promise<RVSStep> {
     const refinementPrompt = `
 Refine this step based on feedback:
 Original Step: ${step.action}
@@ -277,7 +284,7 @@ Provide improved reasoning:
   /**
    * Calculate EMA confidence
    */
-  private calculateEMAConfidence(steps: TRMStep[], currentIteration: number): number {
+  private calculateEMAConfidence(steps: RVSStep[], currentIteration: number): number {
     if (steps.length === 0) return 0;
     
     const alpha = 0.3; // EMA smoothing factor
@@ -394,19 +401,19 @@ Provide detailed reasoning and result:
     return feedbackMatch ? feedbackMatch[1] : 'No specific feedback provided';
   }
   
-  private generateFinalReasoning(steps: TRMStep[]): string {
+  private generateFinalReasoning(steps: RVSStep[]): string {
     return steps.map((step, i) => 
       `Step ${i + 1}: ${step.action} - ${step.reasoning}`
     ).join('\n');
   }
   
   // Simulation methods for fallback
-  private simulateStepResponse(step: TRMStep, query: string): string {
+  private simulateStepResponse(step: RVSStep, query: string): string {
     return `Reasoning: ${step.action} for query "${query.substring(0, 30)}..."
 Result: Simulated result from ${step.tool}`;
   }
   
-  private simulateVerification(step: TRMStep, currentAnswer: string): string {
+  private simulateVerification(step: RVSStep, currentAnswer: string): string {
     return `Score: 0.8
 Feedback: Step looks reasonable and contributes to the answer`;
   }
@@ -418,21 +425,43 @@ Feedback: Answer addresses the query appropriately`;
 }
 
 /**
- * Create TRM instance
+ * Create RVS instance
+ *
+ * Legacy alias: createTRM (deprecated, use createRVS)
  */
-export function createTRM(config?: Partial<TRMConfig>): TRM {
-  return new TRM(config);
+export function createRVS(config?: Partial<RVSConfig>): RVS {
+  return new RVS(config);
+}
+
+// Deprecated: Use createRVS instead
+export function createTRM(config?: Partial<RVSConfig>): RVS {
+  console.warn('createTRM is deprecated. Use createRVS instead.');
+  return createRVS(config);
 }
 
 /**
- * Apply TRM to a query (convenience function)
+ * Apply RVS to a query (convenience function)
+ *
+ * Legacy alias: applyTRM (deprecated, use applyRVS)
  */
-export async function applyTRM(query: string, steps: TRMStep[], llmClient?: any): Promise<TRMResult> {
-  const trm = createTRM();
+export async function applyRVS(query: string, steps: RVSStep[], llmClient?: any): Promise<RVSResult> {
+  const rvs = createRVS();
   if (llmClient) {
-    trm.setLLMClient(llmClient);
+    rvs.setLLMClient(llmClient);
   }
-  return await trm.processQuery(query, steps);
+  return await rvs.processQuery(query, steps);
 }
+
+// Deprecated: Use applyRVS instead
+export async function applyTRM(query: string, steps: RVSStep[], llmClient?: any): Promise<RVSResult> {
+  console.warn('applyTRM is deprecated. Use applyRVS instead.');
+  return applyRVS(query, steps, llmClient);
+}
+
+// Legacy type aliases for backward compatibility
+export type TRMStep = RVSStep;
+export type TRMResult = RVSResult;
+export type TRMConfig = RVSConfig;
+export const TRM = RVS;
 
 
