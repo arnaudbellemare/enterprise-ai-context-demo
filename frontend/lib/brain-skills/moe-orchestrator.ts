@@ -16,6 +16,7 @@ import { openEvalsIntegration, OpenEvalsEvaluationSample } from '../openevals-in
 import { ContinualLearningSystem } from '../continual-learning-integration';
 import { behavioralEvaluationSystem, BehavioralEvaluationSample } from '../behavioral-evaluation-system';
 import { makeRateLimitedRequest, getRateLimiterStats } from '../api-rate-limiter';
+import { callPerplexityWithRateLimiting } from './llm-helpers';
 // Using direct fetch for self-improvement instead of @ax-llm/core
 
 export interface MoERequest {
@@ -432,47 +433,33 @@ export class MoEBrainOrchestrator {
       'gepa_optimization': {
         execute: async (query: string, context: any) => {
           try {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
+            const result = await callPerplexityWithRateLimiting(
+              [
+                {
+                  role: 'system',
+                  content: 'You are a prompt optimization expert. Analyze queries and provide enhanced, more effective versions that will yield better results from AI systems.'
+                },
+                {
+                  role: 'user',
+                  content: `Optimize this query for better AI performance: "${query}". Provide:\n1. An enhanced version of the query\n2. Specific improvements made\n3. Expected performance gains\n4. Alternative phrasings if applicable`
+                }
+              ],
+              {
                 model: 'llama-3.1-sonar-large-128k-online',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are a prompt optimization expert. Analyze queries and provide enhanced, more effective versions that will yield better results from AI systems.'
-                  },
-                  {
-                    role: 'user',
-                    content: `Optimize this query for better AI performance: "${query}". Provide:\n1. An enhanced version of the query\n2. Specific improvements made\n3. Expected performance gains\n4. Alternative phrasings if applicable`
-                  }
-                ],
-                max_tokens: 1200,
+                maxTokens: 1200,
                 temperature: 0.2
-              })
-            });
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              if (response.status === 429) {
-                console.warn('Perplexity rate limit exceeded for GEPA, using fallback optimization');
-                return this.performFallbackGEPAOptimization(query, context);
               }
-              throw new Error(`Perplexity API error: ${response.status} - ${errorData.message || 'Rate limit exceeded'}`);
-            }
+            );
 
-            const data = await response.json();
-            const optimization = data.choices[0].message.content;
-            
-            return { 
+            const optimization = result.content;
+
+            return {
               data: `## GEPA Optimization\n\n${optimization}`,
               metadata: {
                 model: 'sonar-pro',
-                tokens: data.usage?.total_tokens || 0,
-                cost: (data.usage?.total_tokens || 0) * 0.00003
+                provider: result.provider,
+                cost: result.cost,
+                fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
@@ -490,6 +477,122 @@ export class MoEBrainOrchestrator {
           );
           return results;
         },
+      },
+      'gepa_trm_local': {
+        execute: async (query: string, context: any) => {
+          try {
+            console.log('   🔧 GEPA-TRM: Starting optimization with local fallback');
+            
+            // Import GEPA-TRM integration
+            const { GEPATRMIntegration } = await import('../gepa-trm-local');
+            
+            // Initialize with basic configuration
+            const gepaConfig = {
+              llmConfig: {
+                model: 'llama-3.1-sonar-large-128k-online',
+                apiKey: process.env.PERPLEXITY_API_KEY || '',
+                baseURL: 'https://api.perplexity.ai',
+                temperature: 0.2,
+                maxTokens: 1000
+              },
+              populationSize: 5,
+              generations: 2,
+              maxGenerations: 3,
+              mutationRate: 0.1,
+              crossoverRate: 0.8,
+              elitismCount: 1,
+              objectives: {
+                maximize: ['quality'],
+                minimize: ['cost']
+              },
+              evaluationBenchmarks: []
+            };
+            
+            const trmConfig = {
+              maxRecursionDepth: 3,
+              confidenceThreshold: 0.8,
+              localModel: {
+                provider: 'ollama' as const,
+                model: 'gemma3:4b' as const,
+                host: 'http://localhost:11434'
+              },
+              teacherModel: {
+                provider: 'perplexity' as const,
+                model: 'sonar-pro' as const,
+                apiKey: process.env.PERPLEXITY_API_KEY || ''
+              }
+            };
+            
+            // Initialize GEPA-TRM integration
+            const gepaTRM = new GEPATRMIntegration(gepaConfig, trmConfig);
+            
+            // Create initial prompts from the query
+            const initialPrompts = [
+              `Analyze and provide insights on: ${query}`,
+              `Provide a comprehensive analysis of: ${query}`,
+              `Give detailed information about: ${query}`
+            ];
+            
+            // Run GEPA optimization + TRM verification
+            const result = await gepaTRM.optimizeAndVerify(initialPrompts);
+            
+            // Find the best verified prompt
+            const bestPrompt = result.recommendations.bestVerified;
+            const costEfficient = result.recommendations.costEfficient;
+            const localOnly = result.recommendations.localOnly;
+            
+            let selectedPrompt = bestPrompt;
+            let modelUsed = 'teacher';
+            
+            // Prefer cost-efficient or local-only if available
+            if (costEfficient && bestPrompt && costEfficient.fitness.cost < bestPrompt.fitness.cost) {
+              selectedPrompt = costEfficient;
+              modelUsed = 'student';
+            }
+            
+            if (localOnly) {
+              selectedPrompt = localOnly;
+              modelUsed = 'student';
+            }
+            
+            // Fallback if no prompt selected
+            if (!selectedPrompt) {
+              throw new Error('No optimized prompt available');
+            }
+            
+            console.log(`   ✅ GEPA-TRM: Optimization complete`);
+            console.log(`   📊 Model used: ${modelUsed}`);
+            console.log(`   💰 Cost: $${selectedPrompt.fitness.cost.toFixed(6)}`);
+            console.log(`   ⭐ Quality: ${(selectedPrompt.fitness.quality * 100).toFixed(1)}%`);
+            
+            return {
+              data: `## GEPA-TRM Optimized Response\n\n${selectedPrompt.prompt}`,
+              metadata: {
+                model: modelUsed === 'teacher' ? 'perplexity-sonar-pro' : 'ollama-gemma3:4b',
+                provider: modelUsed === 'teacher' ? 'perplexity' : 'ollama',
+                cost: selectedPrompt.fitness.cost,
+                quality: selectedPrompt.fitness.quality,
+                latency: selectedPrompt.fitness.latency,
+                trmVerified: true,
+                fallbackUsed: modelUsed === 'student'
+              }
+            };
+            
+          } catch (error) {
+            console.error('GEPA-TRM optimization error:', error);
+            // Fallback to simple local model
+            return this.performLocalFallback(query, context);
+          }
+        },
+        executeBatch: async (queries: string[], context: any) => {
+          const results = await Promise.all(
+            queries.map(async (query) => {
+              const result = await this.getExecutableSkill('gepa_trm_local').execute(query, context);
+              return result;
+            })
+          );
+          return results;
+        },
         supportsBatching: true,
         implementations: {
           fast: { cost: 0.001, latency: 50, accuracy: 0.85 },
@@ -500,42 +603,33 @@ export class MoEBrainOrchestrator {
       'ace_framework': {
         execute: async (query: string, context: any) => {
           try {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
+            const result = await callPerplexityWithRateLimiting(
+              [
+                {
+                  role: 'system',
+                  content: 'You are an expert in the ACE (Agentic Context Engineering) framework. Provide contextual analysis that adapts to domain-specific requirements and evolves based on context quality and relevance.'
+                },
+                {
+                  role: 'user',
+                  content: `Using the ACE framework, provide contextual analysis for: "${query}". Focus on:\n1. Context adaptation and evolution\n2. Domain-specific insights and patterns\n3. Context quality optimization\n4. Dynamic context management strategies`
+                }
+              ],
+              {
                 model: 'sonar-pro',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are an expert in the ACE (Agentic Context Engineering) framework. Provide contextual analysis that adapts to domain-specific requirements and evolves based on context quality and relevance.'
-                  },
-                  {
-                    role: 'user',
-                    content: `Using the ACE framework, provide contextual analysis for: "${query}". Focus on:\n1. Context adaptation and evolution\n2. Domain-specific insights and patterns\n3. Context quality optimization\n4. Dynamic context management strategies`
-                  }
-                ],
-                max_tokens: 1300,
+                maxTokens: 1300,
                 temperature: 0.2
-              })
-            });
+              }
+            );
 
-            if (!response.ok) {
-              throw new Error(`Perplexity API error: ${response.status}`);
-            }
+            const analysis = result.content;
 
-            const data = await response.json();
-            const analysis = data.choices[0].message.content;
-            
-            return { 
+            return {
               data: `## ACE Framework Analysis\n\n${analysis}`,
               metadata: {
                 model: 'sonar-pro',
-                tokens: data.usage?.total_tokens || 0,
-                cost: (data.usage?.total_tokens || 0) * 0.00003
+                provider: result.provider,
+                cost: result.cost,
+                fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
@@ -565,42 +659,33 @@ export class MoEBrainOrchestrator {
       'trm_engine': {
         execute: async (query: string, context: any) => {
           try {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
+            const result = await callPerplexityWithRateLimiting(
+              [
+                {
+                  role: 'system',
+                  content: 'You are an expert in the TRM (Tiny Recursion Model) Engine. Provide multi-phase reasoning with structured analysis that breaks down complex problems into manageable phases.'
+                },
+                {
+                  role: 'user',
+                  content: `Using the TRM Engine, provide multi-phase reasoning for: "${query}". Structure your analysis in phases:\n1. Problem Decomposition\n2. Context Analysis\n3. Solution Generation\n4. Validation & Refinement\n5. Synthesis & Output`
+                }
+              ],
+              {
                 model: 'sonar-pro',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are an expert in the TRM (Tiny Recursion Model) Engine. Provide multi-phase reasoning with structured analysis that breaks down complex problems into manageable phases.'
-                  },
-                  {
-                    role: 'user',
-                    content: `Using the TRM Engine, provide multi-phase reasoning for: "${query}". Structure your analysis in phases:\n1. Problem Decomposition\n2. Context Analysis\n3. Solution Generation\n4. Validation & Refinement\n5. Synthesis & Output`
-                  }
-                ],
-                max_tokens: 1500,
+                maxTokens: 1500,
                 temperature: 0.2
-              })
-            });
+              }
+            );
 
-            if (!response.ok) {
-              throw new Error(`Perplexity API error: ${response.status}`);
-            }
+            const analysis = result.content;
 
-            const data = await response.json();
-            const analysis = data.choices[0].message.content;
-            
-            return { 
+            return {
               data: `## TRM Engine Analysis\n\n${analysis}`,
               metadata: {
                 model: 'sonar-pro',
-                tokens: data.usage?.total_tokens || 0,
-                cost: (data.usage?.total_tokens || 0) * 0.00003
+                provider: result.provider,
+                cost: result.cost,
+                fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
@@ -630,36 +715,26 @@ export class MoEBrainOrchestrator {
       'teacher_student': {
         execute: async (query: string, context: any) => {
           try {
-            // Step 1: Teacher (Perplexity Sonar-Pro) - High quality analysis
-            const teacherResponse = await fetch('https://api.perplexity.ai/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
+            // Step 1: Teacher (Perplexity Sonar-Pro) - High quality analysis with rate limiting
+            const teacherResult = await callPerplexityWithRateLimiting(
+              [
+                {
+                  role: 'system',
+                  content: 'You are an expert teacher. Provide comprehensive, high-quality analysis that serves as the "teacher" model for cost-effective learning approaches.'
+                },
+                {
+                  role: 'user',
+                  content: `As a teacher model, provide comprehensive analysis for: "${query}". Focus on delivering high-quality insights that can serve as learning material for student models.`
+                }
+              ],
+              {
                 model: 'sonar-pro',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are an expert teacher. Provide comprehensive, high-quality analysis that serves as the "teacher" model for cost-effective learning approaches.'
-                  },
-                  {
-                    role: 'user',
-                    content: `As a teacher model, provide comprehensive analysis for: "${query}". Focus on delivering high-quality insights that can serve as learning material for student models.`
-                  }
-                ],
-                max_tokens: 1200,
+                maxTokens: 1200,
                 temperature: 0.2
-              })
-            });
+              }
+            );
 
-            if (!teacherResponse.ok) {
-              throw new Error(`Teacher API error: ${teacherResponse.status}`);
-            }
-
-            const teacherData = await teacherResponse.json();
-            const teacherAnalysis = teacherData.choices[0].message.content;
+            const teacherAnalysis = teacherResult.content;
 
             // Step 2: Student (OpenRouter free model + PromptMII) - Professional-quality learning
             let studentAnalysis = '';
@@ -868,8 +943,8 @@ export class MoEBrainOrchestrator {
                   judge: judgeEvaluation
                 },
                 result: {
-                  teacher_tokens: teacherData.usage?.total_tokens || 0,
-                  cost: (teacherData.usage?.total_tokens || 0) * 0.00003,
+                  teacher_tokens: (teacherResult.tokens?.input || 0) + (teacherResult.tokens?.output || 0),
+                  cost: teacherResult.cost || 0,
                   models_used: {
                     teacher: 'sonar-pro',
                     student: studentAnalysis.includes('professional-quality') ? 'openrouter-gemma' : 'ollama-gemma3',
@@ -881,8 +956,8 @@ export class MoEBrainOrchestrator {
                   error: success ? undefined : 'Judge evaluation indicates suboptimal performance',
                   metrics: {
                     accuracy: success ? 0.9 : 0.7,
-                    latency: (teacherData.usage?.total_tokens || 0) * 0.1,
-                    cost: (teacherData.usage?.total_tokens || 0) * 0.00003
+                    latency: ((teacherResult.tokens?.input || 0) + (teacherResult.tokens?.output || 0)) * 0.1,
+                    cost: teacherResult.cost || 0
                   }
                 },
                 timestamp: new Date()
@@ -905,8 +980,8 @@ export class MoEBrainOrchestrator {
                 reasoningbank_enabled: true,
                 enhanced_judge_reasoning: true,
                 fallback_used: studentAnalysis.includes('professional-quality') ? false : true,
-                teacher_tokens: teacherData.usage?.total_tokens || 0,
-                cost: (teacherData.usage?.total_tokens || 0) * 0.00003
+                teacher_tokens: (teacherResult.tokens?.input || 0) + (teacherResult.tokens?.output || 0),
+                cost: teacherResult.cost || 0
               }
             };
           } catch (error) {
@@ -944,43 +1019,34 @@ export class MoEBrainOrchestrator {
               "Data protection must comply with Mexico's Federal Law on Protection of Personal Data Held by Private Parties (LFPDPPP)."
             ];
 
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
+            const result = await callPerplexityWithRateLimiting(
+              [
+                {
+                  role: 'system',
+                  content: 'You are an expert in financial technology and regulatory compliance. Use the provided documents to answer questions with specific, accurate information.'
+                },
+                {
+                  role: 'user',
+                  content: `Based on the following relevant documents, provide a comprehensive answer to: ${query}\n\nRelevant Documents:\n${relevantDocs.join('\n\n')}`
+                }
+              ],
+              {
                 model: 'sonar-pro',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are an expert in financial technology and regulatory compliance. Use the provided documents to answer questions with specific, accurate information.'
-                  },
-                  {
-                    role: 'user',
-                    content: `Based on the following relevant documents, provide a comprehensive answer to: ${query}\n\nRelevant Documents:\n${relevantDocs.join('\n\n')}`
-                  }
-                ],
-                max_tokens: 1500,
+                maxTokens: 1500,
                 temperature: 0.2
-              })
-            });
+              }
+            );
 
-            if (!response.ok) {
-              throw new Error(`Perplexity API error: ${response.status}`);
-            }
+            const ragResponse = result.content;
 
-            const data = await response.json();
-            const ragResponse = data.choices[0].message.content;
-            
-            return { 
+            return {
               data: `## RAG Analysis\n\n${ragResponse}\n\n*Based on ${relevantDocs.length} relevant documents*`,
               metadata: {
                 model: 'gpt-4',
                 documents: relevantDocs.length,
-                tokens: data.usage?.total_tokens || 0,
-                cost: (data.usage?.total_tokens || 0) * 0.00003
+                provider: result.provider,
+                cost: result.cost,
+                fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
@@ -1010,42 +1076,33 @@ export class MoEBrainOrchestrator {
       'advanced_reranking': {
         execute: async (query: string, context: any) => {
           try {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
+            const result = await callPerplexityWithRateLimiting(
+              [
+                {
+                  role: 'system',
+                  content: 'You are an expert in information retrieval and ranking algorithms. Analyze queries and provide optimized ranking strategies with relevance scoring and performance metrics.'
+                },
+                {
+                  role: 'user',
+                  content: `Analyze this query for advanced reranking optimization: "${query}". Provide:\n1. Relevance scoring methodology\n2. Ranking algorithm recommendations\n3. Performance optimization strategies\n4. Quality metrics for evaluation`
+                }
+              ],
+              {
                 model: 'sonar-pro',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are an expert in information retrieval and ranking algorithms. Analyze queries and provide optimized ranking strategies with relevance scoring and performance metrics.'
-                  },
-                  {
-                    role: 'user',
-                    content: `Analyze this query for advanced reranking optimization: "${query}". Provide:\n1. Relevance scoring methodology\n2. Ranking algorithm recommendations\n3. Performance optimization strategies\n4. Quality metrics for evaluation`
-                  }
-                ],
-                max_tokens: 1200,
+                maxTokens: 1200,
                 temperature: 0.1
-              })
-            });
+              }
+            );
 
-            if (!response.ok) {
-              throw new Error(`Perplexity API error: ${response.status}`);
-            }
+            const reranking = result.content;
 
-            const data = await response.json();
-            const reranking = data.choices[0].message.content;
-            
-            return { 
+            return {
               data: `## Advanced Reranking Analysis\n\n${reranking}`,
               metadata: {
                 model: 'sonar-pro',
-                tokens: data.usage?.total_tokens || 0,
-                cost: (data.usage?.total_tokens || 0) * 0.00003
+                provider: result.provider,
+                cost: result.cost,
+                fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
@@ -1075,42 +1132,33 @@ export class MoEBrainOrchestrator {
       'multilingual_business': {
         execute: async (query: string, context: any) => {
           try {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
+            const result = await callPerplexityWithRateLimiting(
+              [
+                {
+                  role: 'system',
+                  content: 'You are an expert in multilingual business intelligence and cross-cultural analysis. Provide comprehensive analysis that considers language nuances, cultural context, and regional business practices.'
+                },
+                {
+                  role: 'user',
+                  content: `Provide multilingual business analysis for: "${query}". Include:\n1. Language-specific considerations\n2. Cultural context and regional variations\n3. Business practices across different markets\n4. Cross-cultural communication strategies`
+                }
+              ],
+              {
                 model: 'sonar-pro',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are an expert in multilingual business intelligence and cross-cultural analysis. Provide comprehensive analysis that considers language nuances, cultural context, and regional business practices.'
-                  },
-                  {
-                    role: 'user',
-                    content: `Provide multilingual business analysis for: "${query}". Include:\n1. Language-specific considerations\n2. Cultural context and regional variations\n3. Business practices across different markets\n4. Cross-cultural communication strategies`
-                  }
-                ],
-                max_tokens: 1400,
+                maxTokens: 1400,
                 temperature: 0.2
-              })
-            });
+              }
+            );
 
-            if (!response.ok) {
-              throw new Error(`Perplexity API error: ${response.status}`);
-            }
+            const analysis = result.content;
 
-            const data = await response.json();
-            const analysis = data.choices[0].message.content;
-            
-            return { 
+            return {
               data: `## Multilingual Business Analysis\n\n${analysis}`,
               metadata: {
                 model: 'sonar-pro',
-                tokens: data.usage?.total_tokens || 0,
-                cost: (data.usage?.total_tokens || 0) * 0.00003
+                provider: result.provider,
+                cost: result.cost,
+                fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
@@ -1261,42 +1309,33 @@ export class MoEBrainOrchestrator {
       'legal_analysis': {
         execute: async (query: string, context: any) => {
           try {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
+            const result = await callPerplexityWithRateLimiting(
+              [
+                {
+                  role: 'system',
+                  content: 'You are a legal expert specializing in international business law, regulatory compliance, and fintech regulations. Provide comprehensive, accurate legal analysis with specific references to relevant laws and regulations.'
+                },
+                {
+                  role: 'user',
+                  content: `Provide a detailed legal analysis for: ${query}. Include specific regulatory requirements, compliance obligations, licensing procedures, and any relevant legal considerations.`
+                }
+              ],
+              {
                 model: 'sonar-pro',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are a legal expert specializing in international business law, regulatory compliance, and fintech regulations. Provide comprehensive, accurate legal analysis with specific references to relevant laws and regulations.'
-                  },
-                  {
-                    role: 'user',
-                    content: `Provide a detailed legal analysis for: ${query}. Include specific regulatory requirements, compliance obligations, licensing procedures, and any relevant legal considerations.`
-                  }
-                ],
-                max_tokens: 2000,
+                maxTokens: 2000,
                 temperature: 0.3
-              })
-            });
+              }
+            );
 
-            if (!response.ok) {
-              throw new Error(`Perplexity API error: ${response.status}`);
-            }
+            const analysis = result.content;
 
-            const data = await response.json();
-            const analysis = data.choices[0].message.content;
-            
-            return { 
+            return {
               data: `## Legal Analysis\n\n${analysis}`,
               metadata: {
                 model: 'gpt-4',
-                tokens: data.usage?.total_tokens || 0,
-                cost: (data.usage?.total_tokens || 0) * 0.00003
+                provider: result.provider,
+                cost: result.cost,
+                fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
@@ -1327,56 +1366,33 @@ export class MoEBrainOrchestrator {
       'content_generation': {
         execute: async (query: string, context: any) => {
           try {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
+            const result = await callPerplexityWithRateLimiting(
+              [
+                {
+                  role: 'system',
+                  content: 'You are an expert assistant that provides comprehensive, accurate, and well-structured answers to user queries. Adapt your response style to the domain and language of the query. Provide direct answers with proper formatting, citations where relevant, and practical analysis.'
+                },
+                {
+                  role: 'user',
+                  content: query
+                }
+              ],
+              {
                 model: 'sonar-pro',
-                messages: [
-                  {
-                    role: 'system',
-                    content: 'You are an expert assistant that provides comprehensive, accurate, and well-structured answers to user queries. Adapt your response style to the domain and language of the query. Provide direct answers with proper formatting, citations where relevant, and practical analysis.'
-                  },
-                  {
-                    role: 'user',
-                    content: query
-                  }
-                ],
-                max_tokens: 4000,
+                maxTokens: 4000,
                 temperature: 0.2
-              })
-            });
-
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              if (response.status === 429) {
-                console.warn('Perplexity rate limit exceeded for content generation');
-                return {
-                  data: `I apologize, but I'm currently experiencing high demand. Please try again in a moment.`,
-                  metadata: {
-                    model: 'fallback',
-                    tokens: 0,
-                    cost: 0,
-                    fallback: true,
-                    rateLimited: true
-                  }
-                };
               }
-              throw new Error(`Perplexity API error: ${response.status} - ${errorData.message || 'Unknown error'}`);
-            }
+            );
 
-            const data = await response.json();
-            const generatedContent = data.choices[0].message.content;
+            const generatedContent = result.content;
 
             return {
               data: generatedContent,
               metadata: {
                 model: 'sonar-pro',
-                tokens: data.usage?.total_tokens || 0,
-                cost: (data.usage?.total_tokens || 0) * 0.00003
+                provider: result.provider,
+                cost: result.cost,
+                fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
@@ -2050,6 +2066,63 @@ ${improvements.map(imp => `- ${imp}`).join('\n')}
           tokens: 0,
           cost: 0,
           fallback: true,
+          error: true
+        }
+      };
+    }
+  }
+
+  /**
+   * Local fallback for GEPA-TRM when optimization fails
+   */
+  private async performLocalFallback(query: string, context: any): Promise<any> {
+    try {
+      console.log('🔄 Using local Gemma3:4b fallback for GEPA-TRM...');
+      
+      const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gemma3:4b',
+          prompt: `Provide a comprehensive analysis of: ${query}`,
+          stream: false
+        })
+      });
+
+      if (ollamaResponse.ok) {
+        const data = await ollamaResponse.json();
+        const response = data.response;
+        
+        console.log('✅ Local Gemma3:4b fallback completed');
+        
+        return {
+          data: `## GEPA-TRM Local Fallback Response\n\n${response}`,
+          metadata: {
+            model: 'ollama-gemma3:4b',
+            provider: 'ollama',
+            cost: 0.0001,
+            quality: 0.75,
+            latency: 2000,
+            trmVerified: false,
+            fallbackUsed: true,
+            localOnly: true
+          }
+        };
+      } else {
+        throw new Error(`Ollama failed: ${ollamaResponse.status}`);
+      }
+    } catch (error) {
+      console.error('Local fallback error:', error);
+      return {
+        data: `## GEPA-TRM Local Fallback Error\n\nUnable to process query using local model. Please try again later.\n\n**Original Query:** ${query}`,
+        metadata: {
+          model: 'fallback-error',
+          provider: 'none',
+          cost: 0,
+          quality: 0,
+          latency: 0,
+          trmVerified: false,
+          fallbackUsed: true,
           error: true
         }
       };

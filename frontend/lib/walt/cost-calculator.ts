@@ -17,7 +17,7 @@ export interface CostBreakdown {
 /**
  * LLM pricing per 1K tokens (as of 2025)
  */
-const LLM_PRICING = {
+export const LLM_PRICING = {
   'gpt-4o': {
     input: 0.0025, // $2.50 per 1M input tokens
     output: 0.01, // $10 per 1M output tokens
@@ -35,7 +35,9 @@ const LLM_PRICING = {
 /**
  * Browser automation costs (per minute of execution)
  */
-const BROWSER_COST_PER_MINUTE = 0.001; // $0.001 per minute
+export const BROWSER_PRICING = {
+  costPerMinute: 0.001, // $0.001 per minute
+};
 
 /**
  * Estimate discovery method costs
@@ -72,7 +74,7 @@ export function calculateLLMCost(
  */
 export function calculateBrowserCost(executionTimeMs: number): number {
   const minutes = executionTimeMs / 60000;
-  return minutes * BROWSER_COST_PER_MINUTE;
+  return minutes * BROWSER_PRICING.costPerMinute;
 }
 
 /**

@@ -7,6 +7,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { callPerplexityWithRateLimiting } from './brain-skills/llm-helpers';
 
 export interface TeacherResponse {
   answer: string;
@@ -274,37 +275,29 @@ export class TeacherStudentSystem {
    */
   private async performWebSearches(searchQueries: string[]): Promise<string[]> {
     const sources: string[] = [];
-    
-    try {
-      // Use Perplexity API for web search
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
-          messages: [
-            {
-              role: 'user',
-              content: `Search for information about: ${searchQueries.join(', ')}. Provide sources.`
-            }
-          ],
-          max_tokens: 1000,
-          temperature: 0.7
-        })
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices[0]?.message?.content || '';
-        
-        // Extract sources from response (simple extraction)
-        const sourceMatches = content.match(/https?:\/\/[^\s]+/g);
-        if (sourceMatches) {
-          sources.push(...sourceMatches.slice(0, 5)); // Limit to 5 sources
+    try {
+      // Use Perplexity API for web search with rate limiting
+      const result = await callPerplexityWithRateLimiting(
+        [
+          {
+            role: 'user',
+            content: `Search for information about: ${searchQueries.join(', ')}. Provide sources.`
+          }
+        ],
+        {
+          model: 'llama-3.1-sonar-small-128k-online',
+          maxTokens: 1000,
+          temperature: 0.7
         }
+      );
+
+      const content = result.content;
+
+      // Extract sources from response (simple extraction)
+      const sourceMatches = content.match(/https?:\/\/[^\s]+/g);
+      if (sourceMatches) {
+        sources.push(...sourceMatches.slice(0, 5)); // Limit to 5 sources
       }
     } catch (error) {
       console.warn('⚠️ Web search failed:', error);
@@ -324,25 +317,17 @@ ${sources.length > 0 ? `Sources: ${sources.join(', ')}` : ''}
 
 Provide a detailed, accurate answer with proper context and explanations.`;
 
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const result = await callPerplexityWithRateLimiting(
+        [{ role: 'user', content: prompt }],
+        {
           model: 'llama-3.1-sonar-small-128k-online',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 1500,
+          maxTokens: 1500,
           temperature: 0.7
-        })
-      });
+        }
+      );
 
-      if (response.ok) {
-        const data = await response.json();
-        const answer = data.choices[0]?.message?.content || 'No response generated.';
-        return { answer, confidence: 0.9 };
-      }
+      const answer = result.content || 'No response generated.';
+      return { answer, confidence: 0.9 };
     } catch (error) {
       console.warn('⚠️ Teacher response generation failed:', error);
     }
