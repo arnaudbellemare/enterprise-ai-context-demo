@@ -10,8 +10,7 @@
  * - DSPy principles for programmatic LLM composition
  */
 
-// import * as Ax from '@ax-llm/ax';
-// Temporarily disable Ax import to fix build
+import { AxAI } from '@ax-llm/ax';
 import { z } from 'zod';
 import { createLogger } from './walt/logger';
 
@@ -121,7 +120,7 @@ export interface GEPAResult {
 // ============================================================================
 
 export class GEPAEngine {
-  // private ax: Ax.AI;
+  private ax: any;
   private config: GEPAConfig;
   private population: Map<string, PromptIndividual> = new Map();
   private generationHistory: PromptIndividual[][] = [];
@@ -131,16 +130,18 @@ export class GEPAEngine {
     this.config = config;
 
     // Initialize Ax LLM - Temporarily disabled
-    // this.ax = new Ax.AI({
-    //   name: 'GEPA-Optimizer',
-    //   description: 'Genetic-Pareto evolution for prompt optimization',
-    //   apiKey: config.llmConfig.apiKey,
-    //   config: {
-    //     model: config.llmConfig.model as Ax.AxAIOpenAIChatModel,
-    //     temperature: config.llmConfig.temperature,
-    //     maxTokens: config.llmConfig.maxTokens
-    //   }
-    // });
+    // Mock AxAI for now to get system working
+    this.ax = {
+      gen: async (prompt: string, options: any) => {
+        return {
+          object: {
+            mutated_prompt: prompt + ' [optimized]',
+            reasoning: 'Mock optimization',
+            offspring_prompt: prompt + ' [crossover]'
+          }
+        };
+      }
+    };
 
     logger.info('GEPA Engine initialized', {
       populationSize: config.populationSize,
@@ -276,8 +277,15 @@ export class GEPAEngine {
           //   maxTokens: 500
           // });
           
-          // Mock response for build
-          const response = { results: 'Mock response for build' };
+      const response = await this.ax.gen(
+        `Mutate this prompt for better performance: "${individual.prompt}"`,
+        {
+          schema: z.object({
+            mutated_prompt: z.string(),
+            reasoning: z.string()
+          })
+        }
+      );
 
           // Evaluate response
           const score = benchmark.evaluator(response.results || '', testCase.expected);
@@ -354,13 +362,8 @@ Return the mutated prompt and explain your reasoning.
 `.trim();
 
       // Temporarily disabled for build
-      // const result = await this.ax.gen(mutationPrompt, {
-      //   model: this.config.llmConfig.model as Ax.AxAIOpenAIChatModel,
-      //   schema: PromptMutationSchema
-      // }) as Ax.AxGenOut & { object: z.infer<typeof PromptMutationSchema> };
-      
-      // Mock result for build
-      const result = { object: { mutated_prompt: 'Mock mutated prompt', reasoning: 'Mock mutation' } };
+      const response = await this.ax.gen(mutationPrompt, { schema: PromptMutationSchema });
+      const result = response.object;
 
       return {
         id: this.generateId(),
@@ -399,14 +402,8 @@ ${parent2.prompt}
 Create a new prompt that inherits the best features from both parents. Explain what you inherited from each.
 `.trim();
 
-      // Temporarily disabled for build
-      // const result = await this.ax.gen(crossoverPrompt, {
-      //   model: this.config.llmConfig.model as Ax.AxAIOpenAIChatModel,
-      //   schema: PromptCrossoverSchema
-      // }) as Ax.AxGenOut & { object: z.infer<typeof PromptCrossoverSchema> };
-      
-      // Mock result for build
-      const result = { object: { offspring_prompt: parent1.prompt + ' + ' + parent2.prompt, reasoning: 'Mock crossover' } };
+      const response = await this.ax.gen(crossoverPrompt, { schema: PromptCrossoverSchema });
+      const result = response.object;
 
       return {
         id: this.generateId(),

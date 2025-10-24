@@ -16,7 +16,7 @@
     "@ai-sdk/anthropic": "^2.0.23",
     "@ai-sdk/openai": "^2.0.42",
     "@anthropic-ai/sdk": "^0.65.0",
-    "@ax-llm/ax": "^14.0.30",
+    "@ax-llm/ax": "^14.0.37",
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "@lancedb/lancedb": "^0.22.2",
