@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { kvCacheArchitecture } from '../../../../lib/kv-cache-architecture';
+import { kvCacheArchitecture } from '../../../lib/kv-cache-architecture';
 
 export const runtime = 'edge';
 

@@ -449,11 +449,11 @@ export class AdvancedValuationAnalysis {
     riskAssessment: any
   ) {
     return {
-      marketPosition: `${marketPosition.position} (${Math.round(marketPosition.score * 100)}% confidence) - ${marketPosition.factors.join(', ')}`,
-      crossMarketAppeal: `${crossMarketAppeal.segments.join(', ')} - ${Math.round(crossMarketAppeal.appealScore * 100)}% appeal across ${crossMarketAppeal.collectorTypes.length} collector types`,
-      culturalSignificance: `${culturalSignificance.movement} - ${Math.round(culturalSignificance.influence * 100)}% influence, ${Math.round(culturalSignificance.contemporaryRelevance * 100)}% contemporary relevance`,
-      futurePotential: `${futurePotential.trajectory} trajectory - ${Math.round(futurePotential.projectedGrowth * 100)}% projected growth with ${futurePotential.growthFactors.length} growth factors`,
-      riskAssessment: `${riskAssessment.overallRisk} risk - ${Math.round(riskAssessment.marketStability * 100)}% market stability, ${Math.round((1 - riskAssessment.volatilityRisk) * 100)}% volatility protection`
+      marketPosition: `Position: ${marketPosition.position} (Score: ${marketPosition.score}) - Factors: ${marketPosition.factors?.join(', ') || 'N/A'}`,
+      crossMarketAppeal: `Segments: ${crossMarketAppeal.segments?.join(', ') || 'N/A'} (Appeal: ${crossMarketAppeal.appealScore}) - Collectors: ${crossMarketAppeal.collectorTypes?.join(', ') || 'N/A'}`,
+      culturalSignificance: `Movement: ${culturalSignificance.movement} - Influence: ${culturalSignificance.influence} - Historical: ${culturalSignificance.historicalImportance}`,
+      futurePotential: `Trajectory: ${futurePotential.trajectory} - Growth: ${futurePotential.growthFactors?.join(', ') || 'N/A'} - Projected: ${futurePotential.projectedGrowth}`,
+      riskAssessment: `Stability: ${riskAssessment.marketStability} - Volatility: ${riskAssessment.volatilityRisk} - Liquidity: ${riskAssessment.liquidityRisk} - Overall: ${riskAssessment.overallRisk}`
     };
   }
 }

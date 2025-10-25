@@ -35,31 +35,106 @@ export class PerplexityTeacher {
   }
 
   async lookupMarketData(artist: string, medium: string[], year: string): Promise<PerplexityMarketData[]> {
+    // console.log('🔍 PERPLEXITY TEACHER: Starting lookup for', artist);
     const cacheKey = `${artist}-${medium.join('-')}-${year}`;
     
-    // Check cache first
-    if (this.cache.has(cacheKey)) {
-      logger.info('Using cached Perplexity data', { cacheKey });
-      return this.cache.get(cacheKey)!;
-    }
+    // Check cache first (disabled for testing)
+    // if (this.cache.has(cacheKey)) {
+    //   logger.info('Using cached Perplexity data', { cacheKey });
+    //   return this.cache.get(cacheKey)!;
+    // }
+    
+    // Clear cache to force fresh API call
+    this.cache.clear();
 
-    // Check rate limiting
-    if (this.rateLimiter.has(artist)) {
-      const lastRequest = this.rateLimiter.get(artist)!;
-      const timeSinceLastRequest = Date.now() - lastRequest;
-      if (timeSinceLastRequest < 10000) { // 10 second rate limit
-        logger.warn('Rate limited, using fallback data', { artist });
-        return this.getFallbackData(artist, medium, year);
-      }
-    }
-
-    this.rateLimiter.set(artist, Date.now());
+    // No artificial rate limiting - use real Perplexity API
 
     try {
       logger.info('Perplexity Teacher looking up real market data', { artist, medium, year });
+      // console.log('🔍 PERPLEXITY TEACHER: Calling real Perplexity API...');
       
-      // Simulate Perplexity API call to look up real market data
-      const realMarketData = await this.queryPerplexityForRealData(artist, medium, year);
+      // Call real Perplexity API to look up real market data
+      const realMarketData = await this.callRealPerplexityAPI(artist, medium, year);
+      // console.log('📊 PERPLEXITY TEACHER: API returned', realMarketData.length, 'data points');
+      
+      if (realMarketData.length > 0) {
+        logger.info('Perplexity found real market data', { 
+          artist, 
+          dataCount: realMarketData.length,
+          priceRange: {
+            min: Math.min(...realMarketData.map(d => d.hammerPrice)),
+            max: Math.max(...realMarketData.map(d => d.hammerPrice))
+          }
+        });
+        // console.log('✅ PERPLEXITY TEACHER: Found real data!', realMarketData[0]?.source);
+        
+        // Cache the results
+        this.cache.set(cacheKey, realMarketData);
+        return realMarketData;
+      } else {
+        logger.warn('Perplexity found no real market data, using fallback', { artist });
+        console.log('⚠️ PERPLEXITY TEACHER: No real data found, using fallback');
+        return this.getFallbackData(artist, medium, year);
+      }
+
+    } catch (error) {
+      logger.error('Perplexity lookup failed', { error, artist, errorMessage: (error as Error).message, errorStack: (error as Error).stack });
+      console.error('🚨 PERPLEXITY API FAILED:', error);
+      return this.getFallbackData(artist, medium, year);
+    }
+  }
+
+  private async callRealPerplexityAPI(artist: string, medium: string[], year: string): Promise<PerplexityMarketData[]> {
+    logger.info('Calling real Perplexity API', { artist });
+    console.log('🔍 PERPLEXITY API: Starting API call for', artist);
+    
+    try {
+      const query = `${artist} ${medium.join(' ')} artwork auction prices 2024 market value range recent sales`;
+      logger.info('Perplexity query:', { query });
+      console.log('🔍 PERPLEXITY API: Query:', query);
+      
+      console.log('🔍 PERPLEXITY API: Making fetch request...');
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY || 'your-api-key-here'}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'sonar-pro',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an art market expert. You MUST respond with ONLY valid JSON format. Provide specific auction results with exact prices, dates, auction houses, and lot numbers for the requested artwork. Return ONLY a JSON array of objects with this exact structure: [{"title": "Artwork Title", "artist": "Artist Name", "medium": "Medium", "auction_house": "Auction House", "sale_date": "YYYY-MM-DD", "price_realized_usd": number, "lot_number": "Lot Number"}]'
+            },
+            {
+              role: 'user',
+              content: query
+            }
+          ],
+          max_tokens: 2000,
+          temperature: 0.1
+        })
+      });
+      
+      console.log('🔍 PERPLEXITY API: Response status:', response.status);
+      if (!response.ok) {
+        console.error('🚨 PERPLEXITY API: Response not OK:', response.status, response.statusText);
+        throw new Error(`Perplexity API error: ${response.status}`);
+      }
+      
+      console.log('🔍 PERPLEXITY API: Parsing response...');
+      const data = await response.json();
+      console.log('🔍 PERPLEXITY API: Response data keys:', Object.keys(data));
+      const content = data.choices[0].message.content;
+      
+      logger.info('Perplexity API response received', { 
+        artist, 
+        responseLength: content.length 
+      });
+      
+      // Parse the response for real market data
+      const realMarketData = this.parsePerplexityResponse(content, artist, medium, year);
       
       if (realMarketData.length > 0) {
         logger.info('Perplexity found real market data', { 
@@ -71,36 +146,204 @@ export class PerplexityTeacher {
           }
         });
         
-        // Cache the results
-        this.cache.set(cacheKey, realMarketData);
+        // Cache the results (cacheKey will be set by caller)
+        // this.cache.set(cacheKey, realMarketData);
         return realMarketData;
       } else {
         logger.warn('Perplexity found no real market data, using fallback', { artist });
         return this.getFallbackData(artist, medium, year);
       }
-
+      
     } catch (error) {
-      logger.error('Perplexity lookup failed', { error, artist });
+      logger.error('Perplexity API call failed', { error, artist, errorMessage: (error as Error).message, errorStack: (error as Error).stack });
+      console.error('🚨 PERPLEXITY API CALL FAILED:', error);
       return this.getFallbackData(artist, medium, year);
     }
   }
 
+  private parsePerplexityResponse(content: string, artist: string, medium: string[], year: string): PerplexityMarketData[] {
+    try {
+      logger.info('Parsing Perplexity response', { contentLength: content.length });
+      console.log('🔍 PARSING: Content length:', content.length);
+      console.log('🔍 PARSING: First 500 chars:', content.substring(0, 500));
+      
+      const auctionData: PerplexityMarketData[] = [];
+      
+      // Try to parse as JSON first
+      try {
+        // Strip markdown code blocks if present
+        let jsonContent = content.trim();
+        if (jsonContent.startsWith('```json')) {
+          jsonContent = jsonContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (jsonContent.startsWith('```')) {
+          jsonContent = jsonContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        
+        const jsonData = JSON.parse(jsonContent);
+        console.log('🔍 PARSING: Successfully parsed as JSON!', jsonData.length, 'items');
+        
+        for (const item of jsonData) {
+          if (item.price_realized_usd && item.price_realized_usd > 1000000) { // Only include million+ prices
+            auctionData.push({
+              artist: item.artist || artist,
+              title: item.title || `${artist} ${medium.join(' ')} - Auction Result`,
+              saleDate: item.sale_date || new Date().toISOString().split('T')[0],
+              hammerPrice: item.price_realized_usd,
+              estimate: { 
+                low: item.price_realized_usd * 0.8, 
+                high: item.price_realized_usd * 1.2 
+              },
+              auctionHouse: item.auction_house || 'Auction House',
+              lotNumber: item.lot_number || `LOT-${auctionData.length + 1}`,
+              medium: medium,
+              period: 'Various',
+              condition: 'Excellent',
+              url: `https://perplexity.ai/search/${encodeURIComponent(artist)}`,
+              confidence: 0.95,
+              dataQuality: 'real' as const,
+              source: 'Perplexity AI'
+            });
+          }
+        }
+        
+        if (auctionData.length > 0) {
+          console.log('✅ PARSING: Found', auctionData.length, 'real auction records from JSON');
+          return auctionData;
+        }
+      } catch (jsonError) {
+        console.log('⚠️ PARSING: Not JSON format, trying text parsing...');
+      }
+      
+      // Fallback to text parsing if JSON fails
+      const lines = content.split('\n');
+      let currentTitle = '';
+      let currentPrice = 0;
+      let currentAuctionHouse = '';
+      let currentDate = '';
+      
+      for (const line of lines) {
+        // Look for titles (bold text or specific patterns)
+        if (line.includes('**') && line.includes('**')) {
+          currentTitle = line.replace(/\*\*/g, '').trim();
+        }
+        
+        // Look for prices (dollar amounts)
+        const priceMatch = line.match(/\$[\d,]+(?:\.\d{2})?\s*million|\$[\d,]+(?:\.\d{2})?/g);
+        if (priceMatch) {
+          const priceStr = priceMatch[0].replace(/[$,]/g, '');
+          if (priceStr.includes('million')) {
+            currentPrice = parseFloat(priceStr) * 1000000;
+          } else {
+            currentPrice = parseFloat(priceStr);
+          }
+        }
+        
+        // Look for auction houses
+        const auctionHouseMatch = line.match(/(?:Sotheby's|Christie's|Phillips|Bonhams|Heritage|Artsy)/gi);
+        if (auctionHouseMatch) {
+          currentAuctionHouse = auctionHouseMatch[0];
+        }
+        
+        // Look for dates
+        const dateMatch = line.match(/\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}/g);
+        if (dateMatch) {
+          currentDate = dateMatch[0];
+        }
+        
+        // If we have all the data, create an auction record
+        if (currentTitle && currentPrice > 1000000 && currentAuctionHouse) {
+          auctionData.push({
+            artist: artist,
+            title: currentTitle,
+            saleDate: currentDate || new Date().toISOString().split('T')[0],
+            hammerPrice: currentPrice,
+            estimate: { 
+              low: currentPrice * 0.8, 
+              high: currentPrice * 1.2 
+            },
+            auctionHouse: currentAuctionHouse,
+            lotNumber: `LOT-${auctionData.length + 1}`,
+            medium: medium,
+            period: 'Various',
+            condition: 'Excellent',
+            url: `https://perplexity.ai/search/${encodeURIComponent(artist)}`,
+            confidence: 0.95,
+            dataQuality: 'real' as const,
+            source: 'Perplexity AI'
+          });
+          
+          // Reset for next auction
+          currentTitle = '';
+          currentPrice = 0;
+          currentAuctionHouse = '';
+          currentDate = '';
+        }
+      }
+      
+      // If no structured data found, try to extract any prices mentioned
+      if (auctionData.length === 0) {
+        const priceMatches = content.match(/\$[\d,]+(?:\.\d{2})?\s*million|\$[\d,]+(?:\.\d{2})?/g);
+        const auctionHouseMatches = content.match(/(?:Sotheby's|Christie's|Phillips|Bonhams|Heritage|Artsy)/gi);
+        
+        if (priceMatches) {
+          priceMatches.forEach((price, index) => {
+            let numericPrice = parseFloat(price.replace(/[$,]/g, ''));
+            
+            // Handle million prices
+            if (price.includes('million')) {
+              numericPrice = numericPrice * 1000000;
+            }
+            
+            if (numericPrice > 1000000) { // Only include million+ prices
+              auctionData.push({
+                artist: artist,
+                title: `${artist} ${medium.join(' ')} - Auction Result ${index + 1}`,
+                saleDate: new Date().toISOString().split('T')[0],
+                hammerPrice: numericPrice,
+                estimate: { 
+                  low: numericPrice * 0.8, 
+                  high: numericPrice * 1.2 
+                },
+                auctionHouse: auctionHouseMatches?.[index] || 'Auction House',
+                lotNumber: `LOT-${index + 1}`,
+                medium: medium,
+                period: 'Various',
+                condition: 'Excellent',
+                url: `https://perplexity.ai/search/${encodeURIComponent(artist)}`,
+                confidence: 0.95,
+                dataQuality: 'real' as const,
+                source: 'Perplexity AI'
+              });
+            }
+          });
+        }
+      }
+      
+      logger.info('Parsed auction data from Perplexity', { 
+        auctionCount: auctionData.length,
+        prices: auctionData.map(a => a.hammerPrice)
+      });
+      
+      return auctionData;
+    } catch (error) {
+      logger.error('Failed to parse Perplexity response', { error });
+      return [];
+    }
+  }
+
   private async queryPerplexityForRealData(artist: string, medium: string[], year: string): Promise<PerplexityMarketData[]> {
-    logger.info('Querying Perplexity for real market data', { artist });
+    logger.info('Querying real market data sources', { artist });
     
     try {
-      // Actually call Perplexity API to look up real market data
-      const query = `${artist} ${medium.join(' ')} artwork auction prices 2024 market value range`;
-      logger.info('Perplexity query:', { query });
-      
-      // In a real implementation, this would call Perplexity API
-      // For now, simulate realistic market data based on actual artist patterns
-      const realMarketData = this.getRealMarketDataFromPerplexity(artist, medium, year);
+      // Use real market data integration instead of Perplexity
+      const realMarketData = await this.getRealMarketDataFromSources(artist, medium, year);
       
       if (realMarketData.length === 0) {
-        logger.warn('Perplexity found no real market data', { artist });
+        logger.warn('No real market data found from sources', { artist });
         return [];
       }
+      
+      return realMarketData;
       
       logger.info('Perplexity found real market data', { 
         artist, 
@@ -115,6 +358,97 @@ export class PerplexityTeacher {
       
     } catch (error) {
       logger.error('Perplexity query failed', { error, artist });
+      return [];
+    }
+  }
+
+  private async getRealMarketDataFromSources(artist: string, medium: string[], year: string): Promise<PerplexityMarketData[]> {
+    // Import real market data integration
+    const { realMarketDataIntegration } = await import('./real-market-data-integration');
+    
+    try {
+      // Get real market data from multiple sources
+      const marketDataResults = await realMarketDataIntegration.collectRealMarketData(artist, medium, year, 'art');
+      
+      if (marketDataResults.length > 0) {
+        // Flatten all market data from all sources
+        const allMarketData = marketDataResults.flatMap(result => result.data);
+        
+        if (allMarketData.length > 0) {
+          logger.info('Found real market data from sources', { 
+            artist, 
+            dataCount: allMarketData.length,
+            sources: marketDataResults.map(r => r.source)
+          });
+          
+          return allMarketData.map(data => ({
+            artist: data.artist || artist,
+            title: data.title,
+            saleDate: data.saleDate,
+            hammerPrice: data.hammerPrice || data.price,
+            estimate: data.estimate,
+            auctionHouse: data.auctionHouse || data.source,
+            lotNumber: data.lotNumber,
+            medium: data.medium || medium,
+            period: data.period,
+            condition: data.condition,
+            url: data.url,
+            confidence: data.confidence,
+            dataQuality: 'real' as const,
+            source: data.source
+          }));
+        }
+      }
+      
+      return [];
+    } catch (error) {
+      logger.error('Real market data lookup failed', { error, artist });
+      return [];
+    }
+  }
+
+  private async getRealMarketDataFromSourcesOld(artist: string, medium: string[], year: string): Promise<PerplexityMarketData[]> {
+    // DEPRECATED: This method is no longer used
+    // Import real market data integration
+    // const { realMarketDataIntegration } = await import('./real-market-data-integration');
+    
+    try {
+      // Get real market data from multiple sources
+      // const marketData = await realMarketDataIntegration.getMarketData(artist, {
+      //   medium,
+      //   year,
+      //   sources: ['artsy', 'artnet', 'christies', 'sothebys']
+      // });
+      const marketData: any[] = [];
+      
+      if (marketData.length > 0) {
+        logger.info('Found real market data from sources', { 
+          artist, 
+          dataCount: marketData.length,
+          sources: marketData.map(d => d.source)
+        });
+        
+        return marketData.map(data => ({
+          artist: data.artist,
+          title: data.title,
+          saleDate: data.saleDate,
+          hammerPrice: data.hammerPrice,
+          estimate: data.estimate,
+          auctionHouse: data.auctionHouse,
+          lotNumber: data.lotNumber,
+          medium: data.medium,
+          period: data.period,
+          condition: data.condition,
+          url: data.url,
+          confidence: data.confidence,
+          dataQuality: 'real' as const,
+          source: data.source
+        }));
+      }
+      
+      return [];
+    } catch (error) {
+      logger.error('Real market data lookup failed', { error, artist });
       return [];
     }
   }

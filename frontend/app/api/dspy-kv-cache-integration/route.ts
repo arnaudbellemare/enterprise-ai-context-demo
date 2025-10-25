@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { dspyKVCacheIntegration } from '../../../../lib/dspy-kv-cache-integration';
+import { dspyKVCacheIntegration } from '../../../lib/dspy-kv-cache-integration';
 
 export const runtime = 'edge';
 
