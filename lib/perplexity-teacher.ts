@@ -84,12 +84,55 @@ export class PerplexityTeacher {
     }
   }
 
+  private getSystemPrompt(artist: string, medium: string[]): string {
+    // Detect if this is an art-related query
+    const isArtQuery = artist.toLowerCase().includes('art') || 
+                      artist.toLowerCase().includes('painting') ||
+                      artist.toLowerCase().includes('picasso') ||
+                      artist.toLowerCase().includes('van gogh') ||
+                      artist.toLowerCase().includes('monet') ||
+                      artist.toLowerCase().includes('warhol') ||
+                      artist.toLowerCase().includes('banksy') ||
+                      medium.some(m => m.toLowerCase().includes('oil') || 
+                                      m.toLowerCase().includes('canvas') ||
+                                      m.toLowerCase().includes('painting') ||
+                                      m.toLowerCase().includes('art'));
+    
+    if (isArtQuery) {
+      return 'You are an art market expert. You MUST respond with ONLY valid JSON format. Provide specific auction results with exact prices, dates, auction houses, and lot numbers for the requested artwork. Return ONLY a JSON array of objects with this exact structure: [{"title": "Artwork Title", "artist": "Artist Name", "medium": "Medium", "auction_house": "Auction House", "sale_date": "YYYY-MM-DD", "price_realized_usd": number, "lot_number": "Lot Number"}]';
+    } else {
+      return `You are a comprehensive research expert. You MUST respond with ONLY valid JSON format. Provide current, accurate information about ${artist} and ${medium.join(' ')}. Return ONLY a JSON array of objects with this exact structure: [{"title": "Topic Title", "artist": "${artist}", "medium": "${medium.join(' ')}", "auction_house": "Research Source", "sale_date": "2024-01-01", "price_realized_usd": 1000000, "lot_number": "Research-001"}]`;
+    }
+  }
+
+  private buildQueryForAnyTopic(artist: string, medium: string[], year: string): string {
+    // Detect if this is an art-related query
+    const isArtQuery = artist.toLowerCase().includes('art') || 
+                      artist.toLowerCase().includes('painting') ||
+                      artist.toLowerCase().includes('picasso') ||
+                      artist.toLowerCase().includes('van gogh') ||
+                      artist.toLowerCase().includes('monet') ||
+                      artist.toLowerCase().includes('warhol') ||
+                      artist.toLowerCase().includes('banksy') ||
+                      medium.some(m => m.toLowerCase().includes('oil') || 
+                                      m.toLowerCase().includes('canvas') ||
+                                      m.toLowerCase().includes('painting') ||
+                                      m.toLowerCase().includes('art'));
+    
+    if (isArtQuery) {
+      return `${artist} ${medium.join(' ')} artwork auction prices 2024 market value range recent sales`;
+    } else {
+      // For non-art queries, use the artist field as the main topic
+      return `${artist} ${medium.join(' ')} 2024 current information latest developments`;
+    }
+  }
+
   private async callRealPerplexityAPI(artist: string, medium: string[], year: string): Promise<PerplexityMarketData[]> {
     logger.info('Calling real Perplexity API', { artist });
     console.log('🔍 PERPLEXITY API: Starting API call for', artist);
     
     try {
-      const query = `${artist} ${medium.join(' ')} artwork auction prices 2024 market value range recent sales`;
+      const query = this.buildQueryForAnyTopic(artist, medium, year);
       logger.info('Perplexity query:', { query });
       console.log('🔍 PERPLEXITY API: Query:', query);
       
@@ -105,7 +148,7 @@ export class PerplexityTeacher {
           messages: [
             {
               role: 'system',
-              content: 'You are an art market expert. You MUST respond with ONLY valid JSON format. Provide specific auction results with exact prices, dates, auction houses, and lot numbers for the requested artwork. Return ONLY a JSON array of objects with this exact structure: [{"title": "Artwork Title", "artist": "Artist Name", "medium": "Medium", "auction_house": "Auction House", "sale_date": "YYYY-MM-DD", "price_realized_usd": number, "lot_number": "Lot Number"}]'
+              content: this.getSystemPrompt(artist, medium)
             },
             {
               role: 'user',

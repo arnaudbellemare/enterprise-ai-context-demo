@@ -83,8 +83,7 @@ class TRMReasoningSystem {
       if (process.env.OPENROUTER_API_KEY) {
         this.llm = ai({ 
           name: 'openai', 
-          apiKey: process.env.OPENROUTER_API_KEY,
-          config: { baseURL: 'https://openrouter.ai/api/v1' }
+          apiKey: process.env.OPENROUTER_API_KEY
         });
         console.log('✅ TRM initialized with OpenRouter');
         return;
@@ -237,8 +236,7 @@ class TeacherStudentModule {
       if (process.env.OPENROUTER_API_KEY) {
         this.llm = ai({ 
           name: 'openai', 
-          apiKey: process.env.OPENROUTER_API_KEY,
-          config: { baseURL: 'https://openrouter.ai/api/v1' }
+          apiKey: process.env.OPENROUTER_API_KEY
         });
         console.log('✅ DSPy Module initialized with OpenRouter');
         return;
@@ -398,7 +396,7 @@ export class AXLLMEnhancedSystem {
     return `${dspyResult.response.answer}
 
 **Enhanced Reasoning Chain:**
-${trmResult.reasoningChain.map((step, i) => `${i + 1}. ${step}`).join('\n')}
+${trmResult.reasoningChain.map((step: any, i: number) => `${i + 1}. ${step}`).join('\n')}
 
 **Final Confidence:** ${Math.max(dspyResult.confidence, trmResult.confidence).toFixed(3)}
 **Processing Iterations:** ${trmResult.iterations}`;

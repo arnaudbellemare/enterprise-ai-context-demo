@@ -469,7 +469,18 @@ export class AdvancedTeacherStudentJudge {
       }
     };
 
-    // Generate domain-specific answer based on query type
+    // Extract creative optimization insights from Judge
+    const creativeOptimization = judgeResult?.trmEvaluation?.creativeOptimization;
+    const blindSpotDetection = judgeResult?.trmEvaluation?.blindSpotDetection;
+    const deepBreakdown = judgeResult?.trmEvaluation?.deepBreakdown;
+    const perspectiveShift = judgeResult?.trmEvaluation?.perspectiveShift;
+    const contextExpansion = judgeResult?.trmEvaluation?.contextExpansion;
+    
+    const creativeInsights = {
+      creativeOptimization, blindSpotDetection, deepBreakdown, perspectiveShift, contextExpansion
+    };
+
+    // Generate domain-specific answer based on query type with creative optimization
     let finalAnswer = '';
     let answerType = 'general';
     let confidence = 0.9;
@@ -480,29 +491,29 @@ export class AdvancedTeacherStudentJudge {
       
       // Check for specific terms first to avoid false matches
       if (query.includes('artificial intelligence') || query.includes('machine learning') || query.includes('ai ')) {
-        finalAnswer = this.generateGeneralAnswer(request.query, internalThoughts);
+        finalAnswer = this.generateGeneralAnswer(request.query, internalThoughts, creativeInsights);
         answerType = 'artificial_intelligence';
         confidence = 0.92;
       } else if (query.includes('legal') || query.includes('derecho') || query.includes('jurídico')) {
-        finalAnswer = this.generateLegalAnswer(request.query, internalThoughts);
+        finalAnswer = this.generateLegalAnswer(request.query, internalThoughts, creativeInsights);
         answerType = 'legal';
         confidence = 0.92;
       } else if (query.includes('insurance') || query.includes('premium') || query.includes('seguro')) {
-        finalAnswer = this.generateInsuranceAnswer(request.query, internalThoughts);
+        finalAnswer = this.generateInsuranceAnswer(request.query, internalThoughts, creativeInsights);
         answerType = 'insurance';
         confidence = 0.88;
       } else if (query.includes('art') || query.includes('arte') || query.includes('valuation')) {
-        finalAnswer = this.generateArtValuationAnswer(request, internalThoughts);
+        finalAnswer = this.generateArtValuationAnswer(request, internalThoughts, creativeInsights);
         answerType = 'art_valuation';
         confidence = 0.95;
       } else {
-        finalAnswer = this.generateGeneralAnswer(request.query, internalThoughts);
+        finalAnswer = this.generateGeneralAnswer(request.query, internalThoughts, creativeInsights);
         answerType = 'general';
         confidence = 0.85;
       }
     } else {
       // Handle art valuation requests
-      finalAnswer = this.generateArtValuationAnswer(request, internalThoughts);
+      finalAnswer = this.generateArtValuationAnswer(request, internalThoughts, creativeInsights);
       answerType = 'art_valuation';
       confidence = 0.95;
     }
@@ -536,7 +547,7 @@ export class AdvancedTeacherStudentJudge {
     };
   }
 
-  private generateLegalAnswer(query: string, thoughts: any): string {
+  private generateLegalAnswer(query: string, thoughts: any, creativeInsights?: any): string {
     return `🔍 **INTERNAL THOUGHT PROCESS:**
 
 **Teacher Analysis:** ${thoughts.teacherAnalysis.dataSources} data sources analyzed with ${(thoughts.teacherAnalysis.confidence * 100).toFixed(1)}% confidence
@@ -575,12 +586,12 @@ Based on your query about intellectual property in Mexico, here's my comprehensi
 **📊 System Confidence:** ${(thoughts.permutationAI.overallConfidence * 100).toFixed(1)}% (All AI components validated)`;
   }
 
-  private generateInsuranceAnswer(query: string, thoughts: any): string {
+  private generateInsuranceAnswer(query: string, thoughts: any, creativeInsights?: any): string {
     // Use the same dynamic logic as generateGeneralAnswer for insurance queries
-    return this.generateGeneralAnswer(query, thoughts);
+    return this.generateGeneralAnswer(query, thoughts, creativeInsights);
   }
 
-  private generateArtValuationAnswer(request: any, thoughts: any): string {
+  private generateArtValuationAnswer(request: any, thoughts: any, creativeInsights?: any): string {
     const artwork = request.artwork;
     const realDataFound = thoughts.teacherAnalysis.realDataFound;
     
@@ -623,13 +634,20 @@ Based on your query about intellectual property in Mexico, here's my comprehensi
 **📊 System Confidence:** ${(thoughts.permutationAI.overallConfidence * 100).toFixed(1)}% (All AI components validated)`;
   }
 
-  private generateGeneralAnswer(query: string, thoughts: any): string {
+  private generateGeneralAnswer(query: string, thoughts: any, creativeInsights?: any): string {
     // Analyze the query to provide specific, actionable advice
     const queryLower = query.toLowerCase();
     
     let specificAdvice = '';
     let actionItems: string[] = [];
     let resources: string[] = [];
+    
+    // Extract creative optimization insights
+    const creativeOptimization = creativeInsights?.creativeOptimization;
+    const blindSpotDetection = creativeInsights?.blindSpotDetection;
+    const deepBreakdown = creativeInsights?.deepBreakdown;
+    const perspectiveShift = creativeInsights?.perspectiveShift;
+    const contextExpansion = creativeInsights?.contextExpansion;
     
     if (queryLower.includes('colombia') && (queryLower.includes('business') || queryLower.includes('move'))) {
       specificAdvice = `🇨🇴 **BUSINESS RELOCATION TO COLOMBIA:**
@@ -1121,7 +1139,26 @@ ${actionItems.map((item, index) => `${index + 1}. ${item}`).join('\n')}
 **📚 Additional Resources:**
 ${resources.map((resource, index) => `- ${resource}`).join('\n')}
 
-**📈 System Confidence:** ${(thoughts.permutationAI.overallConfidence * 100).toFixed(1)}% (All AI components validated)`;
+**📈 System Confidence:** ${(thoughts.permutationAI.overallConfidence * 100).toFixed(1)}% (All AI components validated)
+
+${creativeOptimization ? `
+🧠 **CREATIVE OPTIMIZATION INSIGHTS:**
+
+**💡 "Let's think about this differently":**
+${creativeOptimization.creativeInsights?.alternativeApproaches?.slice(0, 2).map((approach: string) => `- ${approach}`).join('\n') || '- Exploring unconventional approaches'}
+
+**🔍 "What am I not seeing here?":**
+${blindSpotDetection?.blindSpots?.hiddenAssumptions?.slice(0, 2).map((assumption: string) => `- ${assumption}`).join('\n') || '- Identifying hidden assumptions'}
+
+**🔬 "Break this down for me":**
+${deepBreakdown?.breakdown?.fundamentalComponents?.slice(0, 2).map((component: string) => `- ${component}`).join('\n') || '- Analyzing fundamental components'}
+
+**👥 "What would you do in my shoes?":**
+${perspectiveShift?.perspectiveShift?.personalRecommendations?.slice(0, 2).map((rec: string) => `- ${rec}`).join('\n') || '- Providing personal recommendations'}
+
+**📚 "What else should I know?":**
+${contextExpansion?.contextExpansion?.additionalContext?.slice(0, 2).map((context: string) => `- ${context}`).join('\n') || '- Adding crucial context'}
+` : ''}`;
   }
 }
 
@@ -1263,7 +1300,7 @@ class AXLLM {
       });
 
       return {
-        reasoningSteps: enhancedResult.trmResult.reasoningChain.map((step, i) => ({
+        reasoningSteps: enhancedResult.trmResult.reasoningChain.map((step: any, i: number) => ({
           score: enhancedResult.confidence,
           factors: [`TRM Iteration ${i + 1}`],
           conclusion: step
@@ -1441,10 +1478,13 @@ class GEPA {
 
   private evolvePromptsGenetic(axLlmReasoning: any) {
     // Simulate genetic evolution of prompts
+    const reasoningSteps = axLlmReasoning?.reasoningSteps || [];
+    const conclusions = reasoningSteps.map((step: any) => step?.conclusion || 'general analysis');
+    
     return [
-      `Advanced valuation of ${axLlmReasoning.reasoningSteps[0].conclusion}`,
-      `Market analysis considering ${axLlmReasoning.reasoningSteps[1].conclusion}`,
-      `Expert assessment based on ${axLlmReasoning.reasoningSteps[2].conclusion}`
+      `Advanced valuation of ${conclusions[0] || 'artwork'}`,
+      `Market analysis considering ${conclusions[1] || 'market factors'}`,
+      `Expert assessment based on ${conclusions[2] || 'expert knowledge'}`
     ];
   }
 
@@ -1646,17 +1686,32 @@ class TRM {
     const evaluation = {
       agreementAnalysis: this.analyzeAgreement(teacherResult, studentResult),
       reasoningTree: this.buildReasoningTree(teacherResult, studentResult),
-      evaluationScore: this.calculateEvaluationScore(teacherResult, studentResult)
+      evaluationScore: this.calculateEvaluationScore(teacherResult, studentResult),
+      creativeOptimization: await this.performCreativeOptimization(teacherResult, studentResult),
+      blindSpotDetection: this.detectBlindSpots(teacherResult, studentResult),
+      deepBreakdown: this.performDeepBreakdown(teacherResult, studentResult),
+      perspectiveShift: this.generatePerspectiveShift(teacherResult, studentResult),
+      contextExpansion: this.expandContext(teacherResult, studentResult)
     };
     
     return {
       evaluation,
       evaluationScore: evaluation.evaluationScore,
+      creativeOptimization: evaluation.creativeOptimization,
+      blindSpotDetection: evaluation.blindSpotDetection,
+      deepBreakdown: evaluation.deepBreakdown,
+      perspectiveShift: evaluation.perspectiveShift,
+      contextExpansion: evaluation.contextExpansion,
       methodology: [
         'TRM: Tiny Recursive Model for evaluation',
         'TRM: Agreement analysis and assessment',
         'TRM: Recursive reasoning construction',
-        'TRM: Multi-level recursive evaluation and scoring'
+        'TRM: Multi-level recursive evaluation and scoring',
+        'TRM: Creative optimization with "Let\'s think about this differently"',
+        'TRM: Blind spot detection with "What am I not seeing here?"',
+        'TRM: Deep breakdown analysis with "Break this down for me"',
+        'TRM: Perspective shifting with "What would you do in my shoes?"',
+        'TRM: Context expansion with "What else should I know?"'
       ]
     };
   }
@@ -1701,6 +1756,359 @@ class TRM {
     const dataScore = 0.90;
     
     return (confidenceScore + methodologyScore + dataScore) / 3;
+  }
+
+  // ============================================================
+  // CREATIVE OPTIMIZATION TECHNIQUES
+  // ============================================================
+
+  /**
+   * 1. "Let's think about this differently" - Creative optimization
+   * Immediately stops cookie-cutter responses and gets creative
+   */
+  private async performCreativeOptimization(teacherResult: any, studentResult: any) {
+    logger.info('TRM: Creative optimization - "Let\'s think about this differently"');
+    
+    const creativeInsights = {
+      alternativeApproaches: this.generateAlternativeApproaches(teacherResult, studentResult),
+      unconventionalSolutions: this.findUnconventionalSolutions(teacherResult, studentResult),
+      creativeBreakthroughs: this.identifyCreativeBreakthroughs(teacherResult, studentResult),
+      innovationScore: this.calculateInnovationScore(teacherResult, studentResult)
+    };
+
+    return {
+      creativeInsights,
+      optimizationPrompt: "Let's think about this differently",
+      creativityLevel: creativeInsights.innovationScore,
+      methodology: [
+        'Creative Optimization: Breaking out of conventional patterns',
+        'Alternative Approaches: Exploring non-obvious solutions',
+        'Unconventional Solutions: Finding unexpected paths',
+        'Innovation Scoring: Measuring creative breakthrough potential'
+      ]
+    };
+  }
+
+  /**
+   * 2. "What am I not seeing here?" - Blind spot detection
+   * Finds blind spots and assumptions you didn't even know you had
+   */
+  private detectBlindSpots(teacherResult: any, studentResult: any) {
+    logger.info('TRM: Blind spot detection - "What am I not seeing here?"');
+    
+    const blindSpots = {
+      hiddenAssumptions: this.identifyHiddenAssumptions(teacherResult, studentResult),
+      missingContext: this.findMissingContext(teacherResult, studentResult),
+      overlookedFactors: this.detectOverlookedFactors(teacherResult, studentResult),
+      cognitiveBiases: this.identifyCognitiveBiases(teacherResult, studentResult),
+      blindSpotScore: this.calculateBlindSpotScore(teacherResult, studentResult)
+    };
+
+    return {
+      blindSpots,
+      detectionPrompt: "What am I not seeing here?",
+      awarenessLevel: blindSpots.blindSpotScore,
+      methodology: [
+        'Blind Spot Detection: Identifying hidden assumptions',
+        'Missing Context Analysis: Finding overlooked information',
+        'Overlooked Factors: Detecting ignored variables',
+        'Cognitive Bias Identification: Recognizing mental shortcuts'
+      ]
+    };
+  }
+
+  /**
+   * 3. "Break this down for me" - Deep analysis
+   * Even for simple stuff, gets the science, technique, everything
+   */
+  private performDeepBreakdown(teacherResult: any, studentResult: any) {
+    logger.info('TRM: Deep breakdown - "Break this down for me"');
+    
+    const breakdown = {
+      fundamentalComponents: this.identifyFundamentalComponents(teacherResult, studentResult),
+      underlyingMechanisms: this.analyzeUnderlyingMechanisms(teacherResult, studentResult),
+      stepByStepProcess: this.createStepByStepProcess(teacherResult, studentResult),
+      scientificBasis: this.exploreScientificBasis(teacherResult, studentResult),
+      breakdownDepth: this.calculateBreakdownDepth(teacherResult, studentResult)
+    };
+
+    return {
+      breakdown,
+      analysisPrompt: "Break this down for me",
+      depthLevel: breakdown.breakdownDepth,
+      methodology: [
+        'Deep Breakdown: Analyzing fundamental components',
+        'Underlying Mechanisms: Exploring root causes',
+        'Step-by-Step Process: Creating detailed workflows',
+        'Scientific Basis: Understanding theoretical foundations'
+      ]
+    };
+  }
+
+  /**
+   * 4. "What would you do in my shoes?" - Perspective shifting
+   * Stops being neutral and starts giving actual opinions
+   */
+  private generatePerspectiveShift(teacherResult: any, studentResult: any) {
+    logger.info('TRM: Perspective shift - "What would you do in my shoes?"');
+    
+    const perspectiveShift = {
+      personalRecommendations: this.generatePersonalRecommendations(teacherResult, studentResult),
+      strategicAdvice: this.provideStrategicAdvice(teacherResult, studentResult),
+      riskAssessment: this.performRiskAssessment(teacherResult, studentResult),
+      actionPlan: this.createActionPlan(teacherResult, studentResult),
+      perspectiveScore: this.calculatePerspectiveScore(teacherResult, studentResult)
+    };
+
+    return {
+      perspectiveShift,
+      shiftPrompt: "What would you do in my shoes?",
+      personalizationLevel: perspectiveShift.perspectiveScore,
+      methodology: [
+        'Perspective Shifting: Moving from neutral to personal',
+        'Personal Recommendations: Giving actual opinions',
+        'Strategic Advice: Providing tactical guidance',
+        'Risk Assessment: Evaluating potential outcomes'
+      ]
+    };
+  }
+
+  /**
+   * 5. "What else should I know?" - Context expansion
+   * Adds context and warnings you never thought to ask for
+   */
+  private expandContext(teacherResult: any, studentResult: any) {
+    logger.info('TRM: Context expansion - "What else should I know?"');
+    
+    const contextExpansion = {
+      additionalContext: this.generateAdditionalContext(teacherResult, studentResult),
+      warnings: this.generateWarnings(teacherResult, studentResult),
+      relatedTopics: this.identifyRelatedTopics(teacherResult, studentResult),
+      futureConsiderations: this.exploreFutureConsiderations(teacherResult, studentResult),
+      contextScore: this.calculateContextScore(teacherResult, studentResult)
+    };
+
+    return {
+      contextExpansion,
+      expansionPrompt: "What else should I know?",
+      comprehensivenessLevel: contextExpansion.contextScore,
+      methodology: [
+        'Context Expansion: Adding missing information',
+        'Warning Generation: Identifying potential risks',
+        'Related Topics: Exploring connected areas',
+        'Future Considerations: Planning ahead'
+      ]
+    };
+  }
+
+  // ============================================================
+  // HELPER METHODS FOR CREATIVE OPTIMIZATION
+  // ============================================================
+
+  private generateAlternativeApproaches(teacherResult: any, studentResult: any) {
+    return [
+      'Reverse Engineering Approach: Start from desired outcome and work backwards',
+      'Lateral Thinking: Use analogies from completely different domains',
+      'Constraint Removal: What if we removed all limitations?',
+      'Time Travel Perspective: How would this look in 10 years?'
+    ];
+  }
+
+  private findUnconventionalSolutions(teacherResult: any, studentResult: any) {
+    return [
+      'Cross-Domain Innovation: Apply solutions from unrelated fields',
+      'Minimal Viable Approach: What\'s the simplest thing that could work?',
+      'Maximum Impact Strategy: Focus on highest-leverage actions',
+      'Contrarian Position: What if everyone else is wrong?'
+    ];
+  }
+
+  private identifyCreativeBreakthroughs(teacherResult: any, studentResult: any) {
+    return [
+      'Paradigm Shift: Fundamental change in approach',
+      'Technology Leverage: Using new tools or methods',
+      'Process Innovation: Completely new workflow',
+      'Market Timing: Perfect moment for execution'
+    ];
+  }
+
+  private calculateInnovationScore(teacherResult: any, studentResult: any) {
+    const teacherInnovation = teacherResult.confidence * 0.3;
+    const studentInnovation = (studentResult.learningScore / 100) * 0.4;
+    const agreementInnovation = 0.3;
+    return Math.min((teacherInnovation + studentInnovation + agreementInnovation), 1.0);
+  }
+
+  private identifyHiddenAssumptions(teacherResult: any, studentResult: any) {
+    return [
+      'Market Assumptions: What if market conditions change?',
+      'Resource Assumptions: What if resources are limited?',
+      'Timeline Assumptions: What if deadlines are flexible?',
+      'Success Assumptions: What if success looks different?'
+    ];
+  }
+
+  private findMissingContext(teacherResult: any, studentResult: any) {
+    return [
+      'Historical Context: How did we get here?',
+      'Competitive Context: What are others doing?',
+      'Regulatory Context: What rules apply?',
+      'Cultural Context: What are the social implications?'
+    ];
+  }
+
+  private detectOverlookedFactors(teacherResult: any, studentResult: any) {
+    return [
+      'Human Factors: Emotions, motivations, relationships',
+      'Technical Factors: Infrastructure, compatibility, scalability',
+      'Economic Factors: Costs, ROI, market dynamics',
+      'Environmental Factors: Sustainability, impact, ethics'
+    ];
+  }
+
+  private identifyCognitiveBiases(teacherResult: any, studentResult: any) {
+    return [
+      'Confirmation Bias: Seeking information that confirms existing beliefs',
+      'Anchoring Bias: Over-relying on first piece of information',
+      'Availability Heuristic: Overweighting easily recalled information',
+      'Sunk Cost Fallacy: Continuing because of past investment'
+    ];
+  }
+
+  private calculateBlindSpotScore(teacherResult: any, studentResult: any) {
+    const teacherAwareness = teacherResult.confidence * 0.4;
+    const studentAwareness = (studentResult.learningScore / 100) * 0.3;
+    const agreementAwareness = 0.3;
+    return Math.min((teacherAwareness + studentAwareness + agreementAwareness), 1.0);
+  }
+
+  private identifyFundamentalComponents(teacherResult: any, studentResult: any) {
+    return [
+      'Core Elements: The essential building blocks',
+      'Dependencies: What must happen first?',
+      'Interfaces: How do components connect?',
+      'Constraints: What limits the system?'
+    ];
+  }
+
+  private analyzeUnderlyingMechanisms(teacherResult: any, studentResult: any) {
+    return [
+      'Causal Relationships: What causes what?',
+      'Feedback Loops: How do effects reinforce causes?',
+      'Emergent Properties: What arises from interactions?',
+      'System Dynamics: How does the whole behave?'
+    ];
+  }
+
+  private createStepByStepProcess(teacherResult: any, studentResult: any) {
+    return [
+      'Phase 1: Preparation and setup',
+      'Phase 2: Core execution',
+      'Phase 3: Validation and testing',
+      'Phase 4: Optimization and scaling'
+    ];
+  }
+
+  private exploreScientificBasis(teacherResult: any, studentResult: any) {
+    return [
+      'Theoretical Foundation: What principles apply?',
+      'Empirical Evidence: What data supports this?',
+      'Mathematical Models: How can we quantify this?',
+      'Experimental Validation: How do we test this?'
+    ];
+  }
+
+  private calculateBreakdownDepth(teacherResult: any, studentResult: any) {
+    const teacherDepth = teacherResult.confidence * 0.3;
+    const studentDepth = (studentResult.learningScore / 100) * 0.4;
+    const analysisDepth = 0.3;
+    return Math.min((teacherDepth + studentDepth + analysisDepth), 1.0);
+  }
+
+  private generatePersonalRecommendations(teacherResult: any, studentResult: any) {
+    return [
+      'Personal Action: What I would do first',
+      'Strategic Priority: What deserves immediate attention',
+      'Resource Allocation: Where I would invest',
+      'Risk Management: What I would avoid'
+    ];
+  }
+
+  private provideStrategicAdvice(teacherResult: any, studentResult: any) {
+    return [
+      'Long-term Vision: Where this leads in 5 years',
+      'Competitive Advantage: How to stay ahead',
+      'Market Positioning: How to differentiate',
+      'Partnership Strategy: Who to collaborate with'
+    ];
+  }
+
+  private performRiskAssessment(teacherResult: any, studentResult: any) {
+    return [
+      'High-Impact Risks: What could go seriously wrong?',
+      'Low-Probability Events: Black swan scenarios',
+      'Mitigation Strategies: How to reduce risks',
+      'Contingency Plans: What to do if things fail'
+    ];
+  }
+
+  private createActionPlan(teacherResult: any, studentResult: any) {
+    return [
+      'Immediate Actions: What to do this week',
+      'Short-term Goals: What to achieve this month',
+      'Medium-term Objectives: What to accomplish this quarter',
+      'Long-term Vision: What to build this year'
+    ];
+  }
+
+  private calculatePerspectiveScore(teacherResult: any, studentResult: any) {
+    const teacherPersonalization = teacherResult.confidence * 0.3;
+    const studentPersonalization = (studentResult.learningScore / 100) * 0.4;
+    const advicePersonalization = 0.3;
+    return Math.min((teacherPersonalization + studentPersonalization + advicePersonalization), 1.0);
+  }
+
+  private generateAdditionalContext(teacherResult: any, studentResult: any) {
+    return [
+      'Industry Trends: What\'s happening in the broader market',
+      'Regulatory Changes: New rules and compliance requirements',
+      'Technology Shifts: Emerging tools and platforms',
+      'Social Dynamics: Changing consumer behavior'
+    ];
+  }
+
+  private generateWarnings(teacherResult: any, studentResult: any) {
+    return [
+      'Common Pitfalls: Mistakes others have made',
+      'Timing Risks: When not to act',
+      'Resource Traps: Where money gets wasted',
+      'Legal Considerations: Compliance and liability issues'
+    ];
+  }
+
+  private identifyRelatedTopics(teacherResult: any, studentResult: any) {
+    return [
+      'Adjacent Domains: Related fields to explore',
+      'Complementary Skills: What else to learn',
+      'Supporting Technologies: Tools that enhance this',
+      'Ecosystem Players: Who else is involved'
+    ];
+  }
+
+  private exploreFutureConsiderations(teacherResult: any, studentResult: any) {
+    return [
+      'Scalability Planning: How to grow this',
+      'Evolution Path: How this will change',
+      'Exit Strategies: How to transition out',
+      'Legacy Building: How to create lasting impact'
+    ];
+  }
+
+  private calculateContextScore(teacherResult: any, studentResult: any) {
+    const teacherContext = teacherResult.confidence * 0.3;
+    const studentContext = (studentResult.learningScore / 100) * 0.3;
+    const contextRichness = 0.4;
+    return Math.min((teacherContext + studentContext + contextRichness), 1.0);
   }
 }
 
