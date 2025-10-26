@@ -364,15 +364,15 @@ export class AIWorkflowIntegration {
       
       logger.info('Expert review received', { 
         artworkId, 
-        approved: expertReview.humanReview?.approved,
-        reviewerId: expertReview.humanReview?.reviewerId 
+        approved: expertReview.data?.humanReview?.approved,
+        reviewerId: expertReview.data?.humanReview?.reviewerId 
       });
 
       return {
         artworkId,
         aiValuation,
-        expertReview: expertReview.humanReview,
-        finalValue: expertReview.humanReview?.finalValue || aiValuation.estimatedValue,
+        expertReview: expertReview.data?.humanReview,
+        finalValue: expertReview.data?.humanReview?.finalValue || aiValuation.estimatedValue,
         requiresExpertReview: true
       };
     }
