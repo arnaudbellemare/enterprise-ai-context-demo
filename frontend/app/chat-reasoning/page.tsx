@@ -101,14 +101,22 @@ export default function ChatReasoningPage() {
       ];
 
       // Add assistant message with reasoning
+      console.log('Creating assistant message with response:', data.response?.substring(0, 100) + '...');
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.response || 'No response generated',
         reasoning: tempReasoning,
         metadata: data.metadata
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      console.log('Assistant message created:', assistantMessage);
+      setMessages(prev => {
+        console.log('Previous messages:', prev.length);
+        const newMessages = [...prev, assistantMessage];
+        console.log('New messages:', newMessages.length);
+        return newMessages;
+      });
       setCurrentReasoning([]);
+      console.log('Messages updated, current reasoning cleared');
     } catch (error) {
       console.error('Error:', error);
       console.error('Error details:', error);
@@ -197,7 +205,7 @@ export default function ChatReasoningPage() {
                 </div>
               )}
 
-              {messages.map((msg, idx) => (
+              {console.log('Rendering messages:', messages.length, messages) || messages.map((msg, idx) => (
                 <div key={idx}>
                   {/* User Message */}
                   {msg.role === 'user' && (
