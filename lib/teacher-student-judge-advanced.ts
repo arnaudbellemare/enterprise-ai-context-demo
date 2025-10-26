@@ -15,6 +15,7 @@
 import { createLogger } from './walt/logger';
 import { perplexityTeacher } from './perplexity-teacher';
 import { axLLMEnhancedSystem } from './ax-llm-enhanced';
+import AdvancedLearningMethods from './advanced-learning-methods';
 
 const logger = createLogger('TeacherStudentJudgeAdvanced');
 
@@ -97,6 +98,7 @@ export class AdvancedTeacherStudentJudge {
   private swirl: SWiRL;
   private trm: TRM;
   private graphrag: GraphRAG;
+  private advancedLearningMethods: AdvancedLearningMethods;
 
   constructor() {
     this.ace = new ACE();
@@ -107,6 +109,7 @@ export class AdvancedTeacherStudentJudge {
     this.swirl = new SWiRL();
     this.trm = new TRM();
     this.graphrag = new GraphRAG();
+    this.advancedLearningMethods = new AdvancedLearningMethods();
     logger.info('Advanced Teacher-Student-Judge initialized with full Permutation AI stack');
   }
 
@@ -2109,6 +2112,44 @@ class TRM {
     const studentContext = (studentResult.learningScore / 100) * 0.3;
     const contextRichness = 0.4;
     return Math.min((teacherContext + studentContext + contextRichness), 1.0);
+  }
+
+  /**
+   * Execute Advanced Learning Methods Analysis
+   */
+  async executeAdvancedLearningAnalysis(data: any): Promise<any> {
+    logger.info('Executing advanced learning methods analysis');
+    
+    try {
+      const result = await this.advancedLearningMethods.executeComprehensiveAnalysis(data);
+      
+      logger.info('Advanced learning analysis completed', {
+        components: result.methodology?.length || 0,
+        timestamp: result.timestamp
+      });
+      
+      return {
+        success: true,
+        result,
+        metadata: {
+          processingTime: Date.now(),
+          components: [
+            'Self-Supervised Learning Framework',
+            'Survival Analysis Engine',
+            'Multi-Modal Learning System', 
+            'Causal Inference Engine',
+            'Interpretability Engine'
+          ]
+        }
+      };
+    } catch (error) {
+      logger.error('Advanced learning analysis failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 }
 
