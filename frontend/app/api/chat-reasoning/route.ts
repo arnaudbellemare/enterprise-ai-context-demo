@@ -297,7 +297,7 @@ export async function POST(request: NextRequest) {
     // Use relative URL for Vercel deployment, absolute for local development
     const apiUrl = process.env.NODE_ENV === 'production' 
       ? '/api/teacher-student-judge-advanced'
-      : 'http://localhost:3001/api/teacher-student-judge-advanced';
+      : 'http://localhost:3000/api/teacher-student-judge-advanced';
     
     let permutationAIResult;
     
