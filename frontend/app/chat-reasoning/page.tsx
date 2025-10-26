@@ -70,12 +70,13 @@ export default function ChatReasoningPage() {
       const response = await fetch('/api/chat-reasoning', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: input, domain: 'general' })
+        body: JSON.stringify({ query: input, domain: input.toLowerCase().includes('legal') ? 'legal' : 'general' })
       });
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
+      console.log('API Response:', data);
       
       if (!data.success) throw new Error(data.error || 'API request failed');
 
@@ -105,9 +106,10 @@ export default function ChatReasoningPage() {
       setCurrentReasoning([]);
     } catch (error) {
       console.error('Error:', error);
+      console.error('Error details:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, there was an error processing your request.'
+        content: `Sorry, there was an error processing your request. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       }]);
     } finally {
       setIsLoading(false);
