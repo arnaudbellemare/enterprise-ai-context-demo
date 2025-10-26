@@ -62,8 +62,14 @@ export default function ChatReasoningPage() {
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🔥 FORM SUBMITTED! Event:', e);
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    console.log('🛑 PREVENTED DEFAULT');
+    
+    if (!input.trim() || isLoading) {
+      console.log('❌ SUBMIT: Invalid input or loading:', { input: input.trim(), isLoading });
+      return;
+    }
 
     console.log('🚀 SUBMIT: Starting form submission with input:', input);
     
