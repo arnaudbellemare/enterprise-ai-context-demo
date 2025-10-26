@@ -77,6 +77,8 @@ export default function ChatReasoningPage() {
 
       const data = await response.json();
       console.log('API Response:', data);
+      console.log('Response success:', data.success);
+      console.log('Response data:', data.response);
       
       if (!data.success) throw new Error(data.error || 'API request failed');
 
@@ -107,6 +109,7 @@ export default function ChatReasoningPage() {
     } catch (error) {
       console.error('Error:', error);
       console.error('Error details:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: `Sorry, there was an error processing your request. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
