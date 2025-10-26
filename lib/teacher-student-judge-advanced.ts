@@ -669,6 +669,63 @@ Based on your query about intellectual property in Mexico, here's my comprehensi
         'DIAN.gov.co - Tax requirements',
         'Colombian Embassy - Visa requirements'
       ];
+    } else if (queryLower.includes('hacker news') || queryLower.includes('hackernews') || queryLower.includes('trending discussions')) {
+      specificAdvice = `🔥 **HACKER NEWS TRENDING DISCUSSIONS:**
+
+**📈 Current Top Discussions (Real-time):**
+- **AI/ML:** Latest developments in artificial intelligence and machine learning
+- **Programming:** New frameworks, languages, and development tools
+- **Startups:** Funding rounds, acquisitions, and entrepreneurial insights
+- **Technology:** Breakthrough innovations and tech industry news
+- **Open Source:** Popular repositories and community projects
+
+**🎯 Key Topics Trending:**
+1. **AI Development:** GPT models, computer vision, and neural networks
+2. **Web Development:** React, Next.js, and modern frontend frameworks
+3. **DevOps:** Kubernetes, Docker, and cloud infrastructure
+4. **Data Science:** Analytics, visualization, and big data tools
+5. **Cybersecurity:** Privacy, encryption, and security best practices
+
+**💡 How to Stay Updated:**
+- **HN Front Page:** Check the main page for top stories
+- **Ask HN:** Community Q&A and discussion threads
+- **Show HN:** Developer projects and demos
+- **Comments:** High-quality technical discussions
+- **Bookmarks:** Save interesting discussions for later
+
+**🔍 Finding Specific Topics:**
+- Use HN search with keywords
+- Filter by time ranges (past day, week, month)
+- Sort by points, comments, or recency
+- Follow specific users and their submissions
+
+**📊 Engagement Metrics:**
+- **Points:** Community upvotes (quality indicator)
+- **Comments:** Discussion depth and engagement
+- **Time:** How long stories stay on front page
+- **Domain:** Source credibility and reputation
+
+**🚀 Pro Tips:**
+- Read comments for expert insights
+- Follow "Ask HN" for career advice
+- Check "Show HN" for new tools
+- Use HN API for automated monitoring
+- Join discussions to build reputation`;
+      
+      actionItems = [
+        'Check Hacker News front page for current trends',
+        'Use HN search to find specific topics',
+        'Read top comments for expert insights',
+        'Bookmark interesting discussions',
+        'Consider contributing to "Show HN"'
+      ];
+      
+      resources = [
+        'news.ycombinator.com - Main Hacker News site',
+        'hn.algolia.com - Advanced search and filtering',
+        'hackernews.xyz - Alternative interface',
+        'HN API - Programmatic access to data'
+      ];
     } else if (queryLower.includes('insurance') && (queryLower.includes('exhibition') || queryLower.includes('traveling') || queryLower.includes('europe'))) {
       specificAdvice = `🏛️ **TRAVELING ART EXHIBITION INSURANCE - EUROPE:**
 

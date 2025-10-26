@@ -65,7 +65,12 @@ export async function POST(request: NextRequest) {
     // Call the Teacher-Student-Judge system
     console.log(`📡 Calling Teacher-Student-Judge Advanced API...`);
     
-    const teacherStudentJudgeResponse = await fetch('http://localhost:3001/api/teacher-student-judge-advanced', {
+    // Use relative URL for Vercel deployment, absolute for local development
+    const apiUrl = process.env.NODE_ENV === 'production' 
+      ? '/api/teacher-student-judge-advanced'
+      : 'http://localhost:3001/api/teacher-student-judge-advanced';
+    
+    const teacherStudentJudgeResponse = await fetch(apiUrl, {
           method: 'POST',
       headers: {
         'Content-Type': 'application/json',
