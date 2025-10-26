@@ -262,10 +262,11 @@ export class AIWorkflowIntegration {
     // Step 3: Create hook for human approval
     const approvalHook = await poApprovalHook.trigger({
       poId,
-      poData: poData,
-      aiAnalysis: aiAnalysis,
-      context: context,
-      timestamp: new Date().toISOString()
+      approved: false, // Will be set by human decision
+      approvedBy: context.userId || 'unknown',
+      comment: 'Pending human approval',
+      timestamp: new Date().toISOString(),
+      aiConfidence: aiAnalysis.confidence
     });
 
     logger.info('PO approval hook triggered', { poId, success: approvalHook.success });
