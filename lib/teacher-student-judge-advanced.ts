@@ -18,6 +18,7 @@ import { axLLMEnhancedSystem } from './ax-llm-enhanced';
 import AdvancedLearningMethods from './advanced-learning-methods';
 import ScalableDataSystem from './scalable-data-system';
 import ComprehensiveSemioticSystem from './semiotic-inference-system';
+import ContinualLearningSystem from './continual-learning-system';
 
 const logger = createLogger('TeacherStudentJudgeAdvanced');
 
@@ -103,6 +104,7 @@ export class AdvancedTeacherStudentJudge {
   private advancedLearningMethods: AdvancedLearningMethods;
   private scalableDataSystem: ScalableDataSystem;
   private semioticSystem: ComprehensiveSemioticSystem;
+  private continualLearningSystem: ContinualLearningSystem;
 
   constructor() {
     this.ace = new ACE();
@@ -116,6 +118,7 @@ export class AdvancedTeacherStudentJudge {
     this.advancedLearningMethods = new AdvancedLearningMethods();
     this.scalableDataSystem = new ScalableDataSystem();
     this.semioticSystem = new ComprehensiveSemioticSystem();
+    this.continualLearningSystem = new ContinualLearningSystem();
     logger.info('Advanced Teacher-Student-Judge initialized with full Permutation AI stack');
   }
 
@@ -2258,6 +2261,45 @@ class TRM {
       };
     } catch (error) {
       logger.error('Semiotic analysis failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Continual Learning Pipeline
+   * Beyond static pre-training to dynamic, on-the-fly adaptation
+   */
+  async executeContinualLearning(query: string, context: any, baseModel: any): Promise<any> {
+    logger.info('Executing continual learning pipeline', { query: query.substring(0, 50) });
+    
+    try {
+      const result = await this.continualLearningSystem.executeContinualLearning(query, context, baseModel);
+      
+      logger.info('Continual learning pipeline completed', {
+        selectedExamples: result.selectedExamples?.length || 0,
+        adaptationTime: result.tttResult?.adaptationTime || 0,
+        performanceGain: result.tttResult?.performanceGain || 0,
+        memoryEntries: result.memoryEntries?.length || 0
+      });
+      
+      return {
+        success: true,
+        result,
+        timestamp: new Date().toISOString(),
+        paradigmShift: {
+          from: 'Static pre-training',
+          to: 'Dynamic, on-the-fly adaptation',
+          innovation: 'Test-time adaptation outperforms in-context learning',
+          efficiency: '3.8B model with TTT outperforms 27B base model',
+          speed: 'Local MoE achieves TTT accuracy with 100x speedup'
+        }
+      };
+    } catch (error) {
+      logger.error('Continual learning pipeline failed', { error });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
