@@ -17,6 +17,7 @@ import { perplexityTeacher } from './perplexity-teacher';
 import { axLLMEnhancedSystem } from './ax-llm-enhanced';
 import AdvancedLearningMethods from './advanced-learning-methods';
 import ScalableDataSystem from './scalable-data-system';
+import ComprehensiveSemioticSystem from './semiotic-inference-system';
 
 const logger = createLogger('TeacherStudentJudgeAdvanced');
 
@@ -101,6 +102,7 @@ export class AdvancedTeacherStudentJudge {
   private graphrag: GraphRAG;
   private advancedLearningMethods: AdvancedLearningMethods;
   private scalableDataSystem: ScalableDataSystem;
+  private semioticSystem: ComprehensiveSemioticSystem;
 
   constructor() {
     this.ace = new ACE();
@@ -113,6 +115,7 @@ export class AdvancedTeacherStudentJudge {
     this.graphrag = new GraphRAG();
     this.advancedLearningMethods = new AdvancedLearningMethods();
     this.scalableDataSystem = new ScalableDataSystem();
+    this.semioticSystem = new ComprehensiveSemioticSystem();
     logger.info('Advanced Teacher-Student-Judge initialized with full Permutation AI stack');
   }
 
@@ -2222,6 +2225,42 @@ class TRM {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         operation,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Semiotic Inference Analysis
+   * Beyond formal logic to include experience and imagination
+   */
+  async executeSemioticAnalysis(query: string, context: any): Promise<any> {
+    logger.info('Executing semiotic inference analysis', { query: query.substring(0, 50) });
+    
+    try {
+      const result = await this.semioticSystem.executeSemioticAnalysis(query, context);
+      
+      logger.info('Semiotic analysis completed', {
+        inferenceTypes: Object.keys(result.inference || {}).length,
+        creativeInsights: result.creativeInsights?.length || 0,
+        semioticSigns: result.semioticProcessing?.length || 0
+      });
+      
+      return {
+        success: true,
+        result,
+        timestamp: new Date().toISOString(),
+        philosophicalFramework: {
+          foundation: 'C.S. Peirce\'s semiotic theory',
+          critique: 'Descartes\' bias of logic supremacy',
+          innovation: 'Experience + Imagination + Logic integration'
+        }
+      };
+    } catch (error) {
+      logger.error('Semiotic analysis failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       };
     }
