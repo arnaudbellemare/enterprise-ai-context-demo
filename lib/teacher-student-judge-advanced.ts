@@ -14,6 +14,7 @@
 
 import { createLogger } from './walt/logger';
 import { perplexityTeacher } from './perplexity-teacher';
+import { axLLMEnhancedSystem } from './ax-llm-enhanced';
 
 const logger = createLogger('TeacherStudentJudgeAdvanced');
 
@@ -1235,30 +1236,79 @@ class ACE {
 // AX-LLM: Advanced Reasoning
 class AXLLM {
   async reasonAboutValuation(request: AdvancedTeacherStudentJudgeRequest, aceContext: any) {
-    logger.info('AX-LLM: Advanced reasoning about valuation');
+    logger.info('AX-LLM: Enhanced advanced reasoning with DSPy signatures and TRM concepts');
     
-    const reasoningSteps = [
-      this.reasonAboutArtist(request.artwork.artist, aceContext.enhancedContext.artist),
-      this.reasonAboutMedium(request.artwork.medium, aceContext.enhancedContext.medium),
-      this.reasonAboutPeriod(request.artwork.year, request.artwork.period, aceContext.enhancedContext.period),
-      this.reasonAboutMarket(aceContext.enhancedContext.market),
-      this.reasonAboutPurpose(request.purpose, aceContext.enhancedContext.purpose)
-    ];
-    
-    const reasoningScore = reasoningSteps.reduce((sum, step) => sum + step.score, 0) / reasoningSteps.length;
-    
-    return {
-      reasoningSteps,
-      reasoningScore,
-      conclusion: this.generateReasoningConclusion(reasoningSteps),
-      methodology: [
-        'AX-LLM: Advanced reasoning about artist value',
-        'AX-LLM: Advanced reasoning about medium value',
-        'AX-LLM: Advanced reasoning about period value',
-        'AX-LLM: Advanced reasoning about market value',
-        'AX-LLM: Advanced reasoning about purpose value'
-      ]
-    };
+    try {
+      // Use enhanced AX-LLM system with DSPy and TRM
+      const enhancedResult = await axLLMEnhancedSystem.processWithEnhancedReasoning(
+        request.query || `Valuation for ${request.artwork.artist} ${request.artwork.title}`,
+        {
+          auctionData: aceContext.enhancedContext.market?.auctionData || [],
+          sources: aceContext.enhancedContext.market?.sources || [],
+          context: {
+            artist: request.artwork.artist,
+            title: request.artwork.title,
+            medium: request.artwork.medium,
+            year: request.artwork.year,
+            purpose: request.purpose
+          }
+        }
+      );
+
+      logger.info('AX-LLM Enhanced processing completed', {
+        dspyModules: enhancedResult.dspyResult.dspyModules,
+        trmIterations: enhancedResult.trmResult.iterations,
+        finalConfidence: enhancedResult.confidence,
+        components: enhancedResult.components
+      });
+
+      return {
+        reasoningSteps: enhancedResult.trmResult.reasoningChain.map((step, i) => ({
+          score: enhancedResult.confidence,
+          factors: [`TRM Iteration ${i + 1}`],
+          conclusion: step
+        })),
+        reasoningScore: enhancedResult.confidence,
+        conclusion: enhancedResult.finalAnswer,
+        methodology: [
+          'AX-LLM: Enhanced DSPy Query Analysis',
+          'AX-LLM: Enhanced DSPy Market Analysis',
+          'AX-LLM: Enhanced DSPy Response Generation',
+          'AX-LLM: TRM Recursive Reasoning',
+          'AX-LLM: TRM Adaptive Computation',
+          'AX-LLM: Integrated Multi-Modal Processing'
+        ],
+        enhancedComponents: enhancedResult.components,
+        dspyConfidence: enhancedResult.dspyResult.confidence,
+        trmConfidence: enhancedResult.trmResult.confidence
+      };
+    } catch (error) {
+      logger.error('AX-LLM Enhanced processing failed, falling back to basic reasoning:', error);
+      
+      // Fallback to basic reasoning
+      const reasoningSteps = [
+        this.reasonAboutArtist(request.artwork.artist, aceContext.enhancedContext.artist),
+        this.reasonAboutMedium(request.artwork.medium, aceContext.enhancedContext.medium),
+        this.reasonAboutPeriod(request.artwork.year, request.artwork.period, aceContext.enhancedContext.period),
+        this.reasonAboutMarket(aceContext.enhancedContext.market),
+        this.reasonAboutPurpose(request.purpose, aceContext.enhancedContext.purpose)
+      ];
+      
+      const reasoningScore = reasoningSteps.reduce((sum, step) => sum + step.score, 0) / reasoningSteps.length;
+      
+      return {
+        reasoningSteps,
+        reasoningScore,
+        conclusion: this.generateReasoningConclusion(reasoningSteps),
+        methodology: [
+          'AX-LLM: Advanced reasoning about artist value',
+          'AX-LLM: Advanced reasoning about medium value',
+          'AX-LLM: Advanced reasoning about period value',
+          'AX-LLM: Advanced reasoning about market value',
+          'AX-LLM: Advanced reasoning about purpose value'
+        ]
+      };
+    }
   }
 
   private reasonAboutArtist(artist: string, artistContext: any) {
