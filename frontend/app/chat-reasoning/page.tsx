@@ -62,15 +62,18 @@ export default function ChatReasoningPage() {
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
     setIsLoading(true);
     setCurrentReasoning([]);
+    
+    // Store the input for the API call
+    const queryInput = input;
+    setInput('');
 
     try {
       const response = await fetch('/api/chat-reasoning', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: input, domain: input.toLowerCase().includes('legal') ? 'legal' : 'general' })
+        body: JSON.stringify({ query: queryInput, domain: queryInput.toLowerCase().includes('legal') ? 'legal' : 'general' })
       });
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
