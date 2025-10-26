@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Call the Teacher-Student-Judge system
     console.log(`📡 Calling Teacher-Student-Judge Advanced API...`);
     
-    const teacherStudentJudgeResponse = await fetch('http://localhost:3000/api/teacher-student-judge-advanced', {
+    const teacherStudentJudgeResponse = await fetch('http://localhost:3001/api/teacher-student-judge-advanced', {
           method: 'POST',
       headers: {
         'Content-Type': 'application/json',
