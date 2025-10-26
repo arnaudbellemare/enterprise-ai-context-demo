@@ -47,38 +47,13 @@ export async function POST(req: NextRequest) {
     // Check if Supabase is available
     const supabase = getSupabaseClient();
     if (!supabase) {
-      // Return mock data when Supabase is not available
       return NextResponse.json({
-        documents: [
-          {
-            id: 'mock-1',
-            content: `Mock property data for: ${query}. This would normally search your indexed property database.`,
-            similarity: 0.95,
-            metadata: { source: 'mock', collection: 'properties' },
-            source: 'indexed',
-            llm_summary: `Mock property search results for: ${query}`
-          },
-          {
-            id: 'mock-2', 
-            content: `Additional mock property information related to: ${query}. Configure Supabase for real data.`,
-            similarity: 0.87,
-            metadata: { source: 'mock', collection: 'properties' },
-            source: 'indexed',
-            llm_summary: `More mock property data for: ${query}`
-          }
-        ],
-        errors: [],
+        success: false,
+        error: 'Supabase not configured. Real database search required.',
         query: query,
         source: 'indexed',
-        totalResults: 2,
-        processingTime: 50,
-        searchMetadata: {
-          model: 'mock-data',
-          matchThreshold,
-          collection: collection || 'all',
-          note: 'Using mock data - configure Supabase for real search'
-        }
-      });
+        note: 'Configure Supabase for real search functionality'
+      }, { status: 500 });
     }
 
     const startTime = Date.now();
@@ -250,38 +225,14 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Error in indexed search:', error);
     
-    // Return mock data when any error occurs
+    // Return error when any error occurs - no mock data
     return NextResponse.json({
-      documents: [
-        {
-          id: 'mock-1',
-          content: `Mock property data. Search failed - using mock data: ${error.message || 'Unknown error'}`,
-          similarity: 0.95,
-          metadata: { source: 'mock', collection: 'properties' },
-          source: 'indexed',
-          llm_summary: `Mock property search results`
-        },
-        {
-          id: 'mock-2', 
-          content: `Additional mock property information. Configure services for real data.`,
-          similarity: 0.87,
-          metadata: { source: 'mock', collection: 'properties' },
-          source: 'indexed',
-          llm_summary: `More mock property data`
-        }
-      ],
-      errors: [],
+      success: false,
+      error: `Search failed: ${error.message || 'Unknown error'}`,
       query: query || 'unknown query',
       source: 'indexed',
-      totalResults: 2,
-      processingTime: 50,
-      searchMetadata: {
-        model: 'mock-data',
-        matchThreshold: 0.7,
-        collection: 'all',
-        note: 'Using mock data - search failed'
-      }
-    });
+      note: 'Real search functionality required - no mock data'
+    }, { status: 500 });
   }
 }
 
