@@ -132,8 +132,8 @@ export class AIWorkflowIntegration {
     const approvalHook = await emailApprovalHook.trigger({
       emailId,
       emailBody: emailBody,
-      sender: sender,
-      subject: subject,
+      sender: context.userId || 'unknown',
+      subject: 'Email Approval Request',
       timestamp: new Date().toISOString()
     });
 
