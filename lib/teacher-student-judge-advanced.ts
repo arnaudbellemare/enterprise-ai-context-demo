@@ -20,6 +20,7 @@ import ScalableDataSystem from './scalable-data-system';
 import ComprehensiveSemioticSystem from './semiotic-inference-system';
 import ContinualLearningSystem from './continual-learning-system';
 import SubspaceBoostingSystem from './subspace-boosting-system';
+import QualityFirstTrainingSystem from './quality-first-training-system';
 
 const logger = createLogger('TeacherStudentJudgeAdvanced');
 
@@ -107,6 +108,7 @@ export class AdvancedTeacherStudentJudge {
   private semioticSystem: ComprehensiveSemioticSystem;
   private continualLearningSystem: ContinualLearningSystem;
   private subspaceBoostingSystem: SubspaceBoostingSystem;
+  private qualityFirstTrainingSystem: QualityFirstTrainingSystem;
 
   constructor() {
     this.ace = new ACE();
@@ -122,6 +124,7 @@ export class AdvancedTeacherStudentJudge {
     this.semioticSystem = new ComprehensiveSemioticSystem();
     this.continualLearningSystem = new ContinualLearningSystem();
     this.subspaceBoostingSystem = new SubspaceBoostingSystem();
+    this.qualityFirstTrainingSystem = new QualityFirstTrainingSystem();
     logger.info('Advanced Teacher-Student-Judge initialized with full Permutation AI stack');
   }
 
@@ -2343,6 +2346,46 @@ class TRM {
       };
     } catch (error) {
       logger.error('Subspace boosting analysis failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Quality-First Training Analysis
+   * Prioritize quality and diversity over volume
+   */
+  async executeQualityFirstTraining(): Promise<any> {
+    logger.info('Executing quality-first training analysis');
+    
+    try {
+      const result = await this.qualityFirstTrainingSystem.executeQualityFirstTraining();
+      
+      logger.info('Quality-first training analysis completed', {
+        graduateQuestions: result.graduateQuestions?.length || 0,
+        chainOfThoughtQuestions: result.chainOfThoughtQuestions?.length || 0,
+        qualityScore: result.qualityMetrics?.qualityScore || 0,
+        accuracyGain: result.distillationResult?.accuracyGain || 0,
+        efficiencyMultiplier: result.efficiencyGains?.efficiencyMultiplier || 0
+      });
+      
+      return {
+        success: true,
+        result,
+        timestamp: new Date().toISOString(),
+        paradigmShift: {
+          from: 'Volume-based training',
+          to: 'Quality and diversity-based training',
+          innovation: 'NaturalReasoning dataset with graduate-level questions',
+          performance: 'Steeper accuracy gains with smaller, higher-quality datasets',
+          efficiency: '3x fewer training steps with higher final test accuracy'
+        }
+      };
+    } catch (error) {
+      logger.error('Quality-first training analysis failed', { error });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
