@@ -21,6 +21,7 @@ import ComprehensiveSemioticSystem from './semiotic-inference-system';
 import ContinualLearningSystem from './continual-learning-system';
 import SubspaceBoostingSystem from './subspace-boosting-system';
 import QualityFirstTrainingSystem from './quality-first-training-system';
+import RigorousEvaluationSystem from './rigorous-evaluation-system';
 
 const logger = createLogger('TeacherStudentJudgeAdvanced');
 
@@ -109,6 +110,7 @@ export class AdvancedTeacherStudentJudge {
   private continualLearningSystem: ContinualLearningSystem;
   private subspaceBoostingSystem: SubspaceBoostingSystem;
   private qualityFirstTrainingSystem: QualityFirstTrainingSystem;
+  private rigorousEvaluationSystem: RigorousEvaluationSystem;
 
   constructor() {
     this.ace = new ACE();
@@ -125,6 +127,7 @@ export class AdvancedTeacherStudentJudge {
     this.continualLearningSystem = new ContinualLearningSystem();
     this.subspaceBoostingSystem = new SubspaceBoostingSystem();
     this.qualityFirstTrainingSystem = new QualityFirstTrainingSystem();
+    this.rigorousEvaluationSystem = new RigorousEvaluationSystem();
     logger.info('Advanced Teacher-Student-Judge initialized with full Permutation AI stack');
   }
 
@@ -2386,6 +2389,55 @@ class TRM {
       };
     } catch (error) {
       logger.error('Quality-first training analysis failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Rigorous Evaluation Analysis
+   * Address the illusion of reasoning gains
+   */
+  async executeRigorousEvaluation(
+    baselineResults: number[],
+    improvedResults: number[],
+    evaluationRuns: any[],
+    rlMethods: any[]
+  ): Promise<any> {
+    logger.info('Executing rigorous evaluation analysis');
+    
+    try {
+      const result = await this.rigorousEvaluationSystem.executeRigorousEvaluation(
+        baselineResults,
+        improvedResults,
+        evaluationRuns,
+        rlMethods
+      );
+      
+      logger.info('Rigorous evaluation analysis completed', {
+        illusionOfGains: result.criticalFindings?.illusionOfGains || false,
+        implementationSensitivity: result.criticalFindings?.implementationSensitivity || 0,
+        rlMethodDrops: result.criticalFindings?.rlMethodDrops || 0,
+        statisticalSignificance: result.criticalFindings?.statisticalSignificance || 0
+      });
+      
+      return {
+        success: true,
+        result,
+        timestamp: new Date().toISOString(),
+        researchCritique: {
+          problem: 'Illusion of reasoning gains falling within baseline variance ranges',
+          sensitivity: 'High sensitivity to implementation details (decoding parameters, seeds, prompts, hardware)',
+          datasetSize: 'Small dataset sizes causing performance swings (e.g., AIME 24 with 30 examples)',
+          rlMethods: 'RL approaches showing minimal real gains and overfitting easily',
+          standardization: 'Need for rigorous multi-seed evaluation protocols and transparent reporting'
+        }
+      };
+    } catch (error) {
+      logger.error('Rigorous evaluation analysis failed', { error });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
