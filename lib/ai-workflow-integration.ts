@@ -348,7 +348,8 @@ export class AIWorkflowIntegration {
         artwork: valuationRequest.artwork,
         valuationRequest: {
           purpose: valuationRequest.purpose,
-          urgency: valuationRequest.urgency
+          urgency: valuationRequest.urgency,
+          clientId: context.userId || 'unknown'
         },
         aiValuation: aiValuation,
         timestamp: new Date().toISOString()
