@@ -276,22 +276,22 @@ export class AIWorkflowIntegration {
     
     logger.info('Human PO decision received', { 
       poId, 
-      approved: humanDecision.approved,
-      approvedBy: humanDecision.approvedBy 
+      approved: humanDecision.data?.approved,
+      approvedBy: humanDecision.data?.approvedBy 
     });
 
     // Step 5: Execute approval/rejection
-    if (humanDecision.approved) {
-      await this.markPOApproved(poId, humanDecision);
+    if (humanDecision.data?.approved) {
+      await this.markPOApproved(poId, humanDecision.data);
     } else {
-      await this.markPORejected(poId, humanDecision);
+      await this.markPORejected(poId, humanDecision.data);
     }
 
     return {
-      approved: humanDecision.approved,
+      approved: humanDecision.data?.approved,
       humanApproved: true,
-      approvedBy: humanDecision.approvedBy,
-      comment: humanDecision.comment,
+      approvedBy: humanDecision.data?.approvedBy,
+      comment: humanDecision.data?.comment,
       aiConfidence: aiAnalysis.confidence,
       aiReasoning: aiAnalysis.reasoning
     };
