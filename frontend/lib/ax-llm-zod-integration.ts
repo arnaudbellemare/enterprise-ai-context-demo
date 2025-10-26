@@ -37,9 +37,9 @@ class AxZodSignature<TInput = any, TOutput = any> {
     inputSchema: T,
     outputSchema?: z.ZodSchema,
     config: any = {}
-  ): AxZodSignature<z.infer<T>, z.infer<typeof outputSchema>> {
+  ): AxZodSignature<z.infer<T>, outputSchema extends z.ZodSchema ? z.infer<outputSchema> : any> {
     const signature = { signatureString: 'mock-signature' };
-    return new AxZodSignature(signature, inputSchema, outputSchema, config) as AxZodSignature<z.infer<T>, z.infer<typeof outputSchema>>;
+    return new AxZodSignature(signature, inputSchema, outputSchema, config) as AxZodSignature<z.infer<T>, outputSchema extends z.ZodSchema ? z.infer<outputSchema> : any>;
   }
 
   validateInput(data: unknown): any {
