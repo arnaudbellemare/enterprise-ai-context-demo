@@ -179,15 +179,15 @@ export class AIWorkflowIntegration {
       
       logger.info('Human decision received', { 
         emailId, 
-        approved: humanDecision.classification === 'approval',
-        approvedBy: humanDecision.sender 
+        approved: humanDecision.data?.classification === 'approval',
+        approvedBy: humanDecision.data?.sender 
       });
 
       return {
-        approved: humanDecision.classification === 'approval',
+        approved: humanDecision.data?.classification === 'approval',
         humanApproved: true,
-        approvedBy: humanDecision.sender,
-        comment: humanDecision.reasoning || 'No comment provided',
+        approvedBy: humanDecision.data?.sender,
+        comment: humanDecision.data?.reasoning || 'No comment provided',
         aiConfidence: aiClassification.confidence,
         aiReasoning: aiClassification.reasoning
       };
