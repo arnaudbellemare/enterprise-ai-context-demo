@@ -622,8 +622,8 @@ Based on your query about intellectual property in Mexico, here's my comprehensi
     const queryLower = query.toLowerCase();
     
     let specificAdvice = '';
-    let actionItems = [];
-    let resources = [];
+    let actionItems: string[] = [];
+    let resources: string[] = [];
     
     if (queryLower.includes('colombia') && (queryLower.includes('business') || queryLower.includes('move'))) {
       specificAdvice = `🇨🇴 **BUSINESS RELOCATION TO COLOMBIA:**
