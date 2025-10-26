@@ -5,7 +5,8 @@
  * to create sophisticated AI workflows with hooks, webhooks, and human-in-the-loop patterns.
  */
 
-import { createHook, createWebhook, defineHook } from "workflow";
+// Simplified workflow implementation (Vercel Workflow SDK not available)
+// import { createHook, createWebhook, defineHook } from "workflow";
 
 // Simple logger for AI workflows
 const logger = {
@@ -83,14 +84,27 @@ export interface ArtValuationWorkflow {
 // DEFINE WORKFLOW HOOKS
 // ============================================================
 
-// Email approval workflow hook
-export const emailApprovalHook = defineHook<EmailApprovalRequest>();
+// Simplified hook implementations (Vercel Workflow SDK not available)
+export const emailApprovalHook = {
+  trigger: async (data: EmailApprovalRequest) => {
+    logger.info('Email approval hook triggered', { emailId: data.emailId });
+    return { success: true, data };
+  }
+};
 
-// PO approval workflow hook  
-export const poApprovalHook = defineHook<POApprovalDecision>();
+export const poApprovalHook = {
+  trigger: async (data: POApprovalDecision) => {
+    logger.info('PO approval hook triggered', { poId: data.poId });
+    return { success: true, data };
+  }
+};
 
-// Art valuation workflow hook
-export const artValuationHook = defineHook<ArtValuationWorkflow>();
+export const artValuationHook = {
+  trigger: async (data: ArtValuationWorkflow) => {
+    logger.info('Art valuation hook triggered', { artworkId: data.artworkId });
+    return { success: true, data };
+  }
+};
 
 // ============================================================
 // AI WORKFLOW CLASSES
