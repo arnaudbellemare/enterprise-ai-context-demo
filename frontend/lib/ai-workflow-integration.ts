@@ -133,13 +133,17 @@ export class AIWorkflowIntegration {
     const aiClassification = await this.classifyEmailContent(emailBody, context);
     
     // Step 2: Create hook for human approval if needed
-    const approvalHook = emailApprovalHook.create({
-      token: `email_approval:${emailId}:${context.userId}`
+    const approvalHook = await emailApprovalHook.trigger({
+      emailId,
+      emailBody: emailBody,
+      sender: sender,
+      subject: subject,
+      timestamp: new Date().toISOString()
     });
 
-    logger.info('Email approval hook created', { 
+    logger.info('Email approval hook triggered', { 
       emailId, 
-      token: approvalHook.token,
+      success: approvalHook.success,
       classification: aiClassification.classification 
     });
 
@@ -256,11 +260,15 @@ export class AIWorkflowIntegration {
     }
 
     // Step 3: Create hook for human approval
-    const approvalHook = poApprovalHook.create({
-      token: `po_approval:${poId}:${context.userId}`
+    const approvalHook = await poApprovalHook.trigger({
+      poId,
+      poData: poData,
+      aiAnalysis: aiAnalysis,
+      context: context,
+      timestamp: new Date().toISOString()
     });
 
-    logger.info('PO approval hook created', { poId, token: approvalHook.token });
+    logger.info('PO approval hook triggered', { poId, success: approvalHook.success });
 
     // Step 4: Wait for human decision
     const humanDecision = await approvalHook;
@@ -339,12 +347,17 @@ export class AIWorkflowIntegration {
       });
 
       // Create hook for expert review
-      const expertReviewHook = artValuationHook.create({
-        token: `art_valuation:${artworkId}:${valuationRequest.purpose}`
+      const expertReviewResult = await artValuationHook.trigger({
+        artworkId,
+        artwork: valuationRequest.artwork,
+        purpose: valuationRequest.purpose,
+        urgency: valuationRequest.urgency,
+        aiValuation: aiValuation,
+        timestamp: new Date().toISOString()
       });
 
       // Wait for expert review
-      const expertReview = await expertReviewHook;
+      const expertReview = expertReviewResult;
       
       logger.info('Expert review received', { 
         artworkId, 
