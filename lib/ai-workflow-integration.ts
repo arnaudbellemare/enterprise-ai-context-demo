@@ -351,8 +351,7 @@ export class AIWorkflowIntegration {
           urgency: valuationRequest.urgency,
           clientId: valuationRequest.clientId || 'unknown'
         },
-        aiValuation: aiValuation,
-        timestamp: new Date().toISOString()
+        aiValuation: aiValuation
       });
 
       // Wait for expert review
