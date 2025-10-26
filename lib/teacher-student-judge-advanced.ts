@@ -16,6 +16,7 @@ import { createLogger } from './walt/logger';
 import { perplexityTeacher } from './perplexity-teacher';
 import { axLLMEnhancedSystem } from './ax-llm-enhanced';
 import AdvancedLearningMethods from './advanced-learning-methods';
+import ScalableDataSystem from './scalable-data-system';
 
 const logger = createLogger('TeacherStudentJudgeAdvanced');
 
@@ -99,6 +100,7 @@ export class AdvancedTeacherStudentJudge {
   private trm: TRM;
   private graphrag: GraphRAG;
   private advancedLearningMethods: AdvancedLearningMethods;
+  private scalableDataSystem: ScalableDataSystem;
 
   constructor() {
     this.ace = new ACE();
@@ -110,6 +112,7 @@ export class AdvancedTeacherStudentJudge {
     this.trm = new TRM();
     this.graphrag = new GraphRAG();
     this.advancedLearningMethods = new AdvancedLearningMethods();
+    this.scalableDataSystem = new ScalableDataSystem();
     logger.info('Advanced Teacher-Student-Judge initialized with full Permutation AI stack');
   }
 
@@ -2147,6 +2150,78 @@ class TRM {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Scalable Data System Operations
+   */
+  async executeScalableDataOperations(operation: string, params: any): Promise<any> {
+    logger.info('Executing scalable data system operations', { operation });
+    
+    try {
+      let result;
+      
+      switch (operation) {
+        case 'end-to-end-pipeline':
+          result = await this.scalableDataSystem.executeScalableDataPipeline(
+            params.domains || ['art', 'legal', 'business'], 
+            params.targetSize || 100
+          );
+          break;
+          
+        case 'generate-dataset':
+          const generator = this.scalableDataSystem['dataGenerator'];
+          result = await generator.generateScalableDataset(
+            params.domain || 'general', 
+            params.targetSize || 50
+          );
+          break;
+          
+        case 'distill-data':
+          const distillationEngine = this.scalableDataSystem['distillationEngine'];
+          result = await distillationEngine.distillDataset(
+            params.samples || [], 
+            params.targetSize || 50
+          );
+          break;
+          
+        case 'reasoning-chains':
+          const reasoningArchitecture = this.scalableDataSystem['reasoningArchitecture'];
+          result = await reasoningArchitecture.generateReasoningChain(
+            params.problem || 'Sample problem', 
+            params.domain || 'general'
+          );
+          break;
+          
+        case 'verify-quality':
+          const verifiabilitySystem = this.scalableDataSystem['verifiabilitySystem'];
+          result = await verifiabilitySystem.verifyQuality(params.samples || []);
+          break;
+          
+        default:
+          throw new Error(`Unknown operation: ${operation}`);
+      }
+      
+      logger.info('Scalable data operation completed', {
+        operation,
+        resultKeys: Object.keys(result || {})
+      });
+      
+      return {
+        success: true,
+        operation,
+        result,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      logger.error('Scalable data operation failed', { error, operation });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        operation,
         timestamp: new Date().toISOString()
       };
     }
