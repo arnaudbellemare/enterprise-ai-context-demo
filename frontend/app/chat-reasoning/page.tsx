@@ -33,6 +33,11 @@ export default function ChatReasoningPage() {
     scrollToBottom();
   }, [messages, currentReasoning]);
 
+  // Debug messages state changes
+  useEffect(() => {
+    console.log('Messages state changed:', messages.length, messages);
+  }, [messages]);
+
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0);
