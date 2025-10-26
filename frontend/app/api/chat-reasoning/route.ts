@@ -25,6 +25,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if environment variables are available
+    if (!process.env.PERPLEXITY_API_KEY) {
+      console.warn('⚠️ PERPLEXITY_API_KEY not found in environment variables');
+    }
+
     console.log(`🧠 Chat Reasoning - FULL PERMUTATION AI STACK`);
     console.log(`   Query: ${query.substring(0, 50)}...`);
     console.log(`   Domain: ${domain}`);
@@ -65,7 +70,11 @@ export async function POST(request: NextRequest) {
     // Call the Teacher-Student-Judge system
     console.log(`📡 Calling Teacher-Student-Judge Advanced API...`);
     
-    const teacherStudentJudgeResponse = await fetch('http://localhost:3000/api/teacher-student-judge-advanced', {
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
+    
+    const teacherStudentJudgeResponse = await fetch(`${baseUrl}/api/teacher-student-judge-advanced`, {
           method: 'POST',
       headers: {
         'Content-Type': 'application/json',
