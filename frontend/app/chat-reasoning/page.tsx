@@ -65,14 +65,25 @@ export default function ChatReasoningPage() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    console.log('🚀 SUBMIT: Starting form submission with input:', input);
+    
     const userMessage: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+    console.log('👤 USER: Adding user message:', userMessage);
+    setMessages(prev => {
+      console.log('📝 MESSAGES: Previous messages:', prev.length);
+      const newMessages = [...prev, userMessage];
+      console.log('📝 MESSAGES: New messages after user:', newMessages.length);
+      return newMessages;
+    });
+    
     setIsLoading(true);
     setCurrentReasoning([]);
     
     // Store the input for the API call
     const queryInput = input;
+    console.log('💾 STORED: Query input stored:', queryInput);
     setInput('');
+    console.log('🧹 CLEARED: Input field cleared');
 
     try {
       const response = await fetch('/api/chat-reasoning', {
@@ -83,10 +94,11 @@ export default function ChatReasoningPage() {
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
+      console.log('🌐 API: Making API call to /api/chat-reasoning');
       const data = await response.json();
-      console.log('API Response:', data);
-      console.log('Response success:', data.success);
-      console.log('Response data:', data.response);
+      console.log('📡 API: Response received:', data);
+      console.log('✅ API: Success:', data.success);
+      console.log('📄 API: Response content:', data.response?.substring(0, 100) + '...');
       
       if (!data.success) throw new Error(data.error || 'API request failed');
 
