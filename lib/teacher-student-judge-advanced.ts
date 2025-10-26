@@ -890,9 +890,192 @@ Based on your query about intellectual property in Mexico, here's my comprehensi
         domain = 'education';
       }
       
+      // Inline helper functions to avoid method access issues
+      const getDomainEmojiInline = (domain: string): string => {
+        const emojis: { [key: string]: string } = {
+          'business': '🏢',
+          'art_valuation': '🎨',
+          'artificial_intelligence': '🤖',
+          'cryptocurrency': '₿',
+          'healthcare': '🏥',
+          'finance': '💰',
+          'legal': '⚖️',
+          'technology': '💻',
+          'science': '🔬',
+          'education': '📚',
+          'general': '🧠'
+        };
+        return emojis[domain] || '🧠';
+      };
+      
+      const getDomainTitleInline = (domain: string): string => {
+        const titles: { [key: string]: string } = {
+          'business': 'Business & Entrepreneurship',
+          'art_valuation': 'Art Valuation',
+          'artificial_intelligence': 'Artificial Intelligence',
+          'cryptocurrency': 'Cryptocurrency & Blockchain',
+          'healthcare': 'Healthcare & Medical',
+          'finance': 'Finance & Investment',
+          'legal': 'Legal Analysis',
+          'technology': 'Technology & Programming',
+          'science': 'Scientific Research',
+          'education': 'Education & Learning',
+          'general': 'Comprehensive AI Analysis'
+        };
+        return titles[domain] || 'General Analysis';
+      };
+      
+      const generateDomainSpecificAdviceInline = (domain: string, query: string, complexity: string): string => {
+        const advice: { [key: string]: string } = {
+          'business': `1. **Market Analysis:** Conduct thorough market research and competitive analysis
+2. **Business Planning:** Develop a comprehensive business strategy and execution plan
+3. **Funding Strategy:** Explore various funding options and investment opportunities
+4. **Operations:** Optimize business processes and operational efficiency
+5. **Growth Planning:** Implement scalable growth strategies and expansion plans`,
+          
+          'artificial_intelligence': `1. **AI Strategy:** Develop a comprehensive AI implementation strategy
+2. **Technology Selection:** Choose appropriate AI tools and frameworks for your needs
+3. **Data Preparation:** Ensure high-quality data for AI model training
+4. **Model Development:** Build and train AI models specific to your use case
+5. **Deployment & Monitoring:** Implement AI solutions with proper monitoring and maintenance`,
+          
+          'technology': `1. **Technical Assessment:** Evaluate current technology stack and requirements
+2. **Architecture Design:** Plan scalable and maintainable system architecture
+3. **Development Process:** Implement agile development methodologies
+4. **Quality Assurance:** Establish testing and quality control processes
+5. **Deployment & DevOps:** Set up continuous integration and deployment pipelines`,
+          
+          'science': `1. **Research Methodology:** Design rigorous scientific research approaches
+2. **Data Collection:** Implement systematic data gathering and analysis
+3. **Hypothesis Testing:** Develop and test scientific hypotheses
+4. **Peer Review:** Engage with scientific community for validation
+5. **Publication:** Document and share research findings`,
+          
+          'education': `1. **Learning Objectives:** Define clear educational goals and outcomes
+2. **Curriculum Design:** Develop structured learning programs
+3. **Assessment Methods:** Implement effective evaluation strategies
+4. **Learning Resources:** Provide comprehensive educational materials
+5. **Progress Tracking:** Monitor and measure learning progress`,
+          
+          'general': `1. **Research Phase:** Conduct comprehensive research on your specific topic
+2. **Expert Consultation:** Seek advice from domain experts and professionals
+3. **Documentation:** Gather and organize all relevant information
+4. **Strategic Planning:** Develop a detailed action plan with clear milestones
+5. **Implementation:** Execute your plan with regular progress monitoring`
+        };
+        
+        return advice[domain] || advice['general'];
+      };
+      
+      const generateActionItemsInline = (domain: string, complexity: string): string[] => {
+        const baseItems: { [key: string]: string[] } = {
+          'business': [
+            'Conduct market research and competitive analysis',
+            'Develop comprehensive business plan',
+            'Secure appropriate funding and resources',
+            'Build strong team and organizational structure',
+            'Implement effective marketing and sales strategies'
+          ],
+          'artificial_intelligence': [
+            'Identify specific AI use cases for your domain',
+            'Evaluate available AI tools and platforms',
+            'Develop AI strategy and implementation plan',
+            'Invest in AI talent and training',
+            'Monitor AI developments and best practices'
+          ],
+          'technology': [
+            'Assess current technology requirements',
+            'Design scalable system architecture',
+            'Implement development best practices',
+            'Establish quality assurance processes',
+            'Set up deployment and monitoring systems'
+          ],
+          'science': [
+            'Design rigorous research methodology',
+            'Collect and analyze scientific data',
+            'Develop and test hypotheses',
+            'Engage with scientific community',
+            'Document and publish findings'
+          ],
+          'education': [
+            'Define clear learning objectives',
+            'Develop structured curriculum',
+            'Implement assessment methods',
+            'Provide comprehensive resources',
+            'Track and measure progress'
+          ],
+          'general': [
+            'Research your specific requirements',
+            'Consult with relevant experts',
+            'Gather necessary documentation',
+            'Develop detailed action plan',
+            'Monitor progress and adjust as needed'
+          ]
+        };
+        
+        const items = baseItems[domain] || baseItems['general'];
+        
+        // Add complexity-based items
+        if (complexity === 'complex') {
+          items.push('Break down complex tasks into manageable steps');
+          items.push('Consider professional consultation for advanced topics');
+        }
+        
+        return items;
+      };
+      
+      const generateResourcesInline = (domain: string): string[] => {
+        const resources: { [key: string]: string[] } = {
+          'business': [
+            'Business plan templates and guides',
+            'Industry reports and market research',
+            'Professional business networks and associations',
+            'Mentorship and advisory services',
+            'Funding and investment resources'
+          ],
+          'artificial_intelligence': [
+            'AI research papers and publications',
+            'Open source AI frameworks and tools',
+            'AI conferences and professional networks',
+            'Industry AI reports and analysis',
+            'AI development platforms and APIs'
+          ],
+          'technology': [
+            'Technical documentation and tutorials',
+            'Open source projects and repositories',
+            'Technology conferences and communities',
+            'Development tools and platforms',
+            'Best practices and coding standards'
+          ],
+          'science': [
+            'Scientific journals and publications',
+            'Research databases and tools',
+            'Academic conferences and symposiums',
+            'Professional scientific associations',
+            'Research funding and grant opportunities'
+          ],
+          'education': [
+            'Educational materials and curricula',
+            'Learning management systems',
+            'Professional development resources',
+            'Educational conferences and workshops',
+            'Assessment and evaluation tools'
+          ],
+          'general': [
+            'Professional networks and communities',
+            'Industry reports and analysis',
+            'Expert consultation services',
+            'Educational resources and courses',
+            'Best practices and guidelines'
+          ]
+        };
+        
+        return resources[domain] || resources['general'];
+      };
+      
       // Generate dynamic response
-      const domainEmoji = this.getDomainEmoji(domain);
-      const domainTitle = this.getDomainTitle(domain);
+      const domainEmoji = getDomainEmojiInline(domain);
+      const domainTitle = getDomainTitleInline(domain);
       
       specificAdvice = `${domainEmoji} **${domainTitle.toUpperCase()} ANALYSIS:**
 
@@ -908,7 +1091,7 @@ I've analyzed your request using the full Permutation AI stack with real data fr
 - **Quality Validation:** Judge evaluation shows ${(thoughts.judgeEvaluation.agreementScore * 100).toFixed(1)}% agreement
 
 **🎯 Domain-Specific Recommendations:**
-${this.generateDomainSpecificAdvice(domain, query, 'moderate')}
+${generateDomainSpecificAdviceInline(domain, query, 'moderate')}
 
 **📊 Technical Analysis:**
 - **GEPA Optimization:** ${(thoughts.teacherAnalysis.gepaOptimization * 100).toFixed(1)}% prompt evolution effectiveness
@@ -917,8 +1100,8 @@ ${this.generateDomainSpecificAdvice(domain, query, 'moderate')}
 
 **📈 System Confidence:** ${(thoughts.permutationAI.overallConfidence * 100).toFixed(1)}% (All AI components validated)`;
       
-      actionItems = this.generateActionItems(domain, 'moderate');
-      resources = this.generateResources(domain);
+      actionItems = generateActionItemsInline(domain, 'moderate');
+      resources = generateResourcesInline(domain);
     }
     
     return `🔍 **INTERNAL THOUGHT PROCESS:**
