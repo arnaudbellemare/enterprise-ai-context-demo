@@ -5,10 +5,5 @@
   "installCommand": "cd frontend && npm install",
   "devCommand": "cd frontend && npm run dev",
   "cleanUrls": true,
-  "trailingSlash": false,
-  "functions": {
-    "frontend/app/api/**/*.ts": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  "trailingSlash": false
 }
