@@ -33,11 +33,6 @@ export default function ChatReasoningPage() {
     scrollToBottom();
   }, [messages, currentReasoning]);
 
-  // Debug messages state changes
-  useEffect(() => {
-    console.log('Messages state changed:', messages.length, messages);
-  }, [messages]);
-
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -62,49 +57,25 @@ export default function ChatReasoningPage() {
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('🔥 FORM SUBMITTED! Event:', e);
     e.preventDefault();
-    console.log('🛑 PREVENTED DEFAULT');
-    
-    if (!input.trim() || isLoading) {
-      console.log('❌ SUBMIT: Invalid input or loading:', { input: input.trim(), isLoading });
-      return;
-    }
+    if (!input.trim() || isLoading) return;
 
-    console.log('🚀 SUBMIT: Starting form submission with input:', input);
-    
     const userMessage: Message = { role: 'user', content: input };
-    console.log('👤 USER: Adding user message:', userMessage);
-    setMessages(prev => {
-      console.log('📝 MESSAGES: Previous messages:', prev.length);
-      const newMessages = [...prev, userMessage];
-      console.log('📝 MESSAGES: New messages after user:', newMessages.length);
-      return newMessages;
-    });
-    
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
     setIsLoading(true);
     setCurrentReasoning([]);
-    
-    // Store the input for the API call
-    const queryInput = input;
-    console.log('💾 STORED: Query input stored:', queryInput);
-    setInput('');
-    console.log('🧹 CLEARED: Input field cleared');
 
     try {
       const response = await fetch('/api/chat-reasoning', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: queryInput, domain: queryInput.toLowerCase().includes('legal') ? 'legal' : 'general' })
+        body: JSON.stringify({ query: input, domain: 'general' })
       });
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-      console.log('🌐 API: Making API call to /api/chat-reasoning');
       const data = await response.json();
-      console.log('📡 API: Response received:', data);
-      console.log('✅ API: Success:', data.success);
-      console.log('📄 API: Response content:', data.response?.substring(0, 100) + '...');
       
       if (!data.success) throw new Error(data.error || 'API request failed');
 
@@ -124,29 +95,19 @@ export default function ChatReasoningPage() {
       ];
 
       // Add assistant message with reasoning
-      console.log('Creating assistant message with response:', data.response?.substring(0, 100) + '...');
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.response || 'No response generated',
         reasoning: tempReasoning,
         metadata: data.metadata
       };
-      console.log('Assistant message created:', assistantMessage);
-      setMessages(prev => {
-        console.log('Previous messages:', prev.length);
-        const newMessages = [...prev, assistantMessage];
-        console.log('New messages:', newMessages.length);
-        return newMessages;
-      });
+      setMessages(prev => [...prev, assistantMessage]);
       setCurrentReasoning([]);
-      console.log('Messages updated, current reasoning cleared');
     } catch (error) {
       console.error('Error:', error);
-      console.error('Error details:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `Sorry, there was an error processing your request. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        content: 'Sorry, there was an error processing your request.'
       }]);
     } finally {
       setIsLoading(false);
@@ -228,7 +189,7 @@ export default function ChatReasoningPage() {
                 </div>
               )}
 
-              {console.log('Rendering messages:', messages.length, messages) || messages.map((msg, idx) => (
+              {messages.map((msg, idx) => (
                 <div key={idx}>
                   {/* User Message */}
                   {msg.role === 'user' && (
