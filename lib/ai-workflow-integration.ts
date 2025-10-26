@@ -346,8 +346,10 @@ export class AIWorkflowIntegration {
       const expertReviewResult = await artValuationHook.trigger({
         artworkId,
         artwork: valuationRequest.artwork,
-        purpose: valuationRequest.purpose,
-        urgency: valuationRequest.urgency,
+        valuationRequest: {
+          purpose: valuationRequest.purpose,
+          urgency: valuationRequest.urgency
+        },
         aiValuation: aiValuation,
         timestamp: new Date().toISOString()
       });
