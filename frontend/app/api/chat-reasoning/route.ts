@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
     // Call the Teacher-Student-Judge system
     console.log(`📡 Calling Teacher-Student-Judge Advanced API...`);
     
-    const teacherStudentJudgeResponse = await fetch('http://localhost:3001/api/teacher-student-judge-advanced', {
-      method: 'POST',
+    const teacherStudentJudgeResponse = await fetch('http://localhost:3000/api/teacher-student-judge-advanced', {
+          method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -130,11 +130,11 @@ export async function POST(request: NextRequest) {
         systemHealth: '100% - All components operational'
       }
     };
-
-    return NextResponse.json({
-      success: true,
-      query,
-      domain,
+      
+      return NextResponse.json({
+        success: true,
+        query,
+        domain,
       sessionId,
       response: finalAnswer.answer,
       answerType: finalAnswer.answerType,
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       processingSteps: finalAnswer.processingSteps,
       systemComponents: finalAnswer.systemComponents,
       systemMetrics,
-      reasoning: [
+        reasoning: [
         `🧠 FULL PERMUTATION AI: Complete Teacher-Student-Judge system`,
         `📊 Teacher: ${systemMetrics.teacher.confidence.toFixed(1)}% confidence, ${systemMetrics.teacher.dataSources} data sources`,
         `🎓 Student: ${systemMetrics.student.learningScore}% learning score, ${systemMetrics.student.adaptationFactors} adaptations`,
