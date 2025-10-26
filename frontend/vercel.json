@@ -1,7 +1,7 @@
 {
-  "buildCommand": "npm run build",
   "framework": "nextjs",
-  "cleanUrls": true,
-  "trailingSlash": false
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev"
 }
-
