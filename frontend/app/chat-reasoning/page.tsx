@@ -61,12 +61,10 @@ export default function ChatReasoningPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
-    console.log('🔥 SUBMIT CLICKED! Event:', e);
-    if (e) {
-      e.preventDefault();
-      console.log('🛑 PREVENTED DEFAULT');
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🔥 FORM SUBMITTED! Event:', e);
+    e.preventDefault();
+    console.log('🛑 PREVENTED DEFAULT');
     
     if (!input.trim() || isLoading) {
       console.log('❌ SUBMIT: Invalid input or loading:', { input: input.trim(), isLoading });
@@ -358,8 +356,7 @@ export default function ChatReasoningPage() {
                   disabled={isLoading}
                 />
                 <button
-                  type="button"
-                  onClick={handleSubmit}
+                  type="submit"
                   className="px-6 py-3 bg-black text-white border-2 border-black hover:bg-white hover:text-black transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isLoading}
                 >
