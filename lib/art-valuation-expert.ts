@@ -495,3 +495,4 @@ export class ArtValuationExpert {
 
 // Export singleton instance
 export const artValuationExpert = new ArtValuationExpert();
+

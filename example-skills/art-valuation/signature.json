@@ -1,0 +1,82 @@
+{
+  "input": {
+    "artwork": {
+      "type": "string",
+      "description": "Detailed description of the artwork or item"
+    },
+    "provenance": {
+      "type": "string",
+      "description": "Ownership history and documentation"
+    },
+    "condition": {
+      "type": "string",
+      "description": "Current condition assessment"
+    },
+    "images": {
+      "type": "array",
+      "description": "URLs or descriptions of images",
+      "optional": true
+    },
+    "additional_context": {
+      "type": "object",
+      "description": "Any additional relevant information",
+      "optional": true
+    }
+  },
+  "output": {
+    "valuation": {
+      "type": "number",
+      "description": "Estimated fair market value in USD"
+    },
+    "valuation_range": {
+      "type": "object",
+      "properties": {
+        "low": "number",
+        "high": "number"
+      },
+      "description": "Value range (low to high)"
+    },
+    "confidence": {
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "description": "Confidence level in valuation (0-1)"
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Detailed explanation of valuation methodology"
+    },
+    "market_analysis": {
+      "type": "object",
+      "properties": {
+        "comparable_sales": "array",
+        "market_trend": "string",
+        "demand_level": "string",
+        "regional_factors": "array"
+      },
+      "description": "Market context and comparable sales"
+    },
+    "authentication": {
+      "type": "object",
+      "properties": {
+        "status": "string",
+        "concerns": "array",
+        "verification_needed": "boolean"
+      },
+      "description": "Authentication assessment"
+    },
+    "recommendations": {
+      "type": "array",
+      "items": "string",
+      "description": "Actionable recommendations for buyer/seller"
+    },
+    "risk_factors": {
+      "type": "array",
+      "items": "string",
+      "description": "Potential risks or concerns"
+    }
+  },
+  "description": "Expert art valuation with comprehensive market analysis and authentication assessment",
+  "domain": "art"
+}
+

@@ -461,3 +461,4 @@ export class ArtDecoCartierValuation {
 
 // Export singleton instance
 export const artDecoCartierValuation = new ArtDecoCartierValuation();
+

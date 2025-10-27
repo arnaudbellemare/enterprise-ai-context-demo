@@ -367,3 +367,4 @@ export class EnhancedMarketDataRetrieval {
 
 // Export singleton instance
 export const enhancedMarketDataRetrieval = new EnhancedMarketDataRetrieval();
+

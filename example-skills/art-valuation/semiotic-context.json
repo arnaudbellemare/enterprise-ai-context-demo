@@ -1,0 +1,27 @@
+{
+  "domain": "art",
+  "semioticZone": "scientific",
+  "culturalFrame": "professional",
+  "rhetoricalMode": "evaluative",
+  "generationContext": {
+    "type": "expert-analysis",
+    "audience": "professional",
+    "formality": "high",
+    "purpose": "valuation-and-authentication",
+    "expectedCooperation": 0.7,
+    "interpretiveRichness": 0.75
+  },
+  "zoneTransitions": {
+    "canTransitionTo": ["literary", "business"],
+    "typicalPath": ["scientific"],
+    "borderCrossingDifficulty": 0.4
+  },
+  "discourseCharacteristics": {
+    "empirical": true,
+    "methodological": true,
+    "data-driven": true,
+    "professional-jargon": true,
+    "citations": true
+  }
+}
+

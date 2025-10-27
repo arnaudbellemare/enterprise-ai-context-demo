@@ -1,0 +1,137 @@
+[
+  {
+    "input": {
+      "artwork": "Art Deco Cartier bracelet, platinum with geometric design, featuring high-quality diamonds and calibré-cut sapphires. Circa 1925. Hallmarked 'Cartier Paris' with French platinum marks. Original fitted box with Cartier stamp.",
+      "provenance": "Acquired from Christie's New York, Important Jewels Sale, May 15, 1985, Lot 245. Private European collection 1985-2023. Complete documentation and original sales receipt included.",
+      "condition": "Excellent original condition. Minimal wear consistent with age. All stones original and secure. Platinum shows light surface wear only. Original box in very good condition with some age-related wear. All hallmarks clear and legible.",
+      "additional_context": {
+        "measurements": "7 inches length, 0.75 inches width",
+        "weight": "45.2 grams",
+        "diamond_weight": "approximately 8.5 carats total",
+        "sapphire_weight": "approximately 4.2 carats total"
+      }
+    },
+    "output": {
+      "valuation": 135000,
+      "valuation_range": {
+        "low": 125000,
+        "high": 145000
+      },
+      "confidence": 0.89,
+      "reasoning": "This Art Deco Cartier bracelet represents a prime example of the house's 1920s geometric design aesthetic. The valuation is based on: (1) Strong comparable sales at Christie's and Sotheby's for similar Cartier Art Deco bracelets ranging from $120,000-$150,000 over the past 18 months. (2) Excellent condition with original box significantly enhances value (15-20% premium). (3) Impeccable provenance from major auction house with continuous documentation. (4) Current strong market demand for Art Deco Cartier pieces. (5) High-quality diamonds and sapphires in desirable geometric calibré cut. Market factors: Art Deco jewelry market has shown 12% appreciation over past 3 years. Cartier pieces have maintained premium pricing even during market corrections.",
+      "market_analysis": {
+        "comparable_sales": [
+          {
+            "description": "Similar Cartier Art Deco bracelet, platinum, diamonds and sapphires",
+            "sale_venue": "Christie's Geneva",
+            "sale_date": "November 2023",
+            "hammer_price": 128000,
+            "similarity_score": 0.92
+          },
+          {
+            "description": "Cartier Art Deco bracelet, geometric design, diamonds only",
+            "sale_venue": "Sotheby's New York",
+            "sale_date": "April 2023",
+            "hammer_price": 142000,
+            "similarity_score": 0.85
+          },
+          {
+            "description": "Art Deco platinum bracelet with calibré sapphires (non-Cartier)",
+            "sale_venue": "Bonhams London",
+            "sale_date": "June 2023",
+            "hammer_price": 75000,
+            "similarity_score": 0.65
+          }
+        ],
+        "market_trend": "Strong and stable. Art Deco Cartier jewelry has shown consistent appreciation with minimal volatility. Particularly strong demand from Asian collectors.",
+        "demand_level": "High. Limited supply of authenticated Art Deco Cartier pieces maintains premium pricing.",
+        "regional_factors": [
+          "Strong US market for Cartier heritage pieces",
+          "Growing Asian collector base driving prices upward",
+          "European market stable with institutional buyer interest"
+        ]
+      },
+      "authentication": {
+        "status": "Authentic",
+        "concerns": [],
+        "verification_needed": false,
+        "notes": "All hallmarks consistent with period. Craftsmanship and materials consistent with Cartier standards. Provenance well-documented from reputable auction house."
+      },
+      "recommendations": [
+        "For seller: Consider timing sale during spring auction season (April-May) when jewelry sales are strongest",
+        "Obtain formal gemological report for diamonds and sapphires to strengthen documentation",
+        "Consider insurance appraisal at $145,000 (retail replacement value)",
+        "For buyer: Strong acquisition at auction estimate range. Investment-grade piece with appreciation potential",
+        "Maintain original box and all documentation to preserve premium value"
+      ],
+      "risk_factors": [
+        "Market for ultra-high-end jewelry sensitive to economic conditions",
+        "Requires specialized insurance (fine art/jewelry policy recommended)",
+        "Liquidity may be limited to major auction houses or specialized dealers",
+        "Any future repairs should be done only by Cartier to maintain value"
+      ]
+    }
+  },
+  {
+    "input": {
+      "artwork": "Oil painting attributed to Pablo Picasso, Cubist period style, signed lower right 'Picasso'. Canvas measures 24x30 inches. No frame. No documentation of provenance.",
+      "provenance": "Purchased at estate sale in rural Texas, 2020. Seller claimed inherited from grandmother who allegedly purchased in Paris in the 1950s. No supporting documentation available.",
+      "condition": "Fair condition. Some craquelure visible. Minor surface dirt. Signature appears slightly faded.",
+      "additional_context": {
+        "acquisition_cost": 500,
+        "sellers_estimate": "Possibly worth millions"
+      }
+    },
+    "output": {
+      "valuation": 500,
+      "valuation_range": {
+        "low": 200,
+        "high": 1000
+      },
+      "confidence": 0.15,
+      "reasoning": "CRITICAL AUTHENTICATION CONCERNS: This work presents multiple red flags that strongly suggest it is not an authentic Picasso: (1) No provenance documentation is extremely problematic for an artist of Picasso's stature. (2) Estate sale acquisition in remote location is atypical for genuine high-value works. (3) Signature style would need expert verification. (4) Cubist period Picassos are extensively catalogued; unrecorded works are extremely rare. (5) Market value assumes this is a decorative piece in Picasso's style, not an authentic work. Authentic Picasso Cubist works sell for millions; this valuation reflects high probability of being a copy, study, or misattribution.",
+      "market_analysis": {
+        "comparable_sales": [
+          {
+            "description": "Decorative Picasso-style painting",
+            "sale_venue": "Local auction house",
+            "sale_date": "2023",
+            "hammer_price": 300,
+            "similarity_score": 0.8
+          }
+        ],
+        "market_trend": "Not applicable - authentication required first",
+        "demand_level": "Not applicable without authentication",
+        "regional_factors": []
+      },
+      "authentication": {
+        "status": "Highly questionable",
+        "concerns": [
+          "No provenance documentation",
+          "Atypical acquisition circumstances",
+          "No exhibition or publication history",
+          "Signature requires expert forensic analysis",
+          "Work not found in Picasso catalogue raisonné"
+        ],
+        "verification_needed": true,
+        "notes": "IMMEDIATE AUTHENTICATION REQUIRED. Recommend submission to: (1) Picasso Authentication Committee (if accepting new submissions), (2) Major auction house evaluation (Christie's/Sotheby's Impressionist department), (3) Forensic analysis of materials and signature. Cost of authentication process: $5,000-$15,000."
+      },
+      "recommendations": [
+        "DO NOT proceed with sale or insurance based on Picasso attribution",
+        "Invest in professional authentication before any further action",
+        "Be prepared for authentication to confirm this is not an authentic Picasso",
+        "If proven authentic (unlikely), value would be $2M-$10M+ depending on specific work",
+        "If proven decorative copy, value remains in $200-$1,000 range as stated",
+        "Manage expectations: genuine undiscovered Picassos are extremely rare"
+      ],
+      "risk_factors": [
+        "HIGH RISK: Selling as attributed Picasso without authentication is unethical and potentially illegal",
+        "Authentication process is expensive with no guarantee of positive result",
+        "If authenticated as copy, resale value will be minimal",
+        "Reputation risk if marketed improperly",
+        "Most 'discovered' Picassos prove to be copies or misattributions"
+      ]
+    }
+  }
+]
+
