@@ -148,7 +148,6 @@ export class EnhancedUnifiedPipeline {
   private aceFramework: ACEFramework;
   private rvs: RVS;
   private creativeJudge: CreativeJudgeSystem;
-  private markdownOptimizer: MarkdownOutputOptimizer;
   
   // Performance tracking
   private executionCount = 0;
@@ -204,7 +203,6 @@ export class EnhancedUnifiedPipeline {
     this.aceFramework = new ACEFramework();
     this.rvs = new RVS();
     this.creativeJudge = new CreativeJudgeSystem();
-    this.markdownOptimizer = new MarkdownOutputOptimizer();
     
     logger.info('🚀 Enhanced Unified Pipeline initialized', {
       enabledComponents: this.getEnabledComponents().length,
@@ -624,7 +622,7 @@ export class EnhancedUnifiedPipeline {
           'comprehensive'
         );
         
-        logger.info(`   ✓ Judge: ${judgeResult.overallScore.toFixed(2)} score`);
+        logger.info(`   ✓ Judge: ${(judgeResult.overall_score || 0).toFixed(2)} score`);
       }
       
       layers.push({
@@ -634,7 +632,7 @@ export class EnhancedUnifiedPipeline {
         duration_ms: Date.now() - layer10Start,
         components_used: ['Creative Judge'],
         output_summary: judgeResult 
-          ? `Score: ${judgeResult.overallScore.toFixed(2)}`
+          ? `Score: ${(judgeResult.overall_score || 0).toFixed(2)}`
           : 'Skipped'
       });
       
@@ -661,7 +659,10 @@ export class EnhancedUnifiedPipeline {
       if (this.config.enableMarkdownOptimization) {
         logger.info('   → Optimizing output format...');
         
-        outputOptimization = this.markdownOptimizer.formatOptimal(finalAnswer);
+        outputOptimization = MarkdownOutputOptimizer.optimize(
+          finalAnswer, 
+          { format: 'auto', includeHeaders: true, compactMode: false }
+        );
         finalAnswer = outputOptimization.content;
         tokenSavings += outputOptimization.tokenSavings;
         
@@ -892,7 +893,7 @@ export class EnhancedUnifiedPipeline {
     }
     
     if (judgeResult) {
-      answer += `## Quality Assessment\nScore: ${judgeResult.overallScore.toFixed(2)}/1.0\n\n`;
+      answer += `## Quality Assessment\nScore: ${(judgeResult.overall_score || 0).toFixed(2)}/1.0\n\n`;
     }
     
     return answer;
