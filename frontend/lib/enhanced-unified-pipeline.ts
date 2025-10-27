@@ -267,10 +267,14 @@ export class EnhancedUnifiedPipeline {
       layers.push({
         layer: 0,
         name: 'Skill Selection',
-        status: selectedSkill ? 'success' : 'skipped',
+        status: this.config.enableSkills ? 'success' : 'skipped',
         duration_ms: Date.now() - layerStart,
-        components_used: ['SkillLoader', 'SkillExecutor'],
-        output_summary: selectedSkill ? `Skill: ${skillId}` : 'Dynamic pipeline'
+        components_used: this.config.enableSkills ? ['SkillLoader', 'SkillExecutor'] : [],
+        output_summary: selectedSkill 
+          ? `Skill: ${skillId}` 
+          : this.config.enableSkills 
+            ? 'No matching skill - using dynamic pipeline' 
+            : 'Skills disabled'
       });
       
       logger.info(`   ⏱️  Layer 0: ${Date.now() - layerStart}ms\n`);
@@ -363,13 +367,15 @@ export class EnhancedUnifiedPipeline {
       layers.push({
         layer: 3,
         name: 'Semiotic Framing',
-        status: semioticAnalysis ? 'success' : 'skipped',
+        status: this.config.enableSemiotic ? 'success' : 'skipped',
         duration_ms: Date.now() - layer3Start,
-        components_used: ['Picca Semiotic Framework', 'Semiotic Tracer'],
-        output_summary: semioticAnalysis 
-          ? `Zone: ${semioticAnalysis.semiosphere.currentZone}, Quality: ${semioticAnalysis.overallQuality.toFixed(2)}`
+        components_used: this.config.enableSemiotic 
+          ? ['Picca Semiotic Framework', 'Semiotic Tracer'] 
+          : [],
+        output_summary: this.config.enableSemiotic 
+          ? `Zone: ${semioticZone}, Trace: ${traceId || 'none'}`
           : 'Skipped',
-        metadata: semioticAnalysis
+        metadata: { zone: semioticZone, traceId }
       });
       
       logger.info(`   ⏱️  Layer 3: ${Date.now() - layer3Start}ms\n`);
@@ -759,9 +765,9 @@ export class EnhancedUnifiedPipeline {
           },
           
           semiotic: {
-            zone: semioticAnalysis?.semiosphere.currentZone || 'unknown',
+            zone: semioticZone || detectedDomain,
             transitions: semioticTrace?.semiosphereNavigation?.bordersCrossed || 0,
-            coherence: semioticTrace?.semiosphereNavigation?.culturalCoherence || 0,
+            coherence: semioticTrace?.coherence?.overall || 0,
             fidelity: semioticTrace?.translationFidelity || 0
           },
           

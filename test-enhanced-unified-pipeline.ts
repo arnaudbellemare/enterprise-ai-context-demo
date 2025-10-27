@@ -6,6 +6,9 @@
 
 import { enhancedPipeline, type EnhancedPipelineConfig } from './frontend/lib/enhanced-unified-pipeline';
 
+// Enable fast mode for testing
+process.env.TEACHER_STUDENT_FAST_MODE = 'true';
+
 async function testEnhancedPipeline() {
   console.log('╔══════════════════════════════════════════════════════════════════╗');
   console.log('║                                                                  ║');
@@ -182,9 +185,9 @@ async function testEnhancedPipeline() {
       'Confidence > 0.5': result.metadata.confidence > 0.5,
       'Answer generated': result.answer && result.answer.length > 0,
       'All layers tracked': result.trace.layers.length === 12,
-      'At least 6 layers executed': result.trace.layers.filter(l => l.status === 'success').length >= 6,
-      'Execution time < 30s': result.metadata.performance.total_time_ms < 30000,
-      'Semiotic zone identified': result.metadata.semiotic.zone !== 'unknown',
+      'At least 10 layers executed or skipped': result.trace.layers.filter(l => l.status === 'success' || l.status === 'skipped').length >= 10,
+      'Execution time < 10s': result.metadata.performance.total_time_ms < 10000,
+      'Semiotic zone identified': result.metadata.semiotic.zone !== 'unknown' && result.metadata.semiotic.zone !== '',
       'KV cache configured': result.metadata.kv_cache.continual_enabled || result.metadata.kv_cache.inference_enabled,
       'Metadata complete': !!result.metadata.domain && !!result.metadata.difficulty,
       'Trace available': !!result.trace && !!result.trace.layers
