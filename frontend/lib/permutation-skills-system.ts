@@ -784,12 +784,6 @@ export class SkillRegistry {
 // EXPORTS
 // ============================================================
 
-export {
-  SkillLoader,
-  SkillExecutor,
-  SkillBuilder,
-  SkillRegistry
-};
-
+// Classes are already exported above
 export default SkillLoader;
 

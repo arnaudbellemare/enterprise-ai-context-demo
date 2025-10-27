@@ -31,8 +31,8 @@ import { PiccaSemioticFramework, type PiccaAnalysisResult } from './picca-semiot
 import { SemioticTracer } from './semiotic-observability';
 import { ACEFramework } from './ace-framework';
 import { gepaAlgorithms } from './gepa-algorithms';
-import { IRTCalculator } from './irt-calculator';
-import { RVS } from './rvs';
+import { calculateIRT } from './irt-calculator';
+import { TRM as RVS } from './trm'; // Renamed TRM to RVS
 import { dspyGEPAOptimizer } from './dspy-gepa-optimizer';
 import { dspyRegistry } from './dspy-signatures';
 import { teacherStudentSystem } from './teacher-student-system';
@@ -146,7 +146,6 @@ export class EnhancedUnifiedPipeline {
   private semioticFramework: PiccaSemioticFramework;
   private semioticTracer: SemioticTracer;
   private aceFramework: ACEFramework;
-  private irtCalculator: IRTCalculator;
   private rvs: RVS;
   private creativeJudge: CreativeJudgeSystem;
   private markdownOptimizer: MarkdownOutputOptimizer;
@@ -203,7 +202,6 @@ export class EnhancedUnifiedPipeline {
     this.semioticFramework = new PiccaSemioticFramework();
     this.semioticTracer = new SemioticTracer(this.config.enableLogfire);
     this.aceFramework = new ACEFramework();
-    this.irtCalculator = new IRTCalculator();
     this.rvs = new RVS();
     this.creativeJudge = new CreativeJudgeSystem();
     this.markdownOptimizer = new MarkdownOutputOptimizer();
@@ -320,7 +318,7 @@ export class EnhancedUnifiedPipeline {
       let useRLM = false;
       
       if (this.config.enableIRT) {
-        difficulty = await this.irtCalculator.calculateDifficulty(query, detectedDomain);
+        difficulty = await calculateIRT(query, detectedDomain);
         logger.info(`   ✓ IRT Difficulty: ${difficulty.toFixed(3)}`);
         
         // Determine if RLM needed
@@ -349,20 +347,13 @@ export class EnhancedUnifiedPipeline {
       
       let semioticAnalysis: PiccaAnalysisResult | null = null;
       let traceId: string | undefined;
+      let semioticZone = detectedDomain;
       
       if (this.config.enableSemiotic) {
-        // Use skill's semiotic context if available, otherwise analyze
-        const semioticContext = selectedSkill?.semioticContext || undefined;
-        
-        semioticAnalysis = await this.semioticFramework.analyzeComplete(
-          query,
-          context || {},
-          semioticContext
-        );
-        
-        logger.info(`   ✓ Zone: ${semioticAnalysis.semiosphere.currentZone}`);
-        logger.info(`   ✓ Openness: ${semioticAnalysis.openWork.openness.toFixed(2)}`);
-        logger.info(`   ✓ Overall Quality: ${semioticAnalysis.overallQuality.toFixed(2)}`);
+        // At this layer, we just prepare semiotic context
+        // Full analysis will happen after we have output
+        semioticZone = this.determineSemioticZone(detectedDomain);
+        logger.info(`   ✓ Semiotic Zone: ${semioticZone}`);
         
         // Start observability trace
         if (this.config.enableSemioticObservability) {
@@ -627,7 +618,7 @@ export class EnhancedUnifiedPipeline {
           aceResult
         });
         
-        judgeResult = await this.creativeJudge.evaluate(
+        judgeResult = await this.creativeJudge.evaluateCreatively(
           query,
           preliminaryAnswer,
           'comprehensive'
@@ -827,6 +818,18 @@ export class EnhancedUnifiedPipeline {
       'general': 'optimization'
     };
     return map[domain] || 'optimization';
+  }
+  
+  private determineSemioticZone(domain: string): string {
+    const zoneMap: Record<string, string> = {
+      'art': 'aesthetic-cultural',
+      'legal': 'institutional-juridical',
+      'business': 'economic-pragmatic',
+      'finance': 'economic-pragmatic',
+      'healthcare': 'scientific-ethical',
+      'general': 'general-public'
+    };
+    return zoneMap[domain] || 'general-public';
   }
   
   private createVerificationSteps(aceResult: any, teacherResponse: any): any[] {

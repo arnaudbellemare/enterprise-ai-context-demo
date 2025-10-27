@@ -765,12 +765,6 @@ export class InferenceKVCacheCompression {
 // EXPORTS
 // ============================================================
 
-export {
-  InferenceKVCacheCompression,
-  PerHeadCompressionEngine,
-  SpeculativeDecodingEngine,
-  PagedAttentionManager
-};
-
+// Classes are already exported above
 export default InferenceKVCacheCompression;
 

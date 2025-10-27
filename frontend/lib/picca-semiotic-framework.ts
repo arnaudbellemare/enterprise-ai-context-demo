@@ -974,13 +974,6 @@ export class SemioticIntegration {
 // EXPORTS
 // ============================================================
 
-export {
-  PiccaSemioticFramework,
-  PeirceanSignAnalyzer,
-  OpenWorkAnalyzer,
-  SemiosphereNavigator,
-  SemioticIntegration
-};
-
+// Classes are already exported above
 export default PiccaSemioticFramework;
 
