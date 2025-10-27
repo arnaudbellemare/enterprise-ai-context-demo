@@ -6,9 +6,6 @@
 
 import { enhancedPipeline, type EnhancedPipelineConfig } from './frontend/lib/enhanced-unified-pipeline';
 
-// Enable fast mode for testing
-process.env.TEACHER_STUDENT_FAST_MODE = 'true';
-
 async function testEnhancedPipeline() {
   console.log('╔══════════════════════════════════════════════════════════════════╗');
   console.log('║                                                                  ║');

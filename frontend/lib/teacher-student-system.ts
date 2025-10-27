@@ -40,12 +40,10 @@ export class TeacherStudentSystem {
   private learningHistory: Map<string, LearningSession[]> = new Map();
   private teacherCache: Map<string, TeacherResponse> = new Map();
   private studentCache: Map<string, StudentResponse> = new Map();
-  private fastMode: boolean = false;
 
-  constructor(options?: { fastMode?: boolean }) {
-    this.fastMode = options?.fastMode || false;
+  constructor() {
     this.initializeSupabase();
-    console.log(`🎓 Teacher-Student System initialized${this.fastMode ? ' (Fast Mode)' : ''}!`);
+    console.log('🎓 Teacher-Student System initialized!');
   }
 
   private initializeSupabase() {
@@ -190,20 +188,6 @@ export class TeacherStudentSystem {
     const startTime = Date.now();
 
     try {
-      // In fast mode, return a quick mock response
-      if (this.fastMode) {
-        const fastResponse: StudentResponse = {
-          answer: teacherResponse.answer, // Use teacher's answer directly
-          learned_from_teacher: true,
-          confidence: 0.6,
-          timestamp: new Date().toISOString(),
-          domain: domain || 'general'
-        };
-        console.log(`👨‍🎓 Student: Completed in ${Date.now() - startTime}ms (fast mode)`);
-        this.studentCache.set(cacheKey, fastResponse);
-        return fastResponse;
-      }
-
       // Check if Student has learned similar queries before
       const hasLearned = await this.hasStudentLearned(query, domain);
       console.log(`🧠 Student: Has learned similar queries: ${hasLearned}`);
@@ -394,10 +378,7 @@ Provide a thoughtful response based on this learning.`
 
 I don't have much experience with this yet, but here's what I think:`;
 
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
+      // Let Ollama run without artificial timeout - real system
       const response = await fetch('http://localhost:11434/api/chat', {
         method: 'POST',
         headers: {
@@ -407,11 +388,8 @@ I don't have much experience with this yet, but here's what I think:`;
           model: 'gemma3:4b',
           messages: [{ role: 'user', content: prompt }],
           stream: false
-        }),
-        signal: controller.signal
+        })
       });
-
-      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
@@ -518,6 +496,5 @@ I don't have much experience with this yet, but here's what I think:`;
   }
 }
 
-// Export singleton instance (use fast mode for testing/performance)
-const isFastMode = process.env.TEACHER_STUDENT_FAST_MODE === 'true' || process.env.NODE_ENV === 'test';
-export const teacherStudentSystem = new TeacherStudentSystem({ fastMode: isFastMode });
+// Export singleton instance
+export const teacherStudentSystem = new TeacherStudentSystem();
