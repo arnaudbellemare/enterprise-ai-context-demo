@@ -693,6 +693,27 @@ export class ComprehensiveSemioticSystem {
   }
 
   /**
+   * Public access to semiotic inference
+   */
+  get semioticInferenceAccess() {
+    return this.semioticInference;
+  }
+
+  /**
+   * Public access to imagination engine
+   */
+  get imaginationEngineAccess() {
+    return this.imaginationEngine;
+  }
+
+  /**
+   * Public access to semiotic processor
+   */
+  get semioticProcessorAccess() {
+    return this.semioticProcessor;
+  }
+
+  /**
    * Execute Complete Semiotic Analysis
    * Beyond formal logic to include experience and imagination
    */

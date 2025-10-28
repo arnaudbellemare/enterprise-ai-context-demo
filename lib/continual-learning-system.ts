@@ -789,6 +789,13 @@ export class TestTimeMemorization {
   }
 
   /**
+   * Get memory size
+   */
+  getMemorySize(): number {
+    return this.memory.size;
+  }
+
+  /**
    * Store Information in Architectural Memory
    * Persistent memory for continual learning
    */
@@ -967,6 +974,34 @@ export class ContinualLearningSystem {
   }
 
   /**
+   * Public access to TTT system
+   */
+  get tttAccess() {
+    return this.ttt;
+  }
+
+  /**
+   * Public access to active selector
+   */
+  get activeSelectorAccess() {
+    return this.activeSelector;
+  }
+
+  /**
+   * Public access to local experts
+   */
+  get localExpertsAccess() {
+    return this.localExperts;
+  }
+
+  /**
+   * Public access to memorization
+   */
+  get memorizationAccess() {
+    return this.memorization;
+  }
+
+  /**
    * Execute Complete Continual Learning Pipeline
    * Dynamic, on-the-fly adaptation with all paradigms
    */
@@ -1004,7 +1039,7 @@ export class ContinualLearningSystem {
         adaptationTime: tttResult.adaptationTime,
         mergingTime: mergedModel.mergingTime,
         performanceGain: tttResult.performanceGain,
-        memoryUtilization: this.memorization.memory.size / 1000,
+        memoryUtilization: this.memorization.getMemorySize() / 1000,
         expertUtilization: mergedModel.experts.length / 20
       },
       methodology: [

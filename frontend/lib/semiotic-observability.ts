@@ -759,15 +759,6 @@ export class SemioticTracer {
 // EXPORTS
 // ============================================================
 
-// Classes are already exported above, only export types here
-export type {
-  SemioticTrace,
-  ModuleSemioticAnalysis,
-  SemioticChain,
-  ChainTranslation,
-  CoherenceMetrics,
-  SemioticSpan
-};
-
+// All types and classes are already exported above
 export default SemioticTracer;
 

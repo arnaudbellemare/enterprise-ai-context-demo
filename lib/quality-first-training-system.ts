@@ -822,6 +822,27 @@ export class QualityFirstTrainingSystem {
   }
 
   /**
+   * Public access to natural reasoning dataset
+   */
+  get naturalReasoningDatasetAccess() {
+    return this.naturalReasoningDataset;
+  }
+
+  /**
+   * Public access to data distillation system
+   */
+  get dataDistillationSystemAccess() {
+    return this.dataDistillationSystem;
+  }
+
+  /**
+   * Public access to LILO method
+   */
+  get liloMethodAccess() {
+    return this.liloMethod;
+  }
+
+  /**
    * Execute Complete Quality-First Training Pipeline
    * Prioritize quality and diversity over volume
    */

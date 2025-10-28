@@ -204,6 +204,10 @@ export class PagedAttentionManager {
     }
     
     const blockId = this.freeBlocks.values().next().value;
+    if (blockId === undefined) {
+      logger.warn('No valid block ID found');
+      return null;
+    }
     this.freeBlocks.delete(blockId);
     return blockId;
   }
@@ -601,6 +605,7 @@ export class SpeculativeDecodingEngine {
 
     return {
       ...verificationResult,
+      candidates: candidates,
       speedup
     };
   }

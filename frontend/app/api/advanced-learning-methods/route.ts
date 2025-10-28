@@ -33,11 +33,11 @@ export async function POST(request: NextRequest) {
         };
         
         if (data.taskType === 'generative') {
-          result = await advancedLearningMethods.selfSupervisedLearning.generativeLearning(selfSupervisedTask);
+          result = await advancedLearningMethods.selfSupervisedLearningAccess.generativeLearning(selfSupervisedTask);
         } else if (data.taskType === 'predictive') {
-          result = await advancedLearningMethods.selfSupervisedLearning.predictiveLearning(selfSupervisedTask);
+          result = await advancedLearningMethods.selfSupervisedLearningAccess.predictiveLearning(selfSupervisedTask);
         } else {
-          result = await advancedLearningMethods.selfSupervisedLearning.contrastiveLearning(selfSupervisedTask);
+          result = await advancedLearningMethods.selfSupervisedLearningAccess.contrastiveLearning(selfSupervisedTask);
         }
         break;
 
@@ -46,13 +46,13 @@ export async function POST(request: NextRequest) {
         const covariates = data.covariates || [];
         
         if (data.modelType === 'kaplan-meier') {
-          result = await advancedLearningMethods.survivalAnalysis.kaplanMeierAnalysis(survivalData);
+          result = await advancedLearningMethods.survivalAnalysisAccess.kaplanMeierAnalysis(survivalData);
         } else if (data.modelType === 'parametric') {
-          result = await advancedLearningMethods.survivalAnalysis.parametricSurvivalModel(survivalData, data.distribution || 'weibull');
+          result = await advancedLearningMethods.survivalAnalysisAccess.parametricSurvivalModel(survivalData, data.distribution || 'weibull');
         } else if (data.modelType === 'random-forest') {
-          result = await advancedLearningMethods.survivalAnalysis.randomForestSurvival(survivalData, covariates);
+          result = await advancedLearningMethods.survivalAnalysisAccess.randomForestSurvival(survivalData, covariates);
         } else {
-          result = await advancedLearningMethods.survivalAnalysis.fitCoxModel(survivalData, covariates);
+          result = await advancedLearningMethods.survivalAnalysisAccess.fitCoxModel(survivalData, covariates);
         }
         break;
 
@@ -60,13 +60,13 @@ export async function POST(request: NextRequest) {
         const multiModalData = data.multiModalData || [];
         
         if (data.fusionMethod === 'late') {
-          result = await advancedLearningMethods.multiModalLearning.lateFusion(multiModalData);
+          result = await advancedLearningMethods.multiModalLearningAccess.lateFusion(multiModalData);
         } else if (data.fusionMethod === 'cross-modal') {
-          result = await advancedLearningMethods.multiModalLearning.crossModalAttention(multiModalData);
+          result = await advancedLearningMethods.multiModalLearningAccess.crossModalAttention(multiModalData);
         } else if (data.fusionMethod === 'unimodal') {
-          result = await advancedLearningMethods.multiModalLearning.unimodalLearning(multiModalData, data.modality || 'text');
+          result = await advancedLearningMethods.multiModalLearningAccess.unimodalLearning(multiModalData, data.modality || 'text');
         } else {
-          result = await advancedLearningMethods.multiModalLearning.earlyFusion(multiModalData);
+          result = await advancedLearningMethods.multiModalLearningAccess.earlyFusion(multiModalData);
         }
         break;
 
@@ -74,15 +74,15 @@ export async function POST(request: NextRequest) {
         const causalData = data.causalData || [];
         
         if (data.method === 'instrumental-variable') {
-          result = await advancedLearningMethods.causalInference.instrumentalVariableAnalysis(causalData, data.instrument || 'instrument');
+          result = await advancedLearningMethods.causalInferenceAccess.instrumentalVariableAnalysis(causalData, data.instrument || 'instrument');
         } else if (data.method === 'regression-discontinuity') {
-          result = await advancedLearningMethods.causalInference.regressionDiscontinuity(causalData, data.runningVariable || 'running_var', data.cutoff || 0);
+          result = await advancedLearningMethods.causalInferenceAccess.regressionDiscontinuity(causalData, data.runningVariable || 'running_var', data.cutoff || 0);
         } else if (data.method === 'difference-in-differences') {
-          result = await advancedLearningMethods.causalInference.differenceInDifferences(causalData, data.timeVariable || 'time', data.groupVariable || 'group');
+          result = await advancedLearningMethods.causalInferenceAccess.differenceInDifferences(causalData, data.timeVariable || 'time', data.groupVariable || 'group');
         } else if (data.method === 'causal-graph') {
-          result = await advancedLearningMethods.causalInference.constructCausalGraph(causalData);
+          result = await advancedLearningMethods.causalInferenceAccess.constructCausalGraph(causalData);
         } else {
-          result = await advancedLearningMethods.causalInference.propensityScoreMatching(causalData);
+          result = await advancedLearningMethods.causalInferenceAccess.propensityScoreMatching(causalData);
         }
         break;
 
@@ -91,15 +91,15 @@ export async function POST(request: NextRequest) {
         const samples = data.samples || [];
         
         if (data.method === 'lime') {
-          result = await advancedLearningMethods.interpretability.computeLIMEExplanations(model, samples);
+          result = await advancedLearningMethods.interpretabilityAccess.computeLIMEExplanations(model, samples);
         } else if (data.method === 'gradient') {
-          result = await advancedLearningMethods.interpretability.computeGradientExplanations(model, samples);
+          result = await advancedLearningMethods.interpretabilityAccess.computeGradientExplanations(model, samples);
         } else if (data.method === 'attention') {
-          result = await advancedLearningMethods.interpretability.computeAttentionExplanations(model, samples);
+          result = await advancedLearningMethods.interpretabilityAccess.computeAttentionExplanations(model, samples);
         } else if (data.method === 'counterfactual') {
-          result = await advancedLearningMethods.interpretability.computeCounterfactualExplanations(model, samples);
+          result = await advancedLearningMethods.interpretabilityAccess.computeCounterfactualExplanations(model, samples);
         } else {
-          result = await advancedLearningMethods.interpretability.computeSHAPExplanations(model, samples);
+          result = await advancedLearningMethods.interpretabilityAccess.computeSHAPExplanations(model, samples);
         }
         break;
 

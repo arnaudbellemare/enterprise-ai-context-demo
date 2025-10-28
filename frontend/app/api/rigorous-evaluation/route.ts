@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'analyze-baseline-variance':
-        const baselineVariance = await rigorousEvaluationSystem.baselineVarianceAnalyzer.analyzeBaselineVariance(
+        const baselineVariance = await rigorousEvaluationSystem.baselineVarianceAnalyzerAccess.analyzeBaselineVariance(
           baselineResults || [],
           improvedResults || [],
           confidenceLevel || 0.95
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'detect-illusion-of-gains':
-        const illusionDetection = await rigorousEvaluationSystem.baselineVarianceAnalyzer.detectIllusionOfGains(
+        const illusionDetection = await rigorousEvaluationSystem.baselineVarianceAnalyzerAccess.detectIllusionOfGains(
           baselineResults || [],
           improvedResults || [],
           0.05
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'analyze-implementation-sensitivity':
-        const sensitivityAnalysis = await rigorousEvaluationSystem.implementationSensitivityAnalyzer.analyzeImplementationSensitivity(
+        const sensitivityAnalysis = await rigorousEvaluationSystem.implementationSensitivityAnalyzerAccess.analyzeImplementationSensitivity(
           evaluationRuns || []
         );
         result = {
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'test-small-dataset-sensitivity':
-        const datasetSensitivity = await rigorousEvaluationSystem.implementationSensitivityAnalyzer.testSmallDatasetSensitivity(
+        const datasetSensitivity = await rigorousEvaluationSystem.implementationSensitivityAnalyzerAccess.testSmallDatasetSensitivity(
           datasetSize || 30,
           evaluationRuns || []
         );
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'evaluate-rl-methods':
-        const rlEvaluation = await rigorousEvaluationSystem.rlMethodEvaluator.evaluateRLMethods(
+        const rlEvaluation = await rigorousEvaluationSystem.rlMethodEvaluatorAccess.evaluateRLMethods(
           rlMethods || []
         );
         result = {
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         const validationResults = body.validationResults || [];
         const testResults = body.testResults || [];
         
-        const overfittingTest = await rigorousEvaluationSystem.rlMethodEvaluator.testRLOverfitting(
+        const overfittingTest = await rigorousEvaluationSystem.rlMethodEvaluatorAccess.testRLOverfitting(
           methodName,
           trainingResults,
           validationResults,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
           return Math.random() * 0.1 + 0.7;
         };
         
-        const multiSeedResults = await rigorousEvaluationSystem.multiSeedEvaluator.implementMultiSeedProtocol(
+        const multiSeedResults = await rigorousEvaluationSystem.multiSeedEvaluatorAccess.implementMultiSeedProtocol(
           protocolName,
           evaluationFunction
         );
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
 
       case 'compare-methods-rigorously':
         const methods = body.methods || [];
-        const comparison = await rigorousEvaluationSystem.multiSeedEvaluator.compareMethodsRigorously(
+        const comparison = await rigorousEvaluationSystem.multiSeedEvaluatorAccess.compareMethodsRigorously(
           methods,
           body.protocolName || 'standard'
         );

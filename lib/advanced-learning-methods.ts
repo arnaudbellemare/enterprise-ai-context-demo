@@ -1307,6 +1307,41 @@ export class AdvancedLearningMethods {
   }
 
   /**
+   * Public access to self-supervised learning
+   */
+  get selfSupervisedLearningAccess() {
+    return this.selfSupervisedLearning;
+  }
+
+  /**
+   * Public access to survival analysis
+   */
+  get survivalAnalysisAccess() {
+    return this.survivalAnalysis;
+  }
+
+  /**
+   * Public access to multi-modal learning
+   */
+  get multiModalLearningAccess() {
+    return this.multiModalLearning;
+  }
+
+  /**
+   * Public access to causal inference
+   */
+  get causalInferenceAccess() {
+    return this.causalInference;
+  }
+
+  /**
+   * Public access to interpretability
+   */
+  get interpretabilityAccess() {
+    return this.interpretability;
+  }
+
+  /**
    * Execute comprehensive learning analysis
    */
   async executeComprehensiveAnalysis(data: any): Promise<any> {

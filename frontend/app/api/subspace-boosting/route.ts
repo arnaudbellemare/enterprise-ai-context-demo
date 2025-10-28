@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'analyze-rank-collapse':
-        const rankAnalysis = await subspaceBoostingSystem.taskVectorAnalyzer.analyzeRankCollapse(
+        const rankAnalysis = await subspaceBoostingSystem.taskVectorAnalyzerAccess.analyzeRankCollapse(
           expertModels || []
         );
         result = {
@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'svd-decomposition':
-        const allTaskVectors = (expertModels || []).flatMap(expert => expert.taskVectors || []);
-        const svdResult = await subspaceBoostingSystem.svdSubspaceSystem.performSVDDecomposition(allTaskVectors);
+        const allTaskVectors = (expertModels || []).flatMap((expert: any) => expert.taskVectors || []);
+        const svdResult = await subspaceBoostingSystem.svdSubspaceSystemAccess.performSVDDecomposition(allTaskVectors);
         result = {
           svdResult,
           methodology: ['SVD Decomposition: Maintain rank and preserve unique contributions'],
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'preserve-orthogonal-components':
-        const orthogonalComponents = await subspaceBoostingSystem.svdSubspaceSystem.preserveOrthogonalComponents(
+        const orthogonalComponents = await subspaceBoostingSystem.svdSubspaceSystemAccess.preserveOrthogonalComponents(
           expertModels || [],
           { rank: targetRank || 10, singularValues: [], explainedVariance: [], U: [], S: [], V: [] }
         );
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'merge-expert-models':
-        const mergingResult = await subspaceBoostingSystem.multiExpertMerging.mergeExpertModels(
+        const mergingResult = await subspaceBoostingSystem.multiExpertMergingAccess.mergeExpertModels(
           expertModels || [],
           strategy || 'subspace-boosting'
         );
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'compare-strategies':
-        const strategyComparison = await subspaceBoostingSystem.multiExpertMerging.compareMergingStrategies(
+        const strategyComparison = await subspaceBoostingSystem.multiExpertMergingAccess.compareMergingStrategies(
           expertModels || []
         );
         result = {
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'scale-large-expert-counts':
-        const scalingResults = await subspaceBoostingSystem.multiExpertMerging.scaleToLargeExpertCounts(
+        const scalingResults = await subspaceBoostingSystem.multiExpertMergingAccess.scaleToLargeExpertCounts(
           expertModels || []
         );
         result = {

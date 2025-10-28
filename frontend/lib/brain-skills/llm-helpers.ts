@@ -47,7 +47,7 @@ export async function callPerplexityWithRateLimiting(
   const {
     temperature = 0.7,
     maxTokens = 4000,
-    model = 'llama-3.1-sonar-large-128k-online',
+    model = 'sonar-pro',
     stream = false
   } = options;
 
@@ -73,12 +73,26 @@ export async function callPerplexityWithRateLimiting(
         } else if (provider.name === 'Ollama Local') {
           // Fallback to Ollama
           logger.info('Using Ollama fallback', { provider: 'Ollama Local' });
+          
+          // Validate and normalize messages format
+          let normalizedMessages = messages;
+          if (!Array.isArray(messages)) {
+            if (messages && typeof messages === 'object' && Array.isArray((messages as any).messages)) {
+              // Handle case where messages is wrapped in an object
+              normalizedMessages = (messages as any).messages;
+              logger.info('Normalized messages from object format', { originalType: typeof messages });
+            } else {
+              logger.error('Invalid messages format for Ollama', { messages, type: typeof messages });
+              throw new Error('Messages must be an array or object with messages array');
+            }
+          }
+          
           return fetch('http://localhost:11434/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'llama3.1',
-              messages: messages.map(m => ({
+              model: 'gemma3:4b',
+              messages: normalizedMessages.map(m => ({
                 role: m.role,
                 content: m.content
               })),

@@ -124,7 +124,7 @@ Be concise but specific.`;
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'llama-3.1-sonar-large-128k-online',  // Perplexity's best model
+          model: 'sonar-pro',  // Perplexity's best model
           messages: [
             {
               role: 'system',
@@ -203,7 +203,7 @@ Return ONLY the improved prompt, no explanations.`;
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'llama-3.1-sonar-large-128k-online',
+          model: 'sonar-pro',
           messages: [
             {
               role: 'system',
@@ -310,7 +310,7 @@ Return ONLY the improved prompt, no explanations.`;
     console.log('\n' + '='.repeat(80));
     console.log('🎓 TEACHER-STUDENT GEPA OPTIMIZATION');
     console.log('='.repeat(80));
-    console.log('\nTeacher: Perplexity (llama-3.1-sonar-large-128k-online)');
+    console.log('\nTeacher: Perplexity (sonar-pro)');
     console.log('Student: Ollama (gemma3:4b)');
     console.log('Method: GEPA reflective optimization');
     console.log('\n' + '='.repeat(80) + '\n');

@@ -972,6 +972,34 @@ export class RigorousEvaluationSystem {
   }
 
   /**
+   * Public access to baseline variance analyzer
+   */
+  get baselineVarianceAnalyzerAccess() {
+    return this.baselineVarianceAnalyzer;
+  }
+
+  /**
+   * Public access to implementation sensitivity analyzer
+   */
+  get implementationSensitivityAnalyzerAccess() {
+    return this.implementationSensitivityAnalyzer;
+  }
+
+  /**
+   * Public access to RL method evaluator
+   */
+  get rlMethodEvaluatorAccess() {
+    return this.rlMethodEvaluator;
+  }
+
+  /**
+   * Public access to multi-seed evaluator
+   */
+  get multiSeedEvaluatorAccess() {
+    return this.multiSeedEvaluator;
+  }
+
+  /**
    * Execute Complete Rigorous Evaluation Analysis
    * Address the illusion of reasoning gains
    */

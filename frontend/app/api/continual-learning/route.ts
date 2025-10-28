@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'test-time-fine-tuning':
-        const tttResult = await continualLearningSystem.ttt.adaptAtInference(
+        const tttResult = await continualLearningSystem.tttAccess.adaptAtInference(
           query || 'Sample query', 
           context || {}, 
           baseModel || {}
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'active-learning-selection':
-        const selectedExamples = await continualLearningSystem.activeSelector.selectActiveExamples(
+        const selectedExamples = await continualLearningSystem.activeSelectorAccess.selectActiveExamples(
           query || 'Sample query', 
           10
         );
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'local-mixtures-experts':
-        const mergedModel = await continualLearningSystem.localExperts.mergeAtInference(
+        const mergedModel = await continualLearningSystem.localExpertsAccess.mergeAtInference(
           query || 'Sample query', 
           baseModel || {}
         );
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'test-time-memorization':
-        const memoryEntries = await continualLearningSystem.memorization.retrieveFromMemory(
+        const memoryEntries = await continualLearningSystem.memorizationAccess.retrieveFromMemory(
           query || 'Sample query'
         );
         result = {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'meta-learning-adaptation':
-        const metaResult = await continualLearningSystem.ttt.metaLearningAdaptation(
+        const metaResult = await continualLearningSystem.tttAccess.metaLearningAdaptation(
           query || 'Sample query', 
           context || {}, 
           baseModel || {}
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'few-shot-adaptation':
-        const fewShotResult = await continualLearningSystem.ttt.fewShotAdaptation(
+        const fewShotResult = await continualLearningSystem.tttAccess.fewShotAdaptation(
           query || 'Sample query', 
           context?.examples || [], 
           baseModel || {}

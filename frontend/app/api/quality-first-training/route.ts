@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'mine-graduate-questions':
-        const graduateQuestions = await qualityFirstTrainingSystem.naturalReasoningDataset.mineGraduateLevelQuestions();
+        const graduateQuestions = await qualityFirstTrainingSystem.naturalReasoningDatasetAccess.mineGraduateLevelQuestions();
         result = {
           graduateQuestions,
           methodology: ['NaturalReasoning Dataset: Web-grounded, graduate-level questions'],
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'generate-chain-of-thought':
-        const chainOfThoughtQuestions = await qualityFirstTrainingSystem.naturalReasoningDataset.generateChainOfThoughtQuestions(
+        const chainOfThoughtQuestions = await qualityFirstTrainingSystem.naturalReasoningDatasetAccess.generateChainOfThoughtQuestions(
           targetLength || 434
         );
         result = {
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'evaluate-dataset-quality':
-        const qualityMetrics = await qualityFirstTrainingSystem.naturalReasoningDataset.evaluateDatasetQuality();
+        const qualityMetrics = await qualityFirstTrainingSystem.naturalReasoningDatasetAccess.evaluateDatasetQuality();
         result = {
           qualityMetrics,
           methodology: ['Dataset Quality Evaluation: Comprehensive quality assessment'],
@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'distill-llama-8b':
-        const graduateQuestionsForDistillation = await qualityFirstTrainingSystem.naturalReasoningDataset.mineGraduateLevelQuestions();
-        const distillationResult = await qualityFirstTrainingSystem.dataDistillationSystem.distillLlama8B(
+        const graduateQuestionsForDistillation = await qualityFirstTrainingSystem.naturalReasoningDatasetAccess.mineGraduateLevelQuestions();
+        const distillationResult = await qualityFirstTrainingSystem.dataDistillationSystemAccess.distillLlama8B(
           graduateQuestionsForDistillation, 
           targetSize || 1000000
         );
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'lilo-optimal-selection':
-        const liloResult = await qualityFirstTrainingSystem.liloMethod.identifyOptimalProblems(
+        const liloResult = await qualityFirstTrainingSystem.liloMethodAccess.identifyOptimalProblems(
           candidateProblems || [],
           targetSize || 1000
         );
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
           liloScore: Math.random() * 0.4 + 0.6,
           selected: false
         })) || [];
-        const highVarianceProblems = await qualityFirstTrainingSystem.liloMethod.prioritizeHighVarianceQuestions(
+        const highVarianceProblems = await qualityFirstTrainingSystem.liloMethodAccess.prioritizeHighVarianceQuestions(
           problems,
           varianceThreshold || 0.7
         );
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
           liloScore: Math.random() * 0.4 + 0.6,
           selected: true
         })) || [];
-        const efficiencyGains = await qualityFirstTrainingSystem.liloMethod.demonstrateEfficiencyGains(
+        const efficiencyGains = await qualityFirstTrainingSystem.liloMethodAccess.demonstrateEfficiencyGains(
           selectedProblems,
           []
         );

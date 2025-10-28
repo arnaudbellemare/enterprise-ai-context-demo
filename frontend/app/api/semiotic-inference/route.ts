@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'deduction-only':
-        const deductionResult = await semioticSystem.semioticInference.performComprehensiveInference(query || 'Sample query', context || {});
+        const deductionResult = await semioticSystem.semioticInferenceAccess.performComprehensiveInference(query || 'Sample query', context || {});
         result = {
           inference: { deduction: deductionResult.deduction },
           methodology: ['Deduction: Formal logical reasoning only'],
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'induction-only':
-        const inductionResult = await semioticSystem.semioticInference.performComprehensiveInference(query || 'Sample query', context || {});
+        const inductionResult = await semioticSystem.semioticInferenceAccess.performComprehensiveInference(query || 'Sample query', context || {});
         result = {
           inference: { induction: inductionResult.induction },
           methodology: ['Induction: Experience-based pattern recognition'],
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'abduction-only':
-        const abductionResult = await semioticSystem.semioticInference.performComprehensiveInference(query || 'Sample query', context || {});
+        const abductionResult = await semioticSystem.semioticInferenceAccess.performComprehensiveInference(query || 'Sample query', context || {});
         result = {
           inference: { abduction: abductionResult.abduction },
           methodology: ['Abduction: Creative hypothesis formation with imagination'],

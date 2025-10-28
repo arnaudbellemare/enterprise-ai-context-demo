@@ -505,6 +505,4 @@ export class DeepResearchAgent {
 // EXPORTS
 // ============================================================
 
-export { DeepResearchAgent };
-export default DeepResearchAgent;
 

@@ -11,7 +11,7 @@
  * - Multi-objective optimization (quality, speed, cost)
  */
 
-import { gepaAlgorithms, type PromutationIndividual } from './gepa-algorithms';
+import { gepaAlgorithms, type PromptIndividual } from './gepa-algorithms';
 import { dspyRegistry, type DSPyModule, type DSPySignature } from './dspy-signatures';
 import { getTracer } from './dspy-observability';
 

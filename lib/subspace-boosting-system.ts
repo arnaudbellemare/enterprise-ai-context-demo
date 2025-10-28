@@ -792,6 +792,27 @@ export class SubspaceBoostingSystem {
   }
 
   /**
+   * Public access to task vector analyzer
+   */
+  get taskVectorAnalyzerAccess() {
+    return this.taskVectorAnalyzer;
+  }
+
+  /**
+   * Public access to SVD subspace system
+   */
+  get svdSubspaceSystemAccess() {
+    return this.svdSubspaceSystem;
+  }
+
+  /**
+   * Public access to multi-expert merging
+   */
+  get multiExpertMergingAccess() {
+    return this.multiExpertMerging;
+  }
+
+  /**
    * Execute Complete Subspace Boosting Pipeline
    * Prevent rank collapse and achieve >10% performance gains
    */

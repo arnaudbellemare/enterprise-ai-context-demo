@@ -224,7 +224,7 @@ export class GEPATRMIntegration {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'llama-3.1-sonar-large-128k-online',
+          model: 'sonar-pro',
           messages: [{ role: 'user', content: fullPrompt }],
           max_tokens: 200,
           temperature: 0.1

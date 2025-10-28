@@ -446,7 +446,7 @@ export class MoEBrainOrchestrator {
                 }
               ],
               {
-                model: 'llama-3.1-sonar-large-128k-online',
+                model: 'sonar-pro',
                 maxTokens: 800,      // Reduced from 1200 for 12x faster performance
                 temperature: 0.2,
                 timeout: 30000        // 30-second timeout to prevent 764s hangs
@@ -493,7 +493,7 @@ export class MoEBrainOrchestrator {
             // Initialize with basic configuration
             const gepaConfig = {
               llmConfig: {
-                model: 'llama-3.1-sonar-large-128k-online',
+                model: 'sonar-pro',
                 apiKey: process.env.PERPLEXITY_API_KEY || '',
                 baseURL: 'https://api.perplexity.ai',
                 temperature: 0.2,

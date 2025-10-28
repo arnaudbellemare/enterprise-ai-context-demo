@@ -423,31 +423,36 @@ List each unexpected strength separately.`;
   }
   
   /**
-   * Call LLM with creative prompt
+   * Call LLM with creative prompt using Ollama
    */
   private async callCreativeJudgeLLM(prompt: string): Promise<string> {
     try {
-      const response = await fetch('http://localhost:3000/api/kimi-k2', {
+      const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: prompt,
-          model: 'deepseek/deepseek-chat',
-          max_tokens: 2000,
-          temperature: 0.8 // Higher temp for creativity
+          model: 'gemma3:4b',
+          prompt: prompt,
+          stream: false,
+          options: {
+            temperature: 0.8, // Higher temp for creativity
+            max_tokens: 2000
+          }
         })
       });
       
       if (!response.ok) {
-        throw new Error(`LLM call failed: ${response.statusText}`);
+        throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
-      return data.response || data.answer || '';
+      return data.response || '';
       
     } catch (error) {
       console.error('Creative Judge LLM call failed:', error);
-      return 'Error: Unable to get creative evaluation';
+      
+      // Fallback: Return a basic evaluation if LLM fails
+      return 'Creative evaluation unavailable. Using fallback scoring.';
     }
   }
   
@@ -668,11 +673,11 @@ ${additionalContext.map((ctx, i) => `${i + 1}. ${ctx}`).join('\n')}
     blindSpotCount: number,
     unexpectedStrengthCount: number
   ): number {
-    const avgDimension = Object.values(dimensions).reduce((a: any, b: any) => a + b, 0) / 
+    const avgDimension = (Object.values(dimensions) as number[]).reduce((a: number, b: number) => a + b, 0) / 
                          Object.keys(dimensions).length;
-    const avgReasoning = Object.values(reasoningAnalysis).reduce((a: any, b: any) => a + b, 0) / 
+    const avgReasoning = (Object.values(reasoningAnalysis) as number[]).reduce((a: number, b: number) => a + b, 0) / 
                          Object.keys(reasoningAnalysis).length;
-    const avgEdgeCase = Object.values(edgeCaseCoverage).reduce((a: any, b: any) => a + b, 0) / 
+    const avgEdgeCase = (Object.values(edgeCaseCoverage) as number[]).reduce((a: number, b: number) => a + b, 0) / 
                         Object.keys(edgeCaseCoverage).length;
     
     let score = (avgDimension * 0.4 + avgReasoning * 0.3 + avgEdgeCase * 0.3);
