@@ -1,0 +1,100 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    // Ban 'any' type - force developers to use proper types
+    "@typescript-eslint/no-explicit-any": "error",
+
+    // Ban console.log in production code - use logger instead
+    "no-console": ["error", {
+      "allow": ["warn", "error"]
+    }],
+
+    // Enforce consistent type imports
+    "@typescript-eslint/consistent-type-imports": ["error", {
+      "prefer": "type-imports",
+      "disallowTypeAnnotations": false
+    }],
+
+    // Enforce explicit function return types
+    "@typescript-eslint/explicit-function-return-type": ["warn", {
+      "allowExpressions": true,
+      "allowTypedFunctionExpressions": true,
+      "allowHigherOrderFunctions": true
+    }],
+
+    // Ban unused variables
+    "@typescript-eslint/no-unused-vars": ["error", {
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_",
+      "caughtErrorsIgnorePattern": "^_"
+    }],
+
+    // Enforce consistent naming conventions
+    "@typescript-eslint/naming-convention": ["error",
+      {
+        "selector": "interface",
+        "format": ["PascalCase"],
+        "custom": {
+          "regex": "^I[A-Z]",
+          "match": false
+        }
+      },
+      {
+        "selector": "typeAlias",
+        "format": ["PascalCase"]
+      },
+      {
+        "selector": "enum",
+        "format": ["PascalCase"]
+      },
+      {
+        "selector": "enumMember",
+        "format": ["UPPER_CASE"]
+      }
+    ],
+
+    // Enforce consistent error handling
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/await-thenable": "error",
+
+    // Ban non-null assertions
+    "@typescript-eslint/no-non-null-assertion": "warn",
+
+    // Enforce proper async function patterns
+    "@typescript-eslint/promise-function-async": "warn",
+
+    // Code quality
+    "eqeqeq": ["error", "always"],
+    "no-var": "error",
+    "prefer-const": "error",
+    "prefer-arrow-callback": "error",
+    "no-throw-literal": "error",
+
+    // Security
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error"
+  },
+  "overrides": [
+    {
+      // Allow console in test files
+      "files": ["**/__tests__/**/*", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"],
+      "rules": {
+        "no-console": "off",
+        "@typescript-eslint/no-explicit-any": "warn"
+      }
+    },
+    {
+      // Allow any in migration/legacy files temporarily
+      "files": ["**/walt/**/*"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "warn",
+        "no-console": "warn"
+      }
+    }
+  ]
+}

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { brainEvaluationSystem } from '../../../lib/brain-evaluation-system';
+import { createLogger } from '../../../lib/walt/logger';
+
+const logger = createLogger('BrainEvaluation');
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,10 +19,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('📊 Brain Evaluation: Starting evaluation...');
-    console.log(`   Query: ${query.substring(0, 100)}...`);
-    console.log(`   Domain: ${domain || 'general'}`);
-    console.log(`   Response Length: ${response.length} characters`);
+    logger.info('Starting brain evaluation', {
+      query: query.substring(0, 100),
+      domain: domain || 'general',
+      responseLength: response.length
+    });
 
     const startTime = Date.now();
 
@@ -38,10 +42,12 @@ export async function POST(request: NextRequest) {
     
     const processingTime = (Date.now() - startTime) / 1000;
 
-    console.log(`✅ Brain Evaluation: Completed (${processingTime}s)`);
-    console.log(`   Overall Score: ${(evaluation.overallScore * 100).toFixed(1)}%`);
-    console.log(`   Domain Scores: ${evaluation.domainScores.length}`);
-    console.log(`   Recommendations: ${evaluation.recommendations.length}`);
+    logger.info('Brain evaluation completed', {
+      processingTime,
+      overallScore: evaluation.overallScore,
+      domainScoresCount: evaluation.domainScores.length,
+      recommendationsCount: evaluation.recommendations.length
+    });
 
     return NextResponse.json({
       success: true,
@@ -63,7 +69,8 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Brain Evaluation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Brain evaluation failed', { error: errorMessage });
     
     return NextResponse.json(
       {

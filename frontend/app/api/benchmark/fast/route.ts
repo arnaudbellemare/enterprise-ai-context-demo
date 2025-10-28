@@ -1,10 +1,13 @@
 /**
  * FAST BENCHMARK API
- * 
+ *
  * Quick benchmark using simple queries that actually work
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createLogger } from '../../../../lib/walt/logger';
+
+const logger = createLogger('FastBenchmark');
 
 // Fast, simple queries that don't take forever
 const FAST_QUERIES = [
@@ -154,20 +157,24 @@ async function callOllamaBaseline(query: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('🚀 Starting FAST benchmark run...');
-    
+    logger.info('Starting FAST benchmark run', { queryCount: FAST_QUERIES.length });
+
     const results = [];
-    
+
     for (let i = 0; i < FAST_QUERIES.length; i++) {
       const test = FAST_QUERIES[i];
-      console.log(`📊 Running test ${i + 1}/${FAST_QUERIES.length}: ${test.query}`);
-      
+      logger.info('Running benchmark test', {
+        testNumber: i + 1,
+        totalTests: FAST_QUERIES.length,
+        query: test.query
+      });
+
       // Test PERMUTATION
-      console.log('🤖 Testing PERMUTATION system...');
+      logger.debug('Testing PERMUTATION system');
       const permutationResult = await callPermutationAPI(test.query);
-      
+
       // Test Baseline
-      console.log('🔵 Testing Ollama baseline...');
+      logger.debug('Testing Ollama baseline');
       const baselineResult = await callOllamaBaseline(test.query);
       
       if (baselineResult.success) {
@@ -192,9 +199,17 @@ export async function POST(req: NextRequest) {
           timestamp: new Date().toISOString()
         });
         
-        console.log(`✅ ${test.query.substring(0, 30)}...: PERMUTATION=${Math.round(permutationResult.quality * 100)}%, Baseline=${Math.round(baselineResult.quality * 100)}%, Improvement=${Math.round(improvement)}%`);
+        logger.info('Test completed successfully', {
+          query: test.query.substring(0, 50),
+          permutationQuality: Math.round(permutationResult.quality * 100),
+          baselineQuality: Math.round(baselineResult.quality * 100),
+          improvement: Math.round(improvement)
+        });
       } else {
-        console.log(`❌ ${test.query.substring(0, 30)}...: Baseline failed - ${baselineResult.error}`);
+        logger.warn('Baseline test failed', {
+          query: test.query.substring(0, 50),
+          error: baselineResult.error
+        });
         results.push({
           domain: test.domain,
           query: test.query,
@@ -236,7 +251,7 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString()
     };
 
-    console.log('🏁 Fast benchmark completed:', summary);
+    logger.info('Fast benchmark completed', { summary });
 
     return NextResponse.json({
       success: true,
@@ -245,9 +260,10 @@ export async function POST(req: NextRequest) {
       results: results,
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error: any) {
-    console.error('❌ Fast benchmark error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Fast benchmark failed', { error: errorMessage });
     return NextResponse.json({
       error: 'Benchmark failed',
       details: error?.message || 'Unknown error'

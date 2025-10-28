@@ -9,6 +9,7 @@
     "build": "cd frontend && npm run build",
     "start": "cd frontend && npm run start",
     "lint": "cd frontend && npm run lint",
+    "type-check": "cd frontend && npx tsc --noEmit",
     "test": "npx tsx test-permutation-complete.ts",
     "benchmark": "npx tsx test-complete-system-benchmark.ts",
     "benchmark:gepa": "cd benchmarking && python gepa_optimizer_full_system.py",
@@ -29,7 +30,8 @@
     "test:walt:native": "npx tsx test-walt-native.ts",
     "eval:quick": "npx tsx scripts/run-permutation-evals.ts quick",
     "eval:full": "npx tsx scripts/run-permutation-evals.ts full",
-    "eval:single": "npx tsx scripts/run-permutation-evals.ts single"
+    "eval:single": "npx tsx scripts/run-permutation-evals.ts single",
+    "prepare": "husky"
   },
   "keywords": [
     "ai",
@@ -61,5 +63,14 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "lint-staged": {
+    "frontend/**/*.{ts,tsx}": [
+      "cd frontend && npx eslint --fix",
+      "cd frontend && npx tsc --noEmit"
+    ],
+    "frontend/**/*.{js,jsx,json,css,md}": [
+      "cd frontend && npx prettier --write"
+    ]
   }
 }

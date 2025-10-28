@@ -17,6 +17,75 @@ import { createLogger } from './walt/logger';
 const logger = createLogger('AdvancedLearningMethods');
 
 // ============================================================
+// TYPE DEFINITIONS
+// ============================================================
+
+export interface DataItem {
+  id?: string | number;
+  value?: unknown;
+  features?: number[];
+  [key: string]: unknown;
+}
+
+export interface Embedding {
+  id: number;
+  embedding: number[];
+  norm: number;
+}
+
+export interface LearningRepresentation {
+  taskId: string;
+  loss: number;
+  dimensions: number;
+  quality: number;
+  timestamp: number;
+}
+
+export interface ContrastivePair {
+  anchor: DataItem;
+  positive?: DataItem;
+  negative?: DataItem;
+  label: number;
+}
+
+export interface ContrastiveLearningResult {
+  taskId: string;
+  loss: number;
+  representations: LearningRepresentation;
+  accuracy: number;
+  methodology: string[];
+}
+
+export interface GenerativeLearningResult {
+  taskId: string;
+  reconstructionLoss: number;
+  diversityScore: number;
+  representations: LearningRepresentation;
+  methodology: string[];
+}
+
+export interface PredictiveLearningResult {
+  taskId: string;
+  predictionLoss: number;
+  accuracy: number;
+  representations: LearningRepresentation;
+  methodology: string[];
+}
+
+export interface Prediction {
+  input: DataItem;
+  prediction: string;
+  confidence: number;
+}
+
+export interface TaskMetadata {
+  created?: number;
+  updated?: number;
+  version?: string;
+  [key: string]: unknown;
+}
+
+// ============================================================
 // SELF-SUPERVISED LEARNING FRAMEWORK
 // ============================================================
 
@@ -31,15 +100,15 @@ export interface SelfSupervisedConfig {
 export interface LearningTask {
   id: string;
   type: 'contrastive' | 'generative' | 'predictive' | 'reconstructive';
-  data: any[];
-  labels?: any[];
-  metadata: any;
+  data: DataItem[];
+  labels?: string[] | number[];
+  metadata: TaskMetadata;
 }
 
 export class SelfSupervisedLearningFramework {
   private config: SelfSupervisedConfig;
   private tasks: Map<string, LearningTask> = new Map();
-  private learnedRepresentations: Map<string, any> = new Map();
+  private learnedRepresentations: Map<string, LearningRepresentation> = new Map();
 
   constructor(config: SelfSupervisedConfig) {
     this.config = config;
@@ -49,7 +118,7 @@ export class SelfSupervisedLearningFramework {
   /**
    * Contrastive Learning: Learn representations by contrasting positive and negative pairs
    */
-  async contrastiveLearning(task: LearningTask): Promise<any> {
+  async contrastiveLearning(task: LearningTask): Promise<ContrastiveLearningResult> {
     logger.info('Starting contrastive learning', { taskId: task.id });
 
     const {
@@ -80,7 +149,7 @@ export class SelfSupervisedLearningFramework {
   /**
    * Generative Learning: Learn by generating data and reconstructing
    */
-  async generativeLearning(task: LearningTask): Promise<any> {
+  async generativeLearning(task: LearningTask): Promise<GenerativeLearningResult> {
     logger.info('Starting generative learning', { taskId: task.id });
 
     const {
@@ -108,7 +177,7 @@ export class SelfSupervisedLearningFramework {
   /**
    * Predictive Learning: Learn by predicting future or missing data
    */
-  async predictiveLearning(task: LearningTask): Promise<any> {
+  async predictiveLearning(task: LearningTask): Promise<PredictiveLearningResult> {
     logger.info('Starting predictive learning', { taskId: task.id });
 
     const {
@@ -133,15 +202,19 @@ export class SelfSupervisedLearningFramework {
     };
   }
 
-  private async generateContrastivePairs(task: LearningTask): Promise<any> {
+  private async generateContrastivePairs(task: LearningTask): Promise<{
+    positivePairs: ContrastivePair[];
+    negativePairs: ContrastivePair[];
+    embeddings: Embedding[];
+  }> {
     // Simulate contrastive pair generation
-    const positivePairs = task.data.slice(0, Math.floor(task.data.length / 2)).map((item, i) => ({
+    const positivePairs: ContrastivePair[] = task.data.slice(0, Math.floor(task.data.length / 2)).map((item, i) => ({
       anchor: item,
       positive: task.data[i + Math.floor(task.data.length / 2)] || item,
       label: 1
     }));
 
-    const negativePairs = task.data.slice(0, Math.floor(task.data.length / 2)).map((item, i) => ({
+    const negativePairs: ContrastivePair[] = task.data.slice(0, Math.floor(task.data.length / 2)).map((item, i) => ({
       anchor: item,
       negative: task.data[Math.floor(task.data.length / 2) + i] || item,
       label: 0
@@ -152,16 +225,20 @@ export class SelfSupervisedLearningFramework {
     return { positivePairs, negativePairs, embeddings };
   }
 
-  private computeContrastiveLoss(positivePairs: any[], negativePairs: any[], embeddings: any[]): number {
+  private computeContrastiveLoss(positivePairs: ContrastivePair[], negativePairs: ContrastivePair[], embeddings: Embedding[]): number {
     // Simulate contrastive loss computation
     const positiveLoss = positivePairs.reduce((sum, pair) => sum + Math.random() * 0.1, 0);
     const negativeLoss = negativePairs.reduce((sum, pair) => sum + Math.random() * 0.2, 0);
     return positiveLoss + negativeLoss;
   }
 
-  private async generateAndReconstruct(task: LearningTask): Promise<any> {
+  private async generateAndReconstruct(task: LearningTask): Promise<{
+    generatedData: DataItem[];
+    reconstructionLoss: number;
+    diversityScore: number;
+  }> {
     // Simulate generative learning
-    const generatedData = task.data.map(item => ({
+    const generatedData: DataItem[] = task.data.map(item => ({
       ...item,
       generated: true,
       timestamp: Date.now()
@@ -173,9 +250,13 @@ export class SelfSupervisedLearningFramework {
     return { generatedData, reconstructionLoss, diversityScore };
   }
 
-  private async predictMissingData(task: LearningTask): Promise<any> {
+  private async predictMissingData(task: LearningTask): Promise<{
+    predictions: Prediction[];
+    predictionLoss: number;
+    accuracy: number;
+  }> {
     // Simulate predictive learning
-    const predictions = task.data.map((item, i) => ({
+    const predictions: Prediction[] = task.data.map((item, i) => ({
       input: item,
       prediction: `predicted_${i}`,
       confidence: Math.random() * 0.4 + 0.6
@@ -187,7 +268,7 @@ export class SelfSupervisedLearningFramework {
     return { predictions, predictionLoss, accuracy };
   }
 
-  private async computeEmbeddings(data: any[]): Promise<any[]> {
+  private async computeEmbeddings(data: DataItem[]): Promise<Embedding[]> {
     // Simulate embedding computation
     return data.map((item, i) => ({
       id: i,
@@ -196,7 +277,7 @@ export class SelfSupervisedLearningFramework {
     }));
   }
 
-  private async updateRepresentations(task: LearningTask, loss: number): Promise<any> {
+  private async updateRepresentations(task: LearningTask, loss: number): Promise<LearningRepresentation> {
     // Simulate representation update
     return {
       taskId: task.id,
@@ -207,7 +288,7 @@ export class SelfSupervisedLearningFramework {
     };
   }
 
-  private evaluateContrastiveAccuracy(positivePairs: any[], negativePairs: any[]): number {
+  private evaluateContrastiveAccuracy(positivePairs: ContrastivePair[], negativePairs: ContrastivePair[]): number {
     return Math.random() * 0.2 + 0.8; // Simulate high accuracy
   }
 }
