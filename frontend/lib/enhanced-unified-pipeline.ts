@@ -436,11 +436,14 @@ export class EnhancedUnifiedPipeline {
     let totalCost = 0;
     let tokenSavings = 0;
     
+    // Detect domain early for use throughout the pipeline
+    const detectedDomain = domain || await this.detectDomain(query);
+    
     logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     logger.info('🎯 ENHANCED UNIFIED PERMUTATION PIPELINE');
     logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     logger.info(`📝 Query: ${query.substring(0, 60)}...`);
-    logger.info(`🏢 Domain: ${domain || 'auto-detect'}`);
+    logger.info(`🏢 Domain: ${detectedDomain}`);
     logger.info(`⚙️  Mode: ${this.config.optimizationMode}`);
     logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     
@@ -460,9 +463,6 @@ export class EnhancedUnifiedPipeline {
       // ============================================================
       const layerStart = Date.now();
       logger.info('📦 LAYER 0: SKILL SELECTION');
-      
-      // Detect domain early for use in subsequent layers
-      const detectedDomain = domain || await this.detectDomain(query);
       
       let selectedSkill: Skill | null = null;
       let skillId: string | undefined;

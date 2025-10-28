@@ -1,0 +1,60 @@
+{
+  "base_model": {
+    "name": "microsoft/DialoGPT-medium",
+    "torch_dtype": "float16",
+    "device_map": "auto",
+    "trust_remote_code": true
+  },
+  "lora": {
+    "r": 16,
+    "lora_alpha": 32,
+    "target_modules": [
+      "q_proj",
+      "v_proj",
+      "k_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ],
+    "lora_dropout": 0.1,
+    "bias": "none",
+    "task_type": "CAUSAL_LM",
+    "use_rslora": true,
+    "use_dora": false
+  },
+  "qlora": {
+    "enabled": true,
+    "bits": 4,
+    "double_quant": true,
+    "quant_type": "nf4"
+  },
+  "training": {
+    "num_train_epochs": 2,
+    "max_steps": 1000,
+    "per_device_train_batch_size": 4,
+    "gradient_accumulation_steps": 4,
+    "learning_rate": 0.0002,
+    "weight_decay": 0.00001,
+    "logging_steps": 10,
+    "save_steps": 500,
+    "bf16": true,
+    "fp16": false,
+    "lr_scheduler_type": "cosine",
+    "warmup_ratio": 0.1,
+    "save_total_limit": 3,
+    "load_best_model_at_end": true,
+    "report_to": [],
+    "gradient_checkpointing": true,
+    "optim": "adamw_torch"
+  },
+  "domains": {
+    "financial": {
+      "training_data": "/Users/cno/enterprise-ai-context-demo/enterprise-ai-context-demo-2/enterprise-ai-context-demo/frontend/lora-finetuning/data/financial_training.json",
+      "r": 16,
+      "lora_alpha": 32,
+      "lora_dropout": 0.1,
+      "weight_decay": 0.00001
+    }
+  }
+}

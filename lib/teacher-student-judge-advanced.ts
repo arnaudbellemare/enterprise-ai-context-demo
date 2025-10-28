@@ -15,7 +15,7 @@
 import { createLogger } from './walt/logger';
 import { perplexityTeacher } from './perplexity-teacher';
 import { axLLMEnhancedSystem } from './ax-llm-enhanced';
-import AdvancedLearningMethods from './advanced-learning-methods';
+import { AdvancedLearningMethods } from './advanced-learning-methods';
 import ScalableDataSystem from './scalable-data-system';
 import ComprehensiveSemioticSystem from './semiotic-inference-system';
 import ContinualLearningSystem from './continual-learning-system';
@@ -224,25 +224,13 @@ export class AdvancedTeacherStudentJudge {
           student: studentResult,
           judge: judgeResult,
           permutationAI,
-          advancedLearning,
-          semioticAnalysis,
-          rigorousEval,
           finalAnswer
         },
         metadata: {
           processingTime,
           cost: 0.08, // Higher cost for full Permutation AI stack
           quality: judgeResult.selfTrainingEffectiveness,
-          timestamp: new Date().toISOString(),
-          systemsUsed: [
-            'Teacher-Student-Judge',
-            'MoE (ACE, AX-LLM, GEPA, DSPy, PromptMii)',
-            'Advanced Learning Methods',
-            'Semiotic Inference',
-            'Rigorous Evaluation',
-            'TRM with Creative Optimization',
-            'GraphRAG'
-          ]
+          timestamp: new Date().toISOString()
         }
       };
 
@@ -1253,6 +1241,320 @@ ${perspectiveShift?.perspectiveShift?.personalRecommendations?.slice(0, 2).map((
 ${contextExpansion?.contextExpansion?.additionalContext?.slice(0, 2).map((context: string) => `- ${context}`).join('\n') || '- Adding crucial context'}
 ` : ''}`;
   }
+  /**
+   * Execute Advanced Learning Methods Analysis
+   */
+  async executeAdvancedLearningAnalysis(data: any): Promise<any> {
+    logger.info('Executing advanced learning methods analysis');
+    
+    try {
+      const result = await this.advancedLearningMethods.executeComprehensiveAnalysis(data);
+      
+      logger.info('Advanced learning analysis completed', {
+        components: result.methodology?.length || 0,
+        timestamp: result.timestamp
+      });
+      
+      return {
+        success: true,
+        result,
+        metadata: {
+          processingTime: Date.now(),
+          components: [
+            'Self-Supervised Learning Framework',
+            'Survival Analysis Engine',
+            'Multi-Modal Learning System', 
+            'Causal Inference Engine',
+            'Interpretability Engine'
+          ]
+        }
+      };
+    } catch (error) {
+      logger.error('Advanced learning analysis failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Scalable Data System Operations
+   */
+  async executeScalableDataOperations(operation: string, params: any): Promise<any> {
+    logger.info('Executing scalable data system operations', { operation });
+    
+    try {
+      let result;
+      
+      switch (operation) {
+        case 'end-to-end-pipeline':
+          result = await this.scalableDataSystem.executeScalableDataPipeline(
+            params.domains || ['art', 'legal', 'business'], 
+            params.targetSize || 100
+          );
+          break;
+          
+        case 'generate-dataset':
+          const generator = this.scalableDataSystem['dataGenerator'];
+          result = await generator.generateScalableDataset(
+            params.domain || 'general', 
+            params.targetSize || 50
+          );
+          break;
+          
+        case 'distill-data':
+          const distillationEngine = this.scalableDataSystem['distillationEngine'];
+          result = await distillationEngine.distillDataset(
+            params.samples || [], 
+            params.targetSize || 50
+          );
+          break;
+          
+        case 'reasoning-chains':
+          const reasoningArchitecture = this.scalableDataSystem['reasoningArchitecture'];
+          result = await reasoningArchitecture.generateReasoningChain(
+            params.problem || 'Sample problem', 
+            params.domain || 'general'
+          );
+          break;
+          
+        case 'verify-quality':
+          const verifiabilitySystem = this.scalableDataSystem['verifiabilitySystem'];
+          result = await verifiabilitySystem.verifyQuality(params.samples || []);
+          break;
+          
+        default:
+          throw new Error(`Unknown operation: ${operation}`);
+      }
+      
+      logger.info('Scalable data operation completed', {
+        operation,
+        resultKeys: Object.keys(result || {})
+      });
+      
+      return {
+        success: true,
+        operation,
+        result,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      logger.error('Scalable data operation failed', { error, operation });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        operation,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Semiotic Inference Analysis
+   * Beyond formal logic to include experience and imagination
+   */
+  async executeSemioticAnalysis(query: string, context: any): Promise<any> {
+    logger.info('Executing semiotic inference analysis', { query: query.substring(0, 50) });
+    
+    try {
+      const result = await this.semioticSystem.executeSemioticAnalysis(query, context);
+      
+      logger.info('Semiotic analysis completed', {
+        inferenceTypes: Object.keys(result.inference || {}).length,
+        creativeInsights: result.creativeInsights?.length || 0,
+        semioticSigns: result.semioticProcessing?.length || 0
+      });
+      
+      return {
+        success: true,
+        result,
+        timestamp: new Date().toISOString(),
+        philosophicalFramework: {
+          foundation: 'C.S. Peirce\'s semiotic theory',
+          critique: 'Descartes\' bias of logic supremacy',
+          innovation: 'Experience + Imagination + Logic integration'
+        }
+      };
+    } catch (error) {
+      logger.error('Semiotic analysis failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Continual Learning Pipeline
+   * Beyond static pre-training to dynamic, on-the-fly adaptation
+   */
+  async executeContinualLearning(query: string, context: any, baseModel: any): Promise<any> {
+    logger.info('Executing continual learning pipeline', { query: query.substring(0, 50) });
+    
+    try {
+      const result = await this.continualLearningSystem.executeContinualLearning(query, context, baseModel);
+      
+      logger.info('Continual learning pipeline completed', {
+        selectedExamples: result.selectedExamples?.length || 0,
+        adaptationTime: result.tttResult?.adaptationTime || 0,
+        performanceGain: result.tttResult?.performanceGain || 0,
+        memoryEntries: result.memoryEntries?.length || 0
+      });
+      
+      return {
+        success: true,
+        result,
+        timestamp: new Date().toISOString(),
+        paradigmShift: {
+          from: 'Static pre-training',
+          to: 'Dynamic, on-the-fly adaptation',
+          innovation: 'Test-time adaptation outperforms in-context learning',
+          efficiency: '3.8B model with TTT outperforms 27B base model',
+          speed: 'Local MoE achieves TTT accuracy with 100x speedup'
+        }
+      };
+    } catch (error) {
+      logger.error('Continual learning pipeline failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Subspace Boosting Analysis
+   * Prevent rank collapse in model merging
+   */
+  async executeSubspaceBoosting(expertModels: any[]): Promise<any> {
+    logger.info('Executing subspace boosting analysis', { 
+      expertCount: expertModels.length 
+    });
+    
+    try {
+      const result = await this.subspaceBoostingSystem.executeSubspaceBoosting(expertModels);
+      
+      logger.info('Subspace boosting analysis completed', {
+        rankCollapsePrevention: result.breakthroughMetrics?.rankCollapsePrevention || 0,
+        performanceGain: result.breakthroughMetrics?.performanceGain || 0,
+        improvementOverTraditional: result.breakthroughMetrics?.improvementOverTraditional || 0
+      });
+      
+      return {
+        success: true,
+        result,
+        timestamp: new Date().toISOString(),
+        researchBreakthrough: {
+          problem: 'Rank collapse in task vector space during model merging',
+          solution: 'Subspace boosting with SVD decomposition',
+          innovation: 'Explicit rank preservation through orthogonal components',
+          performance: '>10% improvement on vision benchmarks',
+          scalability: 'Successfully merge up to 20 expert models'
+        }
+      };
+    } catch (error) {
+      logger.error('Subspace boosting analysis failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Quality-First Training Analysis
+   * Prioritize quality and diversity over volume
+   */
+  async executeQualityFirstTraining(): Promise<any> {
+    logger.info('Executing quality-first training analysis');
+    
+    try {
+      const result = await this.qualityFirstTrainingSystem.executeQualityFirstTraining();
+      
+      logger.info('Quality-first training analysis completed', {
+        graduateQuestions: result.graduateQuestions?.length || 0,
+        chainOfThoughtQuestions: result.chainOfThoughtQuestions?.length || 0,
+        qualityScore: result.qualityMetrics?.qualityScore || 0,
+        accuracyGain: result.distillationResult?.accuracyGain || 0,
+        efficiencyMultiplier: result.efficiencyGains?.efficiencyMultiplier || 0
+      });
+      
+      return {
+        success: true,
+        result,
+        timestamp: new Date().toISOString(),
+        paradigmShift: {
+          from: 'Volume-based training',
+          to: 'Quality and diversity-based training',
+          innovation: 'NaturalReasoning dataset with graduate-level questions',
+          performance: 'Steeper accuracy gains with smaller, higher-quality datasets',
+          efficiency: '3x fewer training steps with higher final test accuracy'
+        }
+      };
+    } catch (error) {
+      logger.error('Quality-first training analysis failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Execute Rigorous Evaluation Analysis
+   * Address the illusion of reasoning gains
+   */
+  async executeRigorousEvaluation(
+    baselineResults: number[],
+    improvedResults: number[],
+    evaluationRuns: any[],
+    rlMethods: any[]
+  ): Promise<any> {
+    logger.info('Executing rigorous evaluation analysis');
+    
+    try {
+      const result = await this.rigorousEvaluationSystem.executeRigorousEvaluation(
+        baselineResults,
+        improvedResults,
+        evaluationRuns,
+        rlMethods
+      );
+      
+      logger.info('Rigorous evaluation analysis completed', {
+        illusionOfGains: result.criticalFindings?.illusionOfGains || false,
+        implementationSensitivity: result.criticalFindings?.implementationSensitivity || 0,
+        rlMethodDrops: result.criticalFindings?.rlMethodDrops || 0,
+        statisticalSignificance: result.criticalFindings?.statisticalSignificance || 0
+      });
+      
+      return {
+        success: true,
+        result,
+        timestamp: new Date().toISOString(),
+        researchCritique: {
+          problem: 'Illusion of reasoning gains falling within baseline variance ranges',
+          sensitivity: 'High sensitivity to implementation details (decoding parameters, seeds, prompts, hardware)',
+          datasetSize: 'Small dataset sizes causing performance swings (e.g., AIME 24 with 30 examples)',
+          rlMethods: 'RL approaches showing minimal real gains and overfitting easily',
+          standardization: 'Need for rigorous multi-seed evaluation protocols and transparent reporting'
+        }
+      };
+    } catch (error) {
+      logger.error('Rigorous evaluation analysis failed', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
 }
 
 // ACE: Adaptive Context Enhancement
@@ -2204,319 +2506,6 @@ class TRM {
     return Math.min((teacherContext + studentContext + contextRichness), 1.0);
   }
 
-  /**
-   * Execute Advanced Learning Methods Analysis
-   */
-  async executeAdvancedLearningAnalysis(data: any): Promise<any> {
-    logger.info('Executing advanced learning methods analysis');
-    
-    try {
-      const result = await this.advancedLearningMethods.executeComprehensiveAnalysis(data);
-      
-      logger.info('Advanced learning analysis completed', {
-        components: result.methodology?.length || 0,
-        timestamp: result.timestamp
-      });
-      
-      return {
-        success: true,
-        result,
-        metadata: {
-          processingTime: Date.now(),
-          components: [
-            'Self-Supervised Learning Framework',
-            'Survival Analysis Engine',
-            'Multi-Modal Learning System', 
-            'Causal Inference Engine',
-            'Interpretability Engine'
-          ]
-        }
-      };
-    } catch (error) {
-      logger.error('Advanced learning analysis failed', { error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      };
-    }
-  }
-
-  /**
-   * Execute Scalable Data System Operations
-   */
-  async executeScalableDataOperations(operation: string, params: any): Promise<any> {
-    logger.info('Executing scalable data system operations', { operation });
-    
-    try {
-      let result;
-      
-      switch (operation) {
-        case 'end-to-end-pipeline':
-          result = await this.scalableDataSystem.executeScalableDataPipeline(
-            params.domains || ['art', 'legal', 'business'], 
-            params.targetSize || 100
-          );
-          break;
-          
-        case 'generate-dataset':
-          const generator = this.scalableDataSystem['dataGenerator'];
-          result = await generator.generateScalableDataset(
-            params.domain || 'general', 
-            params.targetSize || 50
-          );
-          break;
-          
-        case 'distill-data':
-          const distillationEngine = this.scalableDataSystem['distillationEngine'];
-          result = await distillationEngine.distillDataset(
-            params.samples || [], 
-            params.targetSize || 50
-          );
-          break;
-          
-        case 'reasoning-chains':
-          const reasoningArchitecture = this.scalableDataSystem['reasoningArchitecture'];
-          result = await reasoningArchitecture.generateReasoningChain(
-            params.problem || 'Sample problem', 
-            params.domain || 'general'
-          );
-          break;
-          
-        case 'verify-quality':
-          const verifiabilitySystem = this.scalableDataSystem['verifiabilitySystem'];
-          result = await verifiabilitySystem.verifyQuality(params.samples || []);
-          break;
-          
-        default:
-          throw new Error(`Unknown operation: ${operation}`);
-      }
-      
-      logger.info('Scalable data operation completed', {
-        operation,
-        resultKeys: Object.keys(result || {})
-      });
-      
-      return {
-        success: true,
-        operation,
-        result,
-        timestamp: new Date().toISOString()
-      };
-    } catch (error) {
-      logger.error('Scalable data operation failed', { error, operation });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        operation,
-        timestamp: new Date().toISOString()
-      };
-    }
-  }
-
-  /**
-   * Execute Semiotic Inference Analysis
-   * Beyond formal logic to include experience and imagination
-   */
-  async executeSemioticAnalysis(query: string, context: any): Promise<any> {
-    logger.info('Executing semiotic inference analysis', { query: query.substring(0, 50) });
-    
-    try {
-      const result = await this.semioticSystem.executeSemioticAnalysis(query, context);
-      
-      logger.info('Semiotic analysis completed', {
-        inferenceTypes: Object.keys(result.inference || {}).length,
-        creativeInsights: result.creativeInsights?.length || 0,
-        semioticSigns: result.semioticProcessing?.length || 0
-      });
-      
-      return {
-        success: true,
-        result,
-        timestamp: new Date().toISOString(),
-        philosophicalFramework: {
-          foundation: 'C.S. Peirce\'s semiotic theory',
-          critique: 'Descartes\' bias of logic supremacy',
-          innovation: 'Experience + Imagination + Logic integration'
-        }
-      };
-    } catch (error) {
-      logger.error('Semiotic analysis failed', { error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      };
-    }
-  }
-
-  /**
-   * Execute Continual Learning Pipeline
-   * Beyond static pre-training to dynamic, on-the-fly adaptation
-   */
-  async executeContinualLearning(query: string, context: any, baseModel: any): Promise<any> {
-    logger.info('Executing continual learning pipeline', { query: query.substring(0, 50) });
-    
-    try {
-      const result = await this.continualLearningSystem.executeContinualLearning(query, context, baseModel);
-      
-      logger.info('Continual learning pipeline completed', {
-        selectedExamples: result.selectedExamples?.length || 0,
-        adaptationTime: result.tttResult?.adaptationTime || 0,
-        performanceGain: result.tttResult?.performanceGain || 0,
-        memoryEntries: result.memoryEntries?.length || 0
-      });
-      
-      return {
-        success: true,
-        result,
-        timestamp: new Date().toISOString(),
-        paradigmShift: {
-          from: 'Static pre-training',
-          to: 'Dynamic, on-the-fly adaptation',
-          innovation: 'Test-time adaptation outperforms in-context learning',
-          efficiency: '3.8B model with TTT outperforms 27B base model',
-          speed: 'Local MoE achieves TTT accuracy with 100x speedup'
-        }
-      };
-    } catch (error) {
-      logger.error('Continual learning pipeline failed', { error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      };
-    }
-  }
-
-  /**
-   * Execute Subspace Boosting Analysis
-   * Prevent rank collapse in model merging
-   */
-  async executeSubspaceBoosting(expertModels: any[]): Promise<any> {
-    logger.info('Executing subspace boosting analysis', { 
-      expertCount: expertModels.length 
-    });
-    
-    try {
-      const result = await this.subspaceBoostingSystem.executeSubspaceBoosting(expertModels);
-      
-      logger.info('Subspace boosting analysis completed', {
-        rankCollapsePrevention: result.breakthroughMetrics?.rankCollapsePrevention || 0,
-        performanceGain: result.breakthroughMetrics?.performanceGain || 0,
-        improvementOverTraditional: result.breakthroughMetrics?.improvementOverTraditional || 0
-      });
-      
-      return {
-        success: true,
-        result,
-        timestamp: new Date().toISOString(),
-        researchBreakthrough: {
-          problem: 'Rank collapse in task vector space during model merging',
-          solution: 'Subspace boosting with SVD decomposition',
-          innovation: 'Explicit rank preservation through orthogonal components',
-          performance: '>10% improvement on vision benchmarks',
-          scalability: 'Successfully merge up to 20 expert models'
-        }
-      };
-    } catch (error) {
-      logger.error('Subspace boosting analysis failed', { error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      };
-    }
-  }
-
-  /**
-   * Execute Quality-First Training Analysis
-   * Prioritize quality and diversity over volume
-   */
-  async executeQualityFirstTraining(): Promise<any> {
-    logger.info('Executing quality-first training analysis');
-    
-    try {
-      const result = await this.qualityFirstTrainingSystem.executeQualityFirstTraining();
-      
-      logger.info('Quality-first training analysis completed', {
-        graduateQuestions: result.graduateQuestions?.length || 0,
-        chainOfThoughtQuestions: result.chainOfThoughtQuestions?.length || 0,
-        qualityScore: result.qualityMetrics?.qualityScore || 0,
-        accuracyGain: result.distillationResult?.accuracyGain || 0,
-        efficiencyMultiplier: result.efficiencyGains?.efficiencyMultiplier || 0
-      });
-      
-      return {
-        success: true,
-        result,
-        timestamp: new Date().toISOString(),
-        paradigmShift: {
-          from: 'Volume-based training',
-          to: 'Quality and diversity-based training',
-          innovation: 'NaturalReasoning dataset with graduate-level questions',
-          performance: 'Steeper accuracy gains with smaller, higher-quality datasets',
-          efficiency: '3x fewer training steps with higher final test accuracy'
-        }
-      };
-    } catch (error) {
-      logger.error('Quality-first training analysis failed', { error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      };
-    }
-  }
-
-  /**
-   * Execute Rigorous Evaluation Analysis
-   * Address the illusion of reasoning gains
-   */
-  async executeRigorousEvaluation(
-    baselineResults: number[],
-    improvedResults: number[],
-    evaluationRuns: any[],
-    rlMethods: any[]
-  ): Promise<any> {
-    logger.info('Executing rigorous evaluation analysis');
-    
-    try {
-      const result = await this.rigorousEvaluationSystem.executeRigorousEvaluation(
-        baselineResults,
-        improvedResults,
-        evaluationRuns,
-        rlMethods
-      );
-      
-      logger.info('Rigorous evaluation analysis completed', {
-        illusionOfGains: result.criticalFindings?.illusionOfGains || false,
-        implementationSensitivity: result.criticalFindings?.implementationSensitivity || 0,
-        rlMethodDrops: result.criticalFindings?.rlMethodDrops || 0,
-        statisticalSignificance: result.criticalFindings?.statisticalSignificance || 0
-      });
-      
-      return {
-        success: true,
-        result,
-        timestamp: new Date().toISOString(),
-        researchCritique: {
-          problem: 'Illusion of reasoning gains falling within baseline variance ranges',
-          sensitivity: 'High sensitivity to implementation details (decoding parameters, seeds, prompts, hardware)',
-          datasetSize: 'Small dataset sizes causing performance swings (e.g., AIME 24 with 30 examples)',
-          rlMethods: 'RL approaches showing minimal real gains and overfitting easily',
-          standardization: 'Need for rigorous multi-seed evaluation protocols and transparent reporting'
-        }
-      };
-    } catch (error) {
-      logger.error('Rigorous evaluation analysis failed', { error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      };
-    }
-  }
 }
 
 // GraphRAG: Graph Retrieval-Augmented Generation

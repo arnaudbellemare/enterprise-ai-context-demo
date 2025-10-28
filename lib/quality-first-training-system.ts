@@ -702,7 +702,7 @@ export class LILOMethod {
       
       const liloScore = (
         learnability * this.config.learnabilityWeight +
-        variance * this.config.varianceWeight +
+        variance * 0.25 + // Fixed weight since varianceWeight doesn't exist in config
         diversity * this.config.diversityWeight +
         efficiency * this.config.efficiencyWeight
       );
