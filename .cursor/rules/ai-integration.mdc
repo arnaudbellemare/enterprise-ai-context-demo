@@ -1,0 +1,35 @@
+---
+description: AI/ML component integration patterns
+---
+
+# AI/ML Component Integration
+
+## Core AI Components
+- **Teacher-Student Pattern**: Implemented in [lib/teacher-student-judge-advanced.ts](mdc:lib/teacher-student-judge-advanced.ts)
+- **Perplexity Integration**: Real-time data lookup in [lib/perplexity-teacher.ts](mdc:lib/perplexity-teacher.ts)
+- **DSPy Framework**: Programmatic prompt optimization with iterative refinement
+- **IRT Model**: Item Response Theory for difficulty-aware routing
+
+## Model Routing Logic
+```typescript
+if (needsRealTimeData || irt_difficulty > 0.7) {
+  model = 'perplexity';  // Teacher model
+} else {
+  model = 'ollama';       // Student model
+}
+```
+
+## Performance Characteristics
+- Teacher Model (Perplexity): 1-3s latency, $0.003 cost, high accuracy
+- Student Model (Ollama): 200-800ms latency, $0 cost, good accuracy
+- DSPy Refinement: 500ms-2s latency, $0.001 cost, 3 iterations typical
+
+## Integration Points
+- ACE Framework for adaptive prompting
+- ReasoningBank for memory retrieval
+- LoRA for domain-specific fine-tuning
+- TRM for recursive verification
+- SWiRL for multi-step reasoning
+
+## Configuration
+Components can be enabled/disabled independently through configuration flags. See [ARCHITECTURE.md](mdc:ARCHITECTURE.md) for detailed configuration options.

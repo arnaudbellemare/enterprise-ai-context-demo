@@ -1,0 +1,74 @@
+---
+description: DSPy safety and alignment engineering patterns
+---
+
+# DSPy Safety and Alignment Engineering
+
+## Safety Pyramid Implementation
+
+DSPy excels at engineering 4 of 5 safety layers through declarative AI system composition:
+
+### 1. Systemic Safety (Foundation)
+- **DSPy Strength**: Declarative signatures prevent systemic failures
+- **Implementation**: `frontend/lib/dspy-signatures.ts` with 43+ validated signatures
+- **Pattern**: Type-safe I/O specifications prevent cascade failures
+- **Example**: `"query: str -> answer: str, confidence: float"` ensures structured outputs
+
+### 2. Adversarial Robustness (Enhanced Needed)
+- **Current**: Basic validation in `frontend/app/api/dspy-reward-optimization/route.ts`
+- **Gap**: Limited adversarial testing tooling
+- **Enhancement Needed**: Adversarial prompt injection testing, robustness evaluation
+- **Implementation**: `benchmarking/adversarial_test.py` (basic framework exists)
+
+### 3. Reliability (Strong)
+- **DSPy Strength**: Iterative refinement with feedback loops
+- **Implementation**: `frontend/lib/dspy-enhanced-optimization.ts` with 3-iteration refinement
+- **Pattern**: Quality improvement from 0.65 → 0.82 → 0.94 through optimization
+- **Metrics**: Confidence intervals, statistical validation
+
+### 4. Goal Alignment (Strong)
+- **DSPy Strength**: Reward-based optimization with custom metrics
+- **Implementation**: `frontend/app/api/dspy-reward-optimization/route.ts`
+- **Pattern**: Multi-objective optimization (accuracy, completeness, efficiency)
+- **Validation**: GEPA optimization with Pareto frontier tracking
+
+### 5. Value Alignment (Weights-Based)
+- **Location**: Model weights and training data
+- **DSPy Role**: Limited - requires weight-level intervention
+- **Implementation**: LoRA fine-tuning configurations in `ARCHITECTURE.md`
+
+## Enhanced Adversarial Robustness Tooling
+
+### Current Implementation
+```typescript
+// Basic adversarial testing framework exists
+const adversarialTests = [
+  'prompt_injection',
+  'jailbreak_attempts', 
+  'misleading_queries',
+  'context_manipulation'
+];
+```
+
+### Recommended Enhancements
+1. **Adversarial Prompt Generation**: Automated generation of adversarial examples
+2. **Robustness Metrics**: Quantified resistance to adversarial inputs
+3. **Defense Mechanisms**: Input sanitization and validation layers
+4. **Continuous Testing**: Automated adversarial testing in CI/CD pipeline
+
+## DSPy Safety Patterns
+
+### Signature-Based Safety
+- Type-safe I/O prevents malformed outputs
+- Structured validation ensures consistent behavior
+- Composition patterns enable modular safety
+
+### Optimization-Based Safety
+- Reward functions can include safety metrics
+- Multi-objective optimization balances performance vs safety
+- Iterative refinement improves robustness over time
+
+### Evaluation-Based Safety
+- Custom metrics for safety evaluation
+- Statistical validation of safety properties
+- Continuous monitoring of safety metrics

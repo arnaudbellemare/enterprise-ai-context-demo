@@ -1,0 +1,28 @@
+---
+description: PERMUTATION AI system architecture and components
+---
+
+# PERMUTATION AI System Architecture
+
+## Core System Overview
+This is a multi-component AI system that orchestrates 11+ advanced techniques into a unified execution pipeline. Main entry point is [main.py](mdc:main.py) with TypeScript components in [lib/](mdc:lib/).
+
+## Key Components
+- **ACE Framework**: Adaptive prompting strategy selection in [lib/teacher-student-judge-advanced.ts](mdc:lib/teacher-student-judge-advanced.ts)
+- **Perplexity Teacher**: Real market data lookup in [lib/perplexity-teacher.ts](mdc:lib/perplexity-teacher.ts)
+- **IRT Routing**: Difficulty-aware query routing using Item Response Theory
+- **DSPy Integration**: Programmatic prompt optimization
+- **ReasoningBank**: Memory system for accumulated knowledge
+- **LoRA**: Domain-specific model fine-tuning
+
+## Configuration
+System configuration is managed through [package.json](mdc:package.json) scripts and environment variables. The architecture supports three modes:
+- Full Power (Quality First): 3-5s latency, $0.005-0.010 cost, 0.92-0.96 quality
+- Fast & Free (Cost First): 500ms-1s latency, $0 cost, 0.75-0.85 quality  
+- Balanced (Production Default): 2-3s latency, $0.003-0.005 cost, 0.88-0.94 quality
+
+## Database Schema
+Uses Supabase with core tables: `ace_playbook`, `reasoning_bank`, `execution_history`, `financial_data`. See [ARCHITECTURE.md](mdc:ARCHITECTURE.md) for complete schema.
+
+## Testing
+Comprehensive test suite with files like [test-complete-system.js](mdc:test-complete-system.js), [test-brain-systems.js](mdc:test-brain-systems.js), and domain-specific tests.

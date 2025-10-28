@@ -1,0 +1,29 @@
+---
+description: Testing patterns and validation approaches
+---
+
+# Testing and Validation Patterns
+
+## Test File Organization
+- Unit tests: `test-*.js` files for individual components
+- Integration tests: `test-*-integration.js` for component interactions
+- System tests: `test-complete-*.js` for end-to-end validation
+- Benchmark tests: `test-*-benchmark.js` for performance validation
+
+## Key Test Files
+- [test-complete-system.js](mdc:test-complete-system.js): Full system validation
+- [test-brain-systems.js](mdc:test-brain-systems.js): Brain component testing
+- [test-permutation-integration.js](mdc:test-permutation-integration.js): Core integration tests
+- [comprehensive-system-test.js](mdc:comprehensive-system-test.js): Comprehensive validation
+
+## Validation Approach
+- Use realistic test data and scenarios
+- Test all three configuration modes (Full Power, Fast & Free, Balanced)
+- Validate performance metrics (latency, cost, quality)
+- Test error handling and edge cases
+- Use proper mocking for external dependencies
+
+## Benchmarking
+- Performance benchmarks in [benchmarking/](mdc:benchmarking/) directory
+- Cost analysis in [cost-analysis.js](mdc:cost-analysis.js)
+- Results stored in `real-benchmark-results-*.json` files

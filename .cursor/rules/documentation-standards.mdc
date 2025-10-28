@@ -1,0 +1,23 @@
+---
+globs: *.md
+---
+
+# Documentation Standards
+
+## Technical Documentation
+- Use precise technical language, avoid marketing speak
+- Include implementation details and trade-offs
+- Reference specific files using [filename.ext](mdc:filename.ext) format
+- Document performance characteristics (latency, cost, quality metrics)
+
+## Architecture Documentation
+- Follow the structure established in [ARCHITECTURE.md](mdc:ARCHITECTURE.md)
+- Include code examples with proper TypeScript syntax
+- Document configuration options and their impact
+- Explain why architectural decisions were made
+
+## Status Documentation
+- Use clear status indicators (✅ implemented, 📄 reference, 🔗 link)
+- Include version numbers and last updated dates
+- Document known limitations and future work
+- Provide concrete metrics and benchmarks

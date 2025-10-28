@@ -1,0 +1,25 @@
+---
+globs: *.ts,*.tsx,*.js,*.jsx
+---
+
+# TypeScript/JavaScript Code Standards
+
+## Type Safety
+- Use strict TypeScript types, avoid `any`
+- Define interfaces for all data structures
+- Use proper error handling with typed exceptions
+
+## Code Organization
+- Follow the modular architecture defined in [ARCHITECTURE.md](mdc:ARCHITECTURE.md)
+- Components should implement the `Component` interface pattern
+- Use dependency injection for testability
+
+## Performance
+- Cache expensive operations using the established caching patterns
+- Use async/await consistently
+- Implement proper rate limiting for external APIs
+
+## Testing
+- Write unit tests for all components
+- Use the existing test patterns in the `test-*.js` files
+- Mock external dependencies properly
