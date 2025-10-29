@@ -7,6 +7,8 @@
  * This is THE missing piece for reliability!
  */
 
+import { SafeMathEvaluator } from './safe-math-evaluator';
+
 export interface VerificationResult {
   is_valid: boolean;
   confidence: number; // 0.0 - 1.0
@@ -382,18 +384,22 @@ export class MathVerifier extends Verifier {
     const calculations = answer.match(/\d+\.?\d*\s*[\+\-\*\/\^]\s*\d+\.?\d*/g);
 
     if (calculations && calculations.length > 0) {
-      // Verify calculations
+      // Verify calculations using safe math evaluator
       for (const calc of calculations) {
         try {
-          // Simple eval check (in production, use a safe math parser!)
-          const result = eval(calc.replace(/\^/g, '**'));
+          // Use safe math evaluator instead of eval()
+          const evalResult = SafeMathEvaluator.evaluate(calc.replace(/\^/g, '^'));
           
-          // Check if result appears in answer
-          const resultStr = result.toString();
-          if (!answer.includes(resultStr)) {
-            baseResult.errors.push(`Calculation ${calc} result ${resultStr} not found in answer`);
-            baseResult.suggestions.push(`Verify calculation: ${calc} = ${resultStr}`);
-            baseResult.quality_scores.accuracy *= 0.7;
+          if (evalResult.error) {
+            baseResult.errors.push(`Unable to verify calculation: ${calc} (${evalResult.error})`);
+          } else {
+            // Check if result appears in answer
+            const resultStr = evalResult.result.toString();
+            if (!answer.includes(resultStr)) {
+              baseResult.errors.push(`Calculation ${calc} result ${resultStr} not found in answer`);
+              baseResult.suggestions.push(`Verify calculation: ${calc} = ${resultStr}`);
+              baseResult.quality_scores.accuracy *= 0.7;
+            }
           }
         } catch (error) {
           baseResult.errors.push(`Unable to verify calculation: ${calc}`);

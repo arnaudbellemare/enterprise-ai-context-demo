@@ -1,13 +1,17 @@
 /**
- * Environment Variable Validation
+ * Environment Variable Validation with Zod
  *
  * Validates required environment variables at startup to fail fast
  * if configuration is missing or invalid.
+ *
+ * Uses Zod schemas for type-safe validation as recommended in CODE_ANALYSIS_REPORT.md
  *
  * Usage:
  *   import { validateEnvironment } from '@/lib/env-validation';
  *   validateEnvironment(); // Call at app startup
  */
+
+import { z } from 'zod';
 
 interface EnvValidationError {
   variable: string;
@@ -21,26 +25,26 @@ interface EnvValidationResult {
 }
 
 /**
- * Required environment variables for production
+ * Zod schema for required environment variables
  */
-const REQUIRED_ENV_VARS = [
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-] as const;
+const requiredEnvSchema = z.object({
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url('Must be a valid URL').min(1),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(10, 'API key must be at least 10 characters'),
+});
 
 /**
- * Optional but recommended environment variables
+ * Zod schema for recommended environment variables (optional)
  */
-const RECOMMENDED_ENV_VARS = [
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'OPENAI_API_KEY',
-  'PERPLEXITY_API_KEY',
-  'ANTHROPIC_API_KEY',
-  'OLLAMA_HOST',
-] as const;
+const recommendedEnvSchema = z.object({
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(10, 'API key must be at least 10 characters').optional(),
+  OPENAI_API_KEY: z.string().min(10, 'API key must be at least 10 characters').optional(),
+  PERPLEXITY_API_KEY: z.string().min(10, 'API key must be at least 10 characters').optional(),
+  ANTHROPIC_API_KEY: z.string().min(10, 'API key must be at least 10 characters').optional(),
+  OLLAMA_HOST: z.string().url('Must be a valid URL').or(z.string().regex(/^[\w.-]+(:\d+)?$/, 'Must be hostname or hostname:port')).optional(),
+});
 
 /**
- * Validate a single environment variable
+ * Validate a single environment variable (legacy function for compatibility)
  */
 function validateEnvVar(varName: string): EnvValidationError | null {
   const value = process.env[varName];
@@ -52,11 +56,18 @@ function validateEnvVar(varName: string): EnvValidationError | null {
     };
   }
 
-  // Validate URL format for URL variables
+  // Use Zod for validation based on variable name
   if (varName.includes('URL') || varName.includes('HOST')) {
+    const urlSchema = z.string().url();
     try {
-      new URL(value);
+      urlSchema.parse(value);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return {
+          variable: varName,
+          reason: error.errors[0]?.message || 'Invalid URL format',
+        };
+      }
       return {
         variable: varName,
         reason: 'Invalid URL format',
@@ -64,13 +75,17 @@ function validateEnvVar(varName: string): EnvValidationError | null {
     }
   }
 
-  // Validate API key format (basic check)
   if (varName.includes('API_KEY') || varName.includes('_KEY')) {
-    if (value.length < 10) {
-      return {
-        variable: varName,
-        reason: 'API key appears too short (< 10 characters)',
-      };
+    const keySchema = z.string().min(10, 'API key must be at least 10 characters');
+    try {
+      keySchema.parse(value);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return {
+          variable: varName,
+          reason: error.errors[0]?.message || 'API key too short',
+        };
+      }
     }
   }
 
@@ -78,25 +93,53 @@ function validateEnvVar(varName: string): EnvValidationError | null {
 }
 
 /**
- * Validate all required and recommended environment variables
+ * Validate all required and recommended environment variables using Zod
  */
 export function validateEnvironment(): EnvValidationResult {
   const errors: EnvValidationError[] = [];
   const warnings: EnvValidationError[] = [];
 
-  // Check required variables
-  for (const varName of REQUIRED_ENV_VARS) {
-    const error = validateEnvVar(varName);
-    if (error) {
-      errors.push(error);
+  // Validate required variables using Zod schema
+  try {
+    requiredEnvSchema.parse({
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      for (const issue of error.errors) {
+        const path = issue.path[0] as string;
+        errors.push({
+          variable: path,
+          reason: issue.message || 'Validation failed',
+        });
+      }
     }
   }
 
-  // Check recommended variables
-  for (const varName of RECOMMENDED_ENV_VARS) {
-    const error = validateEnvVar(varName);
-    if (error) {
-      warnings.push(error);
+  // Validate recommended variables (non-blocking warnings)
+  const recommendedVars = {
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    OLLAMA_HOST: process.env.OLLAMA_HOST,
+  };
+
+  try {
+    recommendedEnvSchema.parse(recommendedVars);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      for (const issue of error.errors) {
+        const path = issue.path[0] as string;
+        // Only add warning if variable was provided but invalid
+        if (recommendedVars[path as keyof typeof recommendedVars]) {
+          warnings.push({
+            variable: path,
+            reason: issue.message || 'Invalid format',
+          });
+        }
+      }
     }
   }
 

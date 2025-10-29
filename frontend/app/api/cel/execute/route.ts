@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { SafeCELEvaluator } from '@/lib/safe-cel-evaluator';
 
 export const runtime = 'nodejs';
 
@@ -30,86 +31,16 @@ interface CELResponse {
   };
 }
 
-// Simple CEL-like expression evaluator
-function evaluateCELExpression(expression: string, context: any): any {
+// Safe CEL expression evaluator - Uses SafeCELEvaluator instead of Function()
+async function evaluateCELExpression(expression: string, context: any): Promise<any> {
   try {
     console.log('🔍 Evaluating CEL expression:', expression);
     console.log('🔍 Context:', JSON.stringify(context, null, 2));
 
-    // Handle multi-statement expressions (separated by semicolons)
-    const statements = expression.split(';').map(s => s.trim()).filter(s => s.length > 0);
-    
-    if (statements.length > 1) {
-      // Execute multiple statements and return the last result
-      let lastResult = null;
-      for (const statement of statements) {
-        lastResult = evaluateSingleExpression(statement.trim(), context);
-      }
-      return lastResult;
-    } else {
-      // Single expression
-      return evaluateSingleExpression(expression, context);
-    }
+    // Use SafeCELEvaluator instead of Function()
+    return SafeCELEvaluator.evaluate(expression, context);
   } catch (error: any) {
     throw new Error(`CEL evaluation error: ${error?.message || String(error)}`);
-  }
-}
-
-function evaluateSingleExpression(expression: string, context: any): any {
-  // Replace CEL-style variable access with JavaScript
-  let jsExpression = expression
-    .replace(/state\./g, 'context.state?.')
-    .replace(/input\./g, 'context.input?.')
-    .replace(/workflow\./g, 'context.workflow?.')
-    .replace(/now\(\)/g, 'new Date().toISOString()')
-    .replace(/\[(\w+)\]/g, '["$1"]');
-
-  // Handle common CEL functions
-  jsExpression = jsExpression
-    .replace(/size\(/g, 'Object.keys(')
-    .replace(/contains\(/g, 'String(')
-    .replace(/all\(/g, 'Array.from(')
-    .replace(/in /g, 'includes(');
-
-  console.log('🔍 Converted to JS:', jsExpression);
-
-  // Create safe evaluation context
-  const safeContext = {
-    ...context,
-    Math,
-    String,
-    Array,
-    Object,
-    JSON,
-    Date
-  };
-
-  // Handle assignment expressions
-  if (jsExpression.includes('=')) {
-    const [left, right] = jsExpression.split('=').map(s => s.trim());
-    
-    // Execute the right side
-    const rightFunc = new Function('context', `with(context) { return ${right}; }`);
-    const value = rightFunc(safeContext);
-    
-    // Set the left side
-    const leftPath = left.replace('context.state?.', 'context.state.');
-    const setFunc = new Function('context', 'value', `
-      const parts = "${leftPath}".split('.');
-      let obj = context;
-      for (let i = 0; i < parts.length - 1; i++) {
-        if (!obj[parts[i]]) obj[parts[i]] = {};
-        obj = obj[parts[i]];
-      }
-      obj[parts[parts.length - 1]] = value;
-      return value;
-    `);
-    
-    return setFunc(safeContext, value);
-  } else {
-    // Simple expression evaluation
-    const func = new Function('context', `with(context) { return ${jsExpression}; }`);
-    return func(safeContext);
   }
 }
 
@@ -142,8 +73,8 @@ export async function POST(request: NextRequest) {
       Date
     };
 
-    // Evaluate the expression
-    const result = evaluateCELExpression(expression, context);
+    // Evaluate the expression using safe CEL evaluator
+    const result = await evaluateCELExpression(expression, context);
 
     // Determine if this affects global state
     let newState = { ...state };
@@ -154,10 +85,10 @@ export async function POST(request: NextRequest) {
       // Extract variable assignments
       const assignments = expression.match(/(\w+)\s*=\s*([^;]+)/g);
       if (assignments) {
-        assignments.forEach(assignment => {
+        for (const assignment of assignments) {
           const [varName, value] = assignment.split('=').map(s => s.trim());
-          newState[varName] = evaluateCELExpression(value, context);
-        });
+          newState[varName] = await evaluateCELExpression(value, context);
+        }
       }
     }
 
