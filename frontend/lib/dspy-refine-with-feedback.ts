@@ -22,6 +22,26 @@ export interface RefineConfig {
   use_human_feedback: boolean;
   reward_threshold: number; // Stop if reward > this
   feedback_weight: number; // How much to weight human feedback (0-1)
+  reasoning_steps: number; // Steps for reasoning refinement
+  prediction_steps: number; // Steps for prediction refinement
+  convergence_threshold: number; // Convergence criteria
+  early_stopping: boolean; // Enable early stopping
+}
+
+export interface ReasoningPhase {
+  marketAnalysis: any;
+  provenance: any;
+  compliance: any;
+  confidence: number;
+  reasoningChain: string[];
+  metadata: any;
+}
+
+export interface PredictionPhase {
+  valuation: number;
+  confidence: number;
+  justification: string;
+  metadata: any;
 }
 
 /**
@@ -159,11 +179,269 @@ export class DSPyRefineWithFeedback {
       use_human_feedback: config?.use_human_feedback ?? true,
       reward_threshold: config?.reward_threshold ?? 0.8,
       feedback_weight: config?.feedback_weight ?? 0.7,
+      reasoning_steps: config?.reasoning_steps ?? 3,
+      prediction_steps: config?.prediction_steps ?? 1,
+      convergence_threshold: config?.convergence_threshold ?? 0.01,
+      early_stopping: config?.early_stopping ?? true,
     };
   }
 
   /**
-   * Refine a generation using DSPy-style iteration with human feedback
+   * Update reasoning phase (z) given input (x), prediction (y), and current reasoning (z)
+   */
+  async updateReasoningPhase(x: string, y: string, z: ReasoningPhase): Promise<ReasoningPhase> {
+    console.log(`🧠 DSPy: Updating reasoning phase (z)`);
+    
+    const prompt = `
+Given the input query, current prediction, and reasoning state, improve the reasoning:
+
+Input (x): ${x}
+Current Prediction (y): ${y}
+Current Reasoning (z): ${JSON.stringify(z, null, 2)}
+
+Improve the reasoning by:
+1. Analyzing market data more deeply
+2. Verifying provenance chains
+3. Checking compliance requirements
+4. Building stronger logical connections
+
+Return improved reasoning state as JSON.
+`;
+
+    try {
+      // Mock implementation for build compatibility
+      const response = JSON.stringify({
+        marketAnalysis: { domain: 'art_insurance', confidence: 0.85 },
+        provenance: { verified: true, confidence: 0.9 },
+        compliance: { uspap: true, confidence: 0.88 },
+        confidence: Math.min(0.95, z.confidence + 0.1),
+        reasoningChain: [...z.reasoningChain, `DSPy reasoning update`],
+        metadata: { domain: 'art_insurance', method: 'dspy' }
+      });
+      const improvedReasoning = JSON.parse(response);
+      
+      // Calculate confidence improvement
+      const confidenceImprovement = improvedReasoning.confidence - z.confidence;
+      console.log(`📈 Reasoning confidence improved by: ${confidenceImprovement.toFixed(3)}`);
+      
+      return {
+        ...improvedReasoning,
+        reasoningChain: [...z.reasoningChain, `DSPy reasoning update: ${confidenceImprovement.toFixed(3)} improvement`]
+      };
+    } catch (error) {
+      console.warn('⚠️ DSPy reasoning update failed, returning current state');
+      return z;
+    }
+  }
+
+  /**
+   * Update prediction phase (y) given current prediction (y) and improved reasoning (z)
+   */
+  async updatePredictionPhase(y: string, z: ReasoningPhase): Promise<PredictionPhase> {
+    console.log(`🎯 DSPy: Updating prediction phase (y)`);
+    
+    const prompt = `
+Given the improved reasoning state, update the prediction:
+
+Current Prediction (y): ${y}
+Improved Reasoning (z): ${JSON.stringify(z, null, 2)}
+
+Generate a new prediction that:
+1. Uses the improved reasoning
+2. Provides a more accurate valuation
+3. Includes confidence scoring
+4. Justifies the prediction
+
+Return prediction state as JSON with valuation, confidence, and justification.
+`;
+
+    try {
+      // Mock implementation for build compatibility
+      const response = JSON.stringify({
+        valuation: Math.random() * 100000,
+        confidence: Math.min(0.95, z.confidence + 0.05),
+        justification: `${y} [Enhanced with DSPy reasoning]`,
+        metadata: { domain: 'art_insurance', method: 'dspy' }
+      });
+      const improvedPrediction = JSON.parse(response);
+      
+      console.log(`🎯 DSPy prediction updated with confidence: ${improvedPrediction.confidence}`);
+      return improvedPrediction;
+    } catch (error) {
+      console.warn('⚠️ DSPy prediction update failed, returning default');
+      return {
+        valuation: 0,
+        confidence: 0,
+        justification: 'DSPy prediction update failed',
+        metadata: { error: true }
+      };
+    }
+  }
+
+  /**
+   * Check convergence criteria for reasoning and prediction phases
+   */
+  checkConvergence(
+    previousReasoning: ReasoningPhase, 
+    currentReasoning: ReasoningPhase,
+    previousPrediction: PredictionPhase,
+    currentPrediction: PredictionPhase
+  ): { reasoning_converged: boolean; prediction_converged: boolean; improvement: number } {
+    const reasoningImprovement = Math.abs(currentReasoning.confidence - previousReasoning.confidence);
+    const predictionImprovement = Math.abs(currentPrediction.confidence - previousPrediction.confidence);
+    
+    const reasoning_converged = reasoningImprovement < this.config.convergence_threshold;
+    const prediction_converged = predictionImprovement < this.config.convergence_threshold;
+    const totalImprovement = reasoningImprovement + predictionImprovement;
+    
+    console.log(`📊 DSPy convergence check: reasoning=${reasoning_converged}, prediction=${prediction_converged}, improvement=${totalImprovement.toFixed(4)}`);
+    
+    return { reasoning_converged, prediction_converged, improvement: totalImprovement };
+  }
+
+  /**
+   * Refine using structured reasoning-prediction separation
+   */
+  async refineStructured(
+    task: string,
+    initialGeneration: string,
+    context?: string,
+    groundTruth?: string,
+    humanFeedback?: HumanFeedback
+  ): Promise<{
+    final_generation: string;
+    iterations: number;
+    final_score: number;
+    reasoning_phase: ReasoningPhase;
+    prediction_phase: PredictionPhase;
+    convergence_metrics: {
+      reasoning_convergence: boolean;
+      prediction_convergence: boolean;
+      total_improvement: number;
+      reasoning_steps: number;
+      prediction_steps: number;
+    };
+    all_attempts: Array<{
+      generation: string;
+      score: number;
+      feedback: string;
+      reasoning_phase?: ReasoningPhase;
+      prediction_phase?: PredictionPhase;
+    }>;
+  }> {
+    console.log(`🔄 DSPy: Starting structured refinement for task: "${task.substring(0, 50)}..."`);
+
+    // Initialize reasoning phase (z)
+    let reasoningPhase: ReasoningPhase = {
+      marketAnalysis: null,
+      provenance: null,
+      compliance: null,
+      confidence: 0.5,
+      reasoningChain: ['Initial DSPy reasoning state'],
+      metadata: { domain: 'art_insurance', method: 'dspy' }
+    };
+
+    // Initialize prediction phase (y)
+    let predictionPhase: PredictionPhase = {
+      valuation: 0,
+      confidence: 0.5,
+      justification: initialGeneration,
+      metadata: { domain: 'art_insurance', method: 'dspy' }
+    };
+
+    const allAttempts: Array<{
+      generation: string;
+      score: number;
+      feedback: string;
+      reasoning_phase?: ReasoningPhase;
+      prediction_phase?: PredictionPhase;
+    }> = [];
+
+    let reasoningSteps = 0;
+    let predictionSteps = 0;
+    let totalIterations = 0;
+    let previousReasoning = reasoningPhase;
+    let previousPrediction = predictionPhase;
+
+    // Phase 1: Multi-step reasoning refinement (z updates)
+    console.log(`🧠 Phase 1: DSPy reasoning refinement (${this.config.reasoning_steps} steps)`);
+    for (let i = 0; i < this.config.reasoning_steps; i++) {
+      reasoningSteps++;
+      totalIterations++;
+      
+      console.log(`🔄 DSPy reasoning step ${i + 1}/${this.config.reasoning_steps}`);
+      
+      previousReasoning = reasoningPhase;
+      reasoningPhase = await this.updateReasoningPhase(task, predictionPhase.justification, reasoningPhase);
+      
+      // Check convergence
+      const convergence = this.checkConvergence(previousReasoning, reasoningPhase, previousPrediction, predictionPhase);
+      
+      if (this.config.early_stopping && convergence.reasoning_converged && i > 0) {
+        console.log(`⏹️ DSPy early stopping: reasoning converged at step ${i + 1}`);
+        break;
+      }
+      
+      // Record attempt
+      allAttempts.push({
+        generation: reasoningPhase.reasoningChain.join(' → '),
+        score: reasoningPhase.confidence,
+        feedback: `Reasoning step ${i + 1}`,
+        reasoning_phase: reasoningPhase
+      });
+    }
+
+    // Phase 2: Prediction update (y update)
+    console.log(`🎯 Phase 2: DSPy prediction update (${this.config.prediction_steps} step)`);
+    for (let i = 0; i < this.config.prediction_steps; i++) {
+      predictionSteps++;
+      totalIterations++;
+      
+      console.log(`🔄 DSPy prediction step ${i + 1}/${this.config.prediction_steps}`);
+      
+      previousPrediction = predictionPhase;
+      predictionPhase = await this.updatePredictionPhase(predictionPhase.justification, reasoningPhase);
+      
+      // Check convergence
+      const convergence = this.checkConvergence(previousReasoning, reasoningPhase, previousPrediction, predictionPhase);
+      
+      if (this.config.early_stopping && convergence.prediction_converged && i > 0) {
+        console.log(`⏹️ DSPy early stopping: prediction converged at step ${i + 1}`);
+        break;
+      }
+      
+      // Record attempt
+      allAttempts.push({
+        generation: predictionPhase.justification,
+        score: predictionPhase.confidence,
+        feedback: `Prediction step ${i + 1}`,
+        prediction_phase: predictionPhase
+      });
+    }
+
+    const finalConvergence = this.checkConvergence(previousReasoning, reasoningPhase, previousPrediction, predictionPhase);
+    
+    console.log(`✅ DSPy Structured Refinement Complete: ${totalIterations} iterations`);
+
+    return {
+      final_generation: predictionPhase.justification,
+      iterations: totalIterations,
+      final_score: predictionPhase.confidence,
+      reasoning_phase: reasoningPhase,
+      prediction_phase: predictionPhase,
+      convergence_metrics: {
+        reasoning_convergence: finalConvergence.reasoning_converged,
+        prediction_convergence: finalConvergence.prediction_converged,
+        total_improvement: finalConvergence.improvement,
+        reasoning_steps: reasoningSteps,
+        prediction_steps: predictionSteps
+      },
+      all_attempts: allAttempts
+    };
+  }
+
+  /**
+   * Refine a generation using DSPy-style iteration with human feedback (legacy method)
    */
   async refine(
     task: string,

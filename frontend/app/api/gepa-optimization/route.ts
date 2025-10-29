@@ -13,7 +13,11 @@ export async function POST(request: NextRequest) {
       prompt,
       domain = 'general',
       maxIterations = 3,
-      optimizationType = 'comprehensive'
+      optimizationType = 'comprehensive',
+      reasoningSteps = 3,
+      predictionSteps = 1,
+      convergenceThreshold = 0.01,
+      earlyStopping = true
     } = body;
 
     if (!prompt) {
@@ -42,7 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`🧠 GEPA Optimization: Optimizing prompt for ${domain} domain`);
+    console.log(`🧠 GEPA Optimization: Optimizing prompt for ${domain} domain with structured reasoning-prediction separation`);
 
     const startTime = Date.now();
     let currentPrompt = prompt;

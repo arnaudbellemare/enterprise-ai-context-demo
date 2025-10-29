@@ -27,6 +27,22 @@ export interface RVSStep {
   confidence?: number;
 }
 
+export interface ReasoningState {
+  marketAnalysis: any;
+  provenance: any;
+  compliance: any;
+  confidence: number;
+  reasoningChain: string[];
+  metadata: any;
+}
+
+export interface PredictionState {
+  valuation: number;
+  confidence: number;
+  justification: string;
+  metadata: any;
+}
+
 export interface RVSResult {
   answer: string;
   iterations: number;
@@ -34,6 +50,15 @@ export interface RVSResult {
   verified: boolean;
   steps: RVSStep[];
   final_reasoning: string;
+  reasoning_state: ReasoningState;
+  prediction_state: PredictionState;
+  convergence_metrics: {
+    reasoning_convergence: boolean;
+    prediction_convergence: boolean;
+    total_improvement: number;
+    reasoning_steps: number;
+    prediction_steps: number;
+  };
   performance_metrics: {
     total_time_ms: number;
     avg_step_time_ms: number;
@@ -48,6 +73,10 @@ export interface RVSConfig {
   verification_required: boolean;
   adaptive_computation: boolean;
   multi_scale: boolean;
+  reasoning_steps: number;
+  prediction_steps: number;
+  convergence_threshold: number;
+  early_stopping: boolean;
 }
 
 /**
@@ -59,11 +88,15 @@ export class RVS {
   
   constructor(config?: Partial<RVSConfig>) {
     this.config = {
-      max_iterations: 5,
+      max_iterations: 16, // TRM uses up to 16 supervision steps
       confidence_threshold: 0.8,
       verification_required: true,
       adaptive_computation: true,
       multi_scale: true,
+      reasoning_steps: 12, // Most steps for reasoning refinement
+      prediction_steps: 4, // Fewer steps for prediction update
+      convergence_threshold: 0.01,
+      early_stopping: true,
       ...config
     };
     
@@ -79,7 +112,214 @@ export class RVS {
   }
   
   /**
-   * Process query with RVS recursive refinement
+   * Update reasoning state (z) given input (x), prediction (y), and current reasoning (z)
+   */
+  async updateReasoning(x: string, y: string, z: ReasoningState): Promise<ReasoningState> {
+    console.log(`🧠 RVS: Updating reasoning state (z)`);
+    
+    const prompt = `
+Given the input query, current prediction, and reasoning state, improve the reasoning:
+
+Input (x): ${x}
+Current Prediction (y): ${y}
+Current Reasoning (z): ${JSON.stringify(z, null, 2)}
+
+Improve the reasoning by:
+1. Analyzing market data more deeply
+2. Verifying provenance chains
+3. Checking compliance requirements
+4. Building stronger logical connections
+
+Return improved reasoning state as JSON.
+`;
+
+    try {
+      const response = await this.llmClient.generate(prompt);
+      const improvedReasoning = JSON.parse(response);
+      
+      // Calculate confidence improvement
+      const confidenceImprovement = improvedReasoning.confidence - z.confidence;
+      console.log(`📈 Reasoning confidence improved by: ${confidenceImprovement.toFixed(3)}`);
+      
+      return {
+        ...improvedReasoning,
+        reasoningChain: [...z.reasoningChain, `Reasoning update: ${confidenceImprovement.toFixed(3)} improvement`]
+      };
+    } catch (error) {
+      console.warn('⚠️ Reasoning update failed, returning current state');
+      return z;
+    }
+  }
+
+  /**
+   * Update prediction state (y) given current prediction (y) and improved reasoning (z)
+   */
+  async updatePrediction(y: string, z: ReasoningState): Promise<PredictionState> {
+    console.log(`🎯 RVS: Updating prediction state (y)`);
+    
+    const prompt = `
+Given the improved reasoning state, update the prediction:
+
+Current Prediction (y): ${y}
+Improved Reasoning (z): ${JSON.stringify(z, null, 2)}
+
+Generate a new prediction that:
+1. Uses the improved reasoning
+2. Provides a more accurate valuation
+3. Includes confidence scoring
+4. Justifies the prediction
+
+Return prediction state as JSON with valuation, confidence, and justification.
+`;
+
+    try {
+      const response = await this.llmClient.generate(prompt);
+      const improvedPrediction = JSON.parse(response);
+      
+      console.log(`🎯 Prediction updated with confidence: ${improvedPrediction.confidence}`);
+      return improvedPrediction;
+    } catch (error) {
+      console.warn('⚠️ Prediction update failed, returning default');
+      return {
+        valuation: 0,
+        confidence: 0,
+        justification: 'Prediction update failed',
+        metadata: { error: true }
+      };
+    }
+  }
+
+  /**
+   * Check convergence criteria for reasoning and prediction
+   */
+  checkConvergence(
+    previousReasoning: ReasoningState, 
+    currentReasoning: ReasoningState,
+    previousPrediction: PredictionState,
+    currentPrediction: PredictionState
+  ): { reasoning_converged: boolean; prediction_converged: boolean; improvement: number } {
+    const reasoningImprovement = Math.abs(currentReasoning.confidence - previousReasoning.confidence);
+    const predictionImprovement = Math.abs(currentPrediction.confidence - previousPrediction.confidence);
+    
+    const reasoning_converged = reasoningImprovement < this.config.convergence_threshold;
+    const prediction_converged = predictionImprovement < this.config.convergence_threshold;
+    const totalImprovement = reasoningImprovement + predictionImprovement;
+    
+    console.log(`📊 Convergence check: reasoning=${reasoning_converged}, prediction=${prediction_converged}, improvement=${totalImprovement.toFixed(4)}`);
+    
+    return { reasoning_converged, prediction_converged, improvement: totalImprovement };
+  }
+
+  /**
+   * Process query with structured reasoning-prediction separation
+   */
+  async processQueryStructured(query: string, initialSteps: RVSStep[]): Promise<RVSResult> {
+    const startTime = Date.now();
+    console.log(`🔄 RVS: Starting structured refinement for query: "${query.substring(0, 50)}..."`);
+
+    // Initialize reasoning state (z)
+    let reasoningState: ReasoningState = {
+      marketAnalysis: null,
+      provenance: null,
+      compliance: null,
+      confidence: 0.5,
+      reasoningChain: ['Initial reasoning state'],
+      metadata: { domain: 'art_insurance' }
+    };
+
+    // Initialize prediction state (y)
+    let predictionState: PredictionState = {
+      valuation: 0,
+      confidence: 0.5,
+      justification: 'Initial prediction',
+      metadata: { domain: 'art_insurance' }
+    };
+
+    const steps: RVSStep[] = [...initialSteps];
+    let reasoningSteps = 0;
+    let predictionSteps = 0;
+    let totalIterations = 0;
+    let verificationPasses = 0;
+    let refinementCycles = 0;
+    let previousReasoning = reasoningState;
+    let previousPrediction = predictionState;
+
+    // Phase 1: Multi-step reasoning refinement (z updates)
+    console.log(`🧠 Phase 1: Reasoning refinement (${this.config.reasoning_steps} steps)`);
+    for (let i = 0; i < this.config.reasoning_steps; i++) {
+      reasoningSteps++;
+      totalIterations++;
+      
+      console.log(`🔄 Reasoning step ${i + 1}/${this.config.reasoning_steps}`);
+      
+      previousReasoning = reasoningState;
+      reasoningState = await this.updateReasoning(query, predictionState.justification, reasoningState);
+      
+      // Check convergence
+      const convergence = this.checkConvergence(previousReasoning, reasoningState, previousPrediction, predictionState);
+      
+      if (this.config.early_stopping && convergence.reasoning_converged && i > 0) {
+        console.log(`⏹️ Early stopping: reasoning converged at step ${i + 1}`);
+        break;
+      }
+      
+      refinementCycles++;
+    }
+
+    // Phase 2: Prediction update (y update)
+    console.log(`🎯 Phase 2: Prediction update (${this.config.prediction_steps} step)`);
+    for (let i = 0; i < this.config.prediction_steps; i++) {
+      predictionSteps++;
+      totalIterations++;
+      
+      console.log(`🔄 Prediction step ${i + 1}/${this.config.prediction_steps}`);
+      
+      previousPrediction = predictionState;
+      predictionState = await this.updatePrediction(predictionState.justification, reasoningState);
+      
+      // Check convergence
+      const convergence = this.checkConvergence(previousReasoning, reasoningState, previousPrediction, predictionState);
+      
+      if (this.config.early_stopping && convergence.prediction_converged && i > 0) {
+        console.log(`⏹️ Early stopping: prediction converged at step ${i + 1}`);
+        break;
+      }
+      
+      verificationPasses++;
+    }
+
+    const duration = Date.now() - startTime;
+    const finalConvergence = this.checkConvergence(previousReasoning, reasoningState, previousPrediction, predictionState);
+    
+    console.log(`✅ RVS Structured Processing Complete: ${totalIterations} iterations, ${duration}ms`);
+
+    return {
+      answer: predictionState.justification,
+      iterations: totalIterations,
+      confidence: predictionState.confidence,
+      verified: predictionState.confidence >= this.config.confidence_threshold,
+      steps,
+      final_reasoning: reasoningState.reasoningChain.join(' → '),
+      reasoning_state: reasoningState,
+      prediction_state: predictionState,
+      convergence_metrics: {
+        reasoning_convergence: finalConvergence.reasoning_converged,
+        prediction_convergence: finalConvergence.prediction_converged,
+        total_improvement: finalConvergence.improvement,
+        reasoning_steps: reasoningSteps,
+        prediction_steps: predictionSteps
+      },
+      performance_metrics: {
+        total_time_ms: duration,
+        avg_step_time_ms: duration / totalIterations,
+        verification_passes: verificationPasses,
+        refinement_cycles: refinementCycles
+      }
+    };
+  }
+
+  /**
+   * Process query with RVS recursive refinement (legacy method)
    */
   async processQuery(query: string, initialSteps: RVSStep[]): Promise<RVSResult> {
     const startTime = Date.now();
@@ -163,6 +403,27 @@ export class RVS {
       verified,
       steps,
       final_reasoning: this.generateFinalReasoning(steps),
+      reasoning_state: {
+        marketAnalysis: null,
+        provenance: null,
+        compliance: null,
+        confidence: confidence,
+        reasoningChain: steps.map(s => s.reasoning || s.action),
+        metadata: { domain: 'art_insurance', method: 'legacy' }
+      },
+      prediction_state: {
+        valuation: 0,
+        confidence: confidence,
+        justification: currentAnswer,
+        metadata: { domain: 'art_insurance', method: 'legacy' }
+      },
+      convergence_metrics: {
+        reasoning_convergence: false,
+        prediction_convergence: false,
+        total_improvement: 0,
+        reasoning_steps: 0,
+        prediction_steps: 0
+      },
       performance_metrics: {
         total_time_ms: totalTime,
         avg_step_time_ms: avgStepTime,

@@ -306,7 +306,7 @@ ${sqlQuery ? `SQL Query: ${sqlQuery}\n` : ''}
 
       // Create TRM-inspired adaptive redo loop
       const trmConfig = {
-        max_iterations: 5, // TRM uses up to 16 supervision steps
+        max_iterations: 16, // TRM uses up to 16 supervision steps
         confidence_threshold: 0.8,
         model: 'qwen2.5:14b',
         act_config: {
