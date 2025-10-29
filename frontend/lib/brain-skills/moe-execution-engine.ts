@@ -161,6 +161,13 @@ export class MoEExecutionEngine {
           success: false,
           error: error.message,
           skillName: skill.name,
+          result: {
+            response: '',
+            confidence: 0,
+            cost: 0,
+            latency: 0,
+            error: error.message
+          },
           executionTime: 0,
           cost: 0,
           quality: 0
@@ -195,8 +202,8 @@ export class MoEExecutionEngine {
             result: batchItem.result,
             error: batchItem.error,
             skillName: skill.name,
-            executionTime: batchResult.metadata.processingTime / group.length,
-            cost: batchResult.metadata.cost / group.length,
+            executionTime: (batchResult.metadata?.processingTime as number || 0) / group.length,
+            cost: (batchResult.metadata?.cost as number || 0) / group.length,
             quality: skill.score
           });
         }
@@ -218,8 +225,8 @@ export class MoEExecutionEngine {
     skills: Array<{ name: string; skill: any; score: number }>
   ): Array<Array<{ name: string; skill: any; score: number }>> {
     const groups: Array<Array<{ name: string; skill: any; score: number }>> = [];
-    const batchSize = this.configuration.batchSize;
-    
+    const batchSize = this.configuration.batchSize || 5;
+
     for (let i = 0; i < skills.length; i += batchSize) {
       groups.push(skills.slice(i, i + batchSize));
     }
@@ -255,9 +262,14 @@ export class MoEExecutionEngine {
       const processingTime = Date.now() - startTime;
       const cost = this.calculateBatchCost(skills);
       
+      const results = batchResult.results || skills.map(() => ({ success: true, result: batchResult }));
+
       return {
         skillName,
-        results: batchResult.results || skills.map(() => ({ success: true, result: batchResult })),
+        results,
+        totalTime: processingTime,
+        successCount: results.filter((r: any) => r.success !== false).length,
+        failureCount: results.filter((r: any) => r.success === false).length,
         metadata: {
           batchSize: skills.length,
           processingTime,
@@ -274,12 +286,26 @@ export class MoEExecutionEngine {
         }
       });
       
+      const errorResults = skills.map((skill) => ({
+        skillName: skill.name,
+        success: false,
+        error: error.message,
+        result: {
+          response: '',
+          confidence: 0,
+          cost: 0,
+          latency: 0,
+          error: error.message
+        },
+        executionTime: 0
+      }));
+
       return {
         skillName,
-        results: skills.map(() => ({ 
-          success: false, 
-          error: error.message 
-        })),
+        results: errorResults,
+        totalTime: Date.now() - startTime,
+        successCount: 0,
+        failureCount: errorResults.length,
         metadata: {
           batchSize: skills.length,
           processingTime: Date.now() - startTime,

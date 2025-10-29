@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AdaptiveRedoLoop, MultiScaleReasoningLoop, createAdaptiveRedoLoop } from '@/lib/adaptive-redo-loop';
 import { detectDomain, detectStructuredQuery, detectWebSearchNeeded } from '@/lib/smart-routing';
 import { createLocalEmbeddings } from '@/lib/local-embeddings';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -49,11 +50,14 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`\n${'═'.repeat(70)}`);
-    console.log(`🧠 TRM-ADAPTIVE EXECUTION: ${query.substring(0, 80)}...`);
-    console.log(`   - TRM Type: ${trmType}`);
-    console.log(`   - Based on: "Less is More: Recursive Reasoning with Tiny Networks"`);
-    console.log(`${'═'.repeat(70)}\n`);
+    logger.info('TRM-ADAPTIVE EXECUTION started', {
+      operation: 'trm_execution',
+      metadata: {
+        query: query.substring(0, 80),
+        trmType,
+        paper: 'Less is More: Recursive Reasoning with Tiny Networks'
+      }
+    });
 
     // =================================================================
     // PHASE 1: SMART ROUTING & DETECTION (Same as before)
@@ -74,7 +78,10 @@ export async function POST(req: NextRequest) {
       timestamp: Date.now() - startTime,
     });
 
-    console.log(`✅ 1. Smart Routing: domain=${domain}, structured=${isStructured}, web=${needsWebSearch}`);
+    logger.debug('Smart Routing complete', {
+      operation: 'smart_routing',
+      metadata: { domain, isStructured, needsWebSearch }
+    });
 
     // =================================================================
     // PHASE 2: MULTI-QUERY EXPANSION (if needed)
@@ -99,7 +106,10 @@ export async function POST(req: NextRequest) {
         timestamp: Date.now() - startTime,
       });
 
-      console.log(`✅ 2. Multi-Query: Generated ${queryVariations.length} variations`);
+      logger.debug('Multi-Query Expansion complete', {
+        operation: 'multi_query',
+        metadata: { variationsCount: queryVariations.length }
+      });
     } else {
       logs.push({
         component: 'Multi-Query Expansion',
@@ -108,7 +118,10 @@ export async function POST(req: NextRequest) {
         timestamp: Date.now() - startTime,
       });
 
-      console.log(`⏭️  2. Multi-Query: Skipped (not needed)`);
+      logger.debug('Multi-Query Expansion skipped', {
+        operation: 'multi_query',
+        metadata: { reason: 'not_needed' }
+      });
     }
 
     // =================================================================
@@ -131,7 +144,10 @@ export async function POST(req: NextRequest) {
         timestamp: Date.now() - startTime,
       });
 
-      console.log(`✅ 3. SQL Generation: ${sqlQuery ? sqlQuery.substring(0, 60) : 'none'}...`);
+      logger.debug('SQL Generation complete', {
+        operation: 'sql_generation',
+        metadata: { hasQuery: !!sqlQuery, preview: sqlQuery?.substring(0, 60) }
+      });
     } else {
       logs.push({
         component: 'SQL Generation',
@@ -140,7 +156,10 @@ export async function POST(req: NextRequest) {
         timestamp: Date.now() - startTime,
       });
 
-      console.log(`⏭️  3. SQL Generation: Skipped (not structured)`);
+      logger.debug('SQL Generation skipped', {
+        operation: 'sql_generation',
+        metadata: { reason: 'not_structured' }
+      });
     }
 
     // =================================================================
@@ -181,10 +200,15 @@ export async function POST(req: NextRequest) {
               timestamp: Date.now() - startTime,
             });
 
-            console.log(`✅ 4. Data Retrieval: Perplexity (${retrievedData?.length || 0} chars)`);
+            logger.debug('Data Retrieval complete', {
+              operation: 'data_retrieval',
+              metadata: { source: 'perplexity', dataLength: retrievedData?.length || 0 }
+            });
           }
         } catch (error) {
-          console.error('Perplexity retrieval failed:', error);
+          logger.error('Perplexity retrieval failed', error as Error, {
+            operation: 'data_retrieval'
+          });
         }
       }
     }
@@ -197,7 +221,10 @@ export async function POST(req: NextRequest) {
         timestamp: Date.now() - startTime,
       });
 
-      console.log(`⏭️  4. Data Retrieval: Skipped`);
+      logger.debug('Data Retrieval skipped', {
+        operation: 'data_retrieval',
+        metadata: { reason: 'not_needed' }
+      });
     }
 
     // =================================================================
@@ -219,7 +246,10 @@ export async function POST(req: NextRequest) {
       timestamp: Date.now() - startTime,
     });
 
-    console.log(`✅ 5. Local Embeddings: Xenova/all-MiniLM-L6-v2 (${embeddingVector.length}D, 1 vector)`);
+    logger.debug('Local Embeddings complete', {
+      operation: 'embeddings',
+      metadata: { model: 'Xenova/all-MiniLM-L6-v2', dimensions: embeddingVector.length, count: 1 }
+    });
 
     // =================================================================
     // PHASE 6: ACE FRAMEWORK
@@ -261,7 +291,10 @@ export async function POST(req: NextRequest) {
       timestamp: Date.now() - startTime,
     });
 
-    console.log(`✅ 6. ACE Framework: ${acePlaybook.bullets_count} strategies loaded`);
+    logger.debug('ACE Framework complete', {
+      operation: 'ace_framework',
+      metadata: { strategiesCount: acePlaybook.bullets_count, domain }
+    });
 
     // =================================================================
     // PHASE 7: REASONING BANK
@@ -279,19 +312,22 @@ export async function POST(req: NextRequest) {
       timestamp: Date.now() - startTime,
     });
 
-    console.log(`✅ 7. ReasoningBank: ${reasoningMemories.count} memories retrieved`);
+    logger.debug('ReasoningBank complete', {
+      operation: 'reasoning_bank',
+      metadata: { memoriesCount: reasoningMemories.count }
+    });
 
     // =================================================================
     // PHASE 8: TRM-ADAPTIVE VERIFICATION LAYER! 🧠
     // =================================================================
     
     if (useTRM) {
-      console.log(`\n${'─'.repeat(70)}`);
-      console.log(`🧠 TRM-ADAPTIVE VERIFICATION LAYER (TRM-Inspired!)`);
-      console.log(`   - ACT: Adaptive Computational Time (Q-learning)`);
-      console.log(`   - EMA: Exponential Moving Average (stability)`);
-      console.log(`   - Multi-scale: Like TRM's z features`);
-      console.log(`${'─'.repeat(70)}\n`);
+      logger.info('TRM-ADAPTIVE VERIFICATION LAYER starting', {
+        operation: 'trm_verification',
+        metadata: {
+          features: ['ACT (Adaptive Computational Time)', 'EMA (Exponential Moving Average)', 'Multi-scale reasoning']
+        }
+      });
 
       // Build context from all components
       const context = `
@@ -361,16 +397,19 @@ ${sqlQuery ? `SQL Query: ${sqlQuery}\n` : ''}
         },
       });
 
-      console.log(`\n🧠 TRM-ADAPTIVE VERIFICATION COMPLETE!`);
-      console.log(`   ├─ Verified: ${trmResult.verified ? '✅ YES' : '⚠️  NO'}`);
-      console.log(`   ├─ Iterations: ${trmResult.iterations}`);
-      console.log(`   ├─ Confidence: ${trmResult.confidence.toFixed(3)}`);
-      console.log(`   ├─ Quality: ${trmResult.quality_score.toFixed(3)}`);
-      console.log(`   ├─ Improvement: +${(trmResult.improvement_over_initial * 100).toFixed(1)}%`);
-      console.log(`   ├─ EMA Score: ${emaScore.toFixed(3)}`);
-      console.log(`   ├─ Halt Q: ${qValues.halt.toFixed(3)}`);
-      console.log(`   ├─ Continue Q: ${qValues.continue.toFixed(3)}`);
-      console.log(`   └─ Reasoning State: [${reasoningState.slice(0, 5).map(x => x.toFixed(2)).join(', ')}...]`);
+      logger.info('TRM-ADAPTIVE VERIFICATION complete', {
+        operation: 'trm_verification',
+        metadata: {
+          verified: trmResult.verified,
+          iterations: trmResult.iterations,
+          confidence: trmResult.confidence,
+          qualityScore: trmResult.quality_score,
+          improvement: trmResult.improvement_over_initial,
+          emaScore,
+          qValues,
+          reasoningStatePreview: reasoningState.slice(0, 5)
+        }
+      });
 
       // Return TRM-adaptive result
       return NextResponse.json({
@@ -411,7 +450,10 @@ ${sqlQuery ? `SQL Query: ${sqlQuery}\n` : ''}
 
     } else {
       // No TRM - fallback to basic verification
-      console.log(`⚠️  TRM DISABLED - Using basic verification (less reliable!)`);
+      logger.warn('TRM DISABLED - using basic verification', {
+        operation: 'trm_verification',
+        metadata: { fallback: 'basic_verification' }
+      });
       
       const basicPrompt = `${acePlaybook.strategies.join('\n')}\n\nTask: ${query}\n\nAnswer:`;
       
@@ -455,8 +497,11 @@ ${sqlQuery ? `SQL Query: ${sqlQuery}\n` : ''}
     }
 
   } catch (error: any) {
-    console.error('TRM-adaptive execution failed:', error);
-    
+    logger.error('TRM-adaptive execution failed', error as Error, {
+      operation: 'trm_execution',
+      metadata: { startTime }
+    });
+
     return NextResponse.json({
       success: false,
       error: error.message || 'TRM-adaptive execution failed',

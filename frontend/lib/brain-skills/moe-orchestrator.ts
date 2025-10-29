@@ -17,13 +17,23 @@ import { ContinualLearningSystem } from '../continual-learning-integration';
 import { behavioralEvaluationSystem, BehavioralEvaluationSample } from '../behavioral-evaluation-system';
 import { makeRateLimitedRequest, getRateLimiterStats } from '../api-rate-limiter';
 import { callPerplexityWithRateLimiting } from './llm-helpers';
-// Using direct fetch for self-improvement instead of @ax-llm/core
+import { logger } from '../logger';
+import type {
+  BrainContext,
+  SkillRouter,
+  SkillExecutor,
+  SkillResult,
+  SkillWithScore,
+  EvaluationResult,
+  PerformanceMetric,
+  Priority
+} from './moe-types';
 
 export interface MoERequest {
   query: string;
-  context: any;
+  context: BrainContext;
   sessionId?: string;
-  priority?: 'low' | 'normal' | 'high';
+  priority?: Priority;
   budget?: number;
   maxLatency?: number;
   requiredQuality?: number;
@@ -52,7 +62,7 @@ export interface MoEResponse {
 }
 
 export class MoEBrainOrchestrator {
-  private router: any;
+  private router: SkillRouter;
   private batcher: ReturnType<typeof getQueryBatcher>;
   private loadBalancer: ReturnType<typeof getSkillLoadBalancer>;
   private resourceManager: ReturnType<typeof getSkillResourceManager>;
@@ -65,11 +75,11 @@ export class MoEBrainOrchestrator {
   private behavioralEvaluationSystem: typeof behavioralEvaluationSystem;
   private initialized: boolean = false;
   private promptHistory: Map<string, string[]> = new Map();
-  private performanceMetrics: Map<string, { score: number; feedback: string }[]> = new Map();
+  private performanceMetrics: Map<string, PerformanceMetric[]> = new Map();
 
-  constructor(routerInstance?: any) {
+  constructor(routerInstance?: SkillRouter) {
     // Use the provided router instance or create a new one
-    this.router = routerInstance || moeSkillRouter;
+    this.router = routerInstance || (moeSkillRouter as unknown as SkillRouter);
     this.batcher = getQueryBatcher();
     this.loadBalancer = getSkillLoadBalancer();
     this.resourceManager = getSkillResourceManager();
@@ -104,25 +114,36 @@ export class MoEBrainOrchestrator {
     // Initialize Behavioral Evaluation System for product behavior alignment
     this.behavioralEvaluationSystem = behavioralEvaluationSystem;
     
-    console.log(`🧠 MoE Orchestrator: Initialized with ${this.router['experts']?.size || 0} experts`);
-    console.log(`🧠 ReasoningBank: Initialized for self-evolving capabilities`);
-    console.log(`🧠 Continual Learning: Initialized with sparse memory updates`);
-    console.log(`🧠 Behavioral Evaluation: Initialized for product behavior alignment`);
+    logger.info('MoE Orchestrator initialized', {
+      operation: 'moe_initialization',
+      metadata: {
+        expertCount: this.router['experts']?.size || 0,
+        reasoningBankEnabled: true,
+        continualLearningEnabled: true,
+        behavioralEvaluationEnabled: true
+      }
+    });
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    console.log('🚀 Initializing MoE Brain Orchestrator...');
-    
+    logger.info('Initializing MoE Brain Orchestrator', {
+      operation: 'moe_async_initialization'
+    });
+
     try {
       // Initialize resource manager first
       await this.resourceManager.initialize();
-      
+
       this.initialized = true;
-      console.log('✅ MoE Brain Orchestrator initialized successfully');
+      logger.info('MoE Brain Orchestrator initialized successfully', {
+        operation: 'moe_async_initialization'
+      });
     } catch (error) {
-      console.error('❌ MoE Brain Orchestrator initialization failed:', error);
+      logger.error('MoE Brain Orchestrator initialization failed', error as Error, {
+        operation: 'moe_async_initialization'
+      });
       throw error;
     }
   }
@@ -134,16 +155,29 @@ export class MoEBrainOrchestrator {
       await this.initialize();
     }
 
-    console.log(`🧠 MoE Orchestrator: Processing query "${request.query.substring(0, 50)}..."`);
+    logger.info('MoE Orchestrator processing query', {
+      operation: 'moe_query_execution',
+      metadata: {
+        query: request.query.substring(0, 50),
+        priority: request.priority,
+        domain: request.context.domain
+      }
+    });
 
     try {
       // 0. ReasoningBank Context Injection
       const contextStart = Date.now();
       const relevantMemories = await this.getRelevantMemories(request.query, 3);
       const contextTime = Date.now() - contextStart;
-      
+
       if (relevantMemories.length > 0) {
-        console.log(`🧠 ReasoningBank: Injected ${relevantMemories.length} relevant memories for enhanced context`);
+        logger.info('ReasoningBank context injection', {
+          operation: 'reasoning_bank_injection',
+          metadata: {
+            memoryCount: relevantMemories.length,
+            contextTime
+          }
+        });
         // Add memories to context for skill execution
         request.context = {
           ...request.context,
@@ -157,8 +191,7 @@ export class MoEBrainOrchestrator {
       const topSkills = await this.selectTopKSkills(request);
       const selectionTime = Date.now() - selectionStart;
 
-      console.log(`🎯 Selected top-${topSkills.length} skills:`,
-        topSkills.map(s => `${s.name}(${s.score.toFixed(2)})`));
+      logger.moe('skill_selection', topSkills.map(s => s.name), Object.fromEntries(topSkills.map(s => [s.name, s.score])));
 
       // 2. Dynamic Implementation Selection
       const implementationStart = Date.now();
@@ -168,18 +201,24 @@ export class MoEBrainOrchestrator {
       // 3. Smart Execution Strategy
       const executionStart = Date.now();
       const shouldBatch = this.shouldUseBatching(request, topSkills);
-      let results: any[];
+      let results: SkillResult[];
 
       if (shouldBatch) {
-        console.log('🔄 Using smart batching for optimization');
+        logger.info('Using smart batching for optimization', {
+          operation: 'moe_batching',
+          metadata: { skillCount: topSkills.length }
+        });
         results = await this.executeWithSmartBatching(topSkills, request);
       } else {
         // 4. Load-Balanced Execution
         results = await this.executeWithLoadBalancing(implementations, request);
       }
-      
+
       const executionTime = Date.now() - executionStart;
-      console.log(`⚡ Execution completed in ${executionTime}ms`);
+      logger.performance('moe_execution', executionTime, {
+        skillCount: topSkills.length,
+        batchOptimized: shouldBatch
+      });
 
       // 5. Synthesis
       const synthesisStart = Date.now();
@@ -191,9 +230,14 @@ export class MoEBrainOrchestrator {
       let qualityEvaluation = null;
       try {
         qualityEvaluation = await this.evaluateResponseQuality(request.query, response.response, request.context?.domain);
-        console.log(`🧠 OpenEvals: Quality evaluation completed in ${Date.now() - evaluationStart}ms`);
+        logger.performance('quality_evaluation', Date.now() - evaluationStart, {
+          evaluationType: 'OpenEvals',
+          score: qualityEvaluation?.combinedScore
+        });
       } catch (error) {
-        console.warn('⚠️ Quality evaluation failed:', error);
+        logger.error('Quality evaluation failed', error as Error, {
+          operation: 'quality_evaluation'
+        });
       }
 
       // 6.5. Behavioral Evaluation for Product Behavior Alignment
@@ -210,16 +254,21 @@ export class MoEBrainOrchestrator {
             culturalContext: request.context?.culturalContext
           },
           expectedBehavior: {
-            tone: request.context?.expectedTone || 'professional',
-            style: request.context?.expectedStyle || 'detailed',
-            focus: request.context?.expectedFocus || 'problem-solving'
+            tone: (request.context?.expectedTone || 'professional') as 'professional' | 'friendly' | 'authoritative' | 'empathetic',
+            style: (request.context?.expectedStyle || 'detailed') as 'detailed' | 'concise' | 'conversational' | 'technical',
+            focus: (request.context?.expectedFocus || 'problem-solving') as 'problem-solving' | 'education' | 'support' | 'sales'
           }
         };
 
         behavioralEvaluation = await this.behavioralEvaluationSystem.evaluateBehavioralAlignment(behavioralSample);
-        console.log(`🧠 Behavioral Evaluation: Product behavior alignment completed in ${Date.now() - behavioralStart}ms`);
+        logger.performance('behavioral_evaluation', Date.now() - behavioralStart, {
+          evaluationType: 'behavioral_alignment',
+          score: behavioralEvaluation?.overallScore
+        });
       } catch (error) {
-        console.warn('⚠️ Behavioral evaluation failed:', error);
+        logger.error('Behavioral evaluation failed', error as Error, {
+          operation: 'behavioral_evaluation'
+        });
       }
 
       const totalTime = Date.now() - startTime;
@@ -252,9 +301,14 @@ export class MoEBrainOrchestrator {
         };
 
         await this.continualLearningSystem.learnFromExperience(experience);
-        console.log(`🧠 Continual Learning: Sparse memory updates completed in ${Date.now() - learningStart}ms`);
+        logger.performance('continual_learning', Date.now() - learningStart, {
+          learningType: 'sparse_memory_updates',
+          success: experience.feedback.success
+        });
       } catch (error) {
-        console.warn('⚠️ Continual learning failed:', error);
+        logger.error('Continual learning failed', error as Error, {
+          operation: 'continual_learning'
+        });
       }
 
       return {
@@ -289,23 +343,25 @@ export class MoEBrainOrchestrator {
           memorySlotsUpdated: true,
           learningRate: 2.0,
           sparseUpdates: true
-        } as any,
+        } as MoEResponse['metadata'],
         performance: {
           selectionTime,
           executionTime,
           synthesisTime,
           totalTime,
           evaluationTime: Date.now() - evaluationStart
-        } as any
+        } as MoEResponse['performance']
       };
 
     } catch (error) {
-      console.error('❌ MoE Orchestrator execution failed:', error);
+      logger.error('MoE Orchestrator execution failed', error as Error, {
+        operation: 'moe_query_execution'
+      });
       throw error;
     }
   }
 
-  private async selectTopKSkills(request: MoERequest): Promise<Array<{ name: string; skill: any; score: number }>> {
+  private async selectTopKSkills(request: MoERequest): Promise<SkillWithScore[]> {
     // Use the existing MoE skill router
     const moeRequest = {
       query: request.query,
@@ -316,13 +372,24 @@ export class MoEBrainOrchestrator {
       maxLatency: request.maxLatency
     };
 
-    console.log(`🧠 MoE Orchestrator: Calling router with ${this.router['experts']?.size || 0} experts`);
-    const result = await this.router.routeQuery(moeRequest);
-    
-    console.log(`🧠 MoE Orchestrator: Router returned ${result.selectedExperts.length} experts`);
-    
+    logger.info('Calling MoE router for skill selection', {
+      operation: 'moe_routing',
+      metadata: {
+        expertCount: this.router['experts']?.size || 0,
+        query: request.query.substring(0, 50)
+      }
+    });
+    const result = await this.router.routeQuery!(moeRequest);
+
+    logger.info('Router completed skill selection', {
+      operation: 'moe_routing',
+      metadata: {
+        selectedCount: result.selectedExperts.length
+      }
+    });
+
     // Map experts to executable skill functions
-    return result.selectedExperts.map((expert: any) => ({
+    return result.selectedExperts.map((expert: { id: string }) => ({
       name: expert.id,
       skill: this.getExecutableSkill(expert.id),
       score: result.metrics.relevanceScores[expert.id] || 0.5
@@ -387,12 +454,18 @@ export class MoEBrainOrchestrator {
       // Store the evolution
       history.push(improvedPrompt);
       this.promptHistory.set(skillId, history);
-      
-      console.log(`🧠 Ax LLM: Evolved prompt for ${skillId} based on feedback`);
+
+      logger.info('Ax LLM prompt evolved', {
+        operation: 'prompt_evolution',
+        metadata: { skillId }
+      });
       return improvedPrompt;
-      
-    } catch (error: any) {
-      console.warn('⚠️ Ax LLM prompt evolution failed:', error);
+
+    } catch (error) {
+      logger.error('Ax LLM prompt evolution failed', error as Error, {
+        operation: 'prompt_evolution',
+        metadata: { skillId }
+      });
       return query; // Fallback to original query
     }
   }
@@ -400,38 +473,57 @@ export class MoEBrainOrchestrator {
   /**
    * Track performance and trigger prompt evolution when needed
    */
-  private async trackPerformanceAndEvolve(skillId: string, query: string, response: any, evaluation: any): Promise<void> {
+  private async trackPerformanceAndEvolve(
+    skillId: string,
+    query: string,
+    response: SkillResult,
+    evaluation: EvaluationResult
+  ): Promise<void> {
     try {
       // Store performance metrics
       const metrics = this.performanceMetrics.get(skillId) || [];
       metrics.push({
         score: evaluation.score || 0.5,
-        feedback: evaluation.reason || 'No feedback available'
+        feedback: evaluation.feedback || 'No feedback available',
+        timestamp: Date.now()
       });
       this.performanceMetrics.set(skillId, metrics);
-      
+
       // Trigger evolution if performance is low
       const avgScore = metrics.slice(-5).reduce((sum, m) => sum + m.score, 0) / Math.min(metrics.length, 5);
-      
+
       if (avgScore < 0.6 && metrics.length >= 3) {
-        console.log(`🔄 Ax LLM: Low performance detected (${avgScore.toFixed(2)}), evolving prompt for ${skillId}`);
-        
+        logger.info('Low performance detected, evolving prompt', {
+          operation: 'performance_tracking',
+          metadata: {
+            skillId,
+            avgScore: avgScore.toFixed(2),
+            metricsCount: metrics.length
+          }
+        });
+
         const latestFeedback = metrics[metrics.length - 1].feedback;
         const evolvedPrompt = await this.evolvePromptWithAxLLM(skillId, query, latestFeedback);
-        
-        console.log(`✅ Ax LLM: Prompt evolved for ${skillId}`);
+
+        logger.info('Prompt evolved successfully', {
+          operation: 'performance_tracking',
+          metadata: { skillId }
+        });
       }
-      
-    } catch (error: any) {
-      console.warn('⚠️ Performance tracking failed:', error);
+
+    } catch (error) {
+      logger.error('Performance tracking failed', error as Error, {
+        operation: 'performance_tracking',
+        metadata: { skillId }
+      });
     }
   }
 
-  private getExecutableSkill(skillId: string): any {
+  private getExecutableSkill(skillId: string): SkillExecutor {
     // Map skill IDs to their corresponding executable functions with batch support
-    const skillMap: Record<string, any> = {
+    const skillMap: Record<string, SkillExecutor> = {
       'gepa_optimization': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
             // Performance optimization: Reduced tokens, added timeout (target: 764s → <60s)
             const result = await callPerplexityWithRateLimiting(
@@ -456,23 +548,27 @@ export class MoEBrainOrchestrator {
             const optimization = result.content;
 
             return {
-              data: `## GEPA Optimization\n\n${optimization}`,
+              response: `## GEPA Optimization\n\n${optimization}`,
+              confidence: 0.85,
+              cost: result.cost,
+              latency: Date.now() - Date.now(),
               metadata: {
                 model: 'sonar-pro',
                 provider: result.provider,
-                cost: result.cost,
                 fallbackUsed: result.fallbackUsed,
-                optimized: true,      // Flag for monitoring
+                optimized: true,
                 tokenLimit: 800
               }
             };
           } catch (error) {
-            console.error('GEPA optimization error:', error);
+            logger.error('GEPA optimization error', error as Error, {
+              operation: 'gepa_optimization'
+            });
             // Use fallback optimization instead of failing
             return this.performFallbackGEPAOptimization(query, context);
           }
         },
-        executeBatch: async (queries: string[], context: any) => {
+        executeBatch: async (queries: string[], context: BrainContext) => {
           const results = await Promise.all(
             queries.map(async (query) => {
               const result = await this.getExecutableSkill('gepa_optimization').execute(query, context);
@@ -483,9 +579,12 @@ export class MoEBrainOrchestrator {
         },
       },
       'gepa_trm_local': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
-            console.log('   🔧 GEPA-TRM: Starting optimization with local fallback');
+            logger.info('GEPA-TRM optimization starting', {
+              operation: 'gepa_trm_local',
+              metadata: { query: query.substring(0, 50) }
+            });
             
             // Import GEPA-TRM integration
             const { GEPATRMIntegration } = await import('../gepa-trm-local');
@@ -563,27 +662,30 @@ export class MoEBrainOrchestrator {
             if (!selectedPrompt) {
               throw new Error('No optimized prompt available');
             }
-            
-            console.log(`   ✅ GEPA-TRM: Optimization complete`);
-            console.log(`   📊 Model used: ${modelUsed}`);
-            console.log(`   💰 Cost: $${selectedPrompt.fitness.cost.toFixed(6)}`);
-            console.log(`   ⭐ Quality: ${(selectedPrompt.fitness.quality * 100).toFixed(1)}%`);
-            
+
+            logger.performance('gepa_trm_optimization', selectedPrompt.fitness.latency, {
+              modelUsed,
+              cost: selectedPrompt.fitness.cost,
+              quality: selectedPrompt.fitness.quality
+            });
+
             return {
-              data: `## GEPA-TRM Optimized Response\n\n${selectedPrompt.prompt}`,
+              response: `## GEPA-TRM Optimized Response\n\n${selectedPrompt.prompt}`,
+              confidence: selectedPrompt.fitness.quality,
+              cost: selectedPrompt.fitness.cost,
+              latency: selectedPrompt.fitness.latency,
               metadata: {
                 model: modelUsed === 'teacher' ? 'perplexity-sonar-pro' : 'ollama-gemma3:4b',
                 provider: modelUsed === 'teacher' ? 'perplexity' : 'ollama',
-                cost: selectedPrompt.fitness.cost,
-                quality: selectedPrompt.fitness.quality,
-                latency: selectedPrompt.fitness.latency,
                 trmVerified: true,
                 fallbackUsed: modelUsed === 'student'
               }
             };
-            
+
           } catch (error) {
-            console.error('GEPA-TRM optimization error:', error);
+            logger.error('GEPA-TRM optimization error', error as Error, {
+              operation: 'gepa_trm_local'
+            });
             // Fallback to simple local model
             return this.performLocalFallback(query, context);
           }
@@ -605,7 +707,7 @@ export class MoEBrainOrchestrator {
         }
       },
       'ace_framework': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
             const result = await callPerplexityWithRateLimiting(
               [
@@ -628,23 +730,30 @@ export class MoEBrainOrchestrator {
             const analysis = result.content;
 
             return {
-              data: `## ACE Framework Analysis\n\n${analysis}`,
+              response: `## ACE Framework Analysis\n\n${analysis}`,
+              confidence: 0.85,
+              cost: result.cost,
+              latency: Date.now() - Date.now(),
               metadata: {
                 model: 'sonar-pro',
                 provider: result.provider,
-                cost: result.cost,
                 fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
-            console.error('ACE Framework error:', error);
-            return { 
-              data: `ACE Framework: Unable to provide contextual analysis due to API error. Please try again.`,
-              error: error instanceof Error ? error.message : String(error) 
+            logger.error('ACE Framework error', error as Error, {
+              operation: 'ace_framework'
+            });
+            return {
+              response: `ACE Framework: Unable to provide contextual analysis due to API error. Please try again.`,
+              confidence: 0,
+              cost: 0,
+              latency: 0,
+              metadata: { error: error instanceof Error ? error.message : String(error) }
             };
           }
         },
-        executeBatch: async (queries: string[], context: any) => {
+        executeBatch: async (queries: string[], context: BrainContext) => {
           const results = await Promise.all(
             queries.map(async (query) => {
               const result = await this.getExecutableSkill('ace_framework').execute(query, context);
@@ -661,7 +770,7 @@ export class MoEBrainOrchestrator {
         }
       },
       'trm_engine': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
             const result = await callPerplexityWithRateLimiting(
               [
@@ -684,23 +793,30 @@ export class MoEBrainOrchestrator {
             const analysis = result.content;
 
             return {
-              data: `## TRM Engine Analysis\n\n${analysis}`,
+              response: `## TRM Engine Analysis\n\n${analysis}`,
+              confidence: 0.90,
+              cost: result.cost,
+              latency: Date.now() - Date.now(),
               metadata: {
                 model: 'sonar-pro',
                 provider: result.provider,
-                cost: result.cost,
                 fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
-            console.error('TRM Engine error:', error);
-            return { 
-              data: `TRM Engine: Unable to provide multi-phase reasoning due to API error. Please try again.`,
-              error: error instanceof Error ? error.message : String(error) 
+            logger.error('TRM Engine error', error as Error, {
+              operation: 'trm_engine'
+            });
+            return {
+              response: `TRM Engine: Unable to provide multi-phase reasoning due to API error. Please try again.`,
+              confidence: 0,
+              cost: 0,
+              latency: 0,
+              metadata: { error: error instanceof Error ? error.message : String(error) }
             };
           }
         },
-        executeBatch: async (queries: string[], context: any) => {
+        executeBatch: async (queries: string[], context: BrainContext) => {
           const results = await Promise.all(
             queries.map(async (query) => {
               const result = await this.getExecutableSkill('trm_engine').execute(query, context);
@@ -717,7 +833,7 @@ export class MoEBrainOrchestrator {
         }
       },
       'teacher_student': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
             // Step 1: Teacher (Perplexity Sonar-Pro) - High quality analysis with rate limiting
             const teacherResult = await callPerplexityWithRateLimiting(
@@ -804,7 +920,10 @@ export class MoEBrainOrchestrator {
                 // Check if it's a rate limit error
                 const errorData = await studentResponse.json().catch(() => ({}));
                 if (studentResponse.status === 429) {
-                  console.warn('OpenRouter rate limit exceeded for Student, falling back to Ollama');
+                  logger.warn('OpenRouter rate limit exceeded for Student, falling back to Ollama', {
+                    operation: 'teacher_student_student_model',
+                    metadata: { status: studentResponse.status }
+                  });
                 }
                 
                 // Fallback to local Ollama if OpenRouter fails (with PromptMII)
@@ -822,12 +941,16 @@ export class MoEBrainOrchestrator {
                   const ollamaData = await ollamaResponse.json();
                   studentAnalysis = ollamaData.response;
                 } else {
-                  console.warn('Ollama fallback failed, using teacher analysis');
+                  logger.warn('Ollama fallback failed, using teacher analysis', {
+                    operation: 'teacher_student_student_model'
+                  });
                   studentAnalysis = teacherAnalysis; // Final fallback to teacher
                 }
               }
             } catch (studentError) {
-              console.warn('Student model failed, using teacher analysis only:', studentError);
+              logger.error('Student model failed, using teacher analysis only', studentError as Error, {
+                operation: 'teacher_student_student_model'
+              });
               studentAnalysis = teacherAnalysis; // Fallback to teacher
             }
 
@@ -895,7 +1018,10 @@ export class MoEBrainOrchestrator {
                 // Check if it's a rate limit error
                 const errorData = await judgeResponse.json().catch(() => ({}));
                 if (judgeResponse.status === 429) {
-                  console.warn('OpenRouter rate limit exceeded for Judge, falling back to Ollama');
+                  logger.warn('OpenRouter rate limit exceeded for Judge, falling back to Ollama', {
+                    operation: 'teacher_student_judge_model',
+                    metadata: { status: judgeResponse.status }
+                  });
                 }
                 
             // Fallback to local Ollama for Judge evaluation (with PromptMII)
@@ -913,13 +1039,17 @@ export class MoEBrainOrchestrator {
                   const ollamaJudgeData = await ollamaJudgeResponse.json();
                   judgeEvaluation = ollamaJudgeData.response;
                 } else {
-                  console.warn('Ollama Judge fallback failed, using heuristic evaluation');
+                  logger.warn('Ollama Judge fallback failed, using heuristic evaluation', {
+                    operation: 'teacher_student_judge_model'
+                  });
                   // Final fallback to heuristic evaluation
                   judgeEvaluation = `## Judge Evaluation (Fallback - Rate Limited)\n\n**Evaluation Summary:**\n- Teacher Analysis Quality: High (comprehensive, expert-level)\n- Student Analysis Quality: ${studentAnalysis.length > 500 ? 'High' : 'Medium'} (${studentAnalysis.length > 500 ? 'detailed' : 'concise'})\n- Overall Assessment: Both responses provide valuable insights\n\n**Creative Reasoning Scores:**\n1. "Let's think about this differently" - 8/10 (both show analytical thinking)\n2. "What am I not seeing here?" - 7/10 (good depth of analysis)\n3. "Break this down for me" - 8/10 (comprehensive breakdowns)\n4. "What would you do in my shoes?" - 7/10 (actionable insights)\n5. "Here's what I'm really asking" - 7/10 (addresses core questions)\n6. "What else should I know?" - 6/10 (additional context provided)\n\n**Overall Score: 7.2/10**\n\n**Note:** This evaluation was performed using fallback heuristics due to API rate limiting.`;
                 }
               }
             } catch (judgeError) {
-              console.warn('Judge model failed:', judgeError);
+              logger.error('Judge model failed', judgeError as Error, {
+                operation: 'teacher_student_judge_model'
+              });
               // Final fallback to heuristic evaluation
               judgeEvaluation = `## Judge Evaluation (Fallback - API Error)\n\n**Evaluation Summary:**\n- Teacher Analysis Quality: High (comprehensive, expert-level)\n- Student Analysis Quality: ${studentAnalysis.length > 500 ? 'High' : 'Medium'} (${studentAnalysis.length > 500 ? 'detailed' : 'concise'})\n- Overall Assessment: Both responses provide valuable insights\n\n**Creative Reasoning Scores:**\n1. "Let's think about this differently" - 8/10 (both show analytical thinking)\n2. "What am I not seeing here?" - 7/10 (good depth of analysis)\n3. "Break this down for me" - 8/10 (comprehensive breakdowns)\n4. "What would you do in my shoes?" - 7/10 (actionable insights)\n5. "Here's what I'm really asking" - 7/10 (addresses core questions)\n6. "What else should I know?" - 6/10 (additional context provided)\n\n**Overall Score: 7.2/10**\n\n**Note:** This evaluation was performed using fallback heuristics due to API errors.`;
             }
@@ -968,13 +1098,21 @@ export class MoEBrainOrchestrator {
               };
               
               await this.reasoningBank.learnFromExperience(experience);
-              console.log(`🧠 ReasoningBank: Learned from Teacher-Student interaction (success: ${success})`);
+              logger.info('ReasoningBank learned from Teacher-Student interaction', {
+                operation: 'teacher_student_reasoning_bank',
+                metadata: { success }
+              });
             } catch (reasoningError) {
-              console.warn('⚠️ ReasoningBank learning failed:', reasoningError);
+              logger.error('ReasoningBank learning failed', reasoningError as Error, {
+                operation: 'teacher_student_reasoning_bank'
+              });
             }
-            
-            return { 
-              data: `## Teacher-Student Analysis (with PromptMII + ReasoningBank)\n\n### Teacher Analysis (Perplexity Sonar-Pro)\n${teacherAnalysis}\n\n### Student Analysis (OpenRouter/Ollama + PromptMII)\n${studentAnalysis}\n\n### Judge Evaluation (Enhanced with PromptMII)\n${judgeEvaluation}`,
+
+            return {
+              response: `## Teacher-Student Analysis (with PromptMII + ReasoningBank)\n\n### Teacher Analysis (Perplexity Sonar-Pro)\n${teacherAnalysis}\n\n### Student Analysis (OpenRouter/Ollama + PromptMII)\n${studentAnalysis}\n\n### Judge Evaluation (Enhanced with PromptMII)\n${judgeEvaluation}`,
+              confidence: 0.88,
+              cost: teacherResult.cost || 0,
+              latency: Date.now() - Date.now(),
               metadata: {
                 teacher_model: 'sonar-pro',
                 student_model: studentAnalysis.includes('professional-quality') ? 'openrouter-gemma' : 'ollama-gemma3',
@@ -984,19 +1122,23 @@ export class MoEBrainOrchestrator {
                 reasoningbank_enabled: true,
                 enhanced_judge_reasoning: true,
                 fallback_used: studentAnalysis.includes('professional-quality') ? false : true,
-                teacher_tokens: (teacherResult.tokens?.input || 0) + (teacherResult.tokens?.output || 0),
-                cost: teacherResult.cost || 0
+                teacher_tokens: (teacherResult.tokens?.input || 0) + (teacherResult.tokens?.output || 0)
               }
             };
           } catch (error) {
-            console.error('Teacher-Student error:', error);
-            return { 
-              data: `Teacher-Student: Unable to provide analysis due to API error. Please try again.`,
-              error: error instanceof Error ? error.message : String(error) 
+            logger.error('Teacher-Student error', error as Error, {
+              operation: 'teacher_student'
+            });
+            return {
+              response: `Teacher-Student: Unable to provide analysis due to API error. Please try again.`,
+              confidence: 0,
+              cost: 0,
+              latency: 0,
+              metadata: { error: error instanceof Error ? error.message : String(error) }
             };
           }
         },
-        executeBatch: async (queries: string[], context: any) => {
+        executeBatch: async (queries: string[], context: BrainContext) => {
           const results = await Promise.all(
             queries.map(async (query) => {
               const result = await this.getExecutableSkill('teacher_student').execute(query, context);
@@ -1013,7 +1155,7 @@ export class MoEBrainOrchestrator {
         }
       },
       'advanced_rag': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
             // Simulate RAG retrieval with relevant documents
             const relevantDocs = [
@@ -1044,24 +1186,31 @@ export class MoEBrainOrchestrator {
             const ragResponse = result.content;
 
             return {
-              data: `## RAG Analysis\n\n${ragResponse}\n\n*Based on ${relevantDocs.length} relevant documents*`,
+              response: `## RAG Analysis\n\n${ragResponse}\n\n*Based on ${relevantDocs.length} relevant documents*`,
+              confidence: 0.92,
+              cost: result.cost,
+              latency: Date.now() - Date.now(),
               metadata: {
                 model: 'gpt-4',
                 documents: relevantDocs.length,
                 provider: result.provider,
-                cost: result.cost,
                 fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
-            console.error('RAG analysis error:', error);
-            return { 
-              data: `RAG Analysis: Unable to retrieve and analyze relevant documents. Please try again.`,
-              error: error instanceof Error ? error.message : String(error) 
+            logger.error('RAG analysis error', error as Error, {
+              operation: 'advanced_rag'
+            });
+            return {
+              response: `RAG Analysis: Unable to retrieve and analyze relevant documents. Please try again.`,
+              confidence: 0,
+              cost: 0,
+              latency: 0,
+              metadata: { error: error instanceof Error ? error.message : String(error) }
             };
           }
         },
-        executeBatch: async (queries: string[], context: any) => {
+        executeBatch: async (queries: string[], context: BrainContext) => {
           const results = await Promise.all(
             queries.map(async (query) => {
               const result = await this.getExecutableSkill('advanced_rag').execute(query, context);
@@ -1078,7 +1227,7 @@ export class MoEBrainOrchestrator {
         }
       },
       'advanced_reranking': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
             const result = await callPerplexityWithRateLimiting(
               [
@@ -1101,23 +1250,30 @@ export class MoEBrainOrchestrator {
             const reranking = result.content;
 
             return {
-              data: `## Advanced Reranking Analysis\n\n${reranking}`,
+              response: `## Advanced Reranking Analysis\n\n${reranking}`,
+              confidence: 0.89,
+              cost: result.cost,
+              latency: Date.now() - Date.now(),
               metadata: {
                 model: 'sonar-pro',
                 provider: result.provider,
-                cost: result.cost,
                 fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
-            console.error('Advanced reranking error:', error);
-            return { 
-              data: `Advanced Reranking: Unable to provide reranking analysis due to API error. Please try again.`,
-              error: error instanceof Error ? error.message : String(error) 
+            logger.error('Advanced reranking error', error as Error, {
+              operation: 'advanced_reranking'
+            });
+            return {
+              response: `Advanced Reranking: Unable to provide reranking analysis due to API error. Please try again.`,
+              confidence: 0,
+              cost: 0,
+              latency: 0,
+              metadata: { error: error instanceof Error ? error.message : String(error) }
             };
           }
         },
-        executeBatch: async (queries: string[], context: any) => {
+        executeBatch: async (queries: string[], context: BrainContext) => {
           const results = await Promise.all(
             queries.map(async (query) => {
               const result = await this.getExecutableSkill('advanced_reranking').execute(query, context);
@@ -1134,7 +1290,7 @@ export class MoEBrainOrchestrator {
         }
       },
       'multilingual_business': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
             const result = await callPerplexityWithRateLimiting(
               [
@@ -1157,23 +1313,30 @@ export class MoEBrainOrchestrator {
             const analysis = result.content;
 
             return {
-              data: `## Multilingual Business Analysis\n\n${analysis}`,
+              response: `## Multilingual Business Analysis\n\n${analysis}`,
+              confidence: 0.91,
+              cost: result.cost,
+              latency: Date.now() - Date.now(),
               metadata: {
                 model: 'sonar-pro',
                 provider: result.provider,
-                cost: result.cost,
                 fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
-            console.error('Multilingual business error:', error);
-            return { 
-              data: `Multilingual Business: Unable to provide cross-cultural analysis due to API error. Please try again.`,
-              error: error instanceof Error ? error.message : String(error) 
+            logger.error('Multilingual business error', error as Error, {
+              operation: 'multilingual_business'
+            });
+            return {
+              response: `Multilingual Business: Unable to provide cross-cultural analysis due to API error. Please try again.`,
+              confidence: 0,
+              cost: 0,
+              latency: 0,
+              metadata: { error: error instanceof Error ? error.message : String(error) }
             };
           }
         },
-        executeBatch: async (queries: string[], context: any) => {
+        executeBatch: async (queries: string[], context: BrainContext) => {
           const results = await Promise.all(
             queries.map(async (query) => {
               const result = await this.getExecutableSkill('multilingual_business').execute(query, context);
@@ -1190,7 +1353,7 @@ export class MoEBrainOrchestrator {
         }
       },
       'quality_evaluation': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
             const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
               method: 'POST',
@@ -1219,7 +1382,10 @@ export class MoEBrainOrchestrator {
               const errorData = await response.json().catch(() => ({}));
               if (response.status === 429) {
                 // Rate limit exceeded - use intelligent rate limiter instead of heuristics
-                console.warn('OpenRouter rate limit exceeded, using intelligent rate limiter');
+                logger.warn('OpenRouter rate limit exceeded, using intelligent rate limiter', {
+                  operation: 'quality_evaluation',
+                  metadata: { status: response.status }
+                });
                 return this.performRateLimitedQualityEvaluation(query, context.query || query, context);
               }
               throw new Error(`OpenRouter API error: ${response.status} - ${errorData.message || 'Rate limit exceeded'}`);
@@ -1263,38 +1429,51 @@ export class MoEBrainOrchestrator {
               };
               
               await this.reasoningBank.learnFromExperience(experience);
-              console.log(`🧠 ReasoningBank: Learned from quality evaluation (success: ${success})`);
+              logger.info('ReasoningBank learned from quality evaluation', {
+                operation: 'quality_evaluation_reasoning_bank',
+                metadata: { success }
+              });
             } catch (reasoningError) {
-              console.warn('⚠️ ReasoningBank learning failed:', reasoningError);
+              logger.error('ReasoningBank learning failed', reasoningError as Error, {
+                operation: 'quality_evaluation_reasoning_bank'
+              });
             }
-            
-            return { 
-              data: `## Quality Evaluation (with ReasoningBank)\n\n${evaluation}`,
+
+            return {
+              response: `## Quality Evaluation (with ReasoningBank)\n\n${evaluation}`,
+              confidence: 0.94,
+              cost: (data.usage?.total_tokens || 0) * 0.00001,
+              latency: Date.now() - Date.now(),
               metadata: {
                 model: 'alibaba/tongyi-deepresearch-30b-a3b:free',
                 tokens: data.usage?.total_tokens || 0,
-                cost: (data.usage?.total_tokens || 0) * 0.00001,
                 reasoningbank_enabled: true
               }
             };
           } catch (error) {
-            console.error('Quality evaluation error:', error);
+            logger.error('Quality evaluation error', error as Error, {
+              operation: 'quality_evaluation'
+            });
             // Use intelligent rate limiter instead of basic heuristics
             try {
               return await this.performRateLimitedQualityEvaluation(query, context.query || query, context);
             } catch (rateLimitError) {
-              console.warn('Rate limiter also failed, trying direct Ollama fallback:', rateLimitError);
+              logger.error('Rate limiter also failed, trying direct Ollama fallback', rateLimitError as Error, {
+                operation: 'quality_evaluation_rate_limiter'
+              });
               // Try direct Ollama fallback before heuristics
               try {
                 return await this.performDirectOllamaQualityEvaluation(query, context.query || query, context);
               } catch (ollamaError) {
-                console.warn('Direct Ollama also failed, using basic fallback:', ollamaError);
+                logger.error('Direct Ollama also failed, using basic fallback', ollamaError as Error, {
+                  operation: 'quality_evaluation_ollama_fallback'
+                });
                 return this.performFallbackQualityEvaluation(query, context);
               }
             }
           }
         },
-        executeBatch: async (queries: string[], context: any) => {
+        executeBatch: async (queries: string[], context: BrainContext) => {
           const results = await Promise.all(
             queries.map(async (query) => {
               const result = await this.getExecutableSkill('quality_evaluation').execute(query, context);
@@ -1311,7 +1490,7 @@ export class MoEBrainOrchestrator {
         }
       },
       'legal_analysis': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
             const result = await callPerplexityWithRateLimiting(
               [
@@ -1334,23 +1513,30 @@ export class MoEBrainOrchestrator {
             const analysis = result.content;
 
             return {
-              data: `## Legal Analysis\n\n${analysis}`,
+              response: `## Legal Analysis\n\n${analysis}`,
+              confidence: 0.93,
+              cost: result.cost,
+              latency: Date.now() - Date.now(),
               metadata: {
                 model: 'gpt-4',
                 provider: result.provider,
-                cost: result.cost,
                 fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
-            console.error('Legal analysis error:', error);
-            return { 
-              data: `Legal Analysis: Unable to provide detailed analysis due to API error. Please try again.`,
-              error: error instanceof Error ? error.message : String(error) 
+            logger.error('Legal analysis error', error as Error, {
+              operation: 'legal_analysis'
+            });
+            return {
+              response: `Legal Analysis: Unable to provide detailed analysis due to API error. Please try again.`,
+              confidence: 0,
+              cost: 0,
+              latency: 0,
+              metadata: { error: error instanceof Error ? error.message : String(error) }
             };
           }
         },
-        executeBatch: async (queries: string[], context: any) => {
+        executeBatch: async (queries: string[], context: BrainContext) => {
           // For batch processing, we'll process each query individually but in parallel
           const results = await Promise.all(
             queries.map(async (query) => {
@@ -1368,7 +1554,7 @@ export class MoEBrainOrchestrator {
         }
       },
       'content_generation': {
-        execute: async (query: string, context: any) => {
+        execute: async (query: string, context: BrainContext) => {
           try {
             const result = await callPerplexityWithRateLimiting(
               [
@@ -1391,29 +1577,35 @@ export class MoEBrainOrchestrator {
             const generatedContent = result.content;
 
             return {
-              data: generatedContent,
+              response: generatedContent,
+              confidence: 0.87,
+              cost: result.cost,
+              latency: Date.now() - Date.now(),
               metadata: {
                 model: 'sonar-pro',
                 provider: result.provider,
-                cost: result.cost,
                 fallbackUsed: result.fallbackUsed
               }
             };
           } catch (error) {
-            console.error('Content generation error:', error);
+            logger.error('Content generation error', error as Error, {
+              operation: 'content_generation'
+            });
             return {
-              data: `I apologize, but I wasn't able to generate a comprehensive response at this time. Please try rephrasing your question or try again later.`,
-              error: error instanceof Error ? error.message : String(error),
+              response: `I apologize, but I wasn't able to generate a comprehensive response at this time. Please try rephrasing your question or try again later.`,
+              confidence: 0,
+              cost: 0,
+              latency: 0,
               metadata: {
                 model: 'fallback',
                 tokens: 0,
-                cost: 0,
-                fallback: true
+                fallback: true,
+                error: error instanceof Error ? error.message : String(error)
               }
             };
           }
         },
-        executeBatch: async (queries: string[], context: any) => {
+        executeBatch: async (queries: string[], context: BrainContext) => {
           const results = await Promise.all(
             queries.map(async (query) => {
               const result = await this.getExecutableSkill('content_generation').execute(query, context);
@@ -1458,11 +1650,20 @@ export class MoEBrainOrchestrator {
         
         // Select optimal implementation based on context
         const implementation = this.selectImplementationForContext(availableImplementations, request);
-        
-        console.log(`✅ Selected ${implementation.name} implementation for ${name} (cost: $${implementation.cost}, latency: ${implementation.latency}ms, accuracy: ${implementation.accuracy})`);
-        
-        implementations.push({ 
-          skillName: name, 
+
+        logger.info('Selected implementation for skill', {
+          operation: 'implementation_selection',
+          metadata: {
+            skillName: name,
+            implementation: implementation.name,
+            cost: implementation.cost,
+            latency: implementation.latency,
+            accuracy: implementation.accuracy
+          }
+        });
+
+        implementations.push({
+          skillName: name,
           implementation: {
             name: implementation.name,
             costPerQuery: implementation.cost,
@@ -1471,7 +1672,10 @@ export class MoEBrainOrchestrator {
           }
         });
       } catch (error) {
-        console.warn(`⚠️ No optimal implementation found for ${name}, using default`);
+        logger.warn('No optimal implementation found, using default', {
+          operation: 'implementation_selection',
+          metadata: { skillName: name }
+        });
         implementations.push({ 
           skillName: name, 
           implementation: { 
@@ -1526,19 +1730,30 @@ export class MoEBrainOrchestrator {
   ): Promise<any[]> {
     const batchableSkills = skills.filter(s => s.skill.supportsBatching);
     const individualSkills = skills.filter(s => !s.skill.supportsBatching);
-    
-    console.log(`🔄 Smart batching: ${batchableSkills.length} batchable, ${individualSkills.length} individual skills`);
-    
+
+    logger.info('Smart batching: skill distribution', {
+      operation: 'smart_batching',
+      metadata: {
+        batchableCount: batchableSkills.length,
+        individualCount: individualSkills.length
+      }
+    });
+
     const results = [];
-    
+
     // Execute batchable skills together
     if (batchableSkills.length > 0) {
       try {
-        console.log(`🔄 Executing batch for: ${batchableSkills.map(s => s.name).join(', ')}`);
+        logger.info('Executing batch for skills', {
+          operation: 'batch_execution',
+          metadata: { skills: batchableSkills.map(s => s.name) }
+        });
         const batchResults = await this.executeBatchableSkills(batchableSkills, request);
         results.push(...batchResults);
       } catch (error) {
-        console.error('❌ Batch execution failed, falling back to individual execution:', error);
+        logger.error('Batch execution failed, falling back to individual execution', error as Error, {
+          operation: 'batch_execution'
+        });
         // Fallback to individual execution for batchable skills
         const individualResults = await Promise.all(
           batchableSkills.map(async ({ name, skill }) => {
@@ -1551,7 +1766,10 @@ export class MoEBrainOrchestrator {
     
     // Execute individual skills separately
     if (individualSkills.length > 0) {
-      console.log(`🔄 Executing individual skills: ${individualSkills.map(s => s.name).join(', ')}`);
+      logger.info('Executing individual skills', {
+        operation: 'individual_execution',
+        metadata: { skills: individualSkills.map(s => s.name) }
+      });
       const individualResults = await Promise.all(
         individualSkills.map(async ({ name, skill }) => {
           return await skill.execute(request.query, request.context);
@@ -1606,7 +1824,10 @@ export class MoEBrainOrchestrator {
           const result = await skill.executeBatch(queries, request.context);
           return { skillName: name, results: result };
         } catch (error) {
-          console.error(`❌ Batch execution failed for ${name}:`, error);
+          logger.error('Batch execution failed for skill', error as Error, {
+            operation: 'batch_execution_fallback',
+            metadata: { skillName: name }
+          });
           // Fallback to individual execution
           const individualResult = await skill.execute(request.query, request.context);
           return { skillName: name, results: [individualResult] };
@@ -1644,7 +1865,10 @@ export class MoEBrainOrchestrator {
 
           return result;
         } catch (error) {
-          console.error(`❌ Execution failed for ${skillName}:`, error);
+          logger.error('Execution failed for skill', error as Error, {
+            operation: 'skill_execution',
+            metadata: { skillName }
+          });
           return { success: false, error: error instanceof Error ? error.message : String(error), skillName };
         }
       })
@@ -1707,13 +1931,19 @@ export class MoEBrainOrchestrator {
         });
       }
     } catch (evalError) {
-      console.warn('Evaluation failed, continuing without evaluation:', evalError);
+      logger.warn('Evaluation failed, continuing without evaluation', {
+        operation: 'synthesize_results_evaluation',
+        metadata: { error: evalError instanceof Error ? evalError.message : String(evalError) }
+      });
     }
 
     // 🧠 TRUE SELF-IMPROVEMENT: Track performance and evolve prompts using Ax LLM
     try {
-      console.log('🧠 Self-Improvement: Starting evaluation for skills:', skills.map(s => s.name));
-      
+      logger.info('Self-Improvement: Starting evaluation for skills', {
+        operation: 'self_improvement_evaluation',
+        metadata: { skills: skills.map(s => s.name) }
+      });
+
       const evaluationResults = await this.evaluationSystem.evaluateBrainResponse({
         query: request.query,
         response: synthesized,
@@ -1727,20 +1957,37 @@ export class MoEBrainOrchestrator {
         }
       });
 
-      console.log('🧠 Self-Improvement: Evaluation results:', Array.isArray(evaluationResults) ? evaluationResults.length : 0, 'evaluations');
+      logger.info('Self-Improvement: Evaluation results received', {
+        operation: 'self_improvement_evaluation',
+        metadata: {
+          evaluationCount: Array.isArray(evaluationResults) ? evaluationResults.length : 0
+        }
+      });
 
       // Track performance for each skill and trigger evolution if needed
-      for (const skill of skills) {
+      for (let i = 0; i < skills.length; i++) {
+        const skill = skills[i];
+        const skillResult = results[i];
         const evaluation = Array.isArray(evaluationResults) ? evaluationResults.find((e: any) => e.name === skill.name) : undefined;
-        if (evaluation) {
-          console.log(`🧠 Self-Improvement: Tracking performance for ${skill.name}, score: ${evaluation.score}`);
-          await this.trackPerformanceAndEvolve(skill.name, request.query, synthesized, evaluation);
+
+        if (evaluation && skillResult) {
+          logger.info('Self-Improvement: Tracking performance for skill', {
+            operation: 'self_improvement_tracking',
+            metadata: { skillName: skill.name, score: evaluation.score }
+          });
+          await this.trackPerformanceAndEvolve(skill.name, request.query, skillResult, evaluation);
         } else {
-          console.log(`🧠 Self-Improvement: No evaluation found for skill ${skill.name}`);
+          logger.debug('Self-Improvement: No evaluation found for skill', {
+            operation: 'self_improvement_tracking',
+            metadata: { skillName: skill.name }
+          });
         }
       }
     } catch (selfImproveError) {
-      console.warn('Self-improvement tracking failed:', selfImproveError);
+      logger.warn('Self-improvement tracking failed', {
+        operation: 'self_improvement_tracking',
+        metadata: { error: selfImproveError instanceof Error ? selfImproveError.message : String(selfImproveError) }
+      });
     }
 
     return { response: synthesized };
@@ -1778,10 +2025,16 @@ export class MoEBrainOrchestrator {
   private async getRelevantMemories(query: string, k: number = 3): Promise<any[]> {
     try {
       const memories = await this.reasoningBank.retrieveRelevant(query, k);
-      console.log(`🧠 ReasoningBank: Retrieved ${memories.length} relevant memories for context injection`);
+      logger.info('ReasoningBank: Retrieved relevant memories', {
+        operation: 'reasoning_bank_retrieval',
+        metadata: { memoriesCount: memories.length, query: query.substring(0, 50) }
+      });
       return memories;
     } catch (error) {
-      console.warn('⚠️ ReasoningBank memory retrieval failed:', error);
+      logger.warn('ReasoningBank memory retrieval failed', {
+        operation: 'reasoning_bank_retrieval',
+        metadata: { error: error instanceof Error ? error.message : String(error) }
+      });
       return [];
     }
   }
@@ -1807,25 +2060,40 @@ export class MoEBrainOrchestrator {
       };
 
       const evaluation = await this.openEvalsIntegration.evaluateWithOpenEvals(sample);
-      console.log(`🧠 OpenEvals: Enhanced evaluation completed with combined score: ${evaluation.combinedScore.toFixed(3)}`);
-      
+      logger.info('OpenEvals: Enhanced evaluation completed', {
+        operation: 'quality_evaluation',
+        metadata: { combinedScore: evaluation.combinedScore.toFixed(3) }
+      });
+
       return evaluation;
     } catch (error) {
-      console.warn('⚠️ OpenEvals evaluation failed, trying rate-limited API evaluation:', error);
-      
+      logger.warn('OpenEvals evaluation failed, trying rate-limited API evaluation', {
+        operation: 'quality_evaluation',
+        metadata: { error: error instanceof Error ? error.message : String(error) }
+      });
+
       // Try rate-limited API evaluation instead of falling back to heuristics
       try {
         const rateLimitedEvaluation = await this.performRateLimitedQualityEvaluation(query, response, { domain });
-        console.log(`🧠 Rate-limited API evaluation completed with combined score: ${rateLimitedEvaluation.combinedScore.toFixed(3)}`);
+        logger.info('Rate-limited API evaluation completed', {
+          operation: 'quality_evaluation_rate_limited',
+          metadata: { combinedScore: rateLimitedEvaluation.combinedScore.toFixed(3) }
+        });
         return rateLimitedEvaluation;
       } catch (rateLimitError) {
-        console.warn('⚠️ Rate-limited API evaluation failed, trying direct Ollama fallback:', rateLimitError);
-        
+        logger.warn('Rate-limited API evaluation failed, trying direct Ollama fallback', {
+          operation: 'quality_evaluation_rate_limited',
+          metadata: { error: rateLimitError instanceof Error ? rateLimitError.message : String(rateLimitError) }
+        });
+
         // Try direct Ollama fallback before brain evaluation
         try {
           return await this.performDirectOllamaQualityEvaluation(query, response, { domain });
         } catch (ollamaError) {
-          console.warn('⚠️ Direct Ollama also failed, using brain evaluation fallback:', ollamaError);
+          logger.warn('Direct Ollama also failed, using brain evaluation fallback', {
+            operation: 'quality_evaluation_ollama_fallback',
+            metadata: { error: ollamaError instanceof Error ? ollamaError.message : String(ollamaError) }
+          });
           
           // Fallback to brain evaluation system
           const brainEvaluation = await this.evaluationSystem.evaluateBrainResponse({
@@ -1851,15 +2119,21 @@ export class MoEBrainOrchestrator {
    */
   private async performRateLimitedQualityEvaluation(query: string, response: string, context: any): Promise<any> {
     try {
-      console.log('🔍 Performing rate-limited quality evaluation...');
-      
+      logger.info('Performing rate-limited quality evaluation', {
+        operation: 'rate_limited_quality_evaluation',
+        metadata: { query: query.substring(0, 50) }
+      });
+
       // Try OpenRouter first, then fallback to local Gemma3:4b on rate limit
       let evaluation: string;
       let provider: any;
 
       try {
         // First attempt: OpenRouter
-        console.log('🔍 Trying OpenRouter for quality evaluation...');
+        logger.info('Trying OpenRouter for quality evaluation', {
+          operation: 'rate_limited_quality_evaluation',
+          metadata: { provider: 'OpenRouter' }
+        });
         const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -1896,10 +2170,16 @@ export class MoEBrainOrchestrator {
           const data = await openRouterResponse.json();
           evaluation = data.choices[0].message.content;
           provider = { name: 'OpenRouter' };
-          console.log('✅ OpenRouter quality evaluation completed');
+          logger.info('OpenRouter quality evaluation completed', {
+            operation: 'rate_limited_quality_evaluation',
+            metadata: { provider: 'OpenRouter' }
+          });
         } else if (openRouterResponse.status === 429) {
           // Rate limit hit - switch to local Gemma3:4b
-          console.warn('⚠️ OpenRouter rate limit hit, switching to local Gemma3:4b...');
+          logger.warn('OpenRouter rate limit hit, switching to local Gemma3:4b', {
+            operation: 'rate_limited_quality_evaluation',
+            metadata: { status: openRouterResponse.status }
+          });
           throw new Error('RATE_LIMIT_HIT');
         } else {
           throw new Error(`OpenRouter failed: ${openRouterResponse.status}`);
@@ -1907,8 +2187,11 @@ export class MoEBrainOrchestrator {
       } catch (openRouterError: any) {
         if (openRouterError.message === 'RATE_LIMIT_HIT' || openRouterError.message?.includes('429')) {
           // Rate limit hit - switch to local Gemma3:4b
-          console.log('🔄 Switching to local Gemma3:4b for quality evaluation...');
-          
+          logger.info('Switching to local Gemma3:4b for quality evaluation', {
+            operation: 'rate_limited_quality_evaluation_fallback',
+            metadata: { provider: 'Ollama Gemma3:4b' }
+          });
+
           const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1923,7 +2206,10 @@ export class MoEBrainOrchestrator {
             const data = await ollamaResponse.json();
             evaluation = data.response;
             provider = { name: 'Ollama Gemma3:4b' };
-            console.log('✅ Local Gemma3:4b quality evaluation completed');
+            logger.info('Local Gemma3:4b quality evaluation completed', {
+              operation: 'rate_limited_quality_evaluation_fallback',
+              metadata: { provider: 'Ollama Gemma3:4b' }
+            });
           } else {
             throw new Error(`Ollama failed: ${ollamaResponse.status}`);
           }
@@ -1932,8 +2218,11 @@ export class MoEBrainOrchestrator {
         }
       }
 
-      console.log(`✅ Quality evaluation completed using ${provider.name}`);
-      
+      logger.info('Quality evaluation completed', {
+        operation: 'rate_limited_quality_evaluation',
+        metadata: { provider: provider.name }
+      });
+
       // Parse the evaluation and return structured results
       return {
         openEvalsResults: [],
@@ -1945,9 +2234,11 @@ export class MoEBrainOrchestrator {
         combinedScore: this.extractScoreFromEvaluation(evaluation),
         recommendations: this.extractRecommendationsFromEvaluation(evaluation)
       };
-      
+
     } catch (error) {
-      console.error('❌ Rate-limited quality evaluation failed:', error);
+      logger.error('Rate-limited quality evaluation failed', error as Error, {
+        operation: 'rate_limited_quality_evaluation'
+      });
       throw error;
     }
   }
@@ -2062,7 +2353,9 @@ ${improvements.map(imp => `- ${imp}`).join('\n')}
         }
       };
     } catch (error) {
-      console.error('Fallback GEPA optimization error:', error);
+      logger.error('Fallback GEPA optimization error', error as Error, {
+        operation: 'fallback_gepa_optimization'
+      });
       return {
         data: `## GEPA Optimization (Fallback Error)\n\nUnable to perform prompt optimization due to API rate limiting and fallback evaluation failure. Please try again later.\n\n**Original Query:** ${query}`,
         metadata: {
@@ -2081,8 +2374,11 @@ ${improvements.map(imp => `- ${imp}`).join('\n')}
    */
   private async performLocalFallback(query: string, context: any): Promise<any> {
     try {
-      console.log('🔄 Using local Gemma3:4b fallback for GEPA-TRM...');
-      
+      logger.info('Using local Gemma3:4b fallback for GEPA-TRM', {
+        operation: 'local_fallback',
+        metadata: { model: 'gemma3:4b' }
+      });
+
       const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2096,9 +2392,12 @@ ${improvements.map(imp => `- ${imp}`).join('\n')}
       if (ollamaResponse.ok) {
         const data = await ollamaResponse.json();
         const response = data.response;
-        
-        console.log('✅ Local Gemma3:4b fallback completed');
-        
+
+        logger.info('Local Gemma3:4b fallback completed', {
+          operation: 'local_fallback',
+          metadata: { model: 'gemma3:4b' }
+        });
+
         return {
           data: `## GEPA-TRM Local Fallback Response\n\n${response}`,
           metadata: {
@@ -2116,7 +2415,9 @@ ${improvements.map(imp => `- ${imp}`).join('\n')}
         throw new Error(`Ollama failed: ${ollamaResponse.status}`);
       }
     } catch (error) {
-      console.error('Local fallback error:', error);
+      logger.error('Local fallback error', error as Error, {
+        operation: 'local_fallback'
+      });
       return {
         data: `## GEPA-TRM Local Fallback Error\n\nUnable to process query using local model. Please try again later.\n\n**Original Query:** ${query}`,
         metadata: {
@@ -2138,8 +2439,11 @@ ${improvements.map(imp => `- ${imp}`).join('\n')}
    */
   private async performDirectOllamaQualityEvaluation(query: string, response: string, context: any): Promise<any> {
     try {
-      console.log('🔄 Using direct Ollama fallback for quality evaluation...');
-      
+      logger.info('Using direct Ollama fallback for quality evaluation', {
+        operation: 'direct_ollama_quality_evaluation',
+        metadata: { model: 'gemma3:4b' }
+      });
+
       const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2153,7 +2457,10 @@ ${improvements.map(imp => `- ${imp}`).join('\n')}
       if (ollamaResponse.ok) {
         const data = await ollamaResponse.json();
         const evaluation = data.response;
-        console.log('✅ Direct Ollama quality evaluation completed');
+        logger.info('Direct Ollama quality evaluation completed', {
+          operation: 'direct_ollama_quality_evaluation',
+          metadata: { model: 'gemma3:4b' }
+        });
         
         return {
           openEvalsResults: [],
@@ -2169,7 +2476,9 @@ ${improvements.map(imp => `- ${imp}`).join('\n')}
         throw new Error(`Ollama failed: ${ollamaResponse.status}`);
       }
     } catch (error) {
-      console.error('❌ Direct Ollama quality evaluation failed:', error);
+      logger.error('Direct Ollama quality evaluation failed', error as Error, {
+        operation: 'direct_ollama_quality_evaluation'
+      });
       throw error;
     }
   }
@@ -2244,7 +2553,9 @@ ${qualityScore > 0.7 ?
         }
       };
     } catch (error) {
-      console.error('Fallback quality evaluation error:', error);
+      logger.error('Fallback quality evaluation error', error as Error, {
+        operation: 'fallback_quality_evaluation'
+      });
       return {
         data: `## Quality Evaluation (Fallback Error)\n\nUnable to perform quality assessment due to API rate limiting and fallback evaluation failure. Please try again later.`,
         metadata: {

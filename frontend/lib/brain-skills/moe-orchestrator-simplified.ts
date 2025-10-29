@@ -34,10 +34,13 @@ export class MoEBrainOrchestrator {
     this.evaluationSystem = new BrainEvaluationSystem();
     
     this.selfImprovementConfig = {
+      evolutionThreshold: 0.6,
+      minSamplesForEvolution: 5,
+      performanceWindow: 100,
+      axLLMEnabled: true,
       enablePromptEvolution: true,
       enablePerformanceTracking: true,
       enableAdaptiveRouting: true,
-      evolutionThreshold: 0.6,
       trackingWindow: 5,
       adaptationRate: 0.1
     };
@@ -117,9 +120,9 @@ export class MoEBrainOrchestrator {
           averageQuality: this.calculateAverageQuality(executionResults),
           totalLatency: totalTime,
           moeOptimized: true,
-          batchOptimized: this.executionEngine.getConfiguration().enableBatching,
-          loadBalanced: this.executionEngine.getConfiguration().enableLoadBalancing,
-          resourceOptimized: this.executionEngine.getConfiguration().enableResourceOptimization
+          batchOptimized: !!this.executionEngine.getConfiguration().enableBatching,
+          loadBalanced: !!this.executionEngine.getConfiguration().enableLoadBalancing,
+          resourceOptimized: !!this.executionEngine.getConfiguration().enableResourceOptimization
         },
         performance: {
           selectionTime,
@@ -480,12 +483,16 @@ export class MoEBrainOrchestrator {
       };
 
       const metrics: MoEMetrics = {
+        totalQueries: 0,
         totalRequests: 0, // Would be tracked in production
         successfulRequests: 0,
         failedRequests: 0,
+        averageLatency: 0,
         averageResponseTime: 0,
         averageCost: 0,
         averageQuality: 0,
+        skillUsageCount: {},
+        errorRate: 0,
         cacheHitRate: 0,
         batchEfficiency: 0,
         loadBalancingEfficiency: 0,
@@ -496,7 +503,9 @@ export class MoEBrainOrchestrator {
         status: Object.values(components).every(Boolean) ? 'healthy' : 'degraded',
         components,
         metrics,
-        lastUpdated: new Date().toISOString()
+        details: {},
+        timestamp: Date.now(),
+        lastUpdated: Date.now()
       };
 
     } catch (error: any) {
@@ -514,7 +523,9 @@ export class MoEBrainOrchestrator {
           dynamicRouter: false
         },
         metrics: {} as MoEMetrics,
-        lastUpdated: new Date().toISOString()
+        details: {},
+        timestamp: Date.now(),
+        lastUpdated: Date.now()
       };
     }
   }
