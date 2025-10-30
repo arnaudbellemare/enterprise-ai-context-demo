@@ -202,7 +202,10 @@ export class PermutationEngine {
       }
       
       const cacheKey = `perm:${detectedDomain}:${Buffer.from(query).toString('base64').substring(0, 20)}`;
-      const cachedResult = await this.advancedCache.get(cacheKey);
+      const rawCachedResult = await this.advancedCache.get(cacheKey);
+      const cachedResult = typeof rawCachedResult === 'string'
+        ? { answer: rawCachedResult }
+        : rawCachedResult;
       
       if (cachedResult) {
         console.log('💾 Advanced cache hit - returning cached result');
@@ -754,7 +757,18 @@ export class PermutationEngine {
       
       // Cache the result using advanced cache system
       try {
-        await this.advancedCache.set(cacheKey, resultToCache, 3600); // Cache for 1 hour
+        await this.advancedCache.set(
+          cacheKey,
+          resultToCache,
+          3600,
+          {
+            component: 'PermutationEngine',
+            task_type: taskType.type,
+            priority: taskType.priority,
+            cost_saved: totalCost,
+            latency_saved_ms: trace.total_duration_ms
+          }
+        ); // Cache for 1 hour
         console.log('💾 Result cached in advanced cache system');
       } catch (error) {
         console.log('⚠️ Advanced cache failed, using KV cache fallback');

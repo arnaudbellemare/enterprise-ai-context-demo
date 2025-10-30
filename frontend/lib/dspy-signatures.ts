@@ -277,3 +277,4 @@ dspyRegistry.registerModule('financial_analysis', new FinancialAnalysisModule())
 dspyRegistry.registerModule('legal_analysis', new LegalAnalysisModule());
 dspyRegistry.registerModule('manufacturing_optimization', new ManufacturingOptimizationModule());
 
+
