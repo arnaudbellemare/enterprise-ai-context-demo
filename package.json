@@ -31,6 +31,10 @@
     "eval:quick": "npx tsx scripts/run-permutation-evals.ts quick",
     "eval:full": "npx tsx scripts/run-permutation-evals.ts full",
     "eval:single": "npx tsx scripts/run-permutation-evals.ts single",
+    "test:quick": "node quick-permutation-test.js",
+    "test:validate": "node validate-permutation-system.js",
+    "test:comprehensive": "node comprehensive-permutation-system-test.js",
+    "test:complete": "node run-comprehensive-test.js",
     "prepare": "husky"
   },
   "keywords": [
