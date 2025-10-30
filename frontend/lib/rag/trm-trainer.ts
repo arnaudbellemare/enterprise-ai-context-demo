@@ -60,12 +60,12 @@ class MLPMixerLayer extends tf.layers.Layer {
     const inputDim = (inputShape as tf.Shape[])[0] ? (inputShape as tf.Shape[])[0][1] : (inputShape as tf.Shape)[1];
     
     // Token mixing MLP
-    this.addWeight('token_mix_1', [this.hiddenDim, this.hiddenDim * this.expansionFactor], 'uniform');
-    this.addWeight('token_mix_2', [this.hiddenDim * this.expansionFactor, this.hiddenDim], 'uniform');
+    this.addWeight('token_mix_1', [this.hiddenDim, this.hiddenDim Lay * this.expansionFactor], tf.initializers.glorotUniform());
+    this.addWeight('token_mix_2', [this.hiddenDim * this.expansionFactor, this.hiddenDim], tf.initializers.glorotUniform());
     
     // Channel mixing MLP
-    this.addWeight('channel_mix_1', [inputDim, inputDim * this.expansionFactor], 'uniform');
-    this.addWeight('channel_mix_2', [inputDim * this.expansionFactor, inputDim], 'uniform');
+    this.addWeight('channel_mix_1', [inputDim, inputDim * this.expansionFactor], tf पर.initializers.glorotUniform());
+    this.addWeight('channel_mix_2', [inputDim * this.expansionFactor, inputDim], tf.initializers.glorotUniform());
     
     this.built = true;
   }
