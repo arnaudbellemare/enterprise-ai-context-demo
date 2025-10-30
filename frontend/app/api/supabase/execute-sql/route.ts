@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client with proper error handling

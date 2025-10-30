@@ -139,7 +139,9 @@ export class PermutationEngine {
       enableWeaviateRetrieveDSPy: true, // ✅ ENABLED - Advanced retrieval systems
       ...config
     };
-    console.log('🚀 PermutationEngine initialized with FULL STACK (parallelized + adaptive):', this.config);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🚀 PermutationEngine initialized with FULL STACK (parallelized + adaptive):', this.config);
+    }
   }
 
   /**
@@ -173,7 +175,7 @@ export class PermutationEngine {
       // Lazy initialize smart router
       if (!this.smartRouter) {
         this.smartRouter = getSmartRouter();
-        console.log('✅ Smart Router initialized');
+        if (process.env.NODE_ENV !== 'production') console.log('✅ Smart Router initialized');
       }
       
       // Create task type and get routing decision
@@ -196,7 +198,7 @@ export class PermutationEngine {
       // ============================================
       if (!this.advancedCache) {
         this.advancedCache = getAdvancedCache();
-        console.log('✅ Advanced Cache initialized');
+        if (process.env.NODE_ENV !== 'production') console.log('✅ Advanced Cache initialized');
       }
       
       const cacheKey = `perm:${detectedDomain}:${Buffer.from(query).toString('base64').substring(0, 20)}`;
@@ -303,7 +305,7 @@ export class PermutationEngine {
       // SIMPLE PARALLEL EXECUTION (FAST!)
       // ============================================
       const parallelStart = Date.now();
-      console.log('⚡ Using simple parallel execution for speed...');
+      if (process.env.NODE_ENV !== 'production') console.log('⚡ Using simple parallel execution for speed...');
       
       // Execute parallel tasks using simple Promise.all for speed
       const [queries, irtScore, memories, loraParams, swirlSteps] = await Promise.all([
