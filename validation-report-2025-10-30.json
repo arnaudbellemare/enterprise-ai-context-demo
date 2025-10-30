@@ -1,0 +1,80 @@
+{
+  "timestamp": "2025-10-30T01:39:10.546Z",
+  "overall": {
+    "ready": false,
+    "issues": [],
+    "readinessPercent": 66.66666666666666
+  },
+  "system": {
+    "Node.js Version": {
+      "success": true,
+      "message": "Node.js v22.16.0 (✅ Compatible)"
+    },
+    "NPM Version": {
+      "success": true,
+      "message": "NPM 10.9.2"
+    },
+    "Available Memory": {
+      "success": false,
+      "message": "Memory usage: 99.4% (⚠️ High usage)"
+    },
+    "Disk Space": {
+      "success": true,
+      "message": "Disk space available"
+    }
+  },
+  "services": {
+    "Frontend Server": {
+      "success": true,
+      "message": "Service responding (200)"
+    },
+    "Supabase Connection": {
+      "success": false,
+      "message": "Supabase environment variables not set"
+    },
+    "LLM Services": {
+      "success": false,
+      "message": "No LLM API keys configured"
+    },
+    "Ollama Service": {
+      "success": true,
+      "message": "Service responding (200)"
+    }
+  },
+  "configuration": {
+    "Environment Variables": {
+      "success": false,
+      "message": "Missing required vars: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    },
+    "Database Schema": {
+      "success": true,
+      "message": "Database schema check (simplified)"
+    },
+    "API Keys": {
+      "success": false,
+      "message": "Valid API keys: "
+    },
+    "Test Files": {
+      "success": true,
+      "message": "Test files: 3/3"
+    }
+  },
+  "dependencies": {
+    "Frontend Dependencies": {
+      "success": true,
+      "message": "46 dependencies found"
+    },
+    "Backend Dependencies": {
+      "success": true,
+      "message": "44 Python packages found"
+    },
+    "Test Dependencies": {
+      "success": true,
+      "message": "Test dependencies: 4/4"
+    }
+  },
+  "apiEndpoints": {
+    "success": false,
+    "message": "0/19 endpoints available"
+  }
+}

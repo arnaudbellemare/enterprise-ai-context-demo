@@ -1,0 +1,454 @@
+{
+  "summary": {
+    "totalTests": 20,
+    "passed": 16,
+    "failed": 3,
+    "skipped": 1,
+    "duration": 219
+  },
+  "categories": {
+    "CORE_COMPONENTS": {
+      "name": "Core PERMUTATION Components",
+      "tests": [
+        {
+          "name": "PermutationEngine",
+          "status": "failed",
+          "message": "PermutationEngine test failed: Cannot find module './frontend/lib/permutation-engine'\nRequire stack:\n- /Users/cno/enterprise-ai-context-demo/enterprise-ai-context-demo-2/enterprise-ai-context-demo/test-permutation-components-direct.js",
+          "duration": 0,
+          "details": {},
+          "timestamp": "2025-10-30T01:41:34.693Z"
+        },
+        {
+          "name": "ACEFramework",
+          "status": "failed",
+          "message": "ACEFramework test failed: Cannot find module './frontend/lib/ace-framework'\nRequire stack:\n- /Users/cno/enterprise-ai-context-demo/enterprise-ai-context-demo-2/enterprise-ai-context-demo/test-permutation-components-direct.js",
+          "duration": 0,
+          "details": {},
+          "timestamp": "2025-10-30T01:41:34.694Z"
+        },
+        {
+          "name": "GEPAAlgorithms",
+          "status": "failed",
+          "message": "GEPAAlgorithms test failed: Cannot find module './frontend/lib/gepa-algorithms'\nRequire stack:\n- /Users/cno/enterprise-ai-context-demo/enterprise-ai-context-demo-2/enterprise-ai-context-demo/test-permutation-components-direct.js",
+          "duration": 0,
+          "details": {},
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "IRTCalculator",
+          "status": "passed",
+          "message": "IRTCalculator working correctly",
+          "duration": 0,
+          "details": {
+            "difficulty": "0.894",
+            "discrimination": "1.236",
+            "expectedAccuracy": "0.312"
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "TeacherStudentSystem",
+          "status": "passed",
+          "message": "TeacherStudentSystem working correctly",
+          "duration": 0,
+          "details": {
+            "teacherResponseLength": 130,
+            "studentLearningProcessed": true
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "TRMEngine",
+          "status": "passed",
+          "message": "TRMEngine working correctly",
+          "duration": 0,
+          "details": {
+            "reasoningSteps": 4,
+            "finalResponseLength": 179
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "ReasoningBank",
+          "status": "passed",
+          "message": "ReasoningBank working correctly",
+          "duration": 0,
+          "details": {
+            "memoryStored": true,
+            "memoryRetrieved": true
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "SmartRouter",
+          "status": "passed",
+          "message": "SmartRouter working correctly",
+          "duration": 0,
+          "details": {
+            "selectedComponent": "ACEFramework",
+            "confidence": 0.85
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "AdvancedCache",
+          "status": "passed",
+          "message": "AdvancedCache working correctly",
+          "duration": 0,
+          "details": {
+            "cacheSet": true,
+            "cacheGet": true
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "MultiAgentPipeline",
+          "status": "passed",
+          "message": "MultiAgentPipeline working correctly",
+          "duration": 0,
+          "details": {
+            "agentsExecuted": 3,
+            "allAgentsSuccessful": true
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        }
+      ],
+      "passed": 7,
+      "failed": 3,
+      "skipped": 0
+    },
+    "INTEGRATION_FLOWS": {
+      "name": "Integration Flows",
+      "tests": [
+        {
+          "name": "EndToEndExecution",
+          "status": "passed",
+          "message": "EndToEndExecution working correctly",
+          "duration": 0,
+          "details": {
+            "stepsCompleted": 5,
+            "allStepsSuccessful": true
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "ComponentInteraction",
+          "duration": 0,
+          "details": {},
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "DataFlowValidation",
+          "status": "passed",
+          "message": "DataFlowValidation working correctly",
+          "duration": 0,
+          "details": {
+            "flowSteps": 3,
+            "validationsPassed": 3
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "ErrorPropagation",
+          "status": "passed",
+          "message": "ErrorPropagation working correctly",
+          "duration": 0,
+          "details": {
+            "errorHandled": true,
+            "errorType": "Error"
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        },
+        {
+          "name": "CacheIntegration",
+          "status": "passed",
+          "message": "CacheIntegration working correctly",
+          "duration": 0,
+          "details": {
+            "cacheSet": true,
+            "cacheGet": true
+          },
+          "timestamp": "2025-10-30T01:41:34.695Z"
+        }
+      ],
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "PERFORMANCE_METRICS": {
+      "name": "Performance & Quality",
+      "tests": [
+        {
+          "name": "ResponseTime",
+          "status": "passed",
+          "message": "ResponseTime within acceptable limits",
+          "duration": 101,
+          "details": {
+            "duration": 101,
+            "target": 5000
+          },
+          "timestamp": "2025-10-30T01:41:34.796Z"
+        },
+        {
+          "name": "QualityScore",
+          "status": "passed",
+          "message": "QualityScore within acceptable range",
+          "duration": 0,
+          "details": {
+            "score": "0.988",
+            "threshold": 0.8
+          },
+          "timestamp": "2025-10-30T01:41:34.796Z"
+        },
+        {
+          "name": "CostOptimization",
+          "status": "passed",
+          "message": "CostOptimization within targets",
+          "duration": 0,
+          "details": {
+            "cost": "0.0032",
+            "target": 0.01
+          },
+          "timestamp": "2025-10-30T01:41:34.796Z"
+        },
+        {
+          "name": "MemoryUsage",
+          "status": "passed",
+          "message": "MemoryUsage within acceptable limits",
+          "duration": 0,
+          "details": {
+            "heapUsedMB": "4.18",
+            "threshold": 1000
+          },
+          "timestamp": "2025-10-30T01:41:34.796Z"
+        },
+        {
+          "name": "Throughput",
+          "status": "passed",
+          "message": "Throughput within requirements",
+          "duration": 112,
+          "details": {
+            "throughput": "90.09",
+            "operations": 10,
+            "duration": 111
+          },
+          "timestamp": "2025-10-30T01:41:34.908Z"
+        }
+      ],
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "detailed": [
+    {
+      "name": "PermutationEngine",
+      "status": "failed",
+      "message": "PermutationEngine test failed: Cannot find module './frontend/lib/permutation-engine'\nRequire stack:\n- /Users/cno/enterprise-ai-context-demo/enterprise-ai-context-demo-2/enterprise-ai-context-demo/test-permutation-components-direct.js",
+      "duration": 0,
+      "details": {},
+      "timestamp": "2025-10-30T01:41:34.693Z"
+    },
+    {
+      "name": "ACEFramework",
+      "status": "failed",
+      "message": "ACEFramework test failed: Cannot find module './frontend/lib/ace-framework'\nRequire stack:\n- /Users/cno/enterprise-ai-context-demo/enterprise-ai-context-demo-2/enterprise-ai-context-demo/test-permutation-components-direct.js",
+      "duration": 0,
+      "details": {},
+      "timestamp": "2025-10-30T01:41:34.694Z"
+    },
+    {
+      "name": "GEPAAlgorithms",
+      "status": "failed",
+      "message": "GEPAAlgorithms test failed: Cannot find module './frontend/lib/gepa-algorithms'\nRequire stack:\n- /Users/cno/enterprise-ai-context-demo/enterprise-ai-context-demo-2/enterprise-ai-context-demo/test-permutation-components-direct.js",
+      "duration": 0,
+      "details": {},
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "IRTCalculator",
+      "status": "passed",
+      "message": "IRTCalculator working correctly",
+      "duration": 0,
+      "details": {
+        "difficulty": "0.894",
+        "discrimination": "1.236",
+        "expectedAccuracy": "0.312"
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "TeacherStudentSystem",
+      "status": "passed",
+      "message": "TeacherStudentSystem working correctly",
+      "duration": 0,
+      "details": {
+        "teacherResponseLength": 130,
+        "studentLearningProcessed": true
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "TRMEngine",
+      "status": "passed",
+      "message": "TRMEngine working correctly",
+      "duration": 0,
+      "details": {
+        "reasoningSteps": 4,
+        "finalResponseLength": 179
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "ReasoningBank",
+      "status": "passed",
+      "message": "ReasoningBank working correctly",
+      "duration": 0,
+      "details": {
+        "memoryStored": true,
+        "memoryRetrieved": true
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "SmartRouter",
+      "status": "passed",
+      "message": "SmartRouter working correctly",
+      "duration": 0,
+      "details": {
+        "selectedComponent": "ACEFramework",
+        "confidence": 0.85
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "AdvancedCache",
+      "status": "passed",
+      "message": "AdvancedCache working correctly",
+      "duration": 0,
+      "details": {
+        "cacheSet": true,
+        "cacheGet": true
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "MultiAgentPipeline",
+      "status": "passed",
+      "message": "MultiAgentPipeline working correctly",
+      "duration": 0,
+      "details": {
+        "agentsExecuted": 3,
+        "allAgentsSuccessful": true
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "EndToEndExecution",
+      "status": "passed",
+      "message": "EndToEndExecution working correctly",
+      "duration": 0,
+      "details": {
+        "stepsCompleted": 5,
+        "allStepsSuccessful": true
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "ComponentInteraction",
+      "duration": 0,
+      "details": {},
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "DataFlowValidation",
+      "status": "passed",
+      "message": "DataFlowValidation working correctly",
+      "duration": 0,
+      "details": {
+        "flowSteps": 3,
+        "validationsPassed": 3
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "ErrorPropagation",
+      "status": "passed",
+      "message": "ErrorPropagation working correctly",
+      "duration": 0,
+      "details": {
+        "errorHandled": true,
+        "errorType": "Error"
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "CacheIntegration",
+      "status": "passed",
+      "message": "CacheIntegration working correctly",
+      "duration": 0,
+      "details": {
+        "cacheSet": true,
+        "cacheGet": true
+      },
+      "timestamp": "2025-10-30T01:41:34.695Z"
+    },
+    {
+      "name": "ResponseTime",
+      "status": "passed",
+      "message": "ResponseTime within acceptable limits",
+      "duration": 101,
+      "details": {
+        "duration": 101,
+        "target": 5000
+      },
+      "timestamp": "2025-10-30T01:41:34.796Z"
+    },
+    {
+      "name": "QualityScore",
+      "status": "passed",
+      "message": "QualityScore within acceptable range",
+      "duration": 0,
+      "details": {
+        "score": "0.988",
+        "threshold": 0.8
+      },
+      "timestamp": "2025-10-30T01:41:34.796Z"
+    },
+    {
+      "name": "CostOptimization",
+      "status": "passed",
+      "message": "CostOptimization within targets",
+      "duration": 0,
+      "details": {
+        "cost": "0.0032",
+        "target": 0.01
+      },
+      "timestamp": "2025-10-30T01:41:34.796Z"
+    },
+    {
+      "name": "MemoryUsage",
+      "status": "passed",
+      "message": "MemoryUsage within acceptable limits",
+      "duration": 0,
+      "details": {
+        "heapUsedMB": "4.18",
+        "threshold": 1000
+      },
+      "timestamp": "2025-10-30T01:41:34.796Z"
+    },
+    {
+      "name": "Throughput",
+      "status": "passed",
+      "message": "Throughput within requirements",
+      "duration": 112,
+      "details": {
+        "throughput": "90.09",
+        "operations": 10,
+        "duration": 111
+      },
+      "timestamp": "2025-10-30T01:41:34.908Z"
+    }
+  ],
+  "errors": []
+}

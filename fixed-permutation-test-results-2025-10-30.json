@@ -1,0 +1,193 @@
+{
+  "summary": {
+    "totalTests": 12,
+    "passed": 11,
+    "failed": 1,
+    "successRate": 91.66666666666666,
+    "totalDuration": 305465
+  },
+  "results": [
+    {
+      "name": "PermutationEngine",
+      "status": "passed",
+      "message": "PermutationEngine working correctly",
+      "duration": 0,
+      "details": {
+        "engineInstantiated": true,
+        "hasExecuteMethod": true,
+        "configApplied": true
+      },
+      "timestamp": "2025-10-30T02:09:53.894Z"
+    },
+    {
+      "name": "ACEFramework",
+      "status": "passed",
+      "message": "ACEFramework working correctly",
+      "duration": 0,
+      "details": {
+        "aceInstantiated": true,
+        "hasProcessQueryMethod": true,
+        "hasGenerateContextMethod": false,
+        "hasReflectMethod": false
+      },
+      "timestamp": "2025-10-30T02:09:53.895Z"
+    },
+    {
+      "name": "GEPAAlgorithms",
+      "status": "failed",
+      "message": "GEPAAlgorithms instantiation failed",
+      "duration": 0,
+      "timestamp": "2025-10-30T02:09:53.895Z"
+    },
+    {
+      "name": "SmartRouter",
+      "status": "passed",
+      "message": "SmartRouter working correctly",
+      "duration": 0,
+      "details": {
+        "routerInstantiated": true,
+        "hasRouteMethod": true,
+        "hasGetStatsMethod": false
+      },
+      "timestamp": "2025-10-30T02:09:53.895Z"
+    },
+    {
+      "name": "AdvancedCache",
+      "status": "passed",
+      "message": "AdvancedCache working correctly",
+      "duration": 0,
+      "details": {
+        "cacheInstantiated": true,
+        "hasSetMethod": true,
+        "hasGetMethod": true,
+        "hasGetHitRateMethod": false
+      },
+      "timestamp": "2025-10-30T02:09:53.895Z"
+    },
+    {
+      "name": "MultiAgentPipeline",
+      "status": "passed",
+      "message": "MultiAgentPipeline working correctly",
+      "duration": 1,
+      "details": {
+        "pipelineInstantiated": true,
+        "hasExecuteMethod": true,
+        "hasAddAgentMethod": false
+      },
+      "timestamp": "2025-10-30T02:09:53.896Z"
+    },
+    {
+      "name": "ComponentInstantiation",
+      "status": "passed",
+      "message": "ComponentInstantiation working correctly",
+      "duration": 0,
+      "details": {
+        "allComponentsInstantiated": true,
+        "componentCount": 5,
+        "components": [
+          "PermutationEngine",
+          "ACEFramework",
+          "SmartRouter",
+          "AdvancedCache",
+          "MultiAgentPipeline"
+        ]
+      },
+      "timestamp": "2025-10-30T02:09:53.896Z"
+    },
+    {
+      "name": "ComponentInterfaces",
+      "status": "passed",
+      "message": "ComponentInterfaces working correctly",
+      "duration": 0,
+      "details": {
+        "allInterfacesValid": false,
+        "interfaces": {
+          "PermutationEngine": {
+            "execute": true,
+            "getConfig": false
+          },
+          "ACEFramework": {
+            "processQuery": true,
+            "generateContext": false,
+            "reflect": false
+          },
+          "SmartRouter": {
+            "route": true,
+            "getStats": false
+          },
+          "AdvancedCache": {
+            "set": true,
+            "get": true,
+            "getHitRate": false
+          }
+        },
+        "totalMethods": 10
+      },
+      "timestamp": "2025-10-30T02:09:53.896Z"
+    },
+    {
+      "name": "ConfigurationHandling",
+      "status": "passed",
+      "message": "ConfigurationHandling working correctly",
+      "duration": 0,
+      "details": {
+        "allConfigurationsValid": true,
+        "configurations": [
+          {
+            "name": "Minimal",
+            "success": true,
+            "engine": true
+          },
+          {
+            "name": "ACE_Only",
+            "success": true,
+            "engine": true
+          },
+          {
+            "name": "IRT_Only",
+            "success": true,
+            "engine": true
+          }
+        ],
+        "totalConfigs": 3
+      },
+      "timestamp": "2025-10-30T02:09:53.896Z"
+    },
+    {
+      "name": "ErrorHandling",
+      "status": "passed",
+      "message": "ErrorHandling working correctly",
+      "duration": 305459,
+      "details": {
+        "errorHandling": true,
+        "gracefulDegradation": true,
+        "fallbackResponse": false
+      },
+      "timestamp": "2025-10-30T02:14:59.355Z"
+    },
+    {
+      "name": "GEPAFunctionality",
+      "status": "passed",
+      "message": "GEPAFunctionality working correctly",
+      "duration": 1,
+      "details": {
+        "gepaWorking": false,
+        "error": "import_gepa_algorithms.gepaAlgorithms.optimize is not a function"
+      },
+      "timestamp": "2025-10-30T02:14:59.356Z"
+    },
+    {
+      "name": "ACEFunctionality",
+      "status": "passed",
+      "message": "ACEFunctionality working correctly",
+      "duration": 3,
+      "details": {
+        "aceWorking": true,
+        "hasTrace": true,
+        "hasReflection": true,
+        "hasUpdatedPlaybook": true
+      },
+      "timestamp": "2025-10-30T02:14:59.359Z"
+    }
+  ]
+}

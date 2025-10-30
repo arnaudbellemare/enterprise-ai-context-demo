@@ -1,0 +1,341 @@
+{
+  "summary": {
+    "totalTests": 23,
+    "passed": 22,
+    "failed": 1,
+    "successRate": 95.65217391304348,
+    "totalDuration": 4468870
+  },
+  "results": [
+    {
+      "name": "PermutationEngine",
+      "status": "passed",
+      "message": "PermutationEngine working correctly",
+      "duration": 411929,
+      "details": {
+        "engineInstantiated": true,
+        "hasExecuteMethod": true,
+        "executionSuccessful": true,
+        "answerLength": 1347,
+        "componentsUsed": 10,
+        "qualityScore": 0.76145,
+        "duration": 411923
+      },
+      "timestamp": "2025-10-30T02:30:50.641Z"
+    },
+    {
+      "name": "ACEFramework",
+      "status": "passed",
+      "message": "ACEFramework working correctly",
+      "duration": 3,
+      "details": {
+        "aceInstantiated": true,
+        "hasProcessQueryMethod": true,
+        "hasGenerateContextMethod": false,
+        "hasReflectMethod": false,
+        "processQueryResult": true
+      },
+      "timestamp": "2025-10-30T02:30:50.645Z"
+    },
+    {
+      "name": "GEPAAlgorithms",
+      "status": "passed",
+      "message": "GEPAAlgorithms working correctly",
+      "duration": 33,
+      "details": {
+        "gepaInstantiated": true,
+        "hasOptimizePromptsMethod": true,
+        "optimizationSuccessful": true,
+        "evolvedPrompts": 50,
+        "paretoFronts": 1,
+        "generationsEvolved": 4
+      },
+      "timestamp": "2025-10-30T02:30:50.679Z"
+    },
+    {
+      "name": "SmartRouter",
+      "status": "passed",
+      "message": "SmartRouter working correctly",
+      "duration": 1,
+      "details": {
+        "routerInstantiated": true,
+        "hasRouteMethod": true,
+        "routingSuccessful": true,
+        "primaryComponent": "TRM (Tiny Recursion Model)"
+      },
+      "timestamp": "2025-10-30T02:30:50.680Z"
+    },
+    {
+      "name": "AdvancedCache",
+      "status": "failed",
+      "message": "Cannot read properties of undefined (reading 'cost_saved')",
+      "duration": 1,
+      "timestamp": "2025-10-30T02:30:50.681Z"
+    },
+    {
+      "name": "MultiAgentPipeline",
+      "status": "passed",
+      "message": "MultiAgentPipeline working correctly",
+      "duration": 68952,
+      "details": {
+        "pipelineInstantiated": true,
+        "hasExecuteMethod": true,
+        "executionSuccessful": true,
+        "parallelResults": 3
+      },
+      "timestamp": "2025-10-30T02:31:59.633Z"
+    },
+    {
+      "name": "ReasoningBank",
+      "status": "passed",
+      "message": "ReasoningBank working correctly",
+      "duration": 457,
+      "details": {
+        "reasoningBankInstantiated": true,
+        "hasRetrieveSimilarMethod": true,
+        "memoriesRetrieved": 0,
+        "isArray": true
+      },
+      "timestamp": "2025-10-30T02:32:00.090Z"
+    },
+    {
+      "name": "TRMEngine",
+      "status": "passed",
+      "message": "TRMEngine working correctly",
+      "duration": 1,
+      "details": {
+        "trmInstantiated": true,
+        "hasProcessQueryMethod": true,
+        "executionSuccessful": true,
+        "iterations": 3,
+        "confidence": 0.6
+      },
+      "timestamp": "2025-10-30T02:32:00.091Z"
+    },
+    {
+      "name": "EndToEndExecution",
+      "status": "passed",
+      "message": "EndToEndExecution working correctly",
+      "duration": 568538,
+      "details": {
+        "endToEndSuccessful": true,
+        "answerLength": 1545,
+        "reasoningSteps": 11,
+        "componentsUsed": 11,
+        "traceSteps": 11,
+        "qualityScore": 0.7999999999999999,
+        "totalDuration": 568536
+      },
+      "timestamp": "2025-10-30T02:41:28.629Z"
+    },
+    {
+      "name": "ComponentInteraction",
+      "status": "passed",
+      "message": "ComponentInteraction working correctly",
+      "duration": 599325,
+      "details": {
+        "componentInteractionSuccessful": true,
+        "totalComponents": 11,
+        "expectedComponentsUsed": 5,
+        "componentList": [
+          "Smart Router + Advanced Cache",
+          "Domain Detection",
+          "IRT (Item Response Theory)",
+          "Teacher Model (Perplexity)",
+          "SWiRL (Step-Wise RL)",
+          "TRM (Tiny Recursion Model)",
+          "Multi-Agent Research (Parallel)",
+          "Teacher-Student System",
+          "ACE Playbook System",
+          "Weaviate Retrieve-DSPy",
+          "Synthesis Agent (Merger)"
+        ]
+      },
+      "timestamp": "2025-10-30T02:51:27.954Z"
+    },
+    {
+      "name": "DataFlowValidation",
+      "status": "passed",
+      "message": "DataFlowValidation working correctly",
+      "duration": 195825,
+      "details": {
+        "dataFlowValid": true,
+        "hasInputProcessing": true,
+        "hasOptimization": true,
+        "hasExecution": true,
+        "hasSynthesis": true,
+        "totalSteps": 10
+      },
+      "timestamp": "2025-10-30T02:54:43.780Z"
+    },
+    {
+      "name": "ErrorHandling",
+      "status": "passed",
+      "message": "ErrorHandling working correctly",
+      "duration": 128732,
+      "details": {
+        "errorHandlingSuccessful": false,
+        "gracefulDegradation": true,
+        "fallbackResponse": false
+      },
+      "timestamp": "2025-10-30T02:56:52.513Z"
+    },
+    {
+      "name": "CacheIntegration",
+      "status": "passed",
+      "message": "CacheIntegration working correctly",
+      "duration": 306393,
+      "details": {
+        "cacheIntegrationSuccessful": true,
+        "firstDuration": 306388,
+        "secondDuration": 1,
+        "isCached": true,
+        "speedImprovement": "100.0%"
+      },
+      "timestamp": "2025-10-30T03:01:58.906Z"
+    },
+    {
+      "name": "ResponseTime",
+      "status": "passed",
+      "message": "ResponseTime working correctly",
+      "duration": 323154,
+      "details": {
+        "responseTimeTest": "failed",
+        "averageTime": 107717,
+        "maxTime": 149498,
+        "target": 5000,
+        "maxAllowed": 10000,
+        "measurements": [
+          82123,
+          91530,
+          149498
+        ]
+      },
+      "timestamp": "2025-10-30T03:07:22.061Z"
+    },
+    {
+      "name": "QualityScore",
+      "status": "passed",
+      "message": "QualityScore working correctly",
+      "duration": 427385,
+      "details": {
+        "qualityScoreTest": "failed",
+        "qualityScore": 0.7999999999999999,
+        "minRequired": 0.8,
+        "target": 0.9,
+        "answerLength": 100
+      },
+      "timestamp": "2025-10-30T03:14:29.446Z"
+    },
+    {
+      "name": "CostOptimization",
+      "status": "passed",
+      "message": "CostOptimization working correctly",
+      "duration": 2,
+      "details": {
+        "costOptimizationTest": "passed",
+        "cost": 0.0001,
+        "maxAllowed": 0.05,
+        "target": 0.02,
+        "componentsUsed": 2
+      },
+      "timestamp": "2025-10-30T03:14:29.449Z"
+    },
+    {
+      "name": "InvalidInputs",
+      "status": "passed",
+      "message": "InvalidInputs working correctly",
+      "duration": 264158,
+      "details": {
+        "invalidInputsTest": "passed",
+        "totalInputs": 2,
+        "handledCorrectly": 2,
+        "successRate": "100.0%"
+      },
+      "timestamp": "2025-10-30T03:18:53.607Z"
+    },
+    {
+      "name": "ResourceLimits",
+      "status": "passed",
+      "message": "ResourceLimits working correctly",
+      "duration": 175510,
+      "details": {
+        "resourceLimitsTest": "passed",
+        "handledCorrectly": true,
+        "queryLength": 312,
+        "answerLength": 1466
+      },
+      "timestamp": "2025-10-30T03:21:49.117Z"
+    },
+    {
+      "name": "FinancialAnalysis",
+      "status": "passed",
+      "message": "FinancialAnalysis working correctly",
+      "duration": 155972,
+      "details": {
+        "domainTestSuccessful": true,
+        "answerLength": 1479,
+        "qualityScore": 0.71,
+        "irtDifficulty": 0.525,
+        "componentsUsed": 10
+      },
+      "timestamp": "2025-10-30T03:24:25.091Z"
+    },
+    {
+      "name": "HealthcareQueries",
+      "status": "passed",
+      "message": "HealthcareQueries working correctly",
+      "duration": 170515,
+      "details": {
+        "domainTestSuccessful": true,
+        "answerLength": 1232,
+        "qualityScore": 0.8220499999999998,
+        "irtDifficulty": 0.5375,
+        "componentsUsed": 10
+      },
+      "timestamp": "2025-10-30T03:27:15.607Z"
+    },
+    {
+      "name": "TechnologyQuestions",
+      "status": "passed",
+      "message": "TechnologyQuestions working correctly",
+      "duration": 377324,
+      "details": {
+        "domainTestSuccessful": true,
+        "answerLength": 100,
+        "qualityScore": 0.7999999999999999,
+        "irtDifficulty": 0.3875,
+        "componentsUsed": 11
+      },
+      "timestamp": "2025-10-30T03:33:32.933Z"
+    },
+    {
+      "name": "LegalReasoning",
+      "status": "passed",
+      "message": "LegalReasoning working correctly",
+      "duration": 149291,
+      "details": {
+        "domainTestSuccessful": true,
+        "answerLength": 1351,
+        "qualityScore": 0.71,
+        "irtDifficulty": 0.5625,
+        "componentsUsed": 10
+      },
+      "timestamp": "2025-10-30T03:36:02.225Z"
+    },
+    {
+      "name": "RealEstateValuation",
+      "status": "passed",
+      "message": "RealEstateValuation working correctly",
+      "duration": 145355,
+      "details": {
+        "domainTestSuccessful": true,
+        "answerLength": 1357,
+        "qualityScore": 0.7414999999999999,
+        "irtDifficulty": 0.4,
+        "componentsUsed": 10
+      },
+      "timestamp": "2025-10-30T03:38:27.580Z"
+    }
+  ]
+}

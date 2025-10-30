@@ -1,0 +1,158 @@
+{
+  "summary": {
+    "totalTests": 10,
+    "passed": 9,
+    "failed": 1,
+    "successRate": 90,
+    "totalDuration": 126034
+  },
+  "results": [
+    {
+      "name": "PermutationEngine",
+      "status": "passed",
+      "message": "PermutationEngine working correctly",
+      "duration": 2,
+      "details": {
+        "engineInstantiated": true,
+        "hasExecuteMethod": true,
+        "configApplied": true,
+        "envVarsLoaded": true
+      },
+      "timestamp": "2025-10-30T02:13:30.124Z"
+    },
+    {
+      "name": "ACEFramework",
+      "status": "passed",
+      "message": "ACEFramework working correctly",
+      "duration": 0,
+      "details": {
+        "aceInstantiated": true,
+        "hasProcessQueryMethod": true,
+        "hasGenerateContextMethod": false,
+        "hasReflectMethod": false
+      },
+      "timestamp": "2025-10-30T02:13:30.126Z"
+    },
+    {
+      "name": "GEPAAlgorithms",
+      "status": "failed",
+      "message": "GEPAAlgorithms instantiation failed",
+      "duration": 0,
+      "timestamp": "2025-10-30T02:13:30.126Z"
+    },
+    {
+      "name": "SmartRouter",
+      "status": "passed",
+      "message": "SmartRouter working correctly",
+      "duration": 0,
+      "details": {
+        "routerInstantiated": true,
+        "hasRouteMethod": true,
+        "hasGetStatsMethod": false
+      },
+      "timestamp": "2025-10-30T02:13:30.126Z"
+    },
+    {
+      "name": "AdvancedCache",
+      "status": "passed",
+      "message": "AdvancedCache working correctly",
+      "duration": 1,
+      "details": {
+        "cacheInstantiated": true,
+        "hasSetMethod": true,
+        "hasGetMethod": true,
+        "hasGetHitRateMethod": false
+      },
+      "timestamp": "2025-10-30T02:13:30.127Z"
+    },
+    {
+      "name": "MultiAgentPipeline",
+      "status": "passed",
+      "message": "MultiAgentPipeline working correctly",
+      "duration": 3,
+      "details": {
+        "pipelineInstantiated": true,
+        "hasExecuteMethod": true,
+        "hasAddAgentMethod": false
+      },
+      "timestamp": "2025-10-30T02:13:30.130Z"
+    },
+    {
+      "name": "ComponentInstantiation",
+      "status": "passed",
+      "message": "ComponentInstantiation working correctly",
+      "duration": 2,
+      "details": {
+        "allComponentsInstantiated": true,
+        "componentCount": 5,
+        "components": [
+          "PermutationEngine",
+          "ACEFramework",
+          "SmartRouter",
+          "AdvancedCache",
+          "MultiAgentPipeline"
+        ],
+        "envVarsAvailable": {
+          "perplexity": true,
+          "supabase": true
+        }
+      },
+      "timestamp": "2025-10-30T02:13:30.132Z"
+    },
+    {
+      "name": "EnvironmentVariables",
+      "status": "passed",
+      "message": "EnvironmentVariables working correctly",
+      "duration": 0,
+      "details": {
+        "allEnvVarsSet": true,
+        "envVars": {
+          "PERPLEXITY_API_KEY": true,
+          "NEXT_PUBLIC_SUPABASE_URL": true,
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY": true
+        }
+      },
+      "timestamp": "2025-10-30T02:13:30.132Z"
+    },
+    {
+      "name": "ConfigurationHandling",
+      "status": "passed",
+      "message": "ConfigurationHandling working correctly",
+      "duration": 1,
+      "details": {
+        "allConfigurationsValid": true,
+        "configurations": [
+          {
+            "name": "Minimal",
+            "success": true,
+            "engine": true
+          },
+          {
+            "name": "ACE_Only",
+            "success": true,
+            "engine": true
+          },
+          {
+            "name": "IRT_Only",
+            "success": true,
+            "engine": true
+          }
+        ],
+        "totalConfigs": 3
+      },
+      "timestamp": "2025-10-30T02:13:30.133Z"
+    },
+    {
+      "name": "ErrorHandling",
+      "status": "passed",
+      "message": "ErrorHandling working correctly",
+      "duration": 126022,
+      "details": {
+        "errorHandling": true,
+        "gracefulDegradation": true,
+        "fallbackResponse": false
+      },
+      "timestamp": "2025-10-30T02:15:36.155Z"
+    }
+  ]
+}

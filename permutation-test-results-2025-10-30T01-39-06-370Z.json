@@ -1,0 +1,615 @@
+{
+  "summary": {
+    "totalTests": 30,
+    "passed": 4,
+    "failed": 26,
+    "skipped": 0,
+    "duration": 153
+  },
+  "categories": {
+    "CORE_COMPONENTS": {
+      "name": "Core PERMUTATION Components",
+      "tests": [
+        {
+          "name": "PermutationEngine",
+          "status": "failed",
+          "message": "PermutationEngine execution failed",
+          "duration": 34,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.253Z"
+        },
+        {
+          "name": "ACEFramework",
+          "status": "failed",
+          "message": "ACEFramework execution failed",
+          "duration": 5,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.258Z"
+        },
+        {
+          "name": "GEPAAlgorithms",
+          "status": "failed",
+          "message": "GEPAAlgorithms execution failed",
+          "duration": 5,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.263Z"
+        },
+        {
+          "name": "IRTCalculator",
+          "status": "failed",
+          "message": "IRTCalculator execution failed",
+          "duration": 4,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.267Z"
+        },
+        {
+          "name": "TeacherStudentSystem",
+          "status": "failed",
+          "message": "TeacherStudentSystem execution failed",
+          "duration": 6,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.273Z"
+        },
+        {
+          "name": "TRMEngine",
+          "status": "failed",
+          "message": "TRMEngine execution failed",
+          "duration": 5,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.278Z"
+        },
+        {
+          "name": "ReasoningBank",
+          "status": "failed",
+          "message": "ReasoningBank execution failed",
+          "duration": 5,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.283Z"
+        },
+        {
+          "name": "SmartRouter",
+          "status": "failed",
+          "message": "SmartRouter execution failed",
+          "duration": 4,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.287Z"
+        },
+        {
+          "name": "AdvancedCache",
+          "status": "failed",
+          "message": "Cache set failed",
+          "duration": 5,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.292Z"
+        },
+        {
+          "name": "MultiAgentPipeline",
+          "status": "failed",
+          "message": "MultiAgentPipeline execution failed",
+          "duration": 5,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.297Z"
+        }
+      ],
+      "passed": 0,
+      "failed": 10,
+      "duration": 78
+    },
+    "INTEGRATION_FLOWS": {
+      "name": "Integration Flows",
+      "tests": [
+        {
+          "name": "EndToEndExecution",
+          "status": "failed",
+          "message": "End-to-end execution failed",
+          "duration": 3,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.300Z"
+        },
+        {
+          "name": "ComponentInteraction",
+          "status": "failed",
+          "message": "Component interaction failed",
+          "duration": 2,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.302Z"
+        },
+        {
+          "name": "DataFlowValidation",
+          "status": "failed",
+          "message": "Data flow validation failed",
+          "duration": 2,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.304Z"
+        },
+        {
+          "name": "ErrorPropagation",
+          "status": "passed",
+          "message": "Error propagation working correctly",
+          "duration": 2,
+          "details": {
+            "errorHandled": true,
+            "errorMessage": "Too Many Requests"
+          },
+          "timestamp": "2025-10-30T01:39:06.306Z"
+        },
+        {
+          "name": "CacheIntegration",
+          "status": "failed",
+          "message": "First request failed",
+          "duration": 2,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.308Z"
+        }
+      ],
+      "passed": 1,
+      "failed": 4,
+      "duration": 11
+    },
+    "PERFORMANCE_METRICS": {
+      "name": "Performance & Quality",
+      "tests": [
+        {
+          "name": "ResponseTime",
+          "status": "failed",
+          "message": "Response time exceeds targets",
+          "duration": 12,
+          "details": {
+            "averageTime": null,
+            "maxTime": null,
+            "target": 5000,
+            "maxAllowed": 10000,
+            "measurements": []
+          },
+          "timestamp": "2025-10-30T01:39:06.320Z"
+        },
+        {
+          "name": "QualityScore",
+          "status": "failed",
+          "message": "Quality score test failed",
+          "duration": 2,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.322Z"
+        },
+        {
+          "name": "CostOptimization",
+          "status": "failed",
+          "message": "Cost optimization test failed",
+          "duration": 3,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.325Z"
+        },
+        {
+          "name": "MemoryUsage",
+          "status": "passed",
+          "message": "Memory usage within limits",
+          "duration": 6,
+          "details": {
+            "memoryIncreaseMB": 0.48755645751953125,
+            "memoryBefore": 9,
+            "memoryAfter": 10,
+            "queriesProcessed": 3
+          },
+          "timestamp": "2025-10-30T01:39:06.331Z"
+        },
+        {
+          "name": "Throughput",
+          "status": "failed",
+          "message": "Throughput below requirements",
+          "duration": 4,
+          "details": {
+            "throughput": 0,
+            "totalTime": 4,
+            "successfulQueries": 0,
+            "totalQueries": 3,
+            "successRate": 0
+          },
+          "timestamp": "2025-10-30T01:39:06.335Z"
+        }
+      ],
+      "passed": 1,
+      "failed": 4,
+      "duration": 27
+    },
+    "EDGE_CASES": {
+      "name": "Edge Cases & Error Handling",
+      "tests": [
+        {
+          "name": "InvalidInputs",
+          "status": "passed",
+          "message": "Invalid inputs handled correctly",
+          "duration": 7,
+          "details": {
+            "totalInputs": 5,
+            "handledCorrectly": 5,
+            "successRate": "100.0%"
+          },
+          "timestamp": "2025-10-30T01:39:06.342Z"
+        },
+        {
+          "name": "NetworkFailures",
+          "status": "failed",
+          "message": "Network failures not handled correctly",
+          "duration": 3,
+          "details": {
+            "statusCode": 401,
+            "success": false,
+            "error": "Unauthorized"
+          },
+          "timestamp": "2025-10-30T01:39:06.345Z"
+        },
+        {
+          "name": "ResourceLimits",
+          "status": "failed",
+          "message": "Resource limits not handled correctly",
+          "duration": 2,
+          "details": {
+            "success": false,
+            "error": "Too Many Requests",
+            "queryLength": 312
+          },
+          "timestamp": "2025-10-30T01:39:06.347Z"
+        },
+        {
+          "name": "ConcurrentRequests",
+          "status": "failed",
+          "message": "Concurrent requests not handled correctly",
+          "duration": 6,
+          "details": {
+            "totalRequests": 3,
+            "successfulRequests": 0,
+            "successRate": "0.0%"
+          },
+          "timestamp": "2025-10-30T01:39:06.353Z"
+        },
+        {
+          "name": "MalformedData",
+          "status": "passed",
+          "message": "Malformed data handled correctly",
+          "duration": 5,
+          "details": {
+            "totalInputs": 3,
+            "handledCorrectly": 3,
+            "successRate": "100.0%"
+          },
+          "timestamp": "2025-10-30T01:39:06.358Z"
+        }
+      ],
+      "passed": 2,
+      "failed": 3,
+      "duration": 23
+    },
+    "DOMAIN_SPECIFIC": {
+      "name": "Domain-Specific Capabilities",
+      "tests": [
+        {
+          "name": "FinancialAnalysis",
+          "status": "failed",
+          "message": "Financial analysis failed",
+          "duration": 2,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.360Z"
+        },
+        {
+          "name": "HealthcareQueries",
+          "status": "failed",
+          "message": "Healthcare query failed",
+          "duration": 4,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.364Z"
+        },
+        {
+          "name": "TechnologyQuestions",
+          "status": "failed",
+          "message": "Technology question failed",
+          "duration": 2,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.366Z"
+        },
+        {
+          "name": "LegalReasoning",
+          "status": "failed",
+          "message": "Legal reasoning failed",
+          "duration": 2,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.368Z"
+        },
+        {
+          "name": "RealEstateValuation",
+          "status": "failed",
+          "message": "Real estate valuation failed",
+          "duration": 2,
+          "details": {},
+          "timestamp": "2025-10-30T01:39:06.370Z"
+        }
+      ],
+      "passed": 0,
+      "failed": 5,
+      "duration": 12
+    }
+  },
+  "detailed": [
+    {
+      "name": "PermutationEngine",
+      "status": "failed",
+      "message": "PermutationEngine execution failed",
+      "duration": 34,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.253Z"
+    },
+    {
+      "name": "ACEFramework",
+      "status": "failed",
+      "message": "ACEFramework execution failed",
+      "duration": 5,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.258Z"
+    },
+    {
+      "name": "GEPAAlgorithms",
+      "status": "failed",
+      "message": "GEPAAlgorithms execution failed",
+      "duration": 5,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.263Z"
+    },
+    {
+      "name": "IRTCalculator",
+      "status": "failed",
+      "message": "IRTCalculator execution failed",
+      "duration": 4,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.267Z"
+    },
+    {
+      "name": "TeacherStudentSystem",
+      "status": "failed",
+      "message": "TeacherStudentSystem execution failed",
+      "duration": 6,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.273Z"
+    },
+    {
+      "name": "TRMEngine",
+      "status": "failed",
+      "message": "TRMEngine execution failed",
+      "duration": 5,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.278Z"
+    },
+    {
+      "name": "ReasoningBank",
+      "status": "failed",
+      "message": "ReasoningBank execution failed",
+      "duration": 5,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.283Z"
+    },
+    {
+      "name": "SmartRouter",
+      "status": "failed",
+      "message": "SmartRouter execution failed",
+      "duration": 4,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.287Z"
+    },
+    {
+      "name": "AdvancedCache",
+      "status": "failed",
+      "message": "Cache set failed",
+      "duration": 5,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.292Z"
+    },
+    {
+      "name": "MultiAgentPipeline",
+      "status": "failed",
+      "message": "MultiAgentPipeline execution failed",
+      "duration": 5,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.297Z"
+    },
+    {
+      "name": "EndToEndExecution",
+      "status": "failed",
+      "message": "End-to-end execution failed",
+      "duration": 3,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.300Z"
+    },
+    {
+      "name": "ComponentInteraction",
+      "status": "failed",
+      "message": "Component interaction failed",
+      "duration": 2,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.302Z"
+    },
+    {
+      "name": "DataFlowValidation",
+      "status": "failed",
+      "message": "Data flow validation failed",
+      "duration": 2,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.304Z"
+    },
+    {
+      "name": "ErrorPropagation",
+      "status": "passed",
+      "message": "Error propagation working correctly",
+      "duration": 2,
+      "details": {
+        "errorHandled": true,
+        "errorMessage": "Too Many Requests"
+      },
+      "timestamp": "2025-10-30T01:39:06.306Z"
+    },
+    {
+      "name": "CacheIntegration",
+      "status": "failed",
+      "message": "First request failed",
+      "duration": 2,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.308Z"
+    },
+    {
+      "name": "ResponseTime",
+      "status": "failed",
+      "message": "Response time exceeds targets",
+      "duration": 12,
+      "details": {
+        "averageTime": null,
+        "maxTime": null,
+        "target": 5000,
+        "maxAllowed": 10000,
+        "measurements": []
+      },
+      "timestamp": "2025-10-30T01:39:06.320Z"
+    },
+    {
+      "name": "QualityScore",
+      "status": "failed",
+      "message": "Quality score test failed",
+      "duration": 2,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.322Z"
+    },
+    {
+      "name": "CostOptimization",
+      "status": "failed",
+      "message": "Cost optimization test failed",
+      "duration": 3,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.325Z"
+    },
+    {
+      "name": "MemoryUsage",
+      "status": "passed",
+      "message": "Memory usage within limits",
+      "duration": 6,
+      "details": {
+        "memoryIncreaseMB": 0.48755645751953125,
+        "memoryBefore": 9,
+        "memoryAfter": 10,
+        "queriesProcessed": 3
+      },
+      "timestamp": "2025-10-30T01:39:06.331Z"
+    },
+    {
+      "name": "Throughput",
+      "status": "failed",
+      "message": "Throughput below requirements",
+      "duration": 4,
+      "details": {
+        "throughput": 0,
+        "totalTime": 4,
+        "successfulQueries": 0,
+        "totalQueries": 3,
+        "successRate": 0
+      },
+      "timestamp": "2025-10-30T01:39:06.335Z"
+    },
+    {
+      "name": "InvalidInputs",
+      "status": "passed",
+      "message": "Invalid inputs handled correctly",
+      "duration": 7,
+      "details": {
+        "totalInputs": 5,
+        "handledCorrectly": 5,
+        "successRate": "100.0%"
+      },
+      "timestamp": "2025-10-30T01:39:06.342Z"
+    },
+    {
+      "name": "NetworkFailures",
+      "status": "failed",
+      "message": "Network failures not handled correctly",
+      "duration": 3,
+      "details": {
+        "statusCode": 401,
+        "success": false,
+        "error": "Unauthorized"
+      },
+      "timestamp": "2025-10-30T01:39:06.345Z"
+    },
+    {
+      "name": "ResourceLimits",
+      "status": "failed",
+      "message": "Resource limits not handled correctly",
+      "duration": 2,
+      "details": {
+        "success": false,
+        "error": "Too Many Requests",
+        "queryLength": 312
+      },
+      "timestamp": "2025-10-30T01:39:06.347Z"
+    },
+    {
+      "name": "ConcurrentRequests",
+      "status": "failed",
+      "message": "Concurrent requests not handled correctly",
+      "duration": 6,
+      "details": {
+        "totalRequests": 3,
+        "successfulRequests": 0,
+        "successRate": "0.0%"
+      },
+      "timestamp": "2025-10-30T01:39:06.353Z"
+    },
+    {
+      "name": "MalformedData",
+      "status": "passed",
+      "message": "Malformed data handled correctly",
+      "duration": 5,
+      "details": {
+        "totalInputs": 3,
+        "handledCorrectly": 3,
+        "successRate": "100.0%"
+      },
+      "timestamp": "2025-10-30T01:39:06.358Z"
+    },
+    {
+      "name": "FinancialAnalysis",
+      "status": "failed",
+      "message": "Financial analysis failed",
+      "duration": 2,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.360Z"
+    },
+    {
+      "name": "HealthcareQueries",
+      "status": "failed",
+      "message": "Healthcare query failed",
+      "duration": 4,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.364Z"
+    },
+    {
+      "name": "TechnologyQuestions",
+      "status": "failed",
+      "message": "Technology question failed",
+      "duration": 2,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.366Z"
+    },
+    {
+      "name": "LegalReasoning",
+      "status": "failed",
+      "message": "Legal reasoning failed",
+      "duration": 2,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.368Z"
+    },
+    {
+      "name": "RealEstateValuation",
+      "status": "failed",
+      "message": "Real estate valuation failed",
+      "duration": 2,
+      "details": {},
+      "timestamp": "2025-10-30T01:39:06.370Z"
+    }
+  ],
+  "performance": {},
+  "errors": []
+}

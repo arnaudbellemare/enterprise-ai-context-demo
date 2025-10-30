@@ -1,0 +1,178 @@
+{
+  "summary": {
+    "totalTests": 16,
+    "passed": 8,
+    "failed": 8,
+    "successRate": 50,
+    "totalDuration": 3035767
+  },
+  "results": [
+    {
+      "name": "PermutationEngine",
+      "status": "passed",
+      "message": "PermutationEngine working correctly",
+      "duration": 442667,
+      "details": {
+        "responseLength": 1299,
+        "componentsUsed": [
+          "Smart Router + Advanced Cache",
+          "Domain Detection",
+          "Multi-Query Expansion",
+          "IRT (Item Response Theory)",
+          "ReasoningBank",
+          "SWiRL (Step-Wise RL)",
+          "TRM (Tiny Recursion Model)",
+          "DSPy Optimization",
+          "Multi-Agent Research (Parallel)",
+          "ACE Playbook System",
+          "Synthesis Agent (Merger)"
+        ],
+        "qualityScore": 0.7254349999999998,
+        "duration": 442665
+      },
+      "timestamp": "2025-10-30T02:03:22.915Z"
+    },
+    {
+      "name": "ACEFramework",
+      "status": "failed",
+      "message": "ace.generateContext is not a function",
+      "duration": 0,
+      "timestamp": "2025-10-30T02:03:22.916Z"
+    },
+    {
+      "name": "GEPAAlgorithms",
+      "status": "failed",
+      "message": "import_gepa_algorithms.gepaAlgorithms.optimize is not a function",
+      "duration": 1,
+      "timestamp": "2025-10-30T02:03:22.917Z"
+    },
+    {
+      "name": "SmartRouter",
+      "status": "failed",
+      "message": "Cannot read properties of undefined (reading 'max_cost')",
+      "duration": 0,
+      "timestamp": "2025-10-30T02:03:22.917Z"
+    },
+    {
+      "name": "AdvancedCache",
+      "status": "failed",
+      "message": "Cannot read properties of undefined (reading 'cost_saved')",
+      "duration": 0,
+      "timestamp": "2025-10-30T02:03:22.917Z"
+    },
+    {
+      "name": "MultiAgentPipeline",
+      "status": "passed",
+      "message": "MultiAgentPipeline working correctly",
+      "duration": 78451,
+      "details": {
+        "agentsExecuted": 0,
+        "coordinationScore": 0,
+        "totalTime": 0
+      },
+      "timestamp": "2025-10-30T02:04:41.368Z"
+    },
+    {
+      "name": "EndToEndExecution",
+      "status": "passed",
+      "message": "EndToEndExecution working correctly",
+      "duration": 734818,
+      "details": {
+        "stepsCompleted": 11,
+        "allStepsSuccessful": true,
+        "totalTime": 734813,
+        "componentsUsed": 11
+      },
+      "timestamp": "2025-10-30T02:16:56.186Z"
+    },
+    {
+      "name": "ComponentInteraction",
+      "status": "failed",
+      "message": "ace.generateContext is not a function",
+      "duration": 1,
+      "timestamp": "2025-10-30T02:16:56.187Z"
+    },
+    {
+      "name": "DataFlowValidation",
+      "status": "passed",
+      "message": "DataFlowValidation working correctly",
+      "duration": 227964,
+      "details": {
+        "dataIntegrity": true,
+        "answerValid": true,
+        "metadataValid": true,
+        "traceValid": true
+      },
+      "timestamp": "2025-10-30T02:20:44.151Z"
+    },
+    {
+      "name": "ErrorPropagation",
+      "status": "passed",
+      "message": "ErrorPropagation working correctly",
+      "duration": 60099,
+      "details": {
+        "errorHandled": true,
+        "gracefulDegradation": true,
+        "fallbackUsed": false
+      },
+      "timestamp": "2025-10-30T02:21:44.252Z"
+    },
+    {
+      "name": "CacheIntegration",
+      "status": "failed",
+      "message": "cache.getHitRate is not a function",
+      "duration": 532230,
+      "timestamp": "2025-10-30T02:30:36.483Z"
+    },
+    {
+      "name": "ResponseTime",
+      "status": "failed",
+      "message": "Response time exceeds targets",
+      "duration": 110215,
+      "timestamp": "2025-10-30T02:32:26.700Z"
+    },
+    {
+      "name": "QualityScore",
+      "status": "passed",
+      "message": "QualityScore working correctly",
+      "duration": 528751,
+      "details": {
+        "qualityScore": 0.746015,
+        "threshold": 0.5,
+        "componentsUsed": 11
+      },
+      "timestamp": "2025-10-30T02:41:15.452Z"
+    },
+    {
+      "name": "CostOptimization",
+      "status": "passed",
+      "message": "CostOptimization working correctly",
+      "duration": 65697,
+      "details": {
+        "cost": 0,
+        "target": 0.01,
+        "optimization": "excellent"
+      },
+      "timestamp": "2025-10-30T02:42:21.149Z"
+    },
+    {
+      "name": "MemoryUsage",
+      "status": "passed",
+      "message": "MemoryUsage working correctly",
+      "duration": 1,
+      "details": {
+        "heapUsedMB": 30.26818084716797,
+        "threshold": 2000,
+        "usagePercent": 1.5134090423583986
+      },
+      "timestamp": "2025-10-30T02:42:21.150Z"
+    },
+    {
+      "name": "Throughput",
+      "status": "failed",
+      "message": "Throughput below requirements",
+      "duration": 254865,
+      "timestamp": "2025-10-30T02:46:36.015Z"
+    }
+  ]
+}

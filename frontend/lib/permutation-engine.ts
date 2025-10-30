@@ -573,7 +573,8 @@ export class PermutationEngine {
       // Generator-Reflector-Curator pattern with GEPA optimization
       // ============================================
       let acePlaybookResult: any = null;
-      if (this.config.enableACE) {
+      // Only run ACE Playbook if the task is moderately complex to control overhead
+      if (this.config.enableACE && (irtScore || 0) > 0.7) {
         console.log('📚 Running ACE Playbook system...');
         const acePlaybookStart = Date.now();
         
@@ -624,6 +625,8 @@ export class PermutationEngine {
             status: 'failed'
           });
         }
+      } else if (this.config.enableACE) {
+        console.log('⚡ Skipping ACE Playbook for low complexity (IRT <= 0.7)');
       }
 
       // ============================================
@@ -1528,8 +1531,8 @@ The PERMUTATION system has processed your query through all 11 technical compone
   private async applyTRM(query: string, steps: any[]): Promise<any> {
     // ✅ REAL TRM (Tiny Recursion Model) - Now using the actual TRM implementation
     try {
-      const { createTRM } = await import('./trm');
-      const trm = createTRM({
+      const { createRVS } = await import('./trm');
+      const trm = createRVS({
         max_iterations: 5,
         confidence_threshold: 0.8,
         verification_required: true,
