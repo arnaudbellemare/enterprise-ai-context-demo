@@ -58,6 +58,9 @@ class MLPMixerLayer extends tf.layers.Layer {
 
   build(inputShape: tf.Shape | tf.Shape[]): void {
     const inputDim = (inputShape as tf.Shape[])[0] ? (inputShape as tf.Shape[])[0][1] : (inputShape as tf.Shape)[1];
+    if (!inputDim) {
+      throw new Error('Cannot determine input dimension from shape');
+    }
     
     // Token mixing MLP
     this.addWeight('token_mix_1', [this.hiddenDim, this.hiddenDim * this.expansionFactor], tf.initializers.glorotUniform({}) as any);
