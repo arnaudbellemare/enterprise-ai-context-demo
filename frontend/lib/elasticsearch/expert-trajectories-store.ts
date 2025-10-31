@@ -47,10 +47,11 @@ export class ExpertTrajectoriesElasticsearchStore {
       await this.client.initialize();
       await this.client.createIndex(EXPERT_TRAJECTORIES_INDEX, 1536);
       this.initialized = true;
-      console.log('✅ Expert Trajectories Elasticsearch store initialized');
+      console.log('✅ Expert Trajectories Elasticsearch store initialized (100% local)');
     } catch (error) {
       console.warn('⚠️  Elasticsearch not available, will fallback to Supabase:', error);
       // Don't throw - allow fallback to Supabase
+      // This ensures the system works even if Elasticsearch isn't running
     }
   }
 
