@@ -253,7 +253,7 @@ export class LearnedRouter {
         };
         localStorage.setItem('learned-router', JSON.stringify(data));
       } catch (error) {
-        logger.warn('Failed to save learned router data:', error);
+        console.warn('Failed to save learned router data:', error);
       }
     }
     // Server environment: could save to database/file
@@ -272,7 +272,7 @@ export class LearnedRouter {
           this.metrics = data.metrics || this.metrics;
         }
       } catch (error) {
-        logger.warn('Failed to load learned router data:', error);
+        console.warn('Failed to load learned router data:', error);
       }
     }
   }

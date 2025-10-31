@@ -47,8 +47,9 @@ export interface EnergyFunction {
 
 export class EBMAnswerRefiner {
   private config: Required<EBMConfig>;
-  private energyModel: tf.LayersModel | null = null;
+  private energyModel: any = null; // tf.LayersModel | null = null;
   private embeddingModel: any = null; // Embedding model for text → embeddings
+  private tfLoaded = false;
 
   constructor(config: EBMConfig) {
     this.config = {
@@ -130,12 +131,12 @@ export class EBMAnswerRefiner {
 
         // Update: x = x - α * ∇E(x) + noise
         const stepSize = this.config.learningRate;
-        const gradientStep = tf.mul(gradient, stepSize);
-        x = tf.sub(x, gradientStep);
+        const gradientStep = (tf as any).mul(gradient, stepSize);
+        x = (tf as any).sub(x, gradientStep);
 
         // Add noise for exploration
-        const noise = tf.randomNormal(x.shape, 0, this.config.noiseScale);
-        x = tf.add(x, noise);
+        const noise = (tf as any).randomNormal((x as any).shape, 0, this.config.noiseScale);
+        x = (tf as any).add(x, noise);
 
         // Cleanup intermediate tensors
         energy.dispose();
@@ -180,10 +181,10 @@ export class EBMAnswerRefiner {
    * Low energy = good answer
    */
   private async computeEnergy(
-    answerEmbedding: tf.Tensor,
+    answerEmbedding: any,
     query: string,
     context: string
-  ): Promise<tf.Tensor> {
+  ): Promise<any> {
     // Simplified energy function: E(x) = ||answer - ideal||^2
     // In production, this would use a trained energy model
     
@@ -191,13 +192,13 @@ export class EBMAnswerRefiner {
     const contextEmbedding = await this.embedContext(context);
     
     // Combined representation: [query, context, answer]
-    const combined = tf.concat([queryEmbedding, contextEmbedding, answerEmbedding], 1);
+    const combined = (tf as any).concat([queryEmbedding, contextEmbedding, answerEmbedding], 1);
     
     // Simple energy: distance from combined representation to "ideal" (zero-centered)
     // Lower distance = lower energy = better answer
-    const ideal = tf.zerosLike(combined);
-    const distance = tf.norm(tf.sub(combined, ideal));
-    const energy = tf.square(distance);
+    const ideal = (tf as any).zerosLike(combined);
+    const distance = (tf as any).norm((tf as any).sub(combined, ideal));
+    const energy = (tf as any).square(distance);
     
     // Cleanup
     queryEmbedding.dispose();
@@ -214,18 +215,18 @@ export class EBMAnswerRefiner {
    * Simplified: use finite differences
    */
   private async computeGradient(
-    x: tf.Tensor,
+    x: any,
     query: string,
     context: string,
-    currentEnergy: tf.Tensor
-  ): Promise<tf.Tensor> {
+    currentEnergy: any
+  ): Promise<any> {
     // Finite difference approximation (tf.grad doesn't work with async functions)
     const epsilon = 0.001;
-    const perturbed = tf.add(x, tf.scalar(epsilon));
+    const perturbed = (tf as any).add(x, (tf as any).scalar(epsilon));
     const perturbedEnergy = await this.computeEnergy(perturbed, query, context);
-    const gradient = tf.div(
-      tf.sub(perturbedEnergy, currentEnergy),
-      tf.scalar(epsilon)
+    const gradient = (tf as any).div(
+      (tf as any).sub(perturbedEnergy, currentEnergy),
+      (tf as any).scalar(epsilon)
     );
     perturbed.dispose();
     perturbedEnergy.dispose();
@@ -235,7 +236,7 @@ export class EBMAnswerRefiner {
   /**
    * Embed answer text to tensor
    */
-  private async embedAnswer(answer: string): Promise<tf.Tensor> {
+  private async embedAnswer(answer: string): Promise<any> {
     // Simplified: use simple token-based encoding
     // In production, would use proper embedding model (e.g., sentence-transformers)
     
@@ -262,31 +263,32 @@ export class EBMAnswerRefiner {
       embeddings.push(new Array(embeddingDim).fill(0));
     }
     
-    return tf.tensor2d(embeddings.slice(0, 50), [50, embeddingDim]);
+    return (tf as any).tensor2d(embeddings.slice(0, 50), [50, embeddingDim]);
   }
 
   /**
    * Embed query text to tensor
    */
-  private async embedQuery(query: string): Promise<tf.Tensor> {
+  private async embedQuery(query: string): Promise<any> {
     return await this.embedAnswer(query); // Reuse same method
   }
 
   /**
    * Embed context text to tensor
    */
-  private async embedContext(context: string): Promise<tf.Tensor> {
+  private async embedContext(context: string): Promise<any> {
     return await this.embedAnswer(context.substring(0, 500)); // Limit context length
   }
 
   /**
    * Decode embedding back to text
    */
-  private async decodeEmbedding(embedding: tf.Tensor): Promise<string> {
+  private async decodeEmbedding(embedding: any): Promise<string> {
     // Simplified: just return placeholder
     // In production, would use proper decoder
     const embeddingData = await embedding.data();
-    const avgValue = Array.from(embeddingData).reduce((a, b) => a + Math.abs(b), 0) / embeddingData.length;
+    const dataArray = Array.from(embeddingData as Float32Array | Int32Array | Uint8Array);
+    const avgValue = dataArray.reduce((a: number, b: number) => a + Math.abs(b), 0) / dataArray.length;
     
     // Generate text based on embedding properties
     // This is a placeholder - real implementation would use a proper decoder
@@ -300,11 +302,11 @@ export class EBMAnswerRefiner {
 export class DefaultEnergyFunction implements EnergyFunction {
   name = 'default';
   
-  async compute(query: string, context: string, answerEmbedding: tf.Tensor): Promise<tf.Tensor> {
+  async compute(query: string, context: string, answerEmbedding: any): Promise<any> {
     // Default: distance from ideal embedding
-    const ideal = tf.zerosLike(answerEmbedding);
-    const distance = tf.norm(tf.sub(answerEmbedding, ideal));
-    const energy = tf.square(distance);
+    const ideal = (tf as any).zerosLike(answerEmbedding);
+    const distance = (tf as any).norm((tf as any).sub(answerEmbedding, ideal));
+    const energy = (tf as any).square(distance);
     
     ideal.dispose();
     distance.dispose();
@@ -316,15 +318,15 @@ export class DefaultEnergyFunction implements EnergyFunction {
 export class QualityEnergyFunction implements EnergyFunction {
   name = 'quality';
   
-  async compute(query: string, context: string, answerEmbedding: tf.Tensor): Promise<tf.Tensor> {
+  async compute(query: string, context: string, answerEmbedding: any): Promise<any> {
     // Quality-based: penalize based on answer quality metrics
     // This would use actual quality metrics in production
     
     // Simplified: use embedding variance as proxy for quality
-    const mean = tf.mean(answerEmbedding);
-    const squaredDiff = tf.squaredDifference(answerEmbedding, mean);
-    const variance = tf.mean(squaredDiff);
-    const energy = tf.add(tf.neg(variance), mean); // Lower variance = lower energy
+    const mean = (tf as any).mean(answerEmbedding);
+    const squaredDiff = (tf as any).squaredDifference(answerEmbedding, mean);
+    const variance = (tf as any).mean(squaredDiff);
+    const energy = (tf as any).add((tf as any).neg(variance), mean); // Lower variance = lower energy
     
     mean.dispose();
     squaredDiff.dispose();

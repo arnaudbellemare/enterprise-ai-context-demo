@@ -698,12 +698,10 @@ export class AdaptiveWorkflowOrchestrator {
    * Analyze query to detect business use case
    */
   async analyzeQuery(query: string, metadata?: any): Promise<QueryAnalysis> {
-    // Use Smart Router for initial domain detection
-    const routing = await this.smartRouter.route(query, metadata?.domain);
-    
-    // Enhanced detection logic
-    const useCase = this.detectBusinessUseCase(query, routing);
-    const domain = routing.domain || 'general';
+    // Enhanced detection logic - Smart Router expects TaskType, so we detect directly
+    // We'll use our own detection logic instead of Smart Router for use case detection
+    const useCase = this.detectBusinessUseCase(query, {});
+    const domain = metadata?.domain || 'general';
     
     // Analyze complexity and requirements
     const complexity = this.estimateComplexity(query, useCase);
@@ -767,9 +765,17 @@ export class AdaptiveWorkflowOrchestrator {
       return 'manufacturing';
     }
     
+    // Marketing (check before healthcare to avoid false positives)
+    if (
+      /marketing|campaign|brand|audience|engagement|conversion|advertising|social media|content strategy/i.test(query)
+    ) {
+      return 'marketing';
+    }
+    
     // Healthcare
     if (
-      /healthcare|medical|diagnosis|treatment|patient|clinical|pharmaceutical/i.test(query)
+      /healthcare|medical|diagnosis|treatment|patient|clinical|pharmaceutical/i.test(query) &&
+      !/marketing|campaign|brand|advertising/i.test(query) // Don't match if it's marketing
     ) {
       return 'healthcare';
     }
@@ -802,16 +808,10 @@ export class AdaptiveWorkflowOrchestrator {
       return 'science_research';
     }
     
-    // Marketing
+    // Copywriting (check before marketing - more specific)
     if (
-      /marketing|campaign|brand|audience|engagement|conversion|advertising|social media|content strategy/i.test(query)
-    ) {
-      return 'marketing';
-    }
-    
-    // Copywriting
-    if (
-      /copywriting|copy|content|writing|headlines|ad copy|email|blog post|article|editorial/i.test(query)
+      /copywriting|copy|content|writing|headlines|ad copy|email|blog post|article|editorial/i.test(query) &&
+      !/marketing|campaign|strategy/i.test(query) // Don't match if it's marketing strategy
     ) {
       return 'copywriting';
     }
@@ -1077,7 +1077,8 @@ export class AdaptiveWorkflowOrchestrator {
       enableSWiRL: profile.config.enableSWiRL ?? false,
       enableTRM: profile.config.enableTRM ?? false,
       enableSQL: profile.config.enableSQL ?? false,
-      enableWeaviateRetrieveDSPy: profile.config.enableWeaviateRetrieveDSPy ?? false
+      enableWeaviateRetrieveDSPy: profile.config.enableWeaviateRetrieveDSPy ?? false,
+      enableRAG: profile.config.enableRAG ?? false,
     };
     
     // Step 4: Execute with specialized config

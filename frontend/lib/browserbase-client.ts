@@ -80,7 +80,7 @@ export class BrowserbaseClient {
       };
       
     } catch (error: any) {
-      logger.error('Browserbase execution error:', error);
+      console.error('Browserbase execution error:', error);
       return {
         id: 'error',
         url: 'error',
@@ -254,7 +254,7 @@ export class BrowserbaseClient {
         }
       });
     } catch (error) {
-      logger.warn('Failed to close session:', error);
+      console.warn('Failed to close session:', error);
     }
   }
 

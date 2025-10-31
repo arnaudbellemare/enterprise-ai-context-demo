@@ -145,12 +145,16 @@ export class ElizaIntegration {
 
     try {
       // Execute providers (optional for EBM)
-      await this.runtime.executeProviders(message).catch(() => {
-        // Providers may not be available, continue anyway
-      });
+      if (this.runtime.executeProviders) {
+        await this.runtime.executeProviders(message).catch(() => {
+          // Providers may not be available, continue anyway
+        });
+      }
 
       // Execute refinement action
-      const result = await this.runtime.executeAction('refine-answer', message);
+      const result = this.runtime.executeAction
+        ? await this.runtime.executeAction('refine-answer', message)
+        : null;
       
       if (!result) {
         // Check if action validation failed
