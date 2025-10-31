@@ -161,13 +161,17 @@ async function testSupabaseVectorSearch() {
   console.log('\n🧪 Testing Supabase Vector Search\n');
   
   try {
-    const { getSupabaseClient } = await import('./frontend/lib/supabase-client');
-    const supabase = await getSupabaseClient();
+    // Import Supabase directly
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
-    if (!supabase) {
-      console.log('⚠️  Supabase not configured - skipping vector search test');
-      return true; // Not a failure, just not available
+    if (!supabaseUrl || !supabaseKey) {
+      console.log('⚠️  Supabase env vars not configured - skipping vector search test');
+      return true; // Not a failure
     }
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Test if expert_trajectories table exists and has vector search function
     const { data, error } = await supabase.rpc('match_expert_trajectories', {
@@ -178,17 +182,17 @@ async function testSupabaseVectorSearch() {
     });
     
     if (error) {
-      console.log(`⚠️  Vector search function test: ${error.message}`);
-      console.log('   (This is OK if migration 018 hasn\'t been run yet)');
+      console.log(`⚠️  Vector search function: ${error.message}`);
+      console.log('   (OK - migration 018 may not be applied yet)');
       return true; // Not a failure if migration not applied
     }
     
-    console.log(`✅ Vector Search Function: AVAILABLE`);
-    console.log(`   Results: ${data?.length || 0} trajectories matched`);
+    console.log(`✅ Vector Search: AVAILABLE`);
+    console.log(`   Matched: ${data?.length || 0} trajectories`);
     return true;
   } catch (error: any) {
-    console.log(`⚠️  Vector search test: ${error.message}`);
-    console.log('   (This is OK if Supabase is not configured)');
+    console.log(`⚠️  Vector search: ${error.message}`);
+    console.log('   (OK - Supabase may not be configured)');
     return true; // Not a failure
   }
 }
