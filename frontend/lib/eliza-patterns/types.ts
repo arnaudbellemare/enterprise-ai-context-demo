@@ -168,7 +168,7 @@ export abstract class Service {
   static serviceName: string;
   abstract capabilityDescription: string;
   abstract stop(): Promise<void>;
-  static async start(runtime: Runtime): Promise<Service>;
+  static start(runtime: Runtime): Promise<Service>;
 }
 
 /**
