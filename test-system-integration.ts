@@ -15,32 +15,56 @@ import { EBMAnswerRefiner } from './frontend/lib/ebm/answer-refiner-simple';
 async function testSRLMatching() {
   console.log('🧪 Testing SRL Trajectory Matching\n');
   
-  const query = 'What is the ROI for AI investment?';
+  const query = 'Calculate Bitcoin ROI 2020-2024 vs S&P 500, adjust for inflation';
   const domain = 'financial';
   
   // Mock SWiRL decomposition (must match SWiRLDecomposition structure)
   const mockDecomposition = {
     trajectory: {
+      task_id: 'test-roi-analysis',
       original_task: query,
       steps: [
-        { step_number: 1, description: 'Research AI investment costs', reasoning: '', action: 'research' },
-        { step_number: 2, description: 'Calculate expected returns', reasoning: '', action: 'calculate' },
-        { step_number: 3, description: 'Compute ROI percentage', reasoning: '', action: 'compute' }
+        { 
+          step_number: 1, 
+          description: 'Research AI investment costs', 
+          reasoning: 'Need to find software licensing and infrastructure costs',
+          tools_needed: ['web_search'],
+          complexity_score: 0.5,
+          depends_on: []
+        },
+        { 
+          step_number: 2, 
+          description: 'Calculate expected returns', 
+          reasoning: 'Estimate revenue and efficiency gains',
+          tools_needed: ['calculator'],
+          complexity_score: 0.7,
+          depends_on: [1]
+        },
+        { 
+          step_number: 3, 
+          description: 'Compute ROI percentage', 
+          reasoning: 'Apply ROI formula with collected data',
+          tools_needed: ['calculator'],
+          complexity_score: 0.6,
+          depends_on: [1, 2]
+        }
       ],
       total_complexity: 0.8,
-      estimated_time_ms: 5000
+      estimated_time_ms: 5000,
+      tools_required: ['web_search', 'calculator']
     },
-    subTrajectories: []
+    sub_trajectories: [],
+    synthesis_plan: 'Combine research, calculations, and ROI computation into final recommendation'
   };
   
   try {
-    const result = await enhanceSWiRLWithSRL(query, domain, mockDecomposition);
-    console.log(`✅ SRL Enhancement: ${result.enhanced ? 'SUCCESS' : 'NO MATCH'}`);
-    console.log(`   Steps: ${result.decomposition.trajectory.steps.length}`);
-    if (result.enhanced && result.averageStepReward) {
+    const result = await enhanceSWiRLWithSRL(query, domain, mockDecomposition.trajectory.steps);
+    console.log(`✅ SRL Enhancement: ${result.averageStepReward > 0 ? 'SUCCESS' : 'NO MATCH'}`);
+    console.log(`   Steps: ${result.enhancedSteps.length}`);
+    if (result.averageStepReward > 0) {
       console.log(`   Avg Reward: ${result.averageStepReward.toFixed(3)}`);
     }
-    return result.enhanced;
+    return result.averageStepReward > 0;
   } catch (error) {
     console.error('❌ SRL Test Failed:', error);
     return false;
