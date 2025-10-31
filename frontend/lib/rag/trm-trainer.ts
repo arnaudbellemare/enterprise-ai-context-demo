@@ -128,14 +128,15 @@ function deepRecursion(
   
     // Gated update
     const gate = tf.sigmoid(tf.add(yUpdate, zUpdate));
-    const yNew = tf.add(tf.mul(gate, yUpdate), tf.mul(tf.sub(1, gate), y));
-    const zNew = tf.add(tf.mul(gate, zUpdate), tf.mul(tf.sub(1, gate), z));
+    const oneMinusGate = tf.sub(tf.scalar(1), gate);
+    const yNew = tf.add(tf.mul(gate, yUpdate), tf.mul(oneMinusGate, y));
+    const zNew = tf.add(tf.mul(gate, zUpdate), tf.mul(oneMinusGate, z));
   
   // Predict output
-  const yHat = outputLayer.call(yNew) as tf.Tensor;
+  const yHat = outputLayer.call(yNew, {}) as tf.Tensor;
   
   // Predict halting probability
-  const qHat = tf.sigmoid(haltingLayer.call(yNew) as tf.Tensor);  // [batch_size, 1]
+  const qHat = tf.sigmoid(haltingLayer.call(yNew, {}) as tf.Tensor);  // [batch_size, 1]
   
   return { y: yNew, z: zNew, y_hat: yHat, q_hat: qHat };
 }
