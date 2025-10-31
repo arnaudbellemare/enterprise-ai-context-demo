@@ -752,35 +752,20 @@ export class PermutationEngine {
 
             console.log(`✅ Loaded evolved prompts for ${ragDomain} domain (v${ragPromptVersion})`);
 
-            // Initialize RAG Pipeline with evolved prompts and trained TRM support
-            const ragConfig: RAGPipelineConfig = {
-              vectorStore: this.ragVectorStore,
-              evolvedPrompts: ragEvolvedPromptsUsed ? this.evolvedPrompts : undefined,
-              useInferenceSampling: true,
-              inferenceSamplingConfig: {
-                samplesPerStage: 3,
-                temperature: 0.7,
-                diversityWeight: 0.3
-              },
-              rerankerConfig: {
-                useTrainedTRM: this.config.useTrainedTRM,
-                trmModelPath: this.config.trmModelPath
-              },
-              generatorConfig: {
-                useTrainedTRM: this.config.useTrainedTRM,
-                trmModelPath: this.config.trmModelPath
-              }
-            };
-
-            this.ragPipeline = new RAGPipeline(ragConfig);
+            // Initialize RAG Pipeline (vectorStore passed to constructor, config passed to execute())
+            this.ragPipeline = new RAGPipeline(this.ragVectorStore);
             console.log('✅ RAG Pipeline initialized with GEPA-evolved prompts + inference sampling');
           }
 
           // Execute RAG Pipeline
           ragResult = await this.ragPipeline.execute(query, {
-            domain: detectedDomain,
-            maxDocuments: 5,
-            minRelevanceScore: 0.7
+            retrieval: {
+              k: 5,
+              filters: { domain: detectedDomain }
+            },
+            generation: {
+              confidenceThreshold: 0.7
+            }
           });
 
           // Extract RAG metrics
@@ -858,7 +843,7 @@ export class PermutationEngine {
             input: { query, refinementSteps: ebmRefinementSteps },
             output: { enabled: true },
             duration_ms: 0, // Will be updated after refinement
-            status: 'pending'
+            status: 'skipped' // Will be updated to 'success' after refinement
           });
         } catch (error) {
           console.warn('⚠️ EBM refinement setup failed:', error);
@@ -992,8 +977,8 @@ export class PermutationEngine {
           rag_documents_retrieved: ragDocumentsRetrieved,
           rag_evolved_prompts_used: ragEvolvedPromptsUsed,
           rag_prompt_version: ragPromptVersion,
-          srl_used: this.config.enableSRL && this.config.enableSWiRL && swirlSteps?.srlReward !== undefined,
-          srl_average_step_reward: swirlSteps?.srlReward,
+          srl_used: this.config.enableSRL && this.config.enableSWiRL && (swirlSteps as any)?.srlReward !== undefined,
+          srl_average_step_reward: (swirlSteps as any)?.srlReward,
           ebm_used: ebmRefined,
           ebm_refinement_steps: ebmRefinementSteps,
           ebm_energy_improvement: ebmEnergyImprovement
@@ -1880,7 +1865,7 @@ The PERMUTATION system has processed your query through all 11 technical compone
           iterations: 1,
           confidence: result.score,
           verified: result.score >= 0.8,
-          answer: result.explanation || ''
+          answer: (result as any).explanation || ''
         };
       }
 

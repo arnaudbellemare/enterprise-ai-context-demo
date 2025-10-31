@@ -168,7 +168,9 @@ export abstract class Service {
   static serviceName: string;
   abstract capabilityDescription: string;
   abstract stop(): Promise<void>;
-  static start(runtime: Runtime): Promise<Service>;
+  static start(runtime: Runtime): Promise<Service> {
+    throw new Error('start() must be implemented by subclass');
+  }
 }
 
 /**

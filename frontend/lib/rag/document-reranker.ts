@@ -183,7 +183,9 @@ export class DocumentReranker {
         model,
         temperature,
         diversityWeight,
-        trmEnabled ? trmWeight : 0
+        trmEnabled ? trmWeight : 0,
+        useTrainedTRM,
+        trmModelPath
       );
     } else if (method === 'listwise') {
       rerankedDocs = await this.listwiseRerank(query, docsToRerank, model);
@@ -235,7 +237,9 @@ export class DocumentReranker {
     model: string,
     temperature: number,
     diversityWeight: number,
-    trmWeight: number
+    trmWeight: number,
+    useTrainedTRM?: boolean,
+    trmModelPath?: string
   ): Promise<Document[]> {
     // Create prompt with documents
     const docList = documents

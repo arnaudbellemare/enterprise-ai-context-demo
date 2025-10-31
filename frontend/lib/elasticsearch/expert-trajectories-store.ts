@@ -64,7 +64,7 @@ export class ExpertTrajectoriesElasticsearchStore {
   ): Promise<string> {
     await this.initialize();
 
-    const doc: ExpertTrajectoryDocument = {
+    const doc: ExpertTrajectoryDocument & { content: string } = {
       id: trajectory.query.substring(0, 50).replace(/[^a-zA-Z0-9]/g, '_') + '_' + trajectory.domain,
       query: trajectory.query,
       domain: trajectory.domain,
@@ -72,6 +72,7 @@ export class ExpertTrajectoriesElasticsearchStore {
       finalAnswer: trajectory.finalAnswer,
       quality: trajectory.quality,
       embedding,
+      content: trajectory.query, // Add content field for Elasticsearch
       metadata: {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -101,7 +102,7 @@ export class ExpertTrajectoriesElasticsearchStore {
     try {
       let results;
 
-      if (queryEmbedding && this.client.getClient) {
+      if (queryEmbedding && this.initialized) {
         // Use hybrid search (vector + full-text)
         results = await this.client.hybridSearch<ExpertTrajectoryDocument>({
           query,
@@ -161,13 +162,15 @@ export class ExpertTrajectoriesElasticsearchStore {
         }
       });
 
-      return response.hits.hits.map(hit => ({
-        query: hit._source.query,
-        domain: hit._source.domain,
-        steps: hit._source.steps,
-        finalAnswer: hit._source.finalAnswer,
-        quality: hit._source.quality
-      }));
+      return response.hits.hits
+        .filter(hit => hit._source)
+        .map(hit => ({
+          query: hit._source!.query,
+          domain: hit._source!.domain,
+          steps: hit._source!.steps,
+          finalAnswer: hit._source!.finalAnswer,
+          quality: hit._source!.quality
+        }));
     } catch (error) {
       console.error('❌ Failed to load trajectories from Elasticsearch:', error);
       return []; // Fallback to Supabase

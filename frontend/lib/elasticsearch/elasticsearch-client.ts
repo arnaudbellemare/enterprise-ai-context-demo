@@ -14,11 +14,11 @@ export interface ElasticsearchConfig {
   cloud?: {
     id: string;
     apiKey: string;
-  };
+  } | undefined;
   auth?: {
     username: string;
     password: string;
-  };
+  } | undefined;
   enableVectorSearch?: boolean;
   enableHybridSearch?: boolean;
 }
@@ -52,7 +52,13 @@ export interface SearchResult<T = any> {
  */
 export class PERMUTATIONElasticsearchClient {
   private client: Client | null = null;
-  private config: Required<ElasticsearchConfig>;
+  private config: {
+    node: string;
+    cloud?: { id: string; apiKey: string };
+    auth?: { username: string; password: string };
+    enableVectorSearch: boolean;
+    enableHybridSearch: boolean;
+  };
   private initialized = false;
 
   constructor(config: ElasticsearchConfig = {}) {
@@ -64,14 +70,17 @@ export class PERMUTATIONElasticsearchClient {
         }
       : undefined; // No auth if no env vars (for dev setups without security)
 
+    // Determine cloud config
+    const cloudConfig = config.cloud || (process.env.ELASTICSEARCH_CLOUD_ID && process.env.ELASTICSEARCH_API_KEY
+      ? {
+          id: process.env.ELASTICSEARCH_CLOUD_ID,
+          apiKey: process.env.ELASTICSEARCH_API_KEY
+        }
+      : undefined);
+
     this.config = {
       node: config.node || process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
-      cloud: config.cloud || (process.env.ELASTICSEARCH_CLOUD_ID && process.env.ELASTICSEARCH_API_KEY
-        ? {
-            id: process.env.ELASTICSEARCH_CLOUD_ID,
-            apiKey: process.env.ELASTICSEARCH_API_KEY
-          }
-        : undefined),
+      cloud: cloudConfig,
       auth: config.auth || defaultAuth,
       enableVectorSearch: config.enableVectorSearch ?? true,
       enableHybridSearch: config.enableHybridSearch ?? true
