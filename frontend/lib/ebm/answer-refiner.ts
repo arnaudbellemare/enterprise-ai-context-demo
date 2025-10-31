@@ -8,9 +8,19 @@
  * 
  * Paper Reference: nanoEBM (https://github.com/sdan/nanoEBM)
  * Architecture: Energy-based transformer that thinks via gradient descent
+ * 
+ * NOTE: This file uses TensorFlow.js Node.js which is server-only.
+ * Use answer-refiner-simple.ts for client-safe implementation.
  */
 
-import * as tf from '@tensorflow/tfjs-node';
+// Dynamic import for server-only TensorFlow.js to prevent client bundling
+let tf: any = null;
+const loadTensorFlow = async () => {
+  if (typeof window === 'undefined' && !tf) {
+    tf = await import('@tensorflow/tfjs-node');
+  }
+  return tf;
+};
 
 export interface EBMConfig {
   refinementSteps: number; // Number of refinement iterations (typically 2-4)
@@ -31,7 +41,7 @@ export interface EBMRefinementResult {
 }
 
 export interface EnergyFunction {
-  compute(query: string, context: string, answerEmbedding: tf.Tensor): Promise<tf.Tensor>;
+  compute(query: string, context: string, answerEmbedding: any): Promise<any>;
   name: string;
 }
 
@@ -52,6 +62,24 @@ export class EBMAnswerRefiner {
   }
 
   /**
+   * Ensure TensorFlow.js is loaded (server-only)
+   */
+  private async ensureTensorFlow() {
+    if (!this.tfLoaded && typeof window === 'undefined') {
+      const tfModule = await loadTensorFlow();
+      if (tfModule) {
+        tf = tfModule;
+        this.tfLoaded = true;
+      } else {
+        throw new Error('TensorFlow.js could not be loaded (server-only)');
+      }
+    }
+    if (!tf) {
+      throw new Error('TensorFlow.js is not available (this is a server-only feature)');
+    }
+  }
+
+  /**
    * Refine answer using energy-based optimization
    */
   async refine(
@@ -59,6 +87,8 @@ export class EBMAnswerRefiner {
     context: string,
     initialAnswer: string
   ): Promise<EBMRefinementResult> {
+    await this.ensureTensorFlow();
+    
     console.log(`🔬 EBM: Starting refinement (${this.config.refinementSteps} steps)`);
     
     // Convert answer to embedding
