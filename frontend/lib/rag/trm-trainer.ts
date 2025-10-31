@@ -128,8 +128,8 @@ function deepRecursion(
   
     // Gated update
     const gate = tf.sigmoid(tf.add(yUpdate, zUpdate));
-    const yNew = tf.add(tf.multiply(gate, yUpdate), tf.multiply(tf.sub(1, gate), y));
-    const zNew = tf.add(tf.multiply(gate, zUpdate), tf.multiply(tf.sub(1, gate), z));
+    const yNew = tf.add(tf.mul(gate, yUpdate), tf.mul(tf.sub(1, gate), y));
+    const zNew = tf.add(tf.mul(gate, zUpdate), tf.mul(tf.sub(1, gate), z));
   
   // Predict output
   const yHat = outputLayer.call(yNew) as tf.Tensor;
