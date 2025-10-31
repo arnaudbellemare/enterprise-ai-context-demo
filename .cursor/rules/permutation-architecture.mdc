@@ -14,6 +14,10 @@ This is a multi-component AI system that orchestrates 11+ advanced techniques in
 - **DSPy Integration**: Programmatic prompt optimization
 - **ReasoningBank**: Memory system for accumulated knowledge
 - **LoRA**: Domain-specific model fine-tuning
+- **ElizaOS Patterns**: Modular component architecture (Actions, Providers, Services, Evaluators)
+  - SRL (Supervised Reinforcement Learning) for step-wise supervision
+  - EBM (Energy-Based Model) for answer refinement
+  - Implemented in [lib/eliza-patterns/](mdc:frontend/lib/eliza-patterns/) and [lib/eliza-integration.ts](mdc:frontend/lib/eliza-integration.ts)
 
 ## Configuration
 System configuration is managed through [package.json](mdc:package.json) scripts and environment variables. The architecture supports three modes:

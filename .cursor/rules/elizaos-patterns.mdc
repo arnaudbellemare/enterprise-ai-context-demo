@@ -1,0 +1,231 @@
+---
+description: ElizaOS architectural patterns adapted for PERMUTATION
+---
+
+# ElizaOS Patterns for PERMUTATION
+
+## Overview
+
+PERMUTATION integrates ElizaOS architectural patterns for modular, composable AI components. Based on [ElizaOS framework](https://github.com/elizaOS/eliza) but adapted for PERMUTATION's unique architecture.
+
+## Core Patterns
+
+### 1. Runtime Pattern
+
+**Purpose**: Central orchestrator for all components
+
+**Implementation**: `frontend/lib/eliza-patterns/runtime-simple.ts`
+
+```typescript
+// SimpleRuntime manages lifecycle of all components
+const runtime = createRuntime();
+await runtime.registerPlugin(srlPlugin);
+await runtime.executeProviders(message);
+const result = await runtime.executeAction('srl-enhance', message);
+```
+
+**Key Principles**:
+- Components register via plugins
+- Runtime manages state and execution order
+- Graceful error handling (components fail independently)
+
+### 2. Plugin Pattern
+
+**Purpose**: Bundle related components (Actions, Providers, Services, Evaluators)
+
+**PERMUTATION Plugins**:
+- **SRL Plugin** (`frontend/lib/srl/srl-plugin.ts`): Step-wise supervision for SWiRL
+- **EBM Plugin** (`frontend/lib/ebm/ebm-plugin.ts`): Energy-based answer refinement
+
+**Structure**:
+```typescript
+export const srlPlugin: Plugin = {
+  name: 'srl',
+  providers: [expertTrajectoriesProvider],
+  actions: [enhanceSWiRLAction],
+  services: [trajectoryService],
+  evaluators: [stepRewardEvaluator]
+};
+```
+
+### 3. Action Pattern
+
+**Purpose**: Single-purpose operations that transform state
+
+**SRL Actions**:
+- `srl-enhance`: Enhances SWiRL decomposition with expert supervision
+- `find-trajectory`: Finds best matching expert trajectory
+
+**EBM Actions**:
+- `ebm-refine`: Refines answer using energy minimization
+- `compute-energy`: Computes energy score for answer quality
+
+**Execution**:
+```typescript
+const result = await runtime.executeAction('srl-enhance', {
+  id: 'msg-1',
+  role: 'user',
+  content: query
+});
+```
+
+### 4. Provider Pattern
+
+**Purpose**: Inject dynamic context into system
+
+**SRL Provider**:
+- `expert-trajectories`: Loads expert trajectories from Supabase/in-memory
+
+**Characteristics**:
+- Can be dynamic (modify state)
+- Execution order controlled by `position`
+- Results stored in runtime state
+
+### 5. Service Pattern
+
+**Purpose**: Long-running integrations and background processes
+
+**Services**:
+- `trajectory-service`: Manages expert trajectory lifecycle
+- `energy-computation-service`: Caches energy calculations
+
+**Lifecycle**:
+```typescript
+const service = await TrajectoryService.start(runtime);
+// Service runs in background
+await service.stop();
+```
+
+### 6. Evaluator Pattern
+
+**Purpose**: Validate and score outputs
+
+**Evaluators**:
+- `step-reward-evaluator`: Scores step similarity to expert actions
+- `energy-quality-evaluator`: Evaluates answer refinement quality
+
+**Validation**:
+```typescript
+const canRun = await evaluator.validate(runtime, message, state);
+if (canRun) {
+  const result = await evaluator.handler(runtime, message, state);
+}
+```
+
+## Integration with PERMUTATION
+
+### Current Integration Points
+
+1. **SRL Enhancement** (`frontend/lib/srl/swirl-srl-enhancer.ts`)
+   - Uses ElizaOS patterns for step-wise supervision
+   - Expert trajectories loaded via Provider
+   - Step rewards computed via Evaluator
+
+2. **EBM Refinement** (`frontend/lib/ebm/answer-refiner.ts`)
+   - Energy computation via Service
+   - Refinement via Action
+   - Quality evaluation via Evaluator
+
+3. **Unified Interface** (`frontend/lib/eliza-integration.ts`)
+   - `executeSRLWorkflow()`: SRL via ElizaOS patterns
+   - `executeEBMWorkflow()`: EBM via ElizaOS patterns
+
+### Architecture Benefits
+
+**Modularity**:
+- Components can be added/removed independently
+- No tight coupling between SRL and EBM
+- Easy to test individual components
+
+**Composability**:
+- Plugins can be combined
+- Actions can chain together
+- Services can coordinate
+
+**State Management**:
+- Centralized state in Runtime
+- Components access/modify shared state
+- Clean separation of concerns
+
+## Best Practices
+
+### 1. Plugin Design
+- Keep plugins focused (one domain per plugin)
+- Export all components from plugin file
+- Provide initialization function
+
+### 2. Action Design
+- Actions should be stateless (use runtime.state for persistence)
+- Return `HandlerResult` with response and metadata
+- Handle errors gracefully (return error in metadata, don't throw)
+
+### 3. Provider Design
+- Use `position` to control execution order
+- Cache expensive operations
+- Store results in state for later use
+
+### 4. Service Design
+- Services start on plugin registration
+- Clean up resources in `stop()` method
+- Services are long-lived (unlike actions)
+
+### 5. Evaluator Design
+- Use `validate()` for conditional execution
+- Evaluators can modify state (via metadata)
+- Don't fail hard - log warnings instead
+
+## PERMUTATION-Specific Adaptations
+
+### 1. Supabase Integration
+- Providers load from Supabase with fallback
+- Services can persist to Supabase
+- State includes Supabase client references
+
+### 2. Vector Search Integration
+- Trajectory matching uses vector similarity
+- Embeddings generated on-the-fly
+- Graceful fallback to keyword matching
+
+### 3. Error Handling
+- PERMUTATION prioritizes graceful degradation
+- Components log warnings but don't break system
+- Fallback chains: Vector → Keyword → In-memory
+
+### 4. Performance
+- Cache embeddings and calculations
+- Async operations for all I/O
+- Batch operations where possible
+
+## Code Organization
+
+```
+frontend/lib/
+├── eliza-patterns/           # Core ElizaOS patterns
+│   ├── types.ts              # TypeScript interfaces
+│   └── runtime-simple.ts     # Runtime implementation
+├── eliza-integration.ts      # Unified PERMUTATION interface
+├── srl/
+│   ├── srl-plugin.ts        # SRL plugin
+│   └── swirl-srl-enhancer.ts # Core SRL logic
+└── ebm/
+    ├── ebm-plugin.ts         # EBM plugin
+    └── answer-refiner.ts     # Core EBM logic
+```
+
+## Testing Patterns
+
+### Unit Tests
+- Test each component independently
+- Mock Runtime for isolated testing
+- Test error cases and fallbacks
+
+### Integration Tests
+- Test plugin registration and execution
+- Verify state flows correctly
+- Test cross-component interactions
+
+## References
+
+- [ElizaOS Framework](https://github.com/elizaOS/eliza)
+- [ElizaOS Cursor Rules](https://github.com/elizaOS/.cursor/tree/797ad22670a917147df4d85a25373b53c727151b/rules)
+- PERMUTATION Implementation: `frontend/lib/eliza-patterns/`

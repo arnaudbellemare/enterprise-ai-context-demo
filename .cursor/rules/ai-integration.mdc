@@ -30,6 +30,10 @@ if (needsRealTimeData || irt_difficulty > 0.7) {
 - LoRA for domain-specific fine-tuning
 - TRM for recursive verification
 - SWiRL for multi-step reasoning
+- **ElizaOS Patterns**: Modular architecture via Actions, Providers, Services, Evaluators
+  - SRL Plugin: Step-wise supervision for SWiRL
+  - EBM Plugin: Energy-based answer refinement
+  - See [elizaos-patterns.mdc](mdc:.cursor/rules/elizaos-patterns.mdc) for details
 
 ## Configuration
 Components can be enabled/disabled independently through configuration flags. See [ARCHITECTURE.md](mdc:ARCHITECTURE.md) for detailed configuration options.
