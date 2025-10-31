@@ -55,7 +55,9 @@ export class EBMEnergyService extends Service {
     });
 
     const answerStr = answer || '';
-    const energy = (refiner as any).computeEnergy?.(query || '', context || '', answerStr) || 1.0;
+    const queryStr = query || '';
+    const contextStr = context || '';
+    const energy = (refiner as any).computeEnergy?.(answerStr, queryStr, contextStr) || 1.0;
 
     // Cache result (limit cache size)
     if (this.energyCache.size > 1000) {
