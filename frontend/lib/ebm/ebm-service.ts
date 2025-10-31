@@ -63,7 +63,9 @@ export class EBMEnergyService extends Service {
     if (this.energyCache.size > 1000) {
       // Remove oldest entries (simple FIFO)
       const firstKey = this.energyCache.keys().next().value;
-      this.energyCache.delete(firstKey);
+      if (firstKey) {
+        this.energyCache.delete(firstKey);
+      }
     }
     this.energyCache.set(cacheKey, energy);
 

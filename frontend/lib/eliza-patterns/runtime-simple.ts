@@ -82,7 +82,7 @@ export class SimpleRuntime implements Runtime {
     if (plugin.services) {
       for (const ServiceClass of plugin.services) {
         try {
-          const service = await ServiceClass.start(this);
+          const service = await ServiceClass.start(this as any as Runtime);
           this.services.set(ServiceClass.serviceName, service);
           servicesCount++;
         } catch (error: any) {
@@ -115,7 +115,7 @@ export class SimpleRuntime implements Runtime {
   /**
    * Execute providers for a message
    */
-  async executeProviders(message: Message): Promise<ProviderResult[]> {
+  async executeProviders(message: Message): Promise<void> {
     const results: ProviderResult[] = [];
     
     // Sort providers by position (lower = earlier)
@@ -143,7 +143,8 @@ export class SimpleRuntime implements Runtime {
       }
     }
 
-    return results;
+    // Results stored in state, return void
+    // return results;
   }
 
   /**
@@ -205,7 +206,7 @@ export class SimpleRuntime implements Runtime {
   /**
    * Execute all evaluators for a message
    */
-  async executeEvaluators(message: Message): Promise<HandlerResult[]> {
+  async executeEvaluators(message: Message): Promise<void> {
     const results: HandlerResult[] = [];
 
     for (const evaluator of this.evaluators.values()) {
@@ -238,7 +239,8 @@ export class SimpleRuntime implements Runtime {
       }
     }
 
-    return results;
+    // Results stored in state, return void
+    // return results;
   }
 
   /**

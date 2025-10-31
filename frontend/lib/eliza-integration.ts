@@ -24,7 +24,7 @@ export class ElizaIntegration {
       enableEBM: config.enableEBM ?? true
     };
     
-    this.runtime = createRuntime() as Runtime;
+    this.runtime = createRuntime() as any as Runtime;
   }
 
   /**
@@ -169,9 +169,11 @@ export class ElizaIntegration {
       }
 
       // Execute evaluators
-      await this.runtime.executeEvaluators(message).catch(() => {
-        // Evaluators may fail, continue anyway
-      });
+      if (this.runtime.executeEvaluators) {
+        await this.runtime.executeEvaluators(message).catch(() => {
+          // Evaluators may fail, continue anyway
+        });
+      }
 
       return {
         refinedAnswer: this.runtime.state.refined_answer || result.response || initialAnswer,
