@@ -34,9 +34,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
   const configs: Record<Domain, LoRAConfig> = {
     crypto: {
       rank: 8,
-      alpha: 16,
+      alpha: 16,                    // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj', 'k_proj', 'o_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.05,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -48,9 +49,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     financial: {
       rank: 4,
-      alpha: 8,
+      alpha: 8,                     // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.1,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -62,9 +64,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     legal: {
       rank: 8,
-      alpha: 16,
+      alpha: 16,                    // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj', 'k_proj', 'o_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.05,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -76,9 +79,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     healthcare: {
       rank: 8,
-      alpha: 16,
+      alpha: 16,                    // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj', 'k_proj', 'o_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.05,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -90,9 +94,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     real_estate: {
       rank: 4,
-      alpha: 8,
+      alpha: 8,                     // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.1,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -105,9 +110,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     // ✅ NEW DOMAINS - Now 10+ domains with LoRA configs!
     manufacturing: {
       rank: 6,
-      alpha: 12,
+      alpha: 12,                    // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj', 'k_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.08,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -119,9 +125,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     education: {
       rank: 4,
-      alpha: 8,
+      alpha: 8,                     // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.1,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -133,9 +140,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     technology: {
       rank: 8,
-      alpha: 16,
+      alpha: 16,                    // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj', 'k_proj', 'o_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.05,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -147,9 +155,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     marketing: {
       rank: 4,
-      alpha: 8,
+      alpha: 8,                     // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.1,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -161,9 +170,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     logistics: {
       rank: 6,
-      alpha: 12,
+      alpha: 12,                    // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj', 'k_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.08,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -175,9 +185,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     energy: {
       rank: 8,
-      alpha: 16,
+      alpha: 16,                    // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj', 'k_proj', 'o_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.05,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -189,9 +200,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     agriculture: {
       rank: 4,
-      alpha: 8,
+      alpha: 8,                     // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.1,
       bias: 'none',
       task_type: 'CAUSAL_LM',
@@ -203,9 +215,10 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     },
     general: {
       rank: 4,
-      alpha: 8,
+      alpha: 8,                     // 2*rank
       weight_decay: 0.01,
-      target_modules: ['q_proj', 'v_proj'],
+      // All MLP and Attention layers
+      target_modules: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj', 'mlp', 'mlp_proj'],
       dropout: 0.1,
       bias: 'none',
       task_type: 'CAUSAL_LM',

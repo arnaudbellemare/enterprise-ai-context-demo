@@ -54,6 +54,7 @@ export interface PermutationConfig {
   enableDSPy: boolean; // Use DSPy prompt optimization
   enableACE: boolean; // Use ACE context engineering
   enableSWiRL: boolean; // Multi-step reasoning with tools
+  enableSRL?: boolean; // SRL enhancement for SWiRL (step-wise supervision) - default: false
   enableTRM: boolean; // Recursive reasoning with verification
   useTrainedTRM?: boolean; // Use trained TRM model instead of heuristic (default: false)
   trmModelPath?: string; // Path to trained TRM model weights
@@ -62,6 +63,8 @@ export interface PermutationConfig {
   enableRAG: boolean; // GEPA-optimized RAG pipeline with inference sampling
   ragDomain?: string; // Domain for GEPA-evolved prompts (default: 'general')
   useEvolvedPrompts?: boolean; // Use GEPA-evolved prompts (default: true if available)
+  enableEBM?: boolean; // nanoEBM energy-based answer refinement - default: false
+  ebmRefinementSteps?: number; // EBM refinement iterations (default: 3)
 }
 
 export interface PermutationResult {
@@ -81,14 +84,19 @@ export interface PermutationResult {
     queries_generated: number;
     sql_executed: boolean;
     lora_applied: boolean;
-    rag_used: boolean;
-    rag_stages_executed?: string[];
-    rag_documents_retrieved?: number;
-    rag_evolved_prompts_used?: boolean;
-    rag_prompt_version?: string;
-  };
-  trace: ExecutionTrace;
-}
+      rag_used: boolean;
+      rag_stages_executed?: string[];
+      rag_documents_retrieved?: number;
+      rag_evolved_prompts_used?: boolean;
+      rag_prompt_version?: string;
+      srl_used?: boolean; // SRL enhancement applied
+      srl_average_step_reward?: number; // Average reward from SRL supervision
+      ebm_used?: boolean; // nanoEBM refinement applied
+      ebm_refinement_steps?: number; // Number of EBM refinement iterations
+      ebm_energy_improvement?: number; // Energy reduction from refinement
+    };
+    trace: ExecutionTrace;
+  }
 
 export interface ExecutionTrace {
   steps: ExecutionStep[];
@@ -826,8 +834,43 @@ export class PermutationEngine {
       // STEP 12: SYNTHESIS AGENT (Merger) - Final Generation
       // Combines: Teacher data + Multi-agent research + System intelligence + Teacher-Student results + RAG results
       // ============================================
+      // STEP 11.9: nanoEBM REFINEMENT (NEW!)
+      // Energy-based answer refinement for improved quality
+      // ============================================
+      let ebmRefined = false;
+      let ebmRefinementSteps = 0;
+      let ebmEnergyImprovement = 0;
+      let preEBMAnswer = '';
+      
+      if (this.config.enableEBM) {
+        console.log('🔬 Running nanoEBM energy-based refinement...');
+        const ebmStart = Date.now();
+        
+        try {
+          // We'll refine the answer after initial generation
+          // Store flag for later refinement
+          ebmRefined = true;
+          ebmRefinementSteps = this.config.ebmRefinementSteps || 3;
+          
+          trace.steps.push({
+            component: 'nanoEBM Refinement',
+            description: 'Energy-based answer refinement (will apply after generation)',
+            input: { query, refinementSteps: ebmRefinementSteps },
+            output: { enabled: true },
+            duration_ms: 0, // Will be updated after refinement
+            status: 'pending'
+          });
+        } catch (error) {
+          console.warn('⚠️ EBM refinement setup failed:', error);
+          ebmRefined = false;
+        }
+      }
+
+      // ============================================
+      // STEP 12: FINAL ANSWER SYNTHESIS
+      // ============================================
       const studentStart = Date.now();
-      const finalAnswer = await this.callStudentModel(query, {
+      const initialAnswer = await this.callStudentModel(query, {
         domain: detectedDomain,
         aceResult,
         queries,
@@ -843,6 +886,56 @@ export class PermutationEngine {
         weaviateRetrieveResult, // Add Weaviate Retrieve-DSPy results
         ragResult // ✅ Add RAG Pipeline results
       });
+
+      preEBMAnswer = initialAnswer;
+
+      // Apply EBM refinement if enabled
+      let finalAnswer = initialAnswer;
+      if (ebmRefined && this.config.enableEBM) {
+        try {
+          const { EBMAnswerRefiner } = await import('./ebm/answer-refiner-simple');
+          const ebmRefiner = new EBMAnswerRefiner({
+            refinementSteps: ebmRefinementSteps,
+            learningRate: 0.5,
+            noiseScale: 0.01,
+            temperature: 0.8,
+            energyFunction: detectedDomain,
+            earlyStoppingThreshold: 0.001
+          });
+          
+          const context = JSON.stringify({
+            domain: detectedDomain,
+            aceResult,
+            queries: queries?.length || 0,
+            irtScore,
+            memories: memories?.length || 0,
+            teacherData: teacherData ? 'available' : 'none'
+          });
+          
+          const ebmResult = await ebmRefiner.refine(query, context, initialAnswer);
+          finalAnswer = ebmResult.refinedAnswer;
+          ebmEnergyImprovement = ebmResult.improvement;
+          
+          console.log(`🔬 EBM refinement complete: energy improved by ${ebmEnergyImprovement.toFixed(4)}`);
+          
+          // Update trace step
+          const ebmTraceStep = trace.steps.find(s => s.component === 'nanoEBM Refinement');
+          if (ebmTraceStep) {
+            ebmTraceStep.output = {
+              enabled: true,
+              stepsCompleted: ebmResult.stepsCompleted,
+              energyImprovement: ebmEnergyImprovement,
+              converged: ebmResult.converged
+            };
+            ebmTraceStep.duration_ms = Date.now() - studentStart;
+            ebmTraceStep.status = 'success';
+          }
+        } catch (error) {
+          console.warn('⚠️ EBM refinement failed, using initial answer:', error);
+          finalAnswer = initialAnswer;
+          ebmRefined = false;
+        }
+      }
 
       trace.steps.push({
         component: 'Synthesis Agent (Merger)',
@@ -898,7 +991,12 @@ export class PermutationEngine {
           rag_stages_executed: ragStagesExecuted,
           rag_documents_retrieved: ragDocumentsRetrieved,
           rag_evolved_prompts_used: ragEvolvedPromptsUsed,
-          rag_prompt_version: ragPromptVersion
+          rag_prompt_version: ragPromptVersion,
+          srl_used: this.config.enableSRL && this.config.enableSWiRL && swirlSteps?.srlReward !== undefined,
+          srl_average_step_reward: swirlSteps?.srlReward,
+          ebm_used: ebmRefined,
+          ebm_refinement_steps: ebmRefinementSteps,
+          ebm_energy_improvement: ebmEnergyImprovement
         },
         trace
       };
@@ -1687,14 +1785,76 @@ The PERMUTATION system has processed your query through all 11 technical compone
   }
 
   private async decomposeSWiRL(query: string, domain: string): Promise<any[]> {
-    // Decompose into multi-step reasoning (SWiRL approach)
-    return [
-      { step: 1, action: 'Understand query requirements', tool: 'parse' },
-      { step: 2, action: 'Gather relevant context', tool: 'search' },
-      { step: 3, action: 'Analyze and reason', tool: 'llm' },
-      { step: 4, action: 'Verify and validate', tool: 'verify' },
-      { step: 5, action: 'Generate final answer', tool: 'generate' }
-    ];
+    try {
+      // Use real SWiRL decomposer
+      const { createSWiRLDecomposer } = await import('./swirl-decomposer');
+      const decomposer = createSWiRLDecomposer('qwen2.5:14b');
+      const availableTools = ['web_search', 'calculator', 'sql'];
+      
+      // Decompose with optional SRL enhancement
+      if (this.config.enableSRL && this.config.enableSWiRL) {
+        console.log('📚 Using SRL-enhanced SWiRL decomposition...');
+        const { SWiRLSRLEnhancer, loadExpertTrajectories } = await import('./srl/swirl-srl-enhancer');
+        
+        const expertTrajectories = await loadExpertTrajectories(domain);
+        if (expertTrajectories.length > 0) {
+          const srlEnhancer = new SWiRLSRLEnhancer({
+            expertTrajectories,
+            stepRewardWeight: 0.6,
+            finalRewardWeight: 0.4,
+            reasoningGeneration: true,
+            similarityThreshold: 0.5
+          });
+          
+          const enhanced = await srlEnhancer.executeWithSRL(
+            query,
+            domain,
+            availableTools,
+            decomposer
+          );
+          
+          // Store SRL reward in metadata for trace
+          const stepsWithMetadata = enhanced.trajectory.steps.map((step: any) => ({
+            step: step.step_number,
+            action: step.description,
+            tool: step.tools_needed?.[0] || 'llm',
+            reasoning: step.reasoning,
+            stepReward: step.stepReward,
+            srlEnhanced: true
+          }));
+          
+          // Store average reward in a way we can access it
+          (stepsWithMetadata as any).srlReward = enhanced.averageStepReward;
+          
+          console.log(`✅ SRL-enhanced decomposition: ${stepsWithMetadata.length} steps, avg reward: ${enhanced.averageStepReward.toFixed(3)}`);
+          return stepsWithMetadata;
+        } else {
+          console.log('⚠️  No expert trajectories found, using standard SWiRL');
+        }
+      }
+      
+      // Standard SWiRL decomposition (no SRL)
+      const decomposition = await decomposer.decompose(query, availableTools);
+      const steps = decomposition.trajectory.steps.map((step: any) => ({
+        step: step.step_number,
+        action: step.description,
+        tool: step.tools_needed?.[0] || 'llm',
+        reasoning: step.reasoning,
+        srlEnhanced: false
+      }));
+      
+      return steps;
+    } catch (error) {
+      console.warn('⚠️ SWiRL decomposition failed, using fallback:', error);
+      // Fallback to simple decomposition
+      return [
+        { step: 1, action: 'Understand query requirements', tool: 'parse' },
+        { step: 2, action: 'Gather relevant context', tool: 'search' },
+        { step: 3, action: 'Analyze and reason', tool: 'llm' },
+        { step: 4, action: 'Verify and validate', tool: 'verify' },
+        { step: 5, action: 'Generate final answer', tool: 'generate' }
+      ];
+    }
   }
 
   private async applyTRM(query: string, steps: any[]): Promise<any> {

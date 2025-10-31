@@ -70,6 +70,30 @@ PERMUTATION is an advanced AI research stack that integrates multiple cutting-ed
 
 **Key Philosophy**: This is a research-grade system that prioritizes quality, optimization, and real-world benchmarking over simplicity. Code implements actual academic research papers, not simplified versions.
 
+## ElizaOS Integration
+
+PERMUTATION can be enhanced with [ElizaOS](https://github.com/elizaOS/eliza) agent framework patterns. ElizaOS provides:
+- **Actions**: Structured tool definitions and multi-step workflows
+- **Providers**: Dynamic context injection (maps to ACE playbooks)
+- **Services**: Long-running integrations (Perplexity, Ollama, Supabase)
+- **Evaluators**: Post-response quality validation (TRM verification)
+- **Memory**: Persistent conversation history (complements ReasoningBank)
+- **Plugins**: Modular capability packaging
+
+**Integration Guides:**
+- [ELIZA_INTEGRATION.md](~/.claude/ELIZA_INTEGRATION.md) - Architecture mapping and patterns
+- [ELIZA_RULES.md](~/.claude/ELIZA_RULES.md) - Development workflow from ElizaOS
+- [MCP_ElizaOS.md](~/.claude/MCP_ElizaOS.md) - ElizaOS component usage patterns
+
+**Key Mappings:**
+- PERMUTATION Tools → Eliza Actions
+- ACE Playbook Bullets → Eliza Providers
+- External APIs (Perplexity, Ollama) → Eliza Services
+- TRM Verification → Eliza Evaluators
+- ReasoningBank → Eliza Memory
+
+See integration guides for complete implementation examples.
+
 ## Commands
 
 ### Development

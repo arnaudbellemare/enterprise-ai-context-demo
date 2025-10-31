@@ -121,8 +121,16 @@ class RealLoRATrainer {
       },
       lora: {
         r: 16,
-        lora_alpha: 32,
-        target_modules: ['q_proj', 'v_proj', 'k_proj', 'o_proj', 'gate_proj', 'up_proj', 'down_proj'],
+        lora_alpha: 32,             // 2*rank (alpha >= rank, preferably 2*rank)
+        // All MLP and Attention layers for comprehensive adaptation
+        target_modules: [
+          // Attention projections (QKV + Output)
+          'q_proj', 'k_proj', 'v_proj', 'o_proj',
+          // MLP projections (Gate + Up + Down)
+          'gate_proj', 'up_proj', 'down_proj',
+          // Additional MLP layers if present
+          'mlp', 'mlp_proj'
+        ],
         lora_dropout: 0.1,
         bias: 'none',
         task_type: 'CAUSAL_LM',
@@ -140,7 +148,7 @@ class RealLoRATrainer {
         max_steps: config.maxSteps || 1000,
         per_device_train_batch_size: config.batchSize,
         gradient_accumulation_steps: 4,
-        learning_rate: config.learningRate,
+        learning_rate: config.learningRate || 2e-4,  // 10x higher LR (2e-4 vs 2e-5) - Thinking Machines recommendation
         weight_decay: config.weightDecay, // LOW weight decay!
         logging_steps: 10,
         save_steps: 500,
@@ -158,7 +166,7 @@ class RealLoRATrainer {
         [config.domain]: {
           training_data: dataPath,
           r: 16,
-          lora_alpha: 32,
+          lora_alpha: 32,           // 2*rank
           lora_dropout: 0.1,
           weight_decay: config.weightDecay
         }
@@ -442,7 +450,7 @@ async function handleLoRATraining(params: any): Promise<NextResponse> {
     baseModel: params.baseModel || 'microsoft/DialoGPT-medium',
     trainingData: params.trainingData || [],
     epochs: params.epochs || 3,
-    learningRate: params.learningRate || 2e-4,
+    learningRate: params.learningRate || 2e-4,  // 10x higher LR - Thinking Machines recommendation for LoRA + RL
     weightDecay: params.weightDecay || 1e-5, // LOW weight decay!
     batchSize: params.batchSize || 4,
     maxSteps: params.maxSteps

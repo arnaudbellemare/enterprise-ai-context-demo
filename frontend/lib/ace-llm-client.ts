@@ -176,6 +176,9 @@ export class ACELLMClient {
       }
       
       // Determine timeout based on prompt complexity
+      // For baseline testing, use reasonable timeouts to prevent hanging
+      const baselineTesting = process.env.BASELINE_TESTING === 'true';
+      const defaultTimeout = baselineTesting ? 30000 : 0; // 30s for baseline tests, no timeout otherwise
       const isComplexQuery = prompt.length > 200 || 
                             prompt.includes('transformer') || 
                             prompt.includes('embedding') ||
@@ -193,55 +196,79 @@ export class ACELLMClient {
                             prompt.includes('technical') ||
                             prompt.includes('fundamental');
       
-      console.log(`🤖 Ollama: No timeout - let it run until it finishes! (${isComplexQuery ? 'complex' : 'simple'} query)`);
+      // Apply timeout for baseline testing, otherwise no timeout
+      const controller = new AbortController();
+      let timeoutId: NodeJS.Timeout | null = null;
       
-      // NO TIMEOUTS - let it run until it actually finishes!
-      
-      const response = await fetch(`${this.ollamaUrl}/api/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'gemma3:4b',
-          prompt: prompt,
-          stream: false,
-          options: {
-            temperature: 0.7,
-            num_predict: 300, // Limit tokens for faster response
-            top_p: 0.9,
-            top_k: 40,
-            repeat_penalty: 1.1
-          }
-        })
-      });
-
-      if (!response.ok) {
-        console.error('Ollama API error:', response.status);
-        return this.getFallbackResponse(prompt, false);
+      if (baselineTesting) {
+        const timeout = isComplexQuery ? 60000 : defaultTimeout; // 60s for complex, 30s for simple
+        timeoutId = setTimeout(() => {
+          controller.abort();
+          console.log(`⏱️  Ollama timeout after ${timeout / 1000}s (baseline testing)`);
+        }, timeout);
+        console.log(`🤖 Ollama: Timeout set to ${timeout / 1000}s for baseline testing (${isComplexQuery ? 'complex' : 'simple'} query)`);
+      } else {
+        console.log(`🤖 Ollama: No timeout - let it run until it finishes! (${isComplexQuery ? 'complex' : 'simple'} query)`);
       }
+      
+      try {
+        const response = await fetch(`${this.ollamaUrl}/api/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: 'gemma3:4b',
+            prompt: prompt,
+            stream: false,
+            options: {
+              temperature: 0.7,
+              num_predict: 300, // Limit tokens for faster response
+              top_p: 0.9,
+              top_k: 40,
+              repeat_penalty: 1.1
+            }
+          })
+        });
+        
+        if (timeoutId) clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          console.error('Ollama API error:', response.status);
+          return this.getFallbackResponse(prompt, false);
+        }
 
-      const data = await response.json();
-      const latency = performance.now() - startTime;
-      const tokens = data.eval_count || 0;
-      
-      const result = {
-        text: data.response || this.getFallbackResponse(prompt, false).text,
-        model: 'ollama-gemma3:4b',
-        tokens,
-        cost: 0 // Ollama is free
-      };
-      
-      // TRACE: Log Student Model end
-      this.tracer.logStudentCall('end', undefined, result.text, {
-        model: 'ollama-gemma3:4b',
-        latency_ms: latency,
-        tokens,
-        cost: 0,
-        quality_score: tokens > 50 ? 0.75 : 0.6
-      });
-      
-      return result;
+        const data = await response.json();
+        const latency = performance.now() - startTime;
+        const tokens = data.eval_count || 0;
+        
+        const result = {
+          text: data.response || this.getFallbackResponse(prompt, false).text,
+          model: 'ollama-gemma3:4b',
+          tokens,
+          cost: 0 // Ollama is free
+        };
+        
+        // TRACE: Log Student Model end
+        this.tracer.logStudentCall('end', undefined, result.text, {
+          model: 'ollama-gemma3:4b',
+          latency_ms: latency,
+          tokens,
+          cost: 0,
+          quality_score: tokens > 50 ? 0.75 : 0.6
+        });
+        
+        return result;
+      } catch (fetchError: any) {
+        if (timeoutId) clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          console.log('⏱️  Ollama request aborted due to timeout');
+          return this.getFallbackResponse(prompt, false);
+        }
+        throw fetchError;
+      }
     } catch (error: any) {
       console.error('Ollama call failed:', error);
       
