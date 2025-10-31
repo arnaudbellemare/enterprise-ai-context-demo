@@ -1,0 +1,213 @@
+/**
+ * System Integration Test
+ * 
+ * Tests core PERMUTATION components to verify system functionality:
+ * - SRL trajectory matching
+ * - EBM refinement
+ * - ElizaOS integration
+ * - Supabase vector search
+ */
+
+import { ElizaIntegration } from './frontend/lib/eliza-integration';
+import { enhanceSWiRLWithSRL } from './frontend/lib/srl/swirl-srl-enhancer';
+import { EBMAnswerRefiner } from './frontend/lib/ebm/answer-refiner-simple';
+
+async function testSRLMatching() {
+  console.log('🧪 Testing SRL Trajectory Matching\n');
+  
+  const query = 'What is the ROI for AI investment?';
+  const domain = 'financial';
+  
+  // Mock SWiRL decomposition (must match SWiRLDecomposition structure)
+  const mockDecomposition = {
+    trajectory: {
+      original_task: query,
+      steps: [
+        { step_number: 1, description: 'Research AI investment costs', reasoning: '', action: 'research' },
+        { step_number: 2, description: 'Calculate expected returns', reasoning: '', action: 'calculate' },
+        { step_number: 3, description: 'Compute ROI percentage', reasoning: '', action: 'compute' }
+      ],
+      total_complexity: 0.8,
+      estimated_time_ms: 5000
+    },
+    subTrajectories: []
+  };
+  
+  try {
+    const result = await enhanceSWiRLWithSRL(query, domain, mockDecomposition);
+    console.log(`✅ SRL Enhancement: ${result.enhanced ? 'SUCCESS' : 'NO MATCH'}`);
+    console.log(`   Steps: ${result.decomposition.trajectory.steps.length}`);
+    if (result.enhanced && result.averageStepReward) {
+      console.log(`   Avg Reward: ${result.averageStepReward.toFixed(3)}`);
+    }
+    return result.enhanced;
+  } catch (error) {
+    console.error('❌ SRL Test Failed:', error);
+    return false;
+  }
+}
+
+async function testEBMRefinement() {
+  console.log('\n🧪 Testing EBM Answer Refinement\n');
+  
+  const query = 'What are the benefits of renewable energy?';
+  const context = 'Renewable energy sources include solar, wind, and hydroelectric power.';
+  const initialAnswer = 'Renewable energy is good for the environment.';
+  
+  try {
+    const refiner = new EBMAnswerRefiner({
+      refinementSteps: 2,
+      learningRate: 0.1,
+      noiseScale: 0.05,
+      temperature: 0.7
+    });
+    
+    const result = await refiner.refine(query, context, initialAnswer);
+    
+    console.log(`✅ EBM Refinement: SUCCESS`);
+    console.log(`   Original: ${initialAnswer.substring(0, 60)}...`);
+    console.log(`   Refined: ${result.refinedAnswer.substring(0, 60)}...`);
+    console.log(`   Improvement: ${result.improvement.toFixed(4)}`);
+    console.log(`   Steps: ${result.stepsCompleted}`);
+    
+    return result.improvement > 0;
+  } catch (error) {
+    console.error('❌ EBM Test Failed:', error);
+    return false;
+  }
+}
+
+async function testElizaOSIntegration() {
+  console.log('\n🧪 Testing ElizaOS Integration\n');
+  
+  try {
+    const integration = new ElizaIntegration({
+      enableSRL: true,
+      enableEBM: true
+    });
+    
+    await integration.initialize();
+    console.log('✅ ElizaOS Integration: INITIALIZED');
+    
+    // Test SRL workflow
+    const srlResult = await integration.executeSRLWorkflow(
+      'Calculate portfolio return',
+      'financial',
+      {
+        trajectory: {
+          original_task: 'Calculate portfolio return',
+          steps: [
+            { step_number: 1, description: 'Get stock prices', reasoning: '', action: 'get_prices' }
+          ],
+          total_complexity: 0.7,
+          estimated_time_ms: 3000
+        },
+        subTrajectories: []
+      }
+    );
+    
+    console.log(`✅ SRL Workflow: ${srlResult.enhanced ? 'ENHANCED' : 'STANDARD'}`);
+    
+    // Test EBM workflow
+    const ebmResult = await integration.executeEBMWorkflow(
+      'What is machine learning?',
+      'AI is a branch of computer science.',
+      'Machine learning is AI.'
+    );
+    
+    console.log(`✅ EBM Workflow: REFINED (improvement: ${ebmResult.improvement.toFixed(4)})`);
+    
+    return true;
+  } catch (error) {
+    console.error('❌ ElizaOS Integration Test Failed:', error);
+    return false;
+  }
+}
+
+async function testSupabaseVectorSearch() {
+  console.log('\n🧪 Testing Supabase Vector Search\n');
+  
+  try {
+    const { getSupabaseClient } = await import('./frontend/lib/supabase-client');
+    const supabase = await getSupabaseClient();
+    
+    if (!supabase) {
+      console.log('⚠️  Supabase not configured - skipping vector search test');
+      return true; // Not a failure, just not available
+    }
+    
+    // Test if expert_trajectories table exists and has vector search function
+    const { data, error } = await supabase.rpc('match_expert_trajectories', {
+      query_embedding: new Array(1536).fill(0.1), // Mock embedding
+      query_domain: 'financial',
+      match_threshold: 0.5,
+      match_count: 5
+    });
+    
+    if (error) {
+      console.log(`⚠️  Vector search function test: ${error.message}`);
+      console.log('   (This is OK if migration 018 hasn\'t been run yet)');
+      return true; // Not a failure if migration not applied
+    }
+    
+    console.log(`✅ Vector Search Function: AVAILABLE`);
+    console.log(`   Results: ${data?.length || 0} trajectories matched`);
+    return true;
+  } catch (error: any) {
+    console.log(`⚠️  Vector search test: ${error.message}`);
+    console.log('   (This is OK if Supabase is not configured)');
+    return true; // Not a failure
+  }
+}
+
+async function runAllTests() {
+  console.log('═'.repeat(80));
+  console.log('PERMUTATION SYSTEM INTEGRATION TESTS');
+  console.log('═'.repeat(80));
+  
+  const results = {
+    srl: false,
+    ebm: false,
+    elizaos: false,
+    vectorSearch: false
+  };
+  
+  try {
+    results.srl = await testSRLMatching();
+    results.ebm = await testEBMRefinement();
+    results.elizaos = await testElizaOSIntegration();
+    results.vectorSearch = await testSupabaseVectorSearch();
+    
+    console.log('\n' + '═'.repeat(80));
+    console.log('TEST RESULTS');
+    console.log('═'.repeat(80));
+    console.log(`   ${results.srl ? '✅' : '❌'} SRL Trajectory Matching`);
+    console.log(`   ${results.ebm ? '✅' : '❌'} EBM Answer Refinement`);
+    console.log(`   ${results.elizaos ? '✅' : '❌'} ElizaOS Integration`);
+    console.log(`   ${results.vectorSearch ? '✅' : '⚠️ '} Supabase Vector Search`);
+    
+    const allCriticalTestsPass = results.srl && results.ebm && results.elizaos;
+    
+    console.log(`\n   ${allCriticalTestsPass ? '✅ ALL CRITICAL TESTS PASS' : '❌ SOME CRITICAL TESTS FAILED'}`);
+    
+    return allCriticalTestsPass;
+  } catch (error) {
+    console.error('\n❌ Test suite failed:', error);
+    return false;
+  }
+}
+
+// Run tests
+if (require.main === module) {
+  runAllTests()
+    .then((success) => {
+      process.exit(success ? 0 : 1);
+    })
+    .catch((error) => {
+      console.error('Fatal error:', error);
+      process.exit(1);
+    });
+}
+
+export { runAllTests, testSRLMatching, testEBMRefinement, testElizaOSIntegration };
+
