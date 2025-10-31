@@ -418,6 +418,86 @@ export async function loadExpertTrajectories(
  * Save expert trajectory to storage
  * Saves to Supabase if available, otherwise logs to console
  */
+/**
+ * Convenience function to enhance SWiRL steps with SRL
+ */
+export async function enhanceSWiRLWithSRL(
+  query: string,
+  domain: string,
+  swirlSteps: SWiRLStep[]
+): Promise<{
+  enhancedSteps: SRLEnhancedStep[];
+  averageStepReward: number;
+  totalReward: number;
+  bestTrajectoryMatch?: ExpertTrajectory;
+  internalReasoning?: string;
+}> {
+  const expertTrajectories = await loadExpertTrajectories(domain);
+  
+  if (expertTrajectories.length === 0) {
+    return {
+      enhancedSteps: swirlSteps.map(s => ({ ...s })),
+      averageStepReward: 0,
+      totalReward: 0
+    };
+  }
+  
+  // Create enhancer instance
+  const enhancer = new SWiRLSRLEnhancer({
+    expertTrajectories,
+    stepRewardWeight: 0.6,
+    finalRewardWeight: 0.4,
+    reasoningGeneration: true,
+    similarityThreshold: 0.5
+  });
+  
+  // Create a mock decomposition result (we only need the steps)
+  const mockDecomposition: SWiRLDecompositionResult = {
+    trajectory: {
+      task_id: `srl-${Date.now()}`,
+      steps: swirlSteps,
+      total_complexity: 0.5,
+      estimated_time_ms: 1000,
+      tools_required: []
+    },
+    sub_trajectories: [],
+    synthesis_plan: ''
+  };
+  
+  const enhanced = await enhancer.enhanceWithSRL(mockDecomposition, query, domain);
+  
+  // Find best trajectory match using public method
+  const bestMatch = expertTrajectories.length > 0 
+    ? expertTrajectories.reduce((best, current) => {
+        // Simple similarity: count shared words
+        const queryWords = new Set(query.toLowerCase().split(/\s+/));
+        const currentWords = new Set(current.query.toLowerCase().split(/\s+/));
+        const bestWords = new Set(best.query.toLowerCase().split(/\s+/));
+        
+        const currentOverlap = Array.from(queryWords).filter(w => currentWords.has(w)).length;
+        const bestOverlap = Array.from(queryWords).filter(w => bestWords.has(w)).length;
+        
+        return (currentOverlap > bestOverlap || (currentOverlap === bestOverlap && current.quality > best.quality)) 
+          ? current 
+          : best;
+      })
+    : null;
+  
+  // Extract internal reasoning (concatenate all step reasonings)
+  const internalReasoning = enhanced.trajectory.steps
+    .map(s => s.internalReasoning)
+    .filter(Boolean)
+    .join('\n\n');
+  
+  return {
+    enhancedSteps: enhanced.trajectory.steps,
+    averageStepReward: enhanced.averageStepReward,
+    totalReward: enhanced.totalReward,
+    bestTrajectoryMatch: bestMatch || undefined,
+    internalReasoning: internalReasoning || undefined
+  };
+}
+
 export async function saveExpertTrajectory(
   trajectory: ExpertTrajectory
 ): Promise<void> {

@@ -22,6 +22,8 @@ import { AdaptiveRedoLoop } from '@/lib/adaptive-redo-loop';
 import { detectDomain, detectStructuredQuery, detectWebSearchNeeded } from '@/lib/smart-routing';
 import { createLocalEmbeddings } from '@/lib/local-embeddings';
 import { createClient } from '@supabase/supabase-js';
+import { decideSRL_EBM_Routing } from '@/lib/srl-ebm-router';
+import { enhanceSWiRLWithSRL } from '@/lib/srl/swirl-srl-enhancer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -455,6 +457,73 @@ export async function POST(req: NextRequest) {
     });
 
     // =================================================================
+    // PHASE 9.5: SRL ENHANCEMENT (if needed) 🎯
+    // =================================================================
+    
+    let swirlStepsWithSRL = swirlDecomposition.trajectory.steps;
+    let srlMetrics: any = null;
+    
+    const routingDecision = await decideSRL_EBM_Routing(query, domain, {
+      swirlSteps: swirlDecomposition.trajectory.steps.length
+    });
+    
+    if (routingDecision.useSRL) {
+      console.log(`\n${'─'.repeat(80)}`);
+      console.log(`🎯 SRL: SUPERVISED REINFORCEMENT LEARNING ENHANCEMENT`);
+      console.log(`${'─'.repeat(80)}\n`);
+      console.log(`   Routing decision: ${routingDecision.reasoning}`);
+      console.log(`   Confidence: ${(routingDecision.confidence * 100).toFixed(1)}%`);
+      
+      try {
+        const srlResult = await enhanceSWiRLWithSRL(
+          query,
+          domain,
+          swirlDecomposition.trajectory.steps
+        );
+        
+        swirlStepsWithSRL = srlResult.enhancedSteps;
+        srlMetrics = {
+          averageStepReward: srlResult.averageStepReward,
+          bestTrajectoryMatch: srlResult.bestTrajectoryMatch?.query?.substring(0, 60) || 'none',
+          totalReward: srlResult.totalReward,
+          internalReasoning: srlResult.internalReasoning?.substring(0, 100) || 'none'
+        };
+        
+        console.log(`   ✅ SRL enhancement complete!`);
+        console.log(`   - Average step reward: ${srlResult.averageStepReward.toFixed(3)}`);
+        console.log(`   - Best trajectory match: ${srlResult.bestTrajectoryMatch ? 'found' : 'none'}`);
+        console.log(`   - Total reward: ${srlResult.totalReward.toFixed(3)}`);
+        
+        logs.push({
+          component: '9.5. SRL Enhancement',
+          status: 'complete',
+          details: {
+            ...srlMetrics,
+            steps_enhanced: swirlStepsWithSRL.length,
+            original_steps: swirlDecomposition.trajectory.steps.length
+          },
+          timestamp: Date.now() - startTime,
+        });
+      } catch (error) {
+        console.error(`   ❌ SRL enhancement failed:`, error);
+        logs.push({
+          component: '9.5. SRL Enhancement',
+          status: 'skipped',
+          details: { error: error instanceof Error ? error.message : 'Unknown error' },
+          timestamp: Date.now() - startTime,
+        });
+      }
+    } else {
+      console.log(`   ⊘ SRL skipped: ${routingDecision.reasoning}`);
+      logs.push({
+        component: '9.5. SRL Enhancement',
+        status: 'skipped',
+        details: { reason: routingDecision.reasoning },
+        timestamp: Date.now() - startTime,
+      });
+    }
+
+    // =================================================================
     // PHASE 10: TEACHER-STUDENT ARCHITECTURE! 🎓
     // =================================================================
     
@@ -632,6 +701,8 @@ Provide a comprehensive, optimized answer.`.trim();
         overall_quality: overallQuality,
         steps_verified: stepResults.filter(sr => sr.trm_verification.verified).length,
         total_steps: stepResults.length,
+        srl_metrics: srlMetrics,
+        srl_enhanced: !!srlMetrics,
       },
       timestamp: Date.now() - startTime,
     });
@@ -674,7 +745,9 @@ Provide a comprehensive, optimized answer.`.trim();
         reasoning_bank: logs.find(l => l.component === '6. ReasoningBank')?.details,
         lora_params: logs.find(l => l.component === '7. LoRA Parameters')?.details,
         irt_metrics: logs.find(l => l.component === '8. IRT Calculations')?.details,
+        srl_enhancement: logs.find(l => l.component === '9.5. SRL Enhancement')?.details,
       },
+      srl_metrics: srlMetrics,
       execution_log: logs,
       total_time_ms: Date.now() - startTime,
       system_info: {

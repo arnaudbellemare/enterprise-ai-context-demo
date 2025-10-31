@@ -22,6 +22,8 @@ import { dspyRegistry, type DSPyModule } from './dspy-signatures';
 import { ComprehensiveSemioticSystem } from '../../lib/semiotic-inference-system';
 import { teacherStudentSystem } from './teacher-student-system';
 import { getTracer } from './dspy-observability';
+import { decideSRL_EBM_Routing } from './srl-ebm-router';
+import { EBMAnswerRefiner } from './ebm/answer-refiner-simple';
 
 export interface UnifiedPipelineConfig {
   enableACE: boolean;
@@ -409,7 +411,7 @@ export class UnifiedPermutationPipeline {
       console.log('🎨 PHASE 7: SYNTHESIS & FINAL ANSWER');
       const synthesisStart = Date.now();
       
-      const finalAnswer = this.synthesizeFinalAnswer({
+      let finalAnswer = this.synthesizeFinalAnswer({
         query,
         semioticSynthesis: synthesis,
         aceResult,
@@ -420,7 +422,7 @@ export class UnifiedPermutationPipeline {
         domain: detectedDomain
       });
       
-      const qualityScore = this.calculateQualityScore({
+      let qualityScore = this.calculateQualityScore({
         semioticConfidence: synthesis?.overallConfidence || 0.5,
         teacherConfidence: teacherResponse?.confidence || 0.5,
         studentConfidence: studentResponse?.confidence || 0.5,
@@ -430,6 +432,96 @@ export class UnifiedPermutationPipeline {
       
       console.log(`   ✓ Final answer synthesized`);
       console.log(`   ✓ Quality score: ${qualityScore.toFixed(3)}`);
+      
+      // ============================================================
+      // PHASE 7.5: EBM REFINEMENT (if needed) ⚡
+      // ============================================================
+      const ebmStart = Date.now();
+      let ebmRefined = false;
+      let ebmRefinementSteps = 0;
+      let ebmEnergyImprovement = 0;
+      let ebmRefinedAnswer = finalAnswer;
+      
+      const routingDecision = await decideSRL_EBM_Routing(query, detectedDomain, {
+        initialAnswer: finalAnswer,
+        answerQuality: qualityScore
+      });
+      
+      if (routingDecision.useEBM) {
+        console.log(`\n${'─'.repeat(60)}`);
+        console.log(`⚡ EBM: ENERGY-BASED REFINEMENT`);
+        console.log(`${'─'.repeat(60)}\n`);
+        console.log(`   Routing decision: ${routingDecision.reasoning}`);
+        console.log(`   Confidence: ${(routingDecision.confidence * 100).toFixed(1)}%`);
+        console.log(`   Initial quality: ${qualityScore.toFixed(3)}`);
+        
+        try {
+          const refiner = new EBMAnswerRefiner({
+            refinementSteps: 3,
+            learningRate: 0.5,
+            noiseScale: 0.01,
+            temperature: 0.8
+          });
+          
+          // Build context for EBM
+          const ebmContext = [
+            aceResult ? `ACE Strategies: ${JSON.stringify(aceResult.curator?.bullets?.slice(0, 3) || [])}` : '',
+            semioticAnalysis ? `Semiotic: ${JSON.stringify(semioticAnalysis?.inference || {})}` : '',
+            teacherResponse ? `Teacher: ${teacherResponse.response?.substring(0, 200) || ''}` : '',
+            studentResponse ? `Student: ${studentResponse.response?.substring(0, 200) || ''}` : ''
+          ].filter(Boolean).join('\n');
+          
+          const refinementResult = await refiner.refine(
+            query,
+            finalAnswer,
+            ebmContext || 'No additional context available'
+          );
+          
+          ebmRefinedAnswer = refinementResult.refinedAnswer;
+          ebmRefinementSteps = refinementResult.stepsCompleted;
+          ebmEnergyImprovement = refinementResult.initialEnergy - refinementResult.finalEnergy;
+          ebmRefined = true;
+          
+          // Update quality score if refinement improved energy
+          if (ebmEnergyImprovement > 0) {
+            qualityScore = Math.min(1.0, qualityScore + (ebmEnergyImprovement * 0.1));
+          }
+          
+          console.log(`   ✅ EBM refinement complete!`);
+          console.log(`   - Steps: ${ebmRefinementSteps}`);
+          console.log(`   - Energy improvement: ${ebmEnergyImprovement.toFixed(4)}`);
+          console.log(`   - Final quality: ${qualityScore.toFixed(3)}`);
+          
+          steps.push({
+            component: 'EBM Answer Refiner',
+            phase: 'verification',
+            input: { query, initialAnswer: finalAnswer.substring(0, 200) + '...' },
+            output: {
+              refinedAnswer: ebmRefinedAnswer.substring(0, 200) + '...',
+              steps: ebmRefinementSteps,
+              energyImprovement: ebmEnergyImprovement
+            },
+            duration_ms: Date.now() - ebmStart,
+            status: 'success'
+          });
+        } catch (error) {
+          console.error(`   ❌ EBM refinement failed:`, error);
+          steps.push({
+            component: 'EBM Answer Refiner',
+            phase: 'verification',
+            input: { query },
+            output: { error: error instanceof Error ? error.message : 'Unknown error' },
+            duration_ms: Date.now() - ebmStart,
+            status: 'failed'
+          });
+        }
+      } else {
+        console.log(`   ⊘ EBM skipped: ${routingDecision.reasoning}`);
+      }
+      
+      // Use refined answer if available
+      finalAnswer = ebmRefined ? ebmRefinedAnswer : finalAnswer;
+      
       console.log(`   ⏱️  Phase 7 completed in ${Date.now() - synthesisStart}ms\n`);
       
       // ============================================================
@@ -477,7 +569,10 @@ export class UnifiedPermutationPipeline {
             cost: totalCost,
             teacher_calls: teacherCalls,
             student_calls: studentCalls
-          }
+          },
+          ebm_refined: ebmRefined,
+          ebm_refinement_steps: ebmRefinementSteps,
+          ebm_energy_improvement: ebmEnergyImprovement
         },
         trace: {
           steps,
