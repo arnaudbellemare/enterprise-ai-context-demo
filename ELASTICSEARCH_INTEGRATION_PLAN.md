@@ -135,10 +135,6 @@ ELASTICSEARCH_PASSWORD=<from .env file or your custom password>
 # Option 3: Self-hosted without security (development)
 ELASTICSEARCH_URL=http://localhost:9200
 # No username/password needed if xpack.security.enabled=false
-
-# Option 2: Elastic Cloud
-ELASTICSEARCH_CLOUD_ID=your-cloud-id
-ELASTICSEARCH_API_KEY=your-api-key
 ```
 
 ## Integration Points
