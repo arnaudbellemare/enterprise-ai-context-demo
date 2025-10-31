@@ -92,13 +92,22 @@ ELASTICSEARCH_API_KEY=your-api-key
 
 ### Option 2: Local Development (Docker)
 
-Based on [Elasticsearch start-local script](https://github.com/elastic/elasticsearch):
+**Option A: Using start-local script (Easiest)**
+
+The script generates a random password automatically and stores it in `.env`:
 
 ```bash
 curl -fsSL https://elastic.co/start-local | sh
 ```
 
-Or manually:
+After running, check the `.env` file in `elastic-start-local` folder for:
+- `ES_LOCAL_PASSWORD` - Auto-generated password
+- `ES_LOCAL_API_KEY` - API key for programmatic access
+
+**Option B: Docker without security (Development only)**
+
+No password needed - security disabled:
+
 ```bash
 docker run -d \
   --name elasticsearch \
@@ -106,16 +115,26 @@ docker run -d \
   -p 9300:9300 \
   -e "discovery.type=single-node" \
   -e "xpack.security.enabled=false" \
-  docker.elastic.co/elasticsearch/elasticsearch:9.2.0
+  docker.elastic.co/elasticsearch:9.2.0
 ```
+
+For this option, you don't need `ELASTICSEARCH_PASSWORD` - leave it empty.
 
 ### Environment Variables
 
 ```env
-# Option 1: Self-hosted
+# Option 1: Elastic Cloud (No password needed)
+ELASTICSEARCH_CLOUD_ID=your-cloud-id
+ELASTICSEARCH_API_KEY=your-api-key
+
+# Option 2: Self-hosted with security
 ELASTICSEARCH_URL=http://localhost:9200
 ELASTICSEARCH_USERNAME=elastic
-ELASTICSEARCH_PASSWORD=your-password
+ELASTICSEARCH_PASSWORD=<from .env file or your custom password>
+
+# Option 3: Self-hosted without security (development)
+ELASTICSEARCH_URL=http://localhost:9200
+# No username/password needed if xpack.security.enabled=false
 
 # Option 2: Elastic Cloud
 ELASTICSEARCH_CLOUD_ID=your-cloud-id

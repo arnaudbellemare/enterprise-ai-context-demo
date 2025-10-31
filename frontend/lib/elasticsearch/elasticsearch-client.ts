@@ -56,13 +56,23 @@ export class PERMUTATIONElasticsearchClient {
   private initialized = false;
 
   constructor(config: ElasticsearchConfig = {}) {
+    // Determine auth - prioritize config, then env vars, then defaults
+    const defaultAuth = process.env.ELASTICSEARCH_USERNAME || process.env.ELASTICSEARCH_PASSWORD
+      ? {
+          username: process.env.ELASTICSEARCH_USERNAME || 'elastic',
+          password: process.env.ELASTICSEARCH_PASSWORD || ''
+        }
+      : undefined; // No auth if no env vars (for dev setups without security)
+
     this.config = {
       node: config.node || process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
-      cloud: config.cloud,
-      auth: config.auth || {
-        username: process.env.ELASTICSEARCH_USERNAME || 'elastic',
-        password: process.env.ELASTICSEARCH_PASSWORD || ''
-      },
+      cloud: config.cloud || (process.env.ELASTICSEARCH_CLOUD_ID && process.env.ELASTICSEARCH_API_KEY
+        ? {
+            id: process.env.ELASTICSEARCH_CLOUD_ID,
+            apiKey: process.env.ELASTICSEARCH_API_KEY
+          }
+        : undefined),
+      auth: config.auth || defaultAuth,
       enableVectorSearch: config.enableVectorSearch ?? true,
       enableHybridSearch: config.enableHybridSearch ?? true
     };
@@ -89,10 +99,16 @@ export class PERMUTATIONElasticsearchClient {
         });
       } else {
         // Self-hosted connection
-        this.client = new Client({
-          node: this.config.node,
-          auth: this.config.auth
-        });
+        const clientConfig: any = {
+          node: this.config.node
+        };
+        
+        // Only add auth if provided (some dev setups disable security)
+        if (this.config.auth?.username || this.config.auth?.password) {
+          clientConfig.auth = this.config.auth;
+        }
+        
+        this.client = new Client(clientConfig);
       }
 
       // Test connection
