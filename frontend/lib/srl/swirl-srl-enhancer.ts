@@ -74,8 +74,11 @@ export class SWiRLSRLEnhancer {
     query: string,
     domain: string
   ): Promise<SRLEnhancedDecomposition> {
-    // Find best matching expert trajectory
-    const expertTrajectory = this.findBestExpertTrajectory(query, domain);
+    // Generate embedding for query (for vector similarity)
+    const queryEmbedding = await this.generateQueryEmbedding(query);
+    
+    // Find best matching expert trajectory (using vector similarity if available)
+    const expertTrajectory = await this.findBestExpertTrajectory(query, domain, queryEmbedding);
     
     if (!expertTrajectory) {
       console.log('⚠️  No expert trajectory found, returning unenhanced decomposition');
@@ -83,6 +86,7 @@ export class SWiRLSRLEnhancer {
         ...decomposition,
         trajectory: {
           ...decomposition.trajectory,
+          original_task: decomposition.trajectory.original_task || query,
           steps: decomposition.trajectory.steps.map(s => ({ ...s }))
         },
         averageStepReward: 0,
@@ -145,9 +149,13 @@ export class SWiRLSRLEnhancer {
   }
 
   /**
-   * Find best matching expert trajectory for query
+   * Find best matching expert trajectory using vector similarity (Supabase pgvector)
    */
-  private findBestExpertTrajectory(query: string, domain: string): ExpertTrajectory | null {
+  private async findBestExpertTrajectory(
+    query: string,
+    domain: string,
+    queryEmbedding?: number[]
+  ): Promise<ExpertTrajectory | null> {
     const domainTrajectories = this.config.expertTrajectories.filter(
       t => t.domain === domain
     );
@@ -156,7 +164,155 @@ export class SWiRLSRLEnhancer {
       return null;
     }
 
-    // Simple similarity: check for common keywords
+    // Try vector similarity search if embedding available and Supabase configured
+    if (queryEmbedding) {
+      try {
+        const supabase = await getSupabaseClient();
+        if (supabase) {
+          const bestMatch = await this.findBestTrajectoryByVector(
+            supabase,
+            query,
+            domain,
+            queryEmbedding
+          );
+          if (bestMatch) {
+            return bestMatch;
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Vector search failed, falling back to keyword matching:', error);
+      }
+    }
+
+    // Fallback to keyword matching (for trajectories without embeddings)
+    return this.findBestTrajectoryByKeyword(query, domain, domainTrajectories);
+  }
+
+  /**
+   * Vector similarity search using Supabase pgvector
+   */
+  private async findBestTrajectoryByVector(
+    supabase: any,
+    query: string,
+    domain: string,
+    queryEmbedding: number[]
+  ): Promise<ExpertTrajectory | null> {
+    try {
+      // Use pgvector cosine similarity
+      const { data, error } = await supabase.rpc('match_expert_trajectories', {
+        query_embedding: queryEmbedding,
+        query_domain: domain,
+        match_threshold: this.config.similarityThreshold,
+        match_count: 5
+      });
+
+      if (error) {
+        console.warn('⚠️ match_expert_trajectories function not found, using direct query:', error);
+        // Fallback: direct cosine similarity query
+        return await this.findBestTrajectoryByVectorDirect(supabase, query, domain, queryEmbedding);
+      }
+
+      if (data && data.length > 0) {
+        const best = data[0]; // Highest similarity
+        return {
+          query: best.query,
+          domain: best.domain,
+          steps: best.steps || [],
+          finalAnswer: best.final_answer || '',
+          quality: best.quality || 0.8
+        };
+      }
+    } catch (error) {
+      console.warn('⚠️ Vector search error:', error);
+    }
+
+    return null;
+  }
+
+  /**
+   * Direct vector similarity query (fallback if RPC function doesn't exist)
+   */
+  private async findBestTrajectoryByVectorDirect(
+    supabase: any,
+    query: string,
+    domain: string,
+    queryEmbedding: number[]
+  ): Promise<ExpertTrajectory | null> {
+    try {
+      // Get trajectories with embeddings for this domain
+      const { data, error } = await supabase
+        .from('expert_trajectories')
+        .select('id, query, domain, steps, final_answer, quality, embedding')
+        .eq('domain', domain)
+        .not('embedding', 'is', null);
+
+      if (error || !data || data.length === 0) {
+        return null;
+      }
+
+      // Calculate cosine similarity for each trajectory
+      let bestMatch: any = null;
+      let bestScore = this.config.similarityThreshold;
+
+      for (const trajectory of data) {
+        if (!trajectory.embedding) continue;
+
+        // Cosine similarity: dot product of normalized vectors
+        const similarity = this.cosineSimilarity(queryEmbedding, trajectory.embedding);
+        
+        // Weight by trajectory quality
+        const score = similarity * 0.7 + (trajectory.quality || 0.8) * 0.3;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = trajectory;
+        }
+      }
+
+      if (bestMatch) {
+        return {
+          query: bestMatch.query,
+          domain: bestMatch.domain,
+          steps: bestMatch.steps || [],
+          finalAnswer: bestMatch.final_answer || '',
+          quality: bestMatch.quality || 0.8
+        };
+      }
+    } catch (error) {
+      console.warn('⚠️ Direct vector search error:', error);
+    }
+
+    return null;
+  }
+
+  /**
+   * Calculate cosine similarity between two vectors
+   */
+  private cosineSimilarity(a: number[], b: number[]): number {
+    if (a.length !== b.length) return 0;
+
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < a.length; i++) {
+      dotProduct += a[i] * b[i];
+      normA += a[i] * a[i];
+      normB += b[i] * b[i];
+    }
+
+    const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+    return denominator === 0 ? 0 : dotProduct / denominator;
+  }
+
+  /**
+   * Fallback: Keyword-based matching (for trajectories without embeddings)
+   */
+  private findBestTrajectoryByKeyword(
+    query: string,
+    domain: string,
+    domainTrajectories: ExpertTrajectory[]
+  ): ExpertTrajectory | null {
     const queryLower = query.toLowerCase();
     const queryWords = new Set(queryLower.split(/\s+/).filter(w => w.length > 3));
 
@@ -182,6 +338,41 @@ export class SWiRLSRLEnhancer {
     }
 
     return bestMatch;
+  }
+
+  /**
+   * Generate embedding for query (for vector similarity search)
+   */
+  private async generateQueryEmbedding(query: string): Promise<number[] | undefined> {
+    try {
+      // Try using OpenAI embedding API
+      const openaiKey = process.env.OPENAI_API_KEY;
+      if (!openaiKey) {
+        return undefined;
+      }
+
+      const response = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'text-embedding-3-small',
+          input: query,
+          encoding_format: 'float'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.data[0]?.embedding;
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to generate query embedding:', error);
+    }
+
+    return undefined;
   }
 
   /**
@@ -499,7 +690,8 @@ export async function enhanceSWiRLWithSRL(
 }
 
 export async function saveExpertTrajectory(
-  trajectory: ExpertTrajectory
+  trajectory: ExpertTrajectory,
+  embedding?: number[]
 ): Promise<void> {
   const supabase = await getSupabaseClient();
   
@@ -507,6 +699,12 @@ export async function saveExpertTrajectory(
     try {
       // Generate a unique ID for the trajectory based on query and domain
       // Use simple hash that works in both Node.js and browser contexts
+      // Generate embedding if not provided
+      let trajectoryEmbedding = embedding;
+      if (!trajectoryEmbedding) {
+        trajectoryEmbedding = await generateTrajectoryEmbedding(trajectory.query);
+      }
+
       const hashString = `${trajectory.domain}:${trajectory.query}`;
       let hash = 0;
       for (let i = 0; i < hashString.length; i++) {
@@ -525,6 +723,7 @@ export async function saveExpertTrajectory(
           steps: trajectory.steps,
           final_answer: trajectory.finalAnswer,
           quality: trajectory.quality,
+          embedding: trajectoryEmbedding || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }, {
@@ -536,7 +735,7 @@ export async function saveExpertTrajectory(
         throw error;
       }
       
-      console.log(`💾 Saved expert trajectory to Supabase for domain: ${trajectory.domain}`);
+      console.log(`💾 Saved expert trajectory to Supabase (${trajectoryEmbedding ? 'with' : 'without'} embedding) for domain: ${trajectory.domain}`);
     } catch (error) {
       console.error(`❌ Failed to save expert trajectory:`, error);
       // Don't throw - allow system to continue without persistence
@@ -545,5 +744,39 @@ export async function saveExpertTrajectory(
     // Supabase not configured - just log
     console.log(`💾 Saving expert trajectory for domain: ${trajectory.domain} (Supabase not configured)`);
   }
+}
+
+/**
+ * Generate embedding for trajectory query
+ */
+async function generateTrajectoryEmbedding(query: string): Promise<number[] | undefined> {
+  try {
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!openaiKey) {
+      return undefined;
+    }
+
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: query,
+        encoding_format: 'float'
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.data[0]?.embedding;
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to generate trajectory embedding:', error);
+  }
+
+  return undefined;
 }
 
