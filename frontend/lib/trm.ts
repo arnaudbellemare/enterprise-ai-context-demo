@@ -115,7 +115,7 @@ export class RVS {
    * Update reasoning state (z) given input (x), prediction (y), and current reasoning (z)
    */
   async updateReasoning(x: string, y: string, z: ReasoningState): Promise<ReasoningState> {
-    console.log(`🧠 RVS: Updating reasoning state (z)`);
+    logger.info(`🧠 RVS: Updating reasoning state (z)`);
     
     const prompt = `
 Given the input query, current prediction, and reasoning state, improve the reasoning:
@@ -139,14 +139,14 @@ Return improved reasoning state as JSON.
       
       // Calculate confidence improvement
       const confidenceImprovement = improvedReasoning.confidence - z.confidence;
-      console.log(`📈 Reasoning confidence improved by: ${confidenceImprovement.toFixed(3)}`);
+      logger.info(`📈 Reasoning confidence improved by: ${confidenceImprovement.toFixed(3)}`);
       
       return {
         ...improvedReasoning,
         reasoningChain: [...z.reasoningChain, `Reasoning update: ${confidenceImprovement.toFixed(3)} improvement`]
       };
     } catch (error) {
-      console.warn('⚠️ Reasoning update failed, returning current state');
+      logger.warn('⚠️ Reasoning update failed, returning current state');
       return z;
     }
   }
@@ -155,7 +155,7 @@ Return improved reasoning state as JSON.
    * Update prediction state (y) given current prediction (y) and improved reasoning (z)
    */
   async updatePrediction(y: string, z: ReasoningState): Promise<PredictionState> {
-    console.log(`🎯 RVS: Updating prediction state (y)`);
+    logger.info(`🎯 RVS: Updating prediction state (y)`);
     
     const prompt = `
 Given the improved reasoning state, update the prediction:
@@ -176,10 +176,10 @@ Return prediction state as JSON with valuation, confidence, and justification.
       const response = await this.llmClient.generate(prompt);
       const improvedPrediction = JSON.parse(response);
       
-      console.log(`🎯 Prediction updated with confidence: ${improvedPrediction.confidence}`);
+      logger.info(`🎯 Prediction updated with confidence: ${improvedPrediction.confidence}`);
       return improvedPrediction;
     } catch (error) {
-      console.warn('⚠️ Prediction update failed, returning default');
+      logger.warn('⚠️ Prediction update failed, returning default');
       return {
         valuation: 0,
         confidence: 0,
@@ -205,7 +205,7 @@ Return prediction state as JSON with valuation, confidence, and justification.
     const prediction_converged = predictionImprovement < this.config.convergence_threshold;
     const totalImprovement = reasoningImprovement + predictionImprovement;
     
-    console.log(`📊 Convergence check: reasoning=${reasoning_converged}, prediction=${prediction_converged}, improvement=${totalImprovement.toFixed(4)}`);
+    logger.info(`📊 Convergence check: reasoning=${reasoning_converged}, prediction=${prediction_converged}, improvement=${totalImprovement.toFixed(4)}`);
     
     return { reasoning_converged, prediction_converged, improvement: totalImprovement };
   }
@@ -215,7 +215,7 @@ Return prediction state as JSON with valuation, confidence, and justification.
    */
   async processQueryStructured(query: string, initialSteps: RVSStep[]): Promise<RVSResult> {
     const startTime = Date.now();
-    console.log(`🔄 RVS: Starting structured refinement for query: "${query.substring(0, 50)}..."`);
+    logger.info(`🔄 RVS: Starting structured refinement for query: "${query.substring(0, 50)}..."`);
 
     // Initialize reasoning state (z)
     let reasoningState: ReasoningState = {
@@ -245,12 +245,12 @@ Return prediction state as JSON with valuation, confidence, and justification.
     let previousPrediction = predictionState;
 
     // Phase 1: Multi-step reasoning refinement (z updates)
-    console.log(`🧠 Phase 1: Reasoning refinement (${this.config.reasoning_steps} steps)`);
+    logger.info(`🧠 Phase 1: Reasoning refinement (${this.config.reasoning_steps} steps)`);
     for (let i = 0; i < this.config.reasoning_steps; i++) {
       reasoningSteps++;
       totalIterations++;
       
-      console.log(`🔄 Reasoning step ${i + 1}/${this.config.reasoning_steps}`);
+      logger.info(`🔄 Reasoning step ${i + 1}/${this.config.reasoning_steps}`);
       
       previousReasoning = reasoningState;
       reasoningState = await this.updateReasoning(query, predictionState.justification, reasoningState);
@@ -259,7 +259,7 @@ Return prediction state as JSON with valuation, confidence, and justification.
       const convergence = this.checkConvergence(previousReasoning, reasoningState, previousPrediction, predictionState);
       
       if (this.config.early_stopping && convergence.reasoning_converged && i > 0) {
-        console.log(`⏹️ Early stopping: reasoning converged at step ${i + 1}`);
+        logger.info(`⏹️ Early stopping: reasoning converged at step ${i + 1}`);
         break;
       }
       
@@ -267,12 +267,12 @@ Return prediction state as JSON with valuation, confidence, and justification.
     }
 
     // Phase 2: Prediction update (y update)
-    console.log(`🎯 Phase 2: Prediction update (${this.config.prediction_steps} step)`);
+    logger.info(`🎯 Phase 2: Prediction update (${this.config.prediction_steps} step)`);
     for (let i = 0; i < this.config.prediction_steps; i++) {
       predictionSteps++;
       totalIterations++;
       
-      console.log(`🔄 Prediction step ${i + 1}/${this.config.prediction_steps}`);
+      logger.info(`🔄 Prediction step ${i + 1}/${this.config.prediction_steps}`);
       
       previousPrediction = predictionState;
       predictionState = await this.updatePrediction(predictionState.justification, reasoningState);
@@ -281,7 +281,7 @@ Return prediction state as JSON with valuation, confidence, and justification.
       const convergence = this.checkConvergence(previousReasoning, reasoningState, previousPrediction, predictionState);
       
       if (this.config.early_stopping && convergence.prediction_converged && i > 0) {
-        console.log(`⏹️ Early stopping: prediction converged at step ${i + 1}`);
+        logger.info(`⏹️ Early stopping: prediction converged at step ${i + 1}`);
         break;
       }
       
@@ -291,7 +291,7 @@ Return prediction state as JSON with valuation, confidence, and justification.
     const duration = Date.now() - startTime;
     const finalConvergence = this.checkConvergence(previousReasoning, reasoningState, previousPrediction, predictionState);
     
-    console.log(`✅ RVS Structured Processing Complete: ${totalIterations} iterations, ${duration}ms`);
+    logger.info(`✅ RVS Structured Processing Complete: ${totalIterations} iterations, ${duration}ms`);
 
     return {
       answer: predictionState.justification,
@@ -323,7 +323,7 @@ Return prediction state as JSON with valuation, confidence, and justification.
    */
   async processQuery(query: string, initialSteps: RVSStep[]): Promise<RVSResult> {
     const startTime = Date.now();
-    console.log(`🔄 RVS: Starting recursive refinement for query: "${query.substring(0, 50)}..."`);
+    logger.info(`🔄 RVS: Starting recursive refinement for query: "${query.substring(0, 50)}..."`);
 
     let currentAnswer = '';
     let iterations = 0;
@@ -336,7 +336,7 @@ Return prediction state as JSON with valuation, confidence, and justification.
     // RVS Recursive Loop
     while (iterations < this.config.max_iterations && confidence < this.config.confidence_threshold) {
       iterations++;
-      console.log(`🔄 RVS: Iteration ${iterations}/${this.config.max_iterations}`);
+      logger.info(`🔄 RVS: Iteration ${iterations}/${this.config.max_iterations}`);
       
       // Step 1: Generate reasoning for current step
       const currentStep = steps[iterations - 1] || steps[steps.length - 1];
@@ -356,9 +356,9 @@ Return prediction state as JSON with valuation, confidence, and justification.
           const verificationResult = await this.verifyStep(currentStep, currentAnswer, query);
           if (verificationResult.passed) {
             verificationPasses++;
-            console.log(`✅ RVS: Verification passed (${verificationPasses}/${iterations})`);
+            logger.info(`✅ RVS: Verification passed (${verificationPasses}/${iterations})`);
           } else {
-            console.log(`❌ RVS: Verification failed, refining...`);
+            logger.info(`❌ RVS: Verification failed, refining...`);
             refinementCycles++;
             
             // Refine the step
@@ -369,13 +369,13 @@ Return prediction state as JSON with valuation, confidence, and justification.
         
         // Step 3: Calculate confidence using EMA
         confidence = this.calculateEMAConfidence(steps, iterations);
-        console.log(`📊 RVS: Confidence: ${(confidence * 100).toFixed(1)}%`);
+        logger.info(`📊 RVS: Confidence: ${(confidence * 100).toFixed(1)}%`);
         
         // Step 4: Adaptive computation time
         if (this.config.adaptive_computation) {
           const shouldContinue = await this.shouldContinueReasoning(query, currentAnswer, confidence, iterations);
           if (!shouldContinue) {
-            console.log(`🛑 RVS: Adaptive computation suggests stopping at iteration ${iterations}`);
+            logger.info(`🛑 RVS: Adaptive computation suggests stopping at iteration ${iterations}`);
             break;
           }
         }
@@ -394,7 +394,7 @@ Return prediction state as JSON with valuation, confidence, and justification.
     const totalTime = Date.now() - startTime;
     const avgStepTime = totalTime / iterations;
 
-    console.log(`✅ RVS: Completed in ${iterations} iterations, ${(confidence * 100).toFixed(1)}% confidence`);
+    logger.info(`✅ RVS: Completed in ${iterations} iterations, ${(confidence * 100).toFixed(1)}% confidence`);
     
     return {
       answer: currentAnswer,
@@ -461,7 +461,7 @@ Return prediction state as JSON with valuation, confidence, and justification.
       
       return { reasoning, result, confidence };
     } catch (error) {
-      console.error('TRM step execution failed:', error);
+      logger.error('TRM step execution failed:', error);
       return {
         reasoning: `Error in ${step.action}: ${error}`,
         result: '',
@@ -696,7 +696,7 @@ export function createRVS(config?: Partial<RVSConfig>): RVS {
 
 // Deprecated: Use createRVS instead
 export function createTRM(config?: Partial<RVSConfig>): RVS {
-  console.warn('createTRM is deprecated. Use createRVS instead.');
+  logger.warn('createTRM is deprecated. Use createRVS instead.');
   return createRVS(config);
 }
 
@@ -715,7 +715,7 @@ export async function applyRVS(query: string, steps: RVSStep[], llmClient?: any)
 
 // Deprecated: Use applyRVS instead
 export async function applyTRM(query: string, steps: RVSStep[], llmClient?: any): Promise<RVSResult> {
-  console.warn('applyTRM is deprecated. Use applyRVS instead.');
+  logger.warn('applyTRM is deprecated. Use applyRVS instead.');
   return applyRVS(query, steps, llmClient);
 }
 

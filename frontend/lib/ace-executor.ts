@@ -78,7 +78,7 @@ export class ACEExecutor {
       };
       
     } catch (error: any) {
-      console.error('ACE execution error:', error);
+      logger.error('ACE execution error:', error);
       return {
         status: 'error',
         duration: (Date.now() - startTime) / 1000,
@@ -299,7 +299,7 @@ Provide only a number (0-100):`;
       const data = await response.json();
       return data.response;
     } catch (error) {
-      console.error('LLM call failed:', error);
+      logger.error('LLM call failed:', error);
       // Fallback to mock response for development
       return this.generateMockResponse(prompt);
     }
@@ -356,7 +356,7 @@ Provide only a number (0-100):`;
    */
   private initializeModel(): void {
     // In a real implementation, this would initialize the actual LLM client
-    console.log('ACE Executor initialized with real LLM capabilities');
+    logger.info('ACE Executor initialized with real LLM capabilities');
   }
 }
 

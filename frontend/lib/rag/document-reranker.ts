@@ -64,6 +64,16 @@ export interface RerankingConfig {
   diversityWeight?: number;
   trmEnabled?: boolean;
   trmWeight?: number; // 0..1
+
+  /**
+   * Use trained TRM model instead of heuristic
+   */
+  useTrainedTRM?: boolean;
+
+  /**
+   * Path to trained TRM model weights
+   */
+  trmModelPath?: string;
 }
 
 export interface RerankingResult {
@@ -152,6 +162,8 @@ export class DocumentReranker {
       diversityWeight = 0.3,
       trmEnabled = false,
       trmWeight = 0.3,
+      useTrainedTRM = false,
+      trmModelPath,
     } = config;
 
     console.log(`🔄 Reranking ${documents.length} documents with ${method} method`);
@@ -266,7 +278,9 @@ export class DocumentReranker {
       diversityWeight,
       trmWeight,
       query,
-      documents
+      documents,
+      useTrainedTRM,
+      trmModelPath
     );
 
     // Reorder documents
@@ -424,9 +438,21 @@ export class DocumentReranker {
     diversityWeight: number,
     trmWeight: number,
     query: string,
-    documents: Document[]
+    documents: Document[],
+    useTrainedTRM?: boolean,
+    trmModelPath?: string
   ): Promise<number[]> {
-    const trm = new TRMAdapter();
+    // Initialize TRM adapter (trained or heuristic)
+    let trm: TRMAdapter;
+    if (useTrainedTRM && trmModelPath) {
+      const { TRMTrainedAdapter } = await import('./trm-trained-adapter');
+      const trainedTRM = new TRMTrainedAdapter();
+      await trainedTRM.initialize(trmModelPath);
+      trm = trainedTRM as any; // TRMTrainedAdapter has same interface as TRMAdapter
+    } else {
+      trm = new TRMAdapter();
+    }
+
     const scored = rankings.map((ranking, i) => {
       const quality = likelihoods[i] || 0;
 

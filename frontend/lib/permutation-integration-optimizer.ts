@@ -9,6 +9,27 @@ import { createLogger } from '../../lib/walt/logger';
 
 const logger = createLogger('PermutationIntegrationOptimizer');
 
+export interface PipelineResult {
+  query: string;
+  answer?: string;
+  metadata?: {
+    quality_score?: number;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export interface ComponentOutput {
+  [key: string]: unknown;
+}
+
+export interface IntegrationHistoryEntry {
+  timestamp: number;
+  optimizedResult: PipelineResult;
+  integrationMetrics: IntegrationMetrics;
+  improvements: string[];
+}
+
 export interface IntegrationConfig {
   enableCrossLayerCommunication: boolean;
   enableComponentFeedback: boolean;
@@ -26,7 +47,27 @@ export interface ComponentStatus {
   successRate: number;
   averageLatency: number;
   dependencies: string[];
-  outputs: any[];
+  outputs: ComponentOutput[];
+}
+
+export interface ComponentBreakdown {
+  active: boolean;
+  successRate: number;
+  outputSize: number;
+  lastUsed: number;
+}
+
+export interface ComponentAnalysis {
+  totalComponents: number;
+  activeComponents: number;
+  utilizationRate: number;
+  averageSuccessRate: number;
+  componentBreakdown: Record<string, ComponentBreakdown>;
+}
+
+export interface OptimizationResult {
+  enabled: boolean;
+  [key: string]: unknown;
 }
 
 export interface IntegrationMetrics {
@@ -41,7 +82,7 @@ export interface IntegrationMetrics {
 export class PermutationIntegrationOptimizer {
   private config: IntegrationConfig;
   private componentStatuses: Map<string, ComponentStatus> = new Map();
-  private integrationHistory: any[] = [];
+  private integrationHistory: IntegrationHistoryEntry[] = [];
 
   constructor(config: Partial<IntegrationConfig> = {}) {
     this.config = {
@@ -59,10 +100,10 @@ export class PermutationIntegrationOptimizer {
    * Optimize integration between all PERMUTATION components
    */
   async optimizeIntegration(
-    pipelineResult: any,
-    componentOutputs: Map<string, any>
+    pipelineResult: PipelineResult,
+    componentOutputs: Map<string, ComponentOutput>
   ): Promise<{
-    optimizedResult: any;
+    optimizedResult: PipelineResult;
     integrationMetrics: IntegrationMetrics;
     improvements: string[];
     recommendations: string[];
@@ -146,13 +187,13 @@ export class PermutationIntegrationOptimizer {
   /**
    * Analyze component statuses and utilization
    */
-  private analyzeComponentStatuses(componentOutputs: Map<string, any>): any {
-    const analysis = {
+  private analyzeComponentStatuses(componentOutputs: Map<string, ComponentOutput>): ComponentAnalysis {
+    const analysis: ComponentAnalysis = {
       totalComponents: componentOutputs.size,
       activeComponents: 0,
       utilizationRate: 0,
       averageSuccessRate: 0,
-      componentBreakdown: {} as any
+      componentBreakdown: {}
     };
 
     let totalSuccessRate = 0;
@@ -186,9 +227,9 @@ export class PermutationIntegrationOptimizer {
    * Optimize cross-layer communication
    */
   private optimizeCrossLayerCommunication(
-    pipelineResult: any,
-    componentOutputs: Map<string, any>
-  ): any {
+    pipelineResult: PipelineResult,
+    componentOutputs: Map<string, ComponentOutput>
+  ): OptimizationResult {
     if (!this.config.enableCrossLayerCommunication) {
       return { enabled: false, optimizations: [] };
     }
@@ -346,9 +387,9 @@ export class PermutationIntegrationOptimizer {
    * Optimize component feedback loops
    */
   private optimizeComponentFeedback(
-    pipelineResult: any,
-    componentOutputs: Map<string, any>
-  ): any {
+    pipelineResult: PipelineResult,
+    componentOutputs: Map<string, ComponentOutput>
+  ): OptimizationResult {
     if (!this.config.enableComponentFeedback) {
       return { enabled: false, feedbackLoops: [] };
     }
@@ -357,7 +398,7 @@ export class PermutationIntegrationOptimizer {
 
     // Quality feedback loop: Creative Judge → DSPy
     if (componentOutputs.has('creativeJudge') && componentOutputs.has('dspy')) {
-      const judgeScore = componentOutputs.get('creativeJudge')?.score || 0;
+      const judgeScore = (componentOutputs.get('creativeJudge')?.score as number) || 0;
       if (judgeScore < 0.7) {
         feedbackLoops.push({
           from: 'creativeJudge',
@@ -371,7 +412,7 @@ export class PermutationIntegrationOptimizer {
 
     // Confidence feedback loop: Teacher-Student → ACE
     if (componentOutputs.has('teacherStudent') && componentOutputs.has('ace')) {
-      const confidence = componentOutputs.get('teacherStudent')?.confidence || 0;
+      const confidence = (componentOutputs.get('teacherStudent')?.confidence as number) || 0;
       if (confidence < 0.6) {
         feedbackLoops.push({
           from: 'teacherStudent',
@@ -399,7 +440,7 @@ export class PermutationIntegrationOptimizer {
 
     // Performance feedback loop: Markdown Optimization → All Components
     if (componentOutputs.has('markdownOptimization')) {
-      const tokenSavings = componentOutputs.get('markdownOptimization')?.tokenSavings || 0;
+      const tokenSavings = (componentOutputs.get('markdownOptimization')?.tokenSavings as number) || 0;
       if (tokenSavings < 0.1) {
         feedbackLoops.push({
           from: 'markdownOptimization',
@@ -422,9 +463,9 @@ export class PermutationIntegrationOptimizer {
    * Optimize adaptive routing
    */
   private optimizeAdaptiveRouting(
-    pipelineResult: any,
-    componentOutputs: Map<string, any>
-  ): any {
+    pipelineResult: PipelineResult,
+    componentOutputs: Map<string, ComponentOutput>
+  ): OptimizationResult {
     if (!this.config.enableAdaptiveRouting) {
       return { enabled: false, routingOptimizations: [] };
     }
@@ -479,7 +520,7 @@ export class PermutationIntegrationOptimizer {
     }
 
     // Adaptive routing based on context size
-    const contextSize = componentOutputs.get('memory')?.contextSize || 0;
+    const contextSize = (componentOutputs.get('memory')?.contextSize as number) || 0;
     if (contextSize > 8000) {
       routingOptimizations.push({
         component: 'rlm',
@@ -499,9 +540,9 @@ export class PermutationIntegrationOptimizer {
    * Optimize quality propagation
    */
   private optimizeQualityPropagation(
-    pipelineResult: any,
-    componentOutputs: Map<string, any>
-  ): any {
+    pipelineResult: PipelineResult,
+    componentOutputs: Map<string, ComponentOutput>
+  ): OptimizationResult {
     if (!this.config.enableQualityPropagation) {
       return { enabled: false, qualityPropagations: [] };
     }
@@ -562,9 +603,9 @@ export class PermutationIntegrationOptimizer {
    * Optimize context sharing
    */
   private optimizeContextSharing(
-    pipelineResult: any,
-    componentOutputs: Map<string, any>
-  ): any {
+    pipelineResult: PipelineResult,
+    componentOutputs: Map<string, ComponentOutput>
+  ): OptimizationResult {
     if (!this.config.enableContextSharing) {
       return { enabled: false, contextShares: [] };
     }
@@ -632,29 +673,29 @@ export class PermutationIntegrationOptimizer {
    * Calculate integration metrics
    */
   private calculateIntegrationMetrics(
-    componentAnalysis: any,
-    crossLayerOptimization: any,
-    feedbackOptimization: any,
-    adaptiveRouting: any,
-    qualityPropagation: any,
-    contextSharing: any
+    componentAnalysis: ComponentAnalysis,
+    crossLayerOptimization: OptimizationResult,
+    feedbackOptimization: OptimizationResult,
+    adaptiveRouting: OptimizationResult,
+    qualityPropagation: OptimizationResult,
+    contextSharing: OptimizationResult
   ): IntegrationMetrics {
     const overallIntegrationScore = (
       componentAnalysis.utilizationRate * 0.2 +
-      crossLayerOptimization.crossLayerScore * 0.2 +
-      feedbackOptimization.feedbackScore * 0.2 +
-      adaptiveRouting.adaptiveScore * 0.2 +
-      qualityPropagation.qualityScore * 0.1 +
-      contextSharing.contextScore * 0.1
+      (crossLayerOptimization.crossLayerScore as number) * 0.2 +
+      (feedbackOptimization.feedbackScore as number) * 0.2 +
+      (adaptiveRouting.adaptiveScore as number) * 0.2 +
+      (qualityPropagation.qualityScore as number) * 0.1 +
+      (contextSharing.contextScore as number) * 0.1
     );
 
     return {
       overallIntegrationScore,
       componentUtilization: componentAnalysis.utilizationRate,
-      crossLayerCommunication: crossLayerOptimization.crossLayerScore,
-      qualityPropagation: qualityPropagation.qualityScore,
-      contextSharing: contextSharing.contextScore,
-      adaptiveRouting: adaptiveRouting.adaptiveScore
+      crossLayerCommunication: crossLayerOptimization.crossLayerScore as number,
+      qualityPropagation: qualityPropagation.qualityScore as number,
+      contextSharing: contextSharing.contextScore as number,
+      adaptiveRouting: adaptiveRouting.adaptiveScore as number
     };
   }
 
@@ -720,13 +761,13 @@ export class PermutationIntegrationOptimizer {
    * Create optimized result
    */
   private createOptimizedResult(
-    pipelineResult: any,
-    crossLayerOptimization: any,
-    feedbackOptimization: any,
-    adaptiveRouting: any,
-    qualityPropagation: any,
-    contextSharing: any
-  ): any {
+    pipelineResult: PipelineResult,
+    crossLayerOptimization: OptimizationResult,
+    feedbackOptimization: OptimizationResult,
+    adaptiveRouting: OptimizationResult,
+    qualityPropagation: OptimizationResult,
+    contextSharing: OptimizationResult
+  ): PipelineResult {
     return {
       ...pipelineResult,
       integration: {
@@ -743,7 +784,7 @@ export class PermutationIntegrationOptimizer {
   /**
    * Calculate component success rate
    */
-  private calculateComponentSuccessRate(output: any): number {
+  private calculateComponentSuccessRate(output: ComponentOutput): number {
     if (!output || Object.keys(output).length === 0) return 0;
     
     // Simple heuristic based on output quality
@@ -756,7 +797,7 @@ export class PermutationIntegrationOptimizer {
   /**
    * Calculate component quality
    */
-  private calculateComponentQuality(output: any): number {
+  private calculateComponentQuality(output: ComponentOutput): number {
     if (!output || Object.keys(output).length === 0) return 0;
     
     // Simple heuristic based on output completeness
@@ -783,35 +824,35 @@ export class PermutationIntegrationOptimizer {
   /**
    * Calculate cross-layer score
    */
-  private calculateCrossLayerScore(optimizations: any[]): number {
+  private calculateCrossLayerScore(optimizations: unknown[]): number {
     return Math.min(optimizations.length / 10, 1.0); // Normalize to 0-1
   }
 
   /**
    * Calculate feedback score
    */
-  private calculateFeedbackScore(feedbackLoops: any[]): number {
+  private calculateFeedbackScore(feedbackLoops: unknown[]): number {
     return Math.min(feedbackLoops.length / 5, 1.0); // Normalize to 0-1
   }
 
   /**
    * Calculate adaptive score
    */
-  private calculateAdaptiveScore(routingOptimizations: any[]): number {
+  private calculateAdaptiveScore(routingOptimizations: unknown[]): number {
     return Math.min(routingOptimizations.length / 5, 1.0); // Normalize to 0-1
   }
 
   /**
    * Calculate quality propagation score
    */
-  private calculateQualityPropagationScore(qualityPropagations: any[]): number {
+  private calculateQualityPropagationScore(qualityPropagations: unknown[]): number {
     return Math.min(qualityPropagations.length / 5, 1.0); // Normalize to 0-1
   }
 
   /**
    * Calculate context score
    */
-  private calculateContextScore(contextShares: any[]): number {
+  private calculateContextScore(contextShares: unknown[]): number {
     return Math.min(contextShares.length / 10, 1.0); // Normalize to 0-1
   }
 }

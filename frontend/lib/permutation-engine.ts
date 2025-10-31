@@ -1,7 +1,7 @@
 /**
  * PERMUTATION ENGINE - The Complete Integrated System
- * 
- * Integrates ALL 11 components into one unified execution flow:
+ *
+ * Integrates ALL 12 components into one unified execution flow:
  * 1. SWiRL (Step-Wise Reinforcement Learning)
  * 2. TRM (Tiny Recursion Models)
  * 3. ACE (Agentic Context Engineering)
@@ -13,6 +13,12 @@
  * 9. Multi-Query Expansion
  * 10. Local Embeddings
  * 11. Teacher-Student (Perplexity + Ollama)
+ * 12. RAG Pipeline (GEPA-optimized with inference sampling)
+ *
+ * Architecture: ✅ GEPA Algorithms → ✅ RAG Pipeline → ✅ PERMUTATION Engine
+ * - GEPA Algorithms: Offline prompt evolution (quality/cost/speed optimization)
+ * - RAG Pipeline: 5-stage retrieval with evolved prompts + inference sampling
+ * - PERMUTATION: Unified orchestration of all 12 components
  */
 
 import { ACEFramework, ACEUtils, Playbook } from './ace-framework';
@@ -29,6 +35,9 @@ import { getRealBenchmarkSystem } from './real-benchmark-system';
 import { acePlaybookSystem } from './ace-playbook-system';
 import { gepaAlgorithms } from './gepa-algorithms';
 import { WeaviateRetrieveDSPyIntegration } from './weaviate-retrieve-dspy-integration';
+import { RAGPipeline, type RAGPipelineConfig } from './rag/complete-rag-pipeline';
+import { LocalVectorAdapter } from './rag/local-vector-adapter';
+import { getEvolvedPrompts, type EvolvedRAGPrompts } from './gepa-evolved-prompts';
 // import { teacherStudentSystem } from './teacher-student-system'; // Temporarily disabled
 
 // ============================================
@@ -46,8 +55,13 @@ export interface PermutationConfig {
   enableACE: boolean; // Use ACE context engineering
   enableSWiRL: boolean; // Multi-step reasoning with tools
   enableTRM: boolean; // Recursive reasoning with verification
+  useTrainedTRM?: boolean; // Use trained TRM model instead of heuristic (default: false)
+  trmModelPath?: string; // Path to trained TRM model weights
   enableSQL: boolean; // Execute SQL for structured data
-  enableWeaviateRetrieveDSPy: boolean; // Advanced retrieval systems
+  enableWeaviateRetrieveDSPy: boolean; // Advanced retrieval systems (legacy)
+  enableRAG: boolean; // GEPA-optimized RAG pipeline with inference sampling
+  ragDomain?: string; // Domain for GEPA-evolved prompts (default: 'general')
+  useEvolvedPrompts?: boolean; // Use GEPA-evolved prompts (default: true if available)
 }
 
 export interface PermutationResult {
@@ -67,6 +81,11 @@ export interface PermutationResult {
     queries_generated: number;
     sql_executed: boolean;
     lora_applied: boolean;
+    rag_used: boolean;
+    rag_stages_executed?: string[];
+    rag_documents_retrieved?: number;
+    rag_evolved_prompts_used?: boolean;
+    rag_prompt_version?: string;
   };
   trace: ExecutionTrace;
 }
@@ -109,6 +128,9 @@ export class PermutationEngine {
   private acePlaybookSystem: any;
   private gepaAlgorithms: any;
   private weaviateRetrieveDSPy: any;
+  private ragPipeline: RAGPipeline | null;
+  private ragVectorStore: LocalVectorAdapter | null;
+  private evolvedPrompts: EvolvedRAGPrompts | null;
 
   constructor(config?: Partial<PermutationConfig>) {
     this.llmClient = new ACELLMClient();
@@ -124,6 +146,9 @@ export class PermutationEngine {
     this.acePlaybookSystem = null;
     this.gepaAlgorithms = null;
     this.weaviateRetrieveDSPy = null;
+    this.ragPipeline = null;
+    this.ragVectorStore = null;
+    this.evolvedPrompts = null;
     this.config = {
       enableTeacherModel: true,
       enableStudentModel: true,
@@ -136,7 +161,10 @@ export class PermutationEngine {
       enableSWiRL: true,         // ✅ ENABLED - Just planning, instant
       enableTRM: true,           // ✅ ENABLED - Fast verification
       enableSQL: false,          // ❌ Disabled - Rarely needed
-      enableWeaviateRetrieveDSPy: true, // ✅ ENABLED - Advanced retrieval systems
+      enableWeaviateRetrieveDSPy: false, // ❌ DISABLED - Legacy, replaced by RAG
+      enableRAG: true,           // ✅ ENABLED - GEPA-optimized RAG with inference sampling
+      ragDomain: 'general',      // Default domain for evolved prompts
+      useEvolvedPrompts: true,   // Use GEPA-evolved prompts when available
       ...config
     };
     if (process.env.NODE_ENV !== 'production') {
@@ -225,7 +253,12 @@ export class PermutationEngine {
             memories_retrieved: 0,
             queries_generated: 0,
             sql_executed: false,
-            lora_applied: false
+            lora_applied: false,
+            rag_used: false,
+            rag_stages_executed: [],
+            rag_documents_retrieved: 0,
+            rag_evolved_prompts_used: false,
+            rag_prompt_version: ''
           },
           trace: {
             steps: [],
@@ -642,18 +675,18 @@ export class PermutationEngine {
       if (this.config.enableWeaviateRetrieveDSPy) {
         console.log('🔍 Running Weaviate Retrieve-DSPy integration...');
         const weaviateStart = Date.now();
-        
+
         // Lazy initialize Weaviate Retrieve-DSPy system
         if (!this.weaviateRetrieveDSPy) {
           this.weaviateRetrieveDSPy = new WeaviateRetrieveDSPyIntegration();
           console.log('✅ Weaviate Retrieve-DSPy Integration initialized');
         }
-        
+
         try {
           weaviateRetrieveResult = await this.weaviateRetrieveDSPy.enhancedRetrieval(query, detectedDomain);
-          
+
           console.log(`🔍 Weaviate Retrieve-DSPy completed in ${Date.now() - weaviateStart}ms`);
-          
+
           trace.steps.push({
             component: 'Weaviate Retrieve-DSPy',
             description: 'Advanced compound retrieval systems',
@@ -681,8 +714,117 @@ export class PermutationEngine {
       }
 
       // ============================================
+      // STEP 11.8: RAG PIPELINE (NEW!)
+      // GEPA-optimized RAG with inference sampling
+      // Reformulation → Retrieval → Reranking → Synthesis → Generation
+      // ============================================
+      let ragResult: any = null;
+      let ragStagesExecuted: string[] = [];
+      let ragDocumentsRetrieved = 0;
+      let ragEvolvedPromptsUsed = false;
+      let ragPromptVersion = '';
+
+      if (this.config.enableRAG) {
+        console.log('📚 Running GEPA-optimized RAG Pipeline...');
+        const ragStart = Date.now();
+
+        try {
+          // Lazy initialize RAG components
+          if (!this.ragPipeline || !this.ragVectorStore || !this.evolvedPrompts) {
+            console.log('🔧 Initializing RAG Pipeline components...');
+
+            // Initialize vector store
+            this.ragVectorStore = new LocalVectorAdapter();
+
+            // Load evolved prompts for domain
+            const ragDomain = this.config.ragDomain || 'general';
+            this.evolvedPrompts = await getEvolvedPrompts(ragDomain);
+            ragEvolvedPromptsUsed = this.config.useEvolvedPrompts !== false;
+            ragPromptVersion = this.evolvedPrompts.metadata.version;
+
+            console.log(`✅ Loaded evolved prompts for ${ragDomain} domain (v${ragPromptVersion})`);
+
+            // Initialize RAG Pipeline with evolved prompts and trained TRM support
+            const ragConfig: RAGPipelineConfig = {
+              vectorStore: this.ragVectorStore,
+              evolvedPrompts: ragEvolvedPromptsUsed ? this.evolvedPrompts : undefined,
+              useInferenceSampling: true,
+              inferenceSamplingConfig: {
+                samplesPerStage: 3,
+                temperature: 0.7,
+                diversityWeight: 0.3
+              },
+              rerankerConfig: {
+                useTrainedTRM: this.config.useTrainedTRM,
+                trmModelPath: this.config.trmModelPath
+              },
+              generatorConfig: {
+                useTrainedTRM: this.config.useTrainedTRM,
+                trmModelPath: this.config.trmModelPath
+              }
+            };
+
+            this.ragPipeline = new RAGPipeline(ragConfig);
+            console.log('✅ RAG Pipeline initialized with GEPA-evolved prompts + inference sampling');
+          }
+
+          // Execute RAG Pipeline
+          ragResult = await this.ragPipeline.execute(query, {
+            domain: detectedDomain,
+            maxDocuments: 5,
+            minRelevanceScore: 0.7
+          });
+
+          // Extract RAG metrics
+          ragStagesExecuted = Object.keys(ragResult.stageResults || {});
+          ragDocumentsRetrieved = ragResult.retrievedDocuments?.length || 0;
+
+          console.log(`📚 RAG Pipeline completed in ${Date.now() - ragStart}ms`);
+          console.log(`   Stages: ${ragStagesExecuted.join(' → ')}`);
+          console.log(`   Documents: ${ragDocumentsRetrieved}`);
+          console.log(`   Evolved prompts: ${ragEvolvedPromptsUsed ? 'Yes' : 'No'} (${ragPromptVersion})`);
+
+          trace.steps.push({
+            component: 'RAG Pipeline (GEPA-optimized)',
+            description: 'Retrieval-Augmented Generation with evolved prompts and inference sampling',
+            input: {
+              query,
+              domain: detectedDomain,
+              evolvedPromptsUsed: ragEvolvedPromptsUsed,
+              promptVersion: ragPromptVersion
+            },
+            output: {
+              stages_executed: ragStagesExecuted,
+              documents_retrieved: ragDocumentsRetrieved,
+              final_answer: ragResult.answer?.substring(0, 100) + '...',
+              confidence: ragResult.confidence || 0,
+              inference_samples_used: ragResult.inferenceSamplesUsed || 0
+            },
+            duration_ms: Date.now() - ragStart,
+            status: 'success',
+            metadata: {
+              reformulation_count: ragResult.stageResults?.reformulation?.queries?.length || 0,
+              reranking_method: ragResult.stageResults?.reranking?.method || 'unknown',
+              synthesis_method: ragResult.stageResults?.synthesis?.method || 'unknown',
+              evolved_prompts_version: ragPromptVersion
+            }
+          });
+        } catch (error) {
+          console.warn('⚠️ RAG Pipeline failed:', error);
+          trace.steps.push({
+            component: 'RAG Pipeline (GEPA-optimized)',
+            description: 'RAG Pipeline execution failed',
+            input: { query, domain: detectedDomain },
+            output: { error: error instanceof Error ? error.message : 'Unknown error' },
+            duration_ms: Date.now() - ragStart,
+            status: 'failed'
+          });
+        }
+      }
+
+      // ============================================
       // STEP 12: SYNTHESIS AGENT (Merger) - Final Generation
-      // Combines: Teacher data + Multi-agent research + System intelligence + Teacher-Student results
+      // Combines: Teacher data + Multi-agent research + System intelligence + Teacher-Student results + RAG results
       // ============================================
       const studentStart = Date.now();
       const finalAnswer = await this.callStudentModel(query, {
@@ -698,7 +840,8 @@ export class PermutationEngine {
         multiAgentResults, // Add multi-agent results
         teacherStudentResult, // Add Teacher-Student results
         acePlaybookResult, // Add ACE Playbook results
-        weaviateRetrieveResult // Add Weaviate Retrieve-DSPy results
+        weaviateRetrieveResult, // Add Weaviate Retrieve-DSPy results
+        ragResult // ✅ Add RAG Pipeline results
       });
 
       trace.steps.push({
@@ -750,7 +893,12 @@ export class PermutationEngine {
           memories_retrieved: memories?.length || 0,
           queries_generated: queries?.length || 0,
           sql_executed: sqlExecuted,
-          lora_applied: loraParams !== null
+          lora_applied: loraParams !== null,
+          rag_used: this.config.enableRAG && ragResult !== null,
+          rag_stages_executed: ragStagesExecuted,
+          rag_documents_retrieved: ragDocumentsRetrieved,
+          rag_evolved_prompts_used: ragEvolvedPromptsUsed,
+          rag_prompt_version: ragPromptVersion
         },
         trace
       };
@@ -805,7 +953,12 @@ export class PermutationEngine {
           memories_retrieved: 0,
           queries_generated: 0,
           sql_executed: false,
-          lora_applied: false
+          lora_applied: false,
+          rag_used: false,
+          rag_stages_executed: [],
+          rag_documents_retrieved: 0,
+          rag_evolved_prompts_used: false,
+          rag_prompt_version: ''
         },
         trace
       };
@@ -1545,8 +1698,33 @@ The PERMUTATION system has processed your query through all 11 technical compone
   }
 
   private async applyTRM(query: string, steps: any[]): Promise<any> {
-    // ✅ REAL TRM (Tiny Recursion Model) - Now using the actual TRM implementation
+    // ✅ REAL TRM (Tiny Recursion Model) - Supports both heuristic and trained models
     try {
+      // Check if trained TRM should be used
+      if (this.config.useTrainedTRM && this.config.trmModelPath) {
+        console.log(`🔄 TRM: Using trained model from ${this.config.trmModelPath}`);
+        const { TRMTrainedAdapter } = await import('./rag/trm-trained-adapter');
+        const trainedTRM = new TRMTrainedAdapter({
+          maxSteps: 5,
+          minScore: 0.8
+        });
+
+        await trainedTRM.initialize(this.config.trmModelPath);
+
+        // Use trained TRM for verification
+        const context = steps?.map(s => s.action || s.tool).join('\n') || '';
+        const result = await trainedTRM.verify(query, context, '');
+
+        console.log(`✅ Trained TRM: Score ${(result.score * 100).toFixed(1)}%`);
+        return {
+          iterations: 1,
+          confidence: result.score,
+          verified: result.score >= 0.8,
+          answer: result.explanation || ''
+        };
+      }
+
+      // Default: Use heuristic RVS-based TRM
       const { createRVS } = await import('./trm');
       const trm = createRVS({
         max_iterations: 5,
@@ -1555,12 +1733,12 @@ The PERMUTATION system has processed your query through all 11 technical compone
         adaptive_computation: true,
         multi_scale: true
       });
-      
+
       // Set LLM client for TRM
       if (this.llmClient) {
         trm.setLLMClient(this.llmClient);
       }
-      
+
       // Convert steps to TRM format
       const trmSteps = steps?.map((step, index) => ({
         step: index + 1,
@@ -1571,10 +1749,10 @@ The PERMUTATION system has processed your query through all 11 technical compone
         { step: 2, action: 'Generate reasoning', tool: 'reason' },
         { step: 3, action: 'Verify solution', tool: 'verify' }
       ];
-      
+
       console.log(`🔄 TRM: Starting recursive refinement with ${trmSteps.length} steps`);
       const result = await trm.processQuery(query, trmSteps);
-      
+
       console.log(`✅ TRM: Completed in ${result.iterations} iterations, ${(result.confidence * 100).toFixed(1)}% confidence`);
       return result;
     } catch (error) {
@@ -1891,6 +2069,20 @@ ${context.teacherData.text}
             fullPrompt += `\n${i + 1}. ${result.agentName} (${result.data?.domain || 'specialist'}):\n   ${result.summary}\n`;
           }
         });
+      }
+
+      // Add RAG Pipeline results if available
+      if (context.ragResult?.answer) {
+        fullPrompt += `\n=== RAG PIPELINE (GEPA-optimized with inference sampling) ===\n`;
+        fullPrompt += `${context.ragResult.answer}\n`;
+        if (context.ragResult.retrievedDocuments?.length > 0) {
+          fullPrompt += `\nRetrieved Documents (${context.ragResult.retrievedDocuments.length}):\n`;
+          context.ragResult.retrievedDocuments.slice(0, 3).forEach((doc: any, i: number) => {
+            fullPrompt += `  ${i + 1}. ${doc.content?.substring(0, 100)}...\n`;
+          });
+        }
+        fullPrompt += `\nRAG Confidence: ${(context.ragResult.confidence * 100).toFixed(0)}%`;
+        fullPrompt += `\nEvolved Prompts: ${context.ragResult.evolvedPromptsUsed ? 'Yes' : 'No'}`;
       }
 
       fullPrompt += `\n=== SYSTEM INTELLIGENCE (Parallel Components) ===`;

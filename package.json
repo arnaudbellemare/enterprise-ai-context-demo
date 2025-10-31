@@ -38,6 +38,10 @@
     "eval:single": "npx tsx scripts/run-permutation-evals.ts single",
     "test:quick": "node quick-permutation-test.js",
     "test:complete": "node run-comprehensive-test.js",
+    "gepa:evolve-rag": "npx tsx scripts/evolve-rag-prompts.ts --domain general --stage all",
+    "gepa:evolve-rag:financial": "npx tsx scripts/evolve-rag-prompts.ts --domain financial --stage all",
+    "gepa:evolve-rag:technical": "npx tsx scripts/evolve-rag-prompts.ts --domain technical --stage all",
+    "gepa:evolve-rag:reranking": "npx tsx scripts/evolve-rag-prompts.ts --domain general --stage reranking",
     "prepare": "husky"
   },
   "keywords": [

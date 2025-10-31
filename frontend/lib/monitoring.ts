@@ -107,12 +107,12 @@ class Monitor {
       const color = colors[level as keyof typeof colors] || '\x1b[0m';
       const reset = '\x1b[0m';
       
-      console.log(`${color}[${level}]${reset} ${message}`, data || '');
+      logger.info(`${color}[${level}]${reset} ${message}`, data || '');
     }
     
     // Structured JSON logging (production)
     if (process.env.NODE_ENV === 'production') {
-      console.log(JSON.stringify(logEntry));
+      logger.info(JSON.stringify(logEntry));
     }
     
     // Send to logging service
@@ -138,7 +138,7 @@ class Monitor {
         });
       }
     } catch (e) {
-      console.error('Failed to send to Sentry:', e);
+      logger.error('Failed to send to Sentry:', e);
     }
   }
   
@@ -154,7 +154,7 @@ class Monitor {
       }
     } catch (e) {
       // Silent fail - don't break app if logging fails
-      console.error('Failed to send to log service:', e);
+      logger.error('Failed to send to log service:', e);
     }
   }
   

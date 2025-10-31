@@ -11,6 +11,48 @@
 
 import { NextRequest } from 'next/server';
 
+export interface EvaluationContext {
+  domain?: string;
+  expectedAnswer?: string;
+  referenceData?: unknown;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ReasoningAnalysis {
+  logical_flow: number;
+  evidence_quality: number;
+  argument_strength: number;
+  critical_thinking: number;
+}
+
+export interface EdgeCaseAnalysis {
+  ambiguity_handling: number;
+  contradiction_detection: number;
+  context_sensitivity: number;
+  domain_expertise: number;
+}
+
+export interface DimensionWeights {
+  dimensions: number[];
+  reasoning: {
+    logical_flow: number;
+    evidence_quality: number;
+    argument_strength: number;
+    critical_thinking: number;
+  };
+  edgeCase: {
+    ambiguity_handling: number;
+    contradiction_detection: number;
+    context_sensitivity: number;
+    domain_expertise: number;
+  };
+  overall: {
+    dimensions: number;
+    reasoning: number;
+    edgeCase: number;
+  };
+}
+
 export interface JudgeEvaluation {
   overall_score: number;
   dimensions: {
@@ -65,9 +107,9 @@ export class EnhancedLLMJudge {
    * Implements the research-backed approach from RiR paper
    */
   async evaluate(
-    prompt: string, 
-    response: string, 
-    context?: any
+    prompt: string,
+    response: string,
+    context?: EvaluationContext
   ): Promise<JudgeEvaluation> {
     console.log(`🧠 Enhanced LLM Judge: Evaluating ${this.config.evaluation_type} response`);
     
@@ -131,16 +173,17 @@ export class EnhancedLLMJudge {
       
       return evaluation;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('❌ Enhanced LLM Judge Error:', error);
-      throw new Error(`Judge evaluation failed: ${error.message}`);
+      throw new Error(`Judge evaluation failed: ${errorMessage}`);
     }
   }
 
   /**
    * Evaluate accuracy using domain-specific criteria
    */
-  private async evaluateAccuracy(prompt: string, response: string, context?: any): Promise<number> {
+  private async evaluateAccuracy(prompt: string, response: string, context?: EvaluationContext): Promise<number> {
     const judgePrompt = this.buildAccuracyJudgePrompt(prompt, response, context);
     
     try {
@@ -155,7 +198,7 @@ export class EnhancedLLMJudge {
   /**
    * Evaluate completeness using comprehensive criteria
    */
-  private async evaluateCompleteness(prompt: string, response: string, context?: any): Promise<number> {
+  private async evaluateCompleteness(prompt: string, response: string, context?: EvaluationContext): Promise<number> {
     const judgePrompt = this.buildCompletenessJudgePrompt(prompt, response, context);
     
     try {
@@ -170,7 +213,7 @@ export class EnhancedLLMJudge {
   /**
    * Evaluate clarity using linguistic analysis
    */
-  private async evaluateClarity(prompt: string, response: string, context?: any): Promise<number> {
+  private async evaluateClarity(prompt: string, response: string, context?: EvaluationContext): Promise<number> {
     const judgePrompt = this.buildClarityJudgePrompt(prompt, response, context);
     
     try {
@@ -185,7 +228,7 @@ export class EnhancedLLMJudge {
   /**
    * Evaluate relevance to the original prompt
    */
-  private async evaluateRelevance(prompt: string, response: string, context?: any): Promise<number> {
+  private async evaluateRelevance(prompt: string, response: string, context?: EvaluationContext): Promise<number> {
     const judgePrompt = this.buildRelevanceJudgePrompt(prompt, response, context);
     
     try {
@@ -200,7 +243,7 @@ export class EnhancedLLMJudge {
   /**
    * Evaluate reasoning quality - critical for RiR tasks
    */
-  private async evaluateReasoningQuality(prompt: string, response: string, context?: any): Promise<number> {
+  private async evaluateReasoningQuality(prompt: string, response: string, context?: EvaluationContext): Promise<number> {
     const judgePrompt = this.buildReasoningJudgePrompt(prompt, response, context);
     
     try {
@@ -215,7 +258,7 @@ export class EnhancedLLMJudge {
   /**
    * Evaluate factual correctness
    */
-  private async evaluateFactualCorrectness(prompt: string, response: string, context?: any): Promise<number> {
+  private async evaluateFactualCorrectness(prompt: string, response: string, context?: EvaluationContext): Promise<number> {
     const judgePrompt = this.buildFactualJudgePrompt(prompt, response, context);
     
     try {
@@ -230,7 +273,7 @@ export class EnhancedLLMJudge {
   /**
    * Evaluate coherence and logical flow
    */
-  private async evaluateCoherence(prompt: string, response: string, context?: any): Promise<number> {
+  private async evaluateCoherence(prompt: string, response: string, context?: EvaluationContext): Promise<number> {
     const judgePrompt = this.buildCoherenceJudgePrompt(prompt, response, context);
     
     try {
@@ -245,7 +288,7 @@ export class EnhancedLLMJudge {
   /**
    * Evaluate depth of analysis
    */
-  private async evaluateDepth(prompt: string, response: string, context?: any): Promise<number> {
+  private async evaluateDepth(prompt: string, response: string, context?: EvaluationContext): Promise<number> {
     const judgePrompt = this.buildDepthJudgePrompt(prompt, response, context);
     
     try {
@@ -264,7 +307,7 @@ export class EnhancedLLMJudge {
   private async analyzeReasoningQuality(
     prompt: string, 
     response: string, 
-    context?: any
+    context?: EvaluationContext
   ): Promise<{
     logical_flow: number;
     evidence_quality: number;
@@ -289,7 +332,7 @@ export class EnhancedLLMJudge {
   private async analyzeEdgeCaseCoverage(
     prompt: string, 
     response: string, 
-    context?: any
+    context?: EvaluationContext
   ): Promise<{
     ambiguity_handling: number;
     contradiction_detection: number;
@@ -314,9 +357,9 @@ export class EnhancedLLMJudge {
     prompt: string,
     response: string,
     evaluations: number[],
-    reasoningAnalysis: any,
-    edgeCaseAnalysis: any,
-    context?: any
+    reasoningAnalysis: ReasoningAnalysis,
+    edgeCaseAnalysis: EdgeCaseAnalysis,
+    context?: EvaluationContext
   ): Promise<string> {
     const feedbackPrompt = this.buildFeedbackPrompt(
       prompt, response, evaluations, reasoningAnalysis, edgeCaseAnalysis, context
@@ -338,8 +381,8 @@ export class EnhancedLLMJudge {
     prompt: string,
     response: string,
     evaluations: number[],
-    reasoningAnalysis: any,
-    edgeCaseAnalysis: any
+    reasoningAnalysis: ReasoningAnalysis,
+    edgeCaseAnalysis: EdgeCaseAnalysis
   ): Promise<string[]> {
     const suggestionsPrompt = this.buildSuggestionsPrompt(
       prompt, response, evaluations, reasoningAnalysis, edgeCaseAnalysis
@@ -411,7 +454,7 @@ export class EnhancedLLMJudge {
   /**
    * Build accuracy judge prompt with comprehensive criteria
    */
-  private buildAccuracyJudgePrompt(prompt: string, response: string, context?: any): string {
+  private buildAccuracyJudgePrompt(prompt: string, response: string, context?: EvaluationContext): string {
     return `You are an expert judge evaluating the accuracy of an AI response. 
 
 ORIGINAL PROMPT: "${prompt}"
@@ -440,7 +483,7 @@ Respond with ONLY a number between 0.0 and 1.0, followed by a brief explanation 
   /**
    * Build completeness judge prompt
    */
-  private buildCompletenessJudgePrompt(prompt: string, response: string, context?: any): string {
+  private buildCompletenessJudgePrompt(prompt: string, response: string, context?: EvaluationContext): string {
     return `You are an expert judge evaluating the completeness of an AI response.
 
 ORIGINAL PROMPT: "${prompt}"
@@ -468,7 +511,7 @@ Respond with ONLY a number between 0.0 and 1.0, followed by a brief explanation 
   /**
    * Build clarity judge prompt
    */
-  private buildClarityJudgePrompt(prompt: string, response: string, context?: any): string {
+  private buildClarityJudgePrompt(prompt: string, response: string, context?: EvaluationContext): string {
     return `You are an expert judge evaluating the clarity of an AI response.
 
 ORIGINAL PROMPT: "${prompt}"
@@ -493,7 +536,7 @@ Respond with ONLY a number between 0.0 and 1.0, followed by a brief explanation 
   /**
    * Build relevance judge prompt
    */
-  private buildRelevanceJudgePrompt(prompt: string, response: string, context?: any): string {
+  private buildRelevanceJudgePrompt(prompt: string, response: string, context?: EvaluationContext): string {
     return `You are an expert judge evaluating the relevance of an AI response.
 
 ORIGINAL PROMPT: "${prompt}"
@@ -518,7 +561,7 @@ Respond with ONLY a number between 0.0 and 1.0, followed by a brief explanation 
   /**
    * Build reasoning judge prompt - critical for RiR tasks
    */
-  private buildReasoningJudgePrompt(prompt: string, response: string, context?: any): string {
+  private buildReasoningJudgePrompt(prompt: string, response: string, context?: EvaluationContext): string {
     return `You are an expert judge evaluating the reasoning quality of an AI response for reasoning-intensive regression tasks.
 
 ORIGINAL PROMPT: "${prompt}"
@@ -548,7 +591,7 @@ Respond with ONLY a number between 0.0 and 1.0, followed by a brief explanation 
   /**
    * Build factual correctness judge prompt
    */
-  private buildFactualJudgePrompt(prompt: string, response: string, context?: any): string {
+  private buildFactualJudgePrompt(prompt: string, response: string, context?: EvaluationContext): string {
     return `You are an expert judge evaluating the factual correctness of an AI response.
 
 ORIGINAL PROMPT: "${prompt}"
@@ -573,7 +616,7 @@ Respond with ONLY a number between 0.0 and 1.0, followed by a brief explanation 
   /**
    * Build coherence judge prompt
    */
-  private buildCoherenceJudgePrompt(prompt: string, response: string, context?: any): string {
+  private buildCoherenceJudgePrompt(prompt: string, response: string, context?: EvaluationContext): string {
     return `You are an expert judge evaluating the coherence of an AI response.
 
 ORIGINAL PROMPT: "${prompt}"
@@ -598,7 +641,7 @@ Respond with ONLY a number between 0.0 and 1.0, followed by a brief explanation 
   /**
    * Build depth judge prompt
    */
-  private buildDepthJudgePrompt(prompt: string, response: string, context?: any): string {
+  private buildDepthJudgePrompt(prompt: string, response: string, context?: EvaluationContext): string {
     return `You are an expert judge evaluating the depth of an AI response.
 
 ORIGINAL PROMPT: "${prompt}"
@@ -623,7 +666,7 @@ Respond with ONLY a number between 0.0 and 1.0, followed by a brief explanation 
   /**
    * Build reasoning analysis prompt for RiR tasks
    */
-  private buildReasoningAnalysisPrompt(prompt: string, response: string, context?: any): string {
+  private buildReasoningAnalysisPrompt(prompt: string, response: string, context?: EvaluationContext): string {
     return `You are an expert judge analyzing the reasoning quality of an AI response for reasoning-intensive regression tasks.
 
 ORIGINAL PROMPT: "${prompt}"
@@ -653,7 +696,7 @@ Respond with a JSON object containing the four scores and brief explanations.`;
   /**
    * Build edge case analysis prompt
    */
-  private buildEdgeCaseAnalysisPrompt(prompt: string, response: string, context?: any): string {
+  private buildEdgeCaseAnalysisPrompt(prompt: string, response: string, context?: EvaluationContext): string {
     return `You are an expert judge analyzing how well an AI response handles edge cases and potential issues.
 
 ORIGINAL PROMPT: "${prompt}"
@@ -684,9 +727,9 @@ Respond with a JSON object containing the four scores and brief explanations.`;
     prompt: string,
     response: string,
     evaluations: number[],
-    reasoningAnalysis: any,
-    edgeCaseAnalysis: any,
-    context?: any
+    reasoningAnalysis: ReasoningAnalysis,
+    edgeCaseAnalysis: EdgeCaseAnalysis,
+    context?: EvaluationContext
   ): string {
     return `You are an expert judge providing detailed feedback on an AI response.
 
@@ -727,8 +770,8 @@ Keep the feedback constructive and actionable.`;
     prompt: string,
     response: string,
     evaluations: number[],
-    reasoningAnalysis: any,
-    edgeCaseAnalysis: any
+    reasoningAnalysis: ReasoningAnalysis,
+    edgeCaseAnalysis: EdgeCaseAnalysis
   ): string {
     return `You are an expert judge providing improvement suggestions for an AI response.
 
@@ -780,7 +823,7 @@ Provide 3-5 specific suggestions.`;
   /**
    * Parse reasoning analysis from JSON response
    */
-  private parseReasoningAnalysis(response: string): any {
+  private parseReasoningAnalysis(response: string): ReasoningAnalysis {
     try {
       const parsed = JSON.parse(response);
       return {
@@ -803,7 +846,7 @@ Provide 3-5 specific suggestions.`;
   /**
    * Parse edge case analysis from JSON response
    */
-  private parseEdgeCaseAnalysis(response: string): any {
+  private parseEdgeCaseAnalysis(response: string): EdgeCaseAnalysis {
     try {
       const parsed = JSON.parse(response);
       return {
@@ -847,8 +890,8 @@ Provide 3-5 specific suggestions.`;
    */
   private calculateOverallScore(
     evaluations: number[],
-    reasoningAnalysis: any,
-    edgeCaseAnalysis: any
+    reasoningAnalysis: ReasoningAnalysis,
+    edgeCaseAnalysis: EdgeCaseAnalysis
   ): number {
     // Weight the dimensions based on evaluation type
     const weights = this.getDimensionWeights();
@@ -884,7 +927,7 @@ Provide 3-5 specific suggestions.`;
   /**
    * Get dimension weights based on evaluation type and domain
    */
-  private getDimensionWeights(): any {
+  private getDimensionWeights(): DimensionWeights {
     const baseWeights = {
       dimensions: [1, 1, 1, 1, 1, 1, 1, 1], // Equal weight for all dimensions
       reasoning: {
@@ -932,7 +975,7 @@ Provide 3-5 specific suggestions.`;
   /**
    * Calculate confidence based on evaluation consistency
    */
-  private calculateConfidence(evaluations: number[], reasoningAnalysis: any): number {
+  private calculateConfidence(evaluations: number[], reasoningAnalysis: ReasoningAnalysis): number {
     // Calculate variance in evaluations
     const mean = evaluations.reduce((sum, score) => sum + score, 0) / evaluations.length;
     const variance = evaluations.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / evaluations.length;
@@ -1046,7 +1089,7 @@ Provide 3-5 specific suggestions.`;
     return Math.max(0.3, Math.min(0.8, score));
   }
 
-  private fallbackReasoningAnalysis(prompt: string, response: string): any {
+  private fallbackReasoningAnalysis(prompt: string, response: string): ReasoningAnalysis {
     return {
       logical_flow: 0.5,
       evidence_quality: 0.5,
@@ -1055,7 +1098,7 @@ Provide 3-5 specific suggestions.`;
     };
   }
 
-  private fallbackEdgeCaseAnalysis(prompt: string, response: string): any {
+  private fallbackEdgeCaseAnalysis(prompt: string, response: string): EdgeCaseAnalysis {
     return {
       ambiguity_handling: 0.5,
       contradiction_detection: 0.5,
@@ -1064,12 +1107,12 @@ Provide 3-5 specific suggestions.`;
     };
   }
 
-  private fallbackFeedbackGeneration(evaluations: number[], reasoningAnalysis: any, edgeCaseAnalysis: any): string {
+  private fallbackFeedbackGeneration(evaluations: number[], reasoningAnalysis: ReasoningAnalysis, edgeCaseAnalysis: EdgeCaseAnalysis): string {
     const avgScore = evaluations.reduce((sum, score) => sum + score, 0) / evaluations.length;
     return `Response scored ${avgScore.toFixed(3)} overall. ${avgScore > 0.7 ? 'Good quality response.' : 'Response needs improvement.'}`;
   }
 
-  private fallbackSuggestions(evaluations: number[], reasoningAnalysis: any, edgeCaseAnalysis: any): string[] {
+  private fallbackSuggestions(evaluations: number[], reasoningAnalysis: ReasoningAnalysis, edgeCaseAnalysis: EdgeCaseAnalysis): string[] {
     const suggestions = [];
     if (evaluations[0] < 0.6) suggestions.push('Improve accuracy and factual correctness');
     if (evaluations[1] < 0.6) suggestions.push('Provide more comprehensive coverage');

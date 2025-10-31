@@ -30,10 +30,10 @@ export function validateConfig() {
   }
   
   if (warnings.length > 0) {
-    console.log('Configuration warnings:');
-    warnings.forEach(warning => console.log(warning));
+    logger.info('Configuration warnings:');
+    warnings.forEach(warning => logger.info(warning));
   } else {
-    console.log('✅ All API credentials configured for real testing');
+    logger.info('✅ All API credentials configured for real testing');
   }
   
   return warnings.length === 0;

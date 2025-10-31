@@ -78,6 +78,16 @@ export interface AnswerGenerationConfig {
   trmMaxSteps?: number;
 
   /**
+   * Use trained TRM model instead of heuristic
+   */
+  useTrainedTRM?: boolean;
+
+  /**
+   * Path to trained TRM model weights
+   */
+  trmModelPath?: string;
+
+  /**
    * Model for generation
    */
   model?: string;
@@ -220,6 +230,8 @@ export class AnswerGenerator {
       useTRMVerification = true,
       trmMinScore = 0.6,
       trmMaxSteps = 2,
+      useTrainedTRM = false,
+      trmModelPath,
     } = config;
 
     console.log(`🤖 Generating answer for: "${query.substring(0, 60)}..."`);
@@ -298,7 +310,18 @@ export class AnswerGenerator {
 
     // Optional TRM verification/improvement pass
     if (useTRMVerification) {
-      const trm = new TRMAdapter({ maxSteps: trmMaxSteps, minScore: trmMinScore });
+      // Initialize TRM adapter (trained or heuristic)
+      let trm: TRMAdapter;
+      if (useTrainedTRM && trmModelPath) {
+        console.log(`   🔄 Using trained TRM model from ${trmModelPath}`);
+        const { TRMTrainedAdapter } = await import('./trm-trained-adapter');
+        const trainedTRM = new TRMTrainedAdapter({ maxSteps: trmMaxSteps, minScore: trmMinScore });
+        await trainedTRM.initialize(trmModelPath);
+        trm = trainedTRM as any; // TRMTrainedAdapter has same interface as TRMAdapter
+      } else {
+        trm = new TRMAdapter({ maxSteps: trmMaxSteps, minScore: trmMinScore });
+      }
+
       const verify = await trm.verify(query, context, bestAnswer);
       if (verify.score < trmMinScore) {
         const improved = await trm.improve(query, context, bestAnswer);

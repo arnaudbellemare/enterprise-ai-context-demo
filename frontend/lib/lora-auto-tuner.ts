@@ -24,6 +24,16 @@ import { AuxiliaryLoRATuning, LoRAHyperparameters, LoRAPerformanceMetrics } from
 import { ConfigurationPerformancePredictor, TrainingExample, PredictionResult } from './configuration-predictor';
 import { StagnationDetector } from './stagnation-detector';
 
+export interface LoRAConfiguration {
+  rank: number;
+  alpha: number;
+  weight_decay: number;
+  learning_rate: number;
+  dropout: number;
+  model: string;
+  use_gepa: boolean;
+}
+
 export interface AutoTuningConfig {
   domain: string;
   targetAccuracy: number;
@@ -36,7 +46,7 @@ export interface AutoTuningConfig {
 
 export interface AutoTuningResult {
   domain: string;
-  bestConfiguration: Record<string, any>;
+  bestConfiguration: LoRAConfiguration;
   bestPerformance: LoRAPerformanceMetrics;
   iterationsUsed: number;
   candidatesTested: number;
@@ -142,7 +152,7 @@ export class LoRAAutoTuner {
     console.log('─────────────────────────────────────────────────────────────\n');
     
     let bestResult: {
-      configuration: Record<string, any>;
+      configuration: LoRAConfiguration;
       performance: LoRAPerformanceMetrics;
       hyperparameters: LoRAHyperparameters;
       iterationsUsed: number;
@@ -182,7 +192,7 @@ export class LoRAAutoTuner {
       // Update best if better
       if (!bestResult || result.finalPerformance.accuracy > bestResult.performance.accuracy) {
         bestResult = {
-          configuration: candidate.configuration,
+          configuration: candidate.configuration as LoRAConfiguration,
           performance: result.finalPerformance,
           hyperparameters: result.finalHyperparameters,
           iterationsUsed: result.iterationsUsed
@@ -304,8 +314,8 @@ export class LoRAAutoTuner {
   /**
    * Generate configuration candidates to evaluate
    */
-  private generateCandidates(): Array<Record<string, any>> {
-    const candidates: Array<Record<string, any>> = [];
+  private generateCandidates(): LoRAConfiguration[] {
+    const candidates: LoRAConfiguration[] = [];
     
     // Hyperparameter search space
     const ranks = [4, 8, 16, 32, 64];

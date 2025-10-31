@@ -8,6 +8,7 @@
  */
 
 import { SafeMathEvaluator } from './safe-math-evaluator';
+import { logger } from './logger';
 
 export interface VerificationResult {
   is_valid: boolean;
@@ -82,7 +83,7 @@ export class Verifier {
       // Parse verification result
       return this.parseVerificationResult(verificationText);
     } catch (error) {
-      console.error('Verification failed:', error);
+      logger.error('Verification failed:', error);
       // Return conservative result on error
       return {
         is_valid: false,
@@ -202,8 +203,8 @@ Provide your verification result as valid JSON:`;
         reasoning: result.reasoning || 'No reasoning provided',
       };
     } catch (error) {
-      console.error('Failed to parse verification result:', error);
-      console.error('Raw text:', text);
+      logger.error('Failed to parse verification result:', error);
+      logger.error('Raw text:', text);
       
       // Fallback: Try to extract basic info from text
       const hasError = /error|wrong|incorrect|invalid|false/i.test(text);
@@ -329,7 +330,7 @@ Respond with JSON:
         };
       }
     } catch (error) {
-      console.error('Error propagation check failed:', error);
+      logger.error('Error propagation check failed:', error);
     }
 
     return { has_propagation: false };

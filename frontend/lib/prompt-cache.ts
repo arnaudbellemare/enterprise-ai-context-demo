@@ -45,7 +45,7 @@ export class PromptCacheManager {
    */
   registerStablePrompt(agentType: string, systemPrompt: string): void {
     this.stableSystemPrompts.set(agentType, systemPrompt);
-    console.log(`✅ Registered stable prompt for: ${agentType}`);
+    logger.info(`✅ Registered stable prompt for: ${agentType}`);
   }
 
   /**
