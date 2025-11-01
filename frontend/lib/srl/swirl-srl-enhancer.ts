@@ -646,6 +646,7 @@ export async function enhanceSWiRLWithSRL(
   const mockDecomposition: SWiRLDecompositionResult = {
     trajectory: {
       task_id: `srl-${Date.now()}`,
+      original_task: query,
       steps: swirlSteps,
       total_complexity: 0.5,
       estimated_time_ms: 1000,
