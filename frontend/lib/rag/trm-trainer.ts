@@ -386,7 +386,9 @@ export class TRMTrainer {
     for (const variable of variables) {
       const name = variable.name;
       if (this.emaWeights.has(name)) {
-        variable.assign(this.emaWeights.get(name)!);
+        const emaValue = this.emaWeights.get(name)!;
+        // Use write() method instead of assign()
+        variable.write(emaValue);
       }
     }
   }
