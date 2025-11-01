@@ -32,6 +32,11 @@ const PROTECTED_ROUTES = [
 const PUBLIC_ROUTES = [
   '/api/health',
   '/api/status',
+  '/api/universal-art-valuation',
+  '/api/permutation-ai-valuation',
+  '/api/art-deco-cartier-valuation',
+  '/api/unified-pipeline',
+  '/api/arena/execute-swirl-trm-full',
 ];
 
 /**
