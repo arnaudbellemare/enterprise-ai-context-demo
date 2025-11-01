@@ -201,7 +201,6 @@ Provide your reasoning step-by-step, referencing specific playbook items when ap
     // Fallback if no model provided
     return `Based on the playbook context, I need to analyze this query systematically...`;
   }
-  
 
   private async generateActions(query: string, reasoning: string, bullets: ContextBullet[]): Promise<string[]> {
     try {
