@@ -24,6 +24,8 @@ import { teacherStudentSystem } from './teacher-student-system';
 import { getTracer } from './dspy-observability';
 import { decideSRL_EBM_Routing } from './srl-ebm-router';
 import { EBMAnswerRefiner } from './ebm/answer-refiner-simple';
+import { SWiRLSRLEnhancer } from './srl/swirl-srl-enhancer';
+import { SWiRLDecompositionResult } from './swirl-decomposer';
 
 export interface UnifiedPipelineConfig {
   enableACE: boolean;
@@ -33,6 +35,9 @@ export interface UnifiedPipelineConfig {
   enableDSPy: boolean;
   enableSemiotic: boolean;
   enableTeacherStudent: boolean;
+  enableSWiRL?: boolean;     // Multi-step reasoning decomposition
+  enableSRL?: boolean;        // SRL enhancement for SWiRL
+  enableEBM?: boolean;        // Energy-based answer refinement
   optimizationMode: 'quality' | 'speed' | 'balanced';
 }
 
@@ -101,6 +106,9 @@ export class UnifiedPermutationPipeline {
       enableDSPy: true,
       enableSemiotic: true,
       enableTeacherStudent: true,
+      enableSWiRL: true,
+      enableSRL: true,
+      enableEBM: true,
       optimizationMode: 'balanced',
       ...config
     };
@@ -362,9 +370,86 @@ export class UnifiedPermutationPipeline {
       console.log(`   ⏱️  Phase 5 completed in ${Date.now() - teacherStudentStart}ms\n`);
       
       // ============================================================
-      // PHASE 6: RECURSIVE VERIFICATION SYSTEM (RVS)
+      // PHASE 6: SWIRL + SRL MULTI-STEP REASONING (if enabled)
       // ============================================================
-      console.log('🔄 PHASE 6: RECURSIVE VERIFICATION');
+      console.log('📚 PHASE 6: SWiRL × SRL MULTI-STEP REASONING');
+      const swirlStart = Date.now();
+      
+      let swirlResult: any[] | null = null;
+      let srlReward = 0;
+      
+      if (this.config.enableSWiRL && irtDifficulty > 0.6) {
+        console.log('   → Decomposing query into multi-step reasoning...');
+        
+        try {
+          // Create SWiRL decomposition
+          const { createSWiRLDecomposer } = await import('./swirl-decomposer');
+          const decomposer = createSWiRLDecomposer();
+          const availableTools = ['web_search', 'calculator', 'sql'];
+          
+          if (this.config.enableSRL) {
+            console.log('   → Applying SRL enhancement with expert trajectories...');
+            const { loadExpertTrajectories } = await import('./srl/swirl-srl-enhancer');
+            const expertTrajectories = await loadExpertTrajectories(detectedDomain);
+            
+            if (expertTrajectories.length > 0) {
+              const srlEnhancer = new SWiRLSRLEnhancer({
+                expertTrajectories,
+                stepRewardWeight: 0.6,
+                finalRewardWeight: 0.4,
+                reasoningGeneration: true,
+                similarityThreshold: 0.5
+              });
+              
+              const decomposition = await decomposer.decompose(query, availableTools);
+              const enhanced = await srlEnhancer.enhanceWithSRL(decomposition, query, detectedDomain);
+              
+              swirlResult = enhanced.trajectory.steps.map((s: any) => ({
+                step: s.step_number,
+                action: s.description,
+                stepReward: s.stepReward || 0
+              }));
+              srlReward = enhanced.averageStepReward;
+              
+              console.log(`   ✓ SRL enhancement: ${swirlResult.length} steps, avg reward: ${srlReward.toFixed(3)}`);
+            } else {
+              const decomposition = await decomposer.decompose(query, availableTools);
+              swirlResult = decomposition.trajectory.steps.map((s: any) => ({
+                step: s.step_number,
+                action: s.description
+              }));
+              console.log(`   ✓ SWiRL decomposition: ${swirlResult.length} steps (no expert trajectory match)`);
+            }
+          } else {
+            const decomposition = await decomposer.decompose(query, availableTools);
+            swirlResult = decomposition.trajectory.steps.map((s: any) => ({
+              step: s.step_number,
+              action: s.description
+            }));
+            console.log(`   ✓ SWiRL decomposition: ${swirlResult.length} steps`);
+          }
+          
+          steps.push({
+            component: 'SWiRL × SRL',
+            phase: 'inference',
+            input: { query, domain: detectedDomain },
+            output: { steps: swirlResult.length, averageReward: srlReward },
+            duration_ms: Date.now() - swirlStart,
+            status: 'success'
+          });
+        } catch (error) {
+          console.log(`   ⚠️ SWiRL/SRL unavailable: ${error}`);
+        }
+      } else {
+        console.log(`   ⊘ Skipped (difficulty ${irtDifficulty.toFixed(2)} < 0.6 threshold or SWiRL disabled)`);
+      }
+      
+      console.log(`   ⏱️  Phase 6 completed in ${Date.now() - swirlStart}ms\n`);
+      
+      // ============================================================
+      // PHASE 7: RECURSIVE VERIFICATION SYSTEM (RVS)
+      // ============================================================
+      console.log('🔄 PHASE 7: RECURSIVE VERIFICATION');
       const rvsStart = Date.now();
       
       let rvsResult: RVSResult | null = null;
@@ -403,12 +488,12 @@ export class UnifiedPermutationPipeline {
         console.log(`   ⊘ Skipped (difficulty ${irtDifficulty.toFixed(2)} < 0.6 threshold)`);
       }
       
-      console.log(`   ⏱️  Phase 6 completed in ${Date.now() - rvsStart}ms\n`);
+      console.log(`   ⏱️  Phase 7 completed in ${Date.now() - rvsStart}ms\n`);
       
       // ============================================================
-      // PHASE 7: SYNTHESIS & FINAL ANSWER
+      // PHASE 8: SYNTHESIS & FINAL ANSWER
       // ============================================================
-      console.log('🎨 PHASE 7: SYNTHESIS & FINAL ANSWER');
+      console.log('🎨 PHASE 8: SYNTHESIS & FINAL ANSWER');
       const synthesisStart = Date.now();
       
       let finalAnswer = this.synthesizeFinalAnswer({
@@ -522,7 +607,7 @@ export class UnifiedPermutationPipeline {
       // Use refined answer if available
       finalAnswer = ebmRefined ? ebmRefinedAnswer : finalAnswer;
       
-      console.log(`   ⏱️  Phase 7 completed in ${Date.now() - synthesisStart}ms\n`);
+      console.log(`   ⏱️  Phase 8 completed in ${Date.now() - synthesisStart}ms\n`);
       
       // ============================================================
       // FINAL METRICS & SUMMARY
