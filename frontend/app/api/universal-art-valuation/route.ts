@@ -240,7 +240,9 @@ async function buildAndExecuteValuation(artwork: any) {
     console.log('🧠 Using Perplexity (teacher) to look up real market data...');
     
     console.log('🔍 About to call Perplexity teacher...');
-    const [marketData, enhancedData, realArtData, perplexityData] = await Promise.all([
+    
+    // Use Promise.allSettled to handle errors gracefully
+    const results = await Promise.allSettled([
       realisticMarketDataCollector.collectMarketData(
         specializedQuery,
         'art'
@@ -262,6 +264,19 @@ async function buildAndExecuteValuation(artwork: any) {
         artwork.year
       )
     ]);
+    
+    // Extract results from settled promises
+    const marketData = results[0].status === 'fulfilled' ? results[0].value : { sales: [] };
+    const enhancedData = results[1].status === 'fulfilled' ? results[1].value : { auctions: [] };
+    const realArtData = results[2].status === 'fulfilled' ? results[2].value : [];
+    const perplexityData = results[3].status === 'fulfilled' ? results[3].value : [];
+    
+    // Log any failures
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.warn(`⚠️  Data source ${index} failed:`, result.reason?.message || result.reason);
+      }
+    });
 
     // 3.5. Process real market data from Perplexity (teacher) - PRIORITY
     console.log('🔍 Checking Perplexity data:', { 
