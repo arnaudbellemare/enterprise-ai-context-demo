@@ -38,6 +38,7 @@ import { WeaviateRetrieveDSPyIntegration } from './weaviate-retrieve-dspy-integr
 import { RAGPipeline, type RAGPipelineConfig } from './rag/complete-rag-pipeline';
 import { LocalVectorAdapter } from './rag/local-vector-adapter';
 import { getEvolvedPrompts, type EvolvedRAGPrompts } from './gepa-evolved-prompts';
+import { Logger } from './logger';
 // import { teacherStudentSystem } from './teacher-student-system'; // Temporarily disabled
 
 // ============================================
