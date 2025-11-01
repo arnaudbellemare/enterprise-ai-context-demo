@@ -168,12 +168,15 @@ export class PermutationEngine {
       enableDSPy: false,         // ❌ DISABLED - Too slow
       enableACE: true,           // ✅ ENABLED - Adaptive (only for IRT > 0.95)
       enableSWiRL: true,         // ✅ ENABLED - Just planning, instant
+      enableSRL: true,           // ✅ ENABLED - Expert trajectory supervision (auto-disabled for IRT < 0.3)
       enableTRM: true,           // ✅ ENABLED - Fast verification
       enableSQL: false,          // ❌ Disabled - Rarely needed
       enableWeaviateRetrieveDSPy: false, // ❌ DISABLED - Legacy, replaced by RAG
       enableRAG: true,           // ✅ ENABLED - GEPA-optimized RAG with inference sampling
       ragDomain: 'general',      // Default domain for evolved prompts
       useEvolvedPrompts: true,   // Use GEPA-evolved prompts when available
+      enableEBM: true,           // ✅ ENABLED - Energy-based refinement (auto-disabled for IRT < 0.3)
+      ebmRefinementSteps: 3,     // Number of EBM refinement iterations
       ...config
     };
     if (process.env.NODE_ENV !== 'production') {
@@ -308,9 +311,17 @@ export class PermutationEngine {
       let aceResult = null;
       let playbookBulletsUsed = 0;
       
-      // Quick IRT pre-check to decide if we need ACE
+      // Quick IRT pre-check to decide if we need ACE and configure SRL/EBM
       const preliminaryIRT = await this.calculateIRT(query, detectedDomain);
       const needsACE = preliminaryIRT > 0.95; // Only use ACE for VERY complex queries to avoid slowdown
+      
+      // Adaptive SRL/EBM gating: Disable for very simple queries (IRT < 0.3)
+      const effectiveConfig = { ...this.config };
+      if (preliminaryIRT < 0.3) {
+        effectiveConfig.enableSRL = false;
+        effectiveConfig.enableEBM = false;
+        console.log(`⚡ Query too simple (IRT: ${preliminaryIRT.toFixed(2)}) - Disabling SRL/EBM for speed`);
+      }
       
       if (this.config.enableACE && needsACE) {
         console.log(`🧠 Query is complex (IRT: ${preliminaryIRT.toFixed(2)}) - Running ENHANCED ACE Framework`);
@@ -353,23 +364,24 @@ export class PermutationEngine {
       if (process.env.NODE_ENV !== 'production') console.log('⚡ Using simple parallel execution for speed...');
       
       // Execute parallel tasks using simple Promise.all for speed
-      const [queries, irtScore, memories, loraParams, swirlSteps] = await Promise.all([
+      // Note: IRT already calculated above, so reuse it
+      const [queries, memories, loraParams] = await Promise.all([
           this.config.enableMultiQuery 
             ? this.generateMultiQuery(query, detectedDomain, 60)
             : Promise.resolve([query]),
-          this.config.enableIRT
-            ? this.calculateIRT(query, detectedDomain)
-            : Promise.resolve(0.5),
           this.config.enableReasoningBank
             ? this.retrieveMemories(query, detectedDomain)
             : Promise.resolve([]),
           this.config.enableLoRA
             ? this.getLoRAParameters(detectedDomain)
-            : Promise.resolve(null),
-          this.config.enableSWiRL
-            ? this.applySWiRL(query, detectedDomain)
-            : Promise.resolve([])
+            : Promise.resolve(null)
         ]);
+
+      // SWiRL execution after parallel (needs effectiveConfig)
+      const irtScore = preliminaryIRT; // Reuse already calculated IRT
+      const swirlSteps = this.config.enableSWiRL
+        ? await this.applySWiRL(query, detectedDomain, effectiveConfig)
+        : [];
 
       console.log(`⚡ Parallel execution completed in ${Date.now() - parallelStart}ms`);
 
@@ -828,7 +840,7 @@ export class PermutationEngine {
       let ebmEnergyImprovement = 0;
       let preEBMAnswer = '';
       
-      if (this.config.enableEBM) {
+      if (effectiveConfig.enableEBM) {
         console.log('🔬 Running nanoEBM energy-based refinement...');
         const ebmStart = Date.now();
         
@@ -877,7 +889,7 @@ export class PermutationEngine {
 
       // Apply EBM refinement if enabled
       let finalAnswer = initialAnswer;
-      if (ebmRefined && this.config.enableEBM) {
+      if (ebmRefined && effectiveConfig.enableEBM) {
         try {
           const { EBMAnswerRefiner } = await import('./ebm/answer-refiner-simple');
           const ebmRefiner = new EBMAnswerRefiner({
@@ -978,7 +990,7 @@ export class PermutationEngine {
           rag_documents_retrieved: ragDocumentsRetrieved,
           rag_evolved_prompts_used: ragEvolvedPromptsUsed,
           rag_prompt_version: ragPromptVersion,
-          srl_used: this.config.enableSRL && this.config.enableSWiRL && (swirlSteps as any)?.srlReward !== undefined,
+          srl_used: effectiveConfig.enableSRL && this.config.enableSWiRL && (swirlSteps as any)?.srlReward !== undefined,
           srl_average_step_reward: (swirlSteps as any)?.srlReward,
           ebm_used: ebmRefined,
           ebm_refinement_steps: ebmRefinementSteps,
@@ -1764,13 +1776,13 @@ To get the best results, please ensure:
 The PERMUTATION system has processed your query through all 11 technical components, but requires external data access for complete answers.`;
   }
 
-  private async applySWiRL(query: string, domain: string): Promise<any[]> {
+  private async applySWiRL(query: string, domain: string, effectiveConfig = this.config): Promise<any[]> {
     // Apply SWiRL (Step-Wise Reinforcement Learning) decomposition
     // Based on Stanford + DeepMind's multi-step reasoning approach
-    return await this.decomposeSWiRL(query, domain);
+    return await this.decomposeSWiRL(query, domain, effectiveConfig);
   }
 
-  private async decomposeSWiRL(query: string, domain: string): Promise<any[]> {
+  private async decomposeSWiRL(query: string, domain: string, effectiveConfig = this.config): Promise<any[]> {
     try {
       // Use real SWiRL decomposer
       const { createSWiRLDecomposer } = await import('./swirl-decomposer');
@@ -1778,7 +1790,7 @@ The PERMUTATION system has processed your query through all 11 technical compone
       const availableTools = ['web_search', 'calculator', 'sql'];
       
       // Decompose with optional SRL enhancement
-      if (this.config.enableSRL && this.config.enableSWiRL) {
+      if (effectiveConfig.enableSRL && this.config.enableSWiRL) {
         console.log('📚 Using SRL-enhanced SWiRL decomposition...');
         const { SWiRLSRLEnhancer, loadExpertTrajectories } = await import('./srl/swirl-srl-enhancer');
         
