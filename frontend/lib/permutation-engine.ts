@@ -127,6 +127,7 @@ export class PermutationEngine {
   private playbook: Playbook | null = null;
   private tracer: any;
   private adaptivePrompts: any;
+  private logger = Logger.getInstance();
   
   // REAL OPTIMIZATION COMPONENTS (actually used!)
   private smartRouter: SmartRouter | null;
@@ -145,6 +146,9 @@ export class PermutationEngine {
     this.llmClient = new ACELLMClient();
     this.tracer = getTracer();
     this.adaptivePrompts = getAdaptivePromptSystem();
+    
+    // Set logger context
+    this.logger.setContext({ component: 'PermutationEngine' });
     
     // Initialize REAL optimization components (lazy loading to avoid timeouts)
     this.smartRouter = null;
@@ -180,7 +184,7 @@ export class PermutationEngine {
       ...config
     };
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🚀 PermutationEngine initialized with FULL STACK (parallelized + adaptive):', this.config);
+      this.logger.info('PermutationEngine initialized', { config: this.config });
     }
   }
 
@@ -189,12 +193,12 @@ export class PermutationEngine {
    * This is where ALL 11 components come together
    */
   async execute(query: string, domain?: string): Promise<PermutationResult> {
-    console.log('📝 PERMUTATION execute() called with query:', query.substring(0, 50));
+    this.logger.info('PERMUTATION execute() called', { query: query.substring(0, 50), domain });
     const startTime = Date.now();
     
     // START TRACE SESSION
     const sessionId = this.tracer.startSession(query);
-    console.log(`🎬 Trace session started: ${sessionId}`);
+    this.logger.debug('Trace session started', { sessionId });
     
     const trace: ExecutionTrace = {
       steps: [],
