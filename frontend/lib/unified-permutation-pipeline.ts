@@ -117,6 +117,7 @@ export class UnifiedPermutationPipeline {
     };
 
     // Initialize with null model - will be set when executing queries
+    // Use optimized ACE framework if GEPA is enabled (lazy load in processQuery)
     this.aceFramework = new ACEFramework(null as any);
     this.irtCalculator = calculateIRT;
     this.rvs = new RVS();
@@ -234,7 +235,20 @@ export class UnifiedPermutationPipeline {
       
       if (this.config.enableACE && irtDifficulty > 0.7) {
         console.log('   → Running ACE (Generator → Reflector → Curator)...');
-        aceResult = await this.aceFramework.processQuery(query, detectedDomain);
+        
+        // Use optimized ACE if GEPA is enabled
+        if (this.config.enableGEPA) {
+          const { OptimizedACEFramework } = await import('./ace-framework-optimized');
+          const optimizedACE = new OptimizedACEFramework(null as any, undefined, {
+            enableOptimization: true,
+            minImprovement: 10,
+            cacheOptimizations: true
+          });
+          aceResult = await optimizedACE.processQuery(query, detectedDomain);
+          console.log(`   ✓ PromptMII+GEPA optimization: Applied`);
+        } else {
+          aceResult = await this.aceFramework.processQuery(query, detectedDomain);
+        }
         
         console.log(`   ✓ Generator: ${aceResult.generator?.actions?.length || 0} actions`);
         console.log(`   ✓ Reflector: ${aceResult.reflector?.insights?.length || 0} insights`);
@@ -244,7 +258,11 @@ export class UnifiedPermutationPipeline {
           component: 'ACE Framework',
           phase: 'optimization',
           input: { query, domain: detectedDomain, difficulty: irtDifficulty },
-          output: aceResult,
+          output: {
+            ...aceResult,
+            promptmii_gepa_applied: this.config.enableGEPA, // Mark optimization status
+            optimization_note: this.config.enableGEPA ? 'Using OptimizedACEFramework with PromptMII+GEPA' : 'Standard ACE Framework'
+          },
           duration_ms: Date.now() - aceStart,
           status: 'success'
         });
@@ -385,9 +403,13 @@ export class UnifiedPermutationPipeline {
         console.log('   → Decomposing query into multi-step reasoning...');
         
         try {
-          // Create SWiRL decomposition
-          const { createSWiRLDecomposer } = await import('./swirl-decomposer');
-          const decomposer = createSWiRLDecomposer();
+          // Create OPTIMIZED SWiRL decomposition (with PromptMII+GEPA)
+          const { createOptimizedSWiRLDecomposer } = await import('./swirl-optimized');
+          const decomposer = createOptimizedSWiRLDecomposer({
+            enableOptimization: true,
+            minImprovement: 10,
+            cacheOptimizations: true
+          });
           const availableTools = ['web_search', 'calculator', 'sql'];
           
           if (this.config.enableSRL) {
@@ -436,7 +458,12 @@ export class UnifiedPermutationPipeline {
             component: 'SWiRL × SRL',
             phase: 'inference',
             input: { query, domain: detectedDomain },
-            output: { steps: swirlResult.length, averageReward: srlReward },
+            output: { 
+              steps: swirlResult.length, 
+              averageReward: srlReward,
+              promptmii_gepa_applied: true, // Mark that PromptMII+GEPA was used
+              optimization_note: 'Using OptimizedSWiRLDecomposer with PromptMII+GEPA'
+            },
             duration_ms: Date.now() - swirlStart,
             status: 'success'
           });
