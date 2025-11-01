@@ -266,8 +266,8 @@ async function buildAndExecuteValuation(artwork: any) {
     ]);
     
     // Extract results from settled promises
-    const marketData = results[0].status === 'fulfilled' ? results[0].value : { sales: [] };
-    const enhancedData = results[1].status === 'fulfilled' ? results[1].value : { auctions: [] };
+    const marketData = results[0].status === 'fulfilled' ? results[0].value : { sales: [], confidence: 0 };
+    const enhancedData = results[1].status === 'fulfilled' ? results[1].value : { auctions: [], totalCost: 0 };
     const realArtData = results[2].status === 'fulfilled' ? results[2].value : [];
     const perplexityData = results[3].status === 'fulfilled' ? results[3].value : [];
     

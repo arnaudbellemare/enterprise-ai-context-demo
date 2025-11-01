@@ -44,6 +44,11 @@ export const srlPlugin: Plugin = {
  * Register SRL plugin with runtime
  */
 export async function registerSRLPlugin(runtime: Runtime): Promise<void> {
+  if (!runtime.registerPlugin) {
+    console.error('❌ Runtime does not have registerPlugin method');
+    return;
+  }
+  
   const result = await runtime.registerPlugin(srlPlugin);
   
   if (!result.success) {

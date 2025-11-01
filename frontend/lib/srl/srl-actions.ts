@@ -112,7 +112,9 @@ export const computeStepRewardAction: Action = {
       const srlEnhancer = new SWiRLSRLEnhancer({
         expertTrajectories: [],
         stepRewardWeight: 0.6,
-        finalRewardWeight: 0.4
+        finalRewardWeight: 0.4,
+        reasoningGeneration: false,
+        similarityThreshold: 0.5
       });
 
       // Use private method via type casting (in production, would expose method)
@@ -164,7 +166,8 @@ export const generateReasoningAction: Action = {
         expertTrajectories: [],
         stepRewardWeight: 0.6,
         finalRewardWeight: 0.4,
-        reasoningGeneration: true
+        reasoningGeneration: true,
+        similarityThreshold: 0.5
       });
 
       // Use private method via type casting

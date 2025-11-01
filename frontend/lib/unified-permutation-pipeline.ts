@@ -61,6 +61,9 @@ export interface UnifiedPipelineResult {
       teacher_calls: number;
       student_calls: number;
     };
+    ebm_refined?: boolean;
+    ebm_refinement_steps?: number;
+    ebm_energy_improvement?: number;
   };
   trace: {
     steps: PipelineStep[];
@@ -545,7 +548,8 @@ export class UnifiedPermutationPipeline {
             refinementSteps: 3,
             learningRate: 0.5,
             noiseScale: 0.01,
-            temperature: 0.8
+            temperature: 0.8,
+            energyFunction: 'combined'
           });
           
           // Build context for EBM
@@ -558,13 +562,13 @@ export class UnifiedPermutationPipeline {
           
           const refinementResult = await refiner.refine(
             query,
-            finalAnswer,
-            ebmContext || 'No additional context available'
+            ebmContext || 'No additional context available',
+            finalAnswer
           );
           
           ebmRefinedAnswer = refinementResult.refinedAnswer;
           ebmRefinementSteps = refinementResult.stepsCompleted;
-          ebmEnergyImprovement = refinementResult.initialEnergy - refinementResult.finalEnergy;
+          ebmEnergyImprovement = refinementResult.improvement; // Use improvement field
           ebmRefined = true;
           
           // Update quality score if refinement improved energy
