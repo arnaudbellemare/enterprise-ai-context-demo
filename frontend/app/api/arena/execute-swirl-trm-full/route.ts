@@ -18,6 +18,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { SWiRLDecomposer, createSWiRLDecomposer, SWiRLStep } from '@/lib/swirl-decomposer';
+import { createOptimizedSWiRLDecomposer } from '@/lib/swirl-optimized';
 import { AdaptiveRedoLoop } from '@/lib/adaptive-redo-loop';
 import { detectDomain, detectStructuredQuery, detectWebSearchNeeded } from '@/lib/smart-routing';
 import { createLocalEmbeddings } from '@/lib/local-embeddings';
@@ -424,7 +425,11 @@ export async function POST(req: NextRequest) {
     console.log(`${'─'.repeat(80)}\n`);
 
     const availableTools = ['web_search', 'calculator', 'sql'];
-    const swirlDecomposer = createSWiRLDecomposer('qwen2.5:14b');
+    // Use optimized SWiRL with PromptMII+GEPA
+    const swirlDecomposer = createOptimizedSWiRLDecomposer({ 
+      enableOptimization: true,
+      minImprovement: 10 
+    });
     const swirlDecomposition = await swirlDecomposer.decompose(query, availableTools);
 
     logs.push({
