@@ -298,10 +298,25 @@ async function buildAndExecuteValuation(artwork: any) {
         dataPoints: perplexityData.length
       });
       
-      // Use real market data as base for Permutation AI processing
-      const realBasePrice = avgRealPrice;
-      const fallbackData = buildFallbackSystemFromRealData(artwork, realBasePrice);
-      comparableSales = fallbackData;
+      // Use REAL Perplexity data directly (not fallback)
+      comparableSales = perplexityData.map(data => ({
+        item: data.title || `${artwork.artist} ${artwork.medium.join(' ')} - Auction Result`,
+        saleDate: data.saleDate,
+        hammerPrice: data.hammerPrice,
+        estimate: data.estimate,
+        auctionHouse: data.auctionHouse,
+        lotNumber: data.lotNumber,
+        artist: data.artist,
+        medium: data.medium,
+        period: data.period,
+        condition: data.condition,
+        url: data.url,
+        autoLabeled: true,
+        confidence: data.confidence,
+        dataQuality: data.dataQuality,
+        source: data.source
+      }));
+      
       learningScore = 0.95; // Very high score for Perplexity Teacher data
       adaptationFactors.push(`Perplexity Teacher found real market data: $${avgRealPrice.toLocaleString()} average`);
       dataSources.push('perplexity_teacher');
