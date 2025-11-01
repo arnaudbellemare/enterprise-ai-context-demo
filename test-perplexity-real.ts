@@ -1,7 +1,10 @@
 import { perplexityTeacher } from './lib/perplexity-teacher';
 
-// Set environment variable directly for testing
-process.env.PERPLEXITY_API_KEY = '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';
+// Note: Perplexity API key should be set in environment variables or .env.local
+if (!process.env.PERPLEXITY_API_KEY) {
+  console.error('❌ PERPLEXITY_API_KEY not set in environment');
+  process.exit(1);
+}
 
 async function testPerplexityReal() {
   console.log('🔍 Testing Perplexity with Real Monet Data\n');
