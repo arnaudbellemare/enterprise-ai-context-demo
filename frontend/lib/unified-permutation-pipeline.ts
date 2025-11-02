@@ -39,6 +39,10 @@ export interface UnifiedPipelineConfig {
   enableSRL?: boolean;        // SRL enhancement for SWiRL
   enableEBM?: boolean;        // Energy-based answer refinement
   optimizationMode: 'quality' | 'speed' | 'balanced';
+  // Threshold configuration for testing
+  aceThreshold?: number;     // IRT threshold for ACE activation (default: 0.7)
+  swirlThreshold?: number;   // IRT threshold for SWiRL activation (default: 0.6)
+  rvsThreshold?: number;     // IRT threshold for RVS activation (default: 0.6)
 }
 
 export interface UnifiedPipelineResult {
@@ -233,7 +237,8 @@ export class UnifiedPermutationPipeline {
       
       let aceResult: any = null;
       
-      if (this.config.enableACE && irtDifficulty > 0.7) {
+      const aceThreshold = this.config.aceThreshold ?? 0.7;
+      if (this.config.enableACE && irtDifficulty > aceThreshold) {
         console.log('   → Running ACE (Generator → Reflector → Curator)...');
         
         // Use optimized ACE if GEPA is enabled
@@ -267,7 +272,7 @@ export class UnifiedPermutationPipeline {
           status: 'success'
         });
       } else {
-        console.log(`   ⊘ Skipped (difficulty ${irtDifficulty.toFixed(2)} < 0.7 threshold)`);
+        console.log(`   ⊘ Skipped (difficulty ${irtDifficulty.toFixed(2)} < ${aceThreshold.toFixed(1)} threshold)`);
       }
       
       console.log(`   ⏱️  Phase 3 completed in ${Date.now() - aceStart}ms\n`);
@@ -399,7 +404,8 @@ export class UnifiedPermutationPipeline {
       let swirlResult: any[] | null = null;
       let srlReward = 0;
       
-      if (this.config.enableSWiRL && irtDifficulty > 0.6) {
+      const swirlThreshold = this.config.swirlThreshold ?? 0.6;
+      if (this.config.enableSWiRL && irtDifficulty > swirlThreshold) {
         console.log('   → Decomposing query into multi-step reasoning...');
         
         try {
@@ -471,7 +477,7 @@ export class UnifiedPermutationPipeline {
           console.log(`   ⚠️ SWiRL/SRL unavailable: ${error}`);
         }
       } else {
-        console.log(`   ⊘ Skipped (difficulty ${irtDifficulty.toFixed(2)} < 0.6 threshold or SWiRL disabled)`);
+        console.log(`   ⊘ Skipped (difficulty ${irtDifficulty.toFixed(2)} < ${swirlThreshold.toFixed(1)} threshold or SWiRL disabled)`);
       }
       
       console.log(`   ⏱️  Phase 6 completed in ${Date.now() - swirlStart}ms\n`);
@@ -484,7 +490,8 @@ export class UnifiedPermutationPipeline {
       
       let rvsResult: RVSResult | null = null;
       
-      if (this.config.enableRVS && irtDifficulty > 0.6) {
+      const rvsThreshold = this.config.rvsThreshold ?? 0.6;
+      if (this.config.enableRVS && irtDifficulty > rvsThreshold) {
         console.log('   → Running recursive verification with adaptive computation...');
         
         // Create verification steps from previous results
@@ -515,7 +522,7 @@ export class UnifiedPermutationPipeline {
           status: 'success'
         });
       } else {
-        console.log(`   ⊘ Skipped (difficulty ${irtDifficulty.toFixed(2)} < 0.6 threshold)`);
+        console.log(`   ⊘ Skipped (difficulty ${irtDifficulty.toFixed(2)} < ${rvsThreshold.toFixed(1)} threshold)`);
       }
       
       console.log(`   ⏱️  Phase 7 completed in ${Date.now() - rvsStart}ms\n`);
