@@ -39,6 +39,7 @@ export interface UnifiedPipelineConfig {
   enableSRL?: boolean;        // SRL enhancement for SWiRL
   enableEBM?: boolean;        // Energy-based answer refinement
   enableToolSynthesis?: boolean; // Alita-G: Synthesize tools from trajectories
+  enableSelfImprovingJudge?: boolean; // Self-improving judge (learns from outcomes)
   optimizationMode: 'quality' | 'speed' | 'balanced';
   // Threshold configuration for testing
   aceThreshold?: number;     // IRT threshold for ACE activation (default: 0.5, optimal from testing)
@@ -76,6 +77,10 @@ export interface UnifiedPipelineResult {
           // Alita-G tool synthesis
           tools_synthesized?: number;
           tool_names?: string[];
+          // Self-improving judge
+          judge_learned_from_outcome?: boolean;
+          judge_calibration_accuracy?: number;
+          judge_active_learning_candidates?: number;
         };
   trace: {
     steps: PipelineStep[];
@@ -125,6 +130,7 @@ export class UnifiedPermutationPipeline {
       enableSRL: true,
       enableEBM: true,
       enableToolSynthesis: true, // Alita-G: Enable tool synthesis by default
+      enableSelfImprovingJudge: true, // Self-improving judge: Learn from outcomes by default
       optimizationMode: 'balanced',
       ...config
     };
@@ -803,6 +809,54 @@ export class UnifiedPermutationPipeline {
             console.warn('⚠️ Tool synthesis failed (non-fatal):', toolError);
           }
         }
+        
+        // Step 5: Self-Improving Judge - Learn from this execution automatically
+        if (this.config.enableSelfImprovingJudge !== false) {
+          try {
+            const { SelfImprovingJudge } = await import('./self-improving-judge');
+            const judge = new SelfImprovingJudge(reasoningBank);
+            
+            // Learn from this single execution (no manual grading needed)
+            const examplesLearned = await judge.learnFromTaskOutcomes([experience as any], 0.7);
+            
+            if (examplesLearned > 0) {
+              console.log(`🎓 Self-improving judge: Learned from execution outcome (success: ${taskSucceeded})`);
+              result.metadata.judge_learned_from_outcome = true;
+            }
+            
+            // Periodic calibration (every 10 executions for performance)
+            if (this.executionCount % 10 === 0) {
+              try {
+                // Load recent experiences from ReasoningBank for calibration
+                const recentExperiences = await this.loadRecentExperiencesForCalibration(reasoningBank, 20);
+                if (recentExperiences.length >= 5) {
+                  const calibration = await judge.calibrateJudge(recentExperiences);
+                  console.log(`📊 Self-improving judge calibration:`);
+                  console.log(`   Empirical accuracy: ${(calibration.empiricalAccuracy * 100).toFixed(1)}%`);
+                  console.log(`   Confidence calibration: ${(calibration.confidenceCalibration * 100).toFixed(1)}%`);
+                  
+                  result.metadata.judge_calibration_accuracy = calibration.empiricalAccuracy;
+                  
+                  // Identify active learning candidates (only when calibration runs)
+                  const activeLearningCandidates = await judge.identifyActiveLearningCandidates(recentExperiences, 5);
+                  if (activeLearningCandidates.length > 0) {
+                    console.log(`❓ Active learning: ${activeLearningCandidates.length} candidates for human review`);
+                    result.metadata.judge_active_learning_candidates = activeLearningCandidates.length;
+                    
+                    // Log candidates for human review (could be stored in database for UI)
+                    activeLearningCandidates.slice(0, 3).forEach((candidate, idx) => {
+                      console.log(`   ${idx + 1}. Priority ${candidate.priority.toFixed(1)}: ${candidate.reason}`);
+                    });
+                  }
+                }
+              } catch (calibrationError) {
+                console.warn('⚠️ Judge calibration failed (non-fatal):', calibrationError);
+              }
+            }
+          } catch (judgeError) {
+            console.warn('⚠️ Self-improving judge failed (non-fatal):', judgeError);
+          }
+        }
       } catch (rbError) {
         // Don't fail the pipeline if ReasoningBank extraction fails
         console.warn('⚠️ ReasoningBank memory extraction failed (non-fatal):', rbError);
@@ -1030,6 +1084,47 @@ export class UnifiedPermutationPipeline {
       }
       
       return score;
+    }
+  }
+  
+  /**
+   * Helper: Load recent experiences for judge calibration
+   * Loads from Supabase reasoning_experiences table
+   */
+  private async loadRecentExperiencesForCalibration(
+    reasoningBank: any,
+    limit: number = 20
+  ): Promise<any[]> {
+    try {
+      // Try to load from Supabase if available
+      if (reasoningBank.supabase) {
+        const { data, error } = await reasoningBank.supabase
+          .from('reasoning_experiences')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        
+        if (!error && data && data.length > 0) {
+          // Convert Supabase records to Experience format
+          return data.map((record: any) => ({
+            taskId: record.task_id,
+            query: record.query,
+            domain: record.domain,
+            steps: record.trajectory || [],
+            success: record.success,
+            finalResult: record.final_result,
+            selfJudgment: record.self_judgment,
+            irtAbility: record.irt_ability,
+            irtConfidence: record.irt_confidence
+          }));
+        }
+      }
+      
+      // Fallback: Return empty array (calibration will be skipped)
+      return [];
+    } catch (error) {
+      console.warn('⚠️ Failed to load recent experiences for calibration:', error);
+      return [];
     }
   }
   
