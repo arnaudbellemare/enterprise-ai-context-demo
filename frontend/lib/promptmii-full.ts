@@ -79,11 +79,44 @@ export class FullPromptMII {
   private templates: Map<string, PromptMIITemplate> = new Map();
   private optimizationHistory: PromptMIIOptimizationResult[] = [];
   private metaLearningData: any[] = [];
+  private examplesLoaded: boolean = false;
+  private examplesLoadPromise: Promise<void> | null = null;
   
   constructor() {
     console.log('🧠 Full PromptMII initialized');
     this.initializeCoreTemplates();
-    this.loadMetaLearningData();
+    // Start loading examples asynchronously (non-blocking)
+    this.examplesLoadPromise = this.loadMetaLearningData().catch(err => {
+      console.warn('Failed to load examples from Supabase, using fallback:', err);
+    });
+  }
+  
+  /**
+   * Ensure examples are loaded before use
+   * Returns immediately if already loaded, or waits with timeout
+   */
+  private async ensureExamplesLoaded(maxWaitMs: number = 500): Promise<void> {
+    if (this.examplesLoaded) {
+      return; // Already loaded
+    }
+    
+    if (!this.examplesLoadPromise) {
+      // Start loading if not already started
+      this.examplesLoadPromise = this.loadMetaLearningData();
+    }
+    
+    // Wait for load with timeout - don't block forever
+    try {
+      await Promise.race([
+        this.examplesLoadPromise,
+        new Promise<void>((resolve) => setTimeout(() => {
+          console.warn(`⚠️  Examples load timeout after ${maxWaitMs}ms, proceeding with available examples`);
+          resolve();
+        }, maxWaitMs))
+      ]);
+    } catch (error) {
+      // Already handled in loadMetaLearningData
+    }
   }
   
   /**
@@ -97,6 +130,9 @@ export class FullPromptMII {
     console.log(`🔄 PromptMII: Generating instruction for ${taskType} in ${domain}`);
     
     const startTime = Date.now();
+    
+    // Ensure examples are loaded (with short timeout to avoid blocking)
+    await this.ensureExamplesLoaded(500); // Max 500ms wait
     
     // Step 1: Analyze task characteristics
     const taskAnalysis = this.analyzeTask(task, domain, taskType);
@@ -235,9 +271,20 @@ export class FullPromptMII {
   private findSimilarExamples(task: string, domain: string, taskType: string): PromptMIIExample[] {
     const taskKeywords = this.extractKeywords(task);
     
-    return this.examples
+    // If examples haven't loaded yet, wait (though this should be rare)
+    if (!this.examplesLoaded && this.examples.length < 3) {
+      console.warn('⚠️  Examples not fully loaded, results may be limited');
+    }
+    
+    const filtered = this.examples
       .filter(ex => ex.domain === domain || ex.domain === 'general')
-      .filter(ex => ex.taskType === taskType)
+      .filter(ex => ex.taskType === taskType || taskType === 'general');
+    
+    // If no exact matches, relax domain filter
+    const candidates = filtered.length >= 3 ? filtered : 
+      this.examples.filter(ex => ex.taskType === taskType || taskType === 'general');
+    
+    return candidates
       .map(ex => ({
         ...ex,
         similarity: this.calculateSimilarity(taskKeywords, this.extractKeywords(ex.input))
@@ -734,13 +781,96 @@ export class FullPromptMII {
   }
   
   /**
-   * Load meta-learning data
+   * Load meta-learning data from Supabase reasoning_bank
+   * Falls back to minimal hardcoded examples if database unavailable
+   * Uses caching to avoid repeated database queries
    */
-  private loadMetaLearningData(): void {
-    // Load example data for meta-learning
+  private async loadMetaLearningData(): Promise<void> {
+    const loadStart = Date.now();
+    
+    try {
+      // Try to load from Supabase reasoning_bank table
+      const { createClient } = await import('@supabase/supabase-js');
+      
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        // Load top 50 successful examples from reasoning_bank
+        // Only select necessary fields to reduce data transfer
+        const { data, error } = await supabase
+          .from('reasoning_bank')
+          .select('id, content, domain, success_count, failure_count, metadata')
+          .order('success_count', { ascending: false })
+          .limit(50); // Load 50 examples (top 5 used for each query)
+        
+        if (!error && data && data.length > 0) {
+          // Convert reasoning_bank entries to PromptMII examples
+          this.examples = data.map((entry, idx) => {
+            // Parse content to extract input/output patterns
+            const content = entry.content || '';
+            const lines = content.split('\n').filter((l: string) => l.trim());
+            
+            // Try to infer input/output from structure
+            // If metadata has input/output, use that, otherwise parse content
+            const metadata = entry.metadata || {};
+            const input = metadata.input || lines[0] || content.substring(0, 100);
+            const output = metadata.output || lines.slice(1).join('\n') || content.substring(100);
+            
+            // Infer task type from domain
+            let taskType = 'analysis';
+            if (content.toLowerCase().includes('explain')) taskType = 'explanation';
+            else if (content.toLowerCase().includes('evaluate') || content.toLowerCase().includes('assess')) taskType = 'evaluation';
+            else if (content.toLowerCase().includes('classify')) taskType = 'classification';
+            
+            // Calculate quality from success/failure ratio
+            const total = (entry.success_count || 0) + (entry.failure_count || 0);
+            const quality = total > 0 ? (entry.success_count || 0) / total : 0.7;
+            
+            return {
+              id: entry.id?.toString() || `ex-${idx}`,
+              input: input,
+              output: output,
+              instruction: this.inferInstruction(content, entry.domain || 'general'),
+              quality: Math.min(1.0, Math.max(0.5, quality)),
+              domain: entry.domain || 'general',
+              taskType: taskType
+            };
+          });
+          
+          const loadTime = Date.now() - loadStart;
+          
+          // Analyze loaded data for logging
+          const domainCounts: Record<string, number> = {};
+          let totalSuccess = 0;
+          let totalFailure = 0;
+          data.forEach((entry: any) => {
+            const domain = entry.domain || 'unknown';
+            domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+            totalSuccess += entry.success_count || 0;
+            totalFailure += entry.failure_count || 0;
+          });
+          
+          console.log(`✅ Loaded ${this.examples.length} examples from reasoning_bank in ${loadTime}ms`);
+          console.log(`   Domains: ${Object.keys(domainCounts).join(', ')}`);
+          console.log(`   Total success: ${totalSuccess}, failure: ${totalFailure}`);
+          console.log(`   Performance: ${loadTime < 500 ? 'FAST' : loadTime < 1000 ? 'ACCEPTABLE' : 'SLOW'} (${loadTime}ms)`);
+          
+          this.examplesLoaded = true;
+          return;
+        }
+      }
+    } catch (error) {
+      console.warn('Could not load examples from Supabase:', error);
+    }
+    
+    // Fallback: minimal hardcoded examples (should rarely be used)
+    const fallbackStart = Date.now();
     this.examples = [
       {
-        id: 'ex1',
+        id: 'ex-fallback-1',
         input: 'Analyze the performance of this algorithm',
         output: 'The algorithm shows O(n log n) complexity with good space efficiency.',
         instruction: 'Analyze the algorithm performance',
@@ -749,7 +879,7 @@ export class FullPromptMII {
         taskType: 'analysis'
       },
       {
-        id: 'ex2',
+        id: 'ex-fallback-2',
         input: 'Explain how machine learning works',
         output: 'Machine learning uses algorithms to learn patterns from data.',
         instruction: 'Explain machine learning concepts',
@@ -759,7 +889,28 @@ export class FullPromptMII {
       }
     ];
     
-    console.log('✅ Meta-learning data loaded');
+    const fallbackTime = Date.now() - fallbackStart;
+    console.log(`⚠️  Using fallback examples (only 2) - Supabase load failed (${fallbackTime}ms)`);
+    this.examplesLoaded = true;
+  }
+  
+  /**
+   * Infer instruction from content
+   */
+  private inferInstruction(content: string, domain: string): string {
+    const lower = content.toLowerCase();
+    
+    if (lower.includes('analyze') || lower.includes('analysis')) {
+      return 'Analyze the problem';
+    } else if (lower.includes('explain') || lower.includes('explanation')) {
+      return 'Explain the concept';
+    } else if (lower.includes('evaluate') || lower.includes('evaluation')) {
+      return 'Evaluate the options';
+    } else if (lower.includes('classify') || lower.includes('classification')) {
+      return 'Classify the input';
+    }
+    
+    return `Process the ${domain} task`;
   }
   
   /**

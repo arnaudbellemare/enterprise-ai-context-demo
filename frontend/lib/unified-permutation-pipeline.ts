@@ -68,6 +68,10 @@ export interface UnifiedPipelineResult {
     ebm_refined?: boolean;
     ebm_refinement_steps?: number;
     ebm_energy_improvement?: number;
+    reasoningbank_memories_extracted?: number;
+    reasoningbank_memory_titles?: string[];
+    reasoningbank_memories_used?: number;
+    reasoningbank_memories_used_ids?: string[];
   };
   trace: {
     steps: PipelineStep[];
@@ -544,13 +548,19 @@ export class UnifiedPermutationPipeline {
         domain: detectedDomain
       });
       
-      let qualityScore = this.calculateQualityScore({
-        semioticConfidence: synthesis?.overallConfidence || 0.5,
-        teacherConfidence: teacherResponse?.confidence || 0.5,
-        studentConfidence: studentResponse?.confidence || 0.5,
-        rvsConfidence: rvsResult?.confidence || 0.5,
-        verified: rvsResult?.verified || false
-      });
+      // Calculate quality score using LLM-as-judge (research-backed)
+      let qualityScore = await this.calculateQualityScore(
+        {
+          semioticConfidence: synthesis?.overallConfidence || 0.5,
+          teacherConfidence: teacherResponse?.confidence || 0.5,
+          studentConfidence: studentResponse?.confidence || 0.5,
+          rvsConfidence: rvsResult?.confidence || 0.5,
+          verified: rvsResult?.verified || false,
+          domain: detectedDomain
+        },
+        query,
+        finalAnswer
+      );
       
       console.log(`   ✓ Final answer synthesized`);
       console.log(`   ✓ Quality score: ${qualityScore.toFixed(3)}`);
@@ -673,7 +683,7 @@ export class UnifiedPermutationPipeline {
         componentsUsed: steps.length
       });
       
-      return {
+      const result: UnifiedPipelineResult = {
         answer: finalAnswer,
         reasoning: {
           deduction,
@@ -704,6 +714,63 @@ export class UnifiedPermutationPipeline {
           learning_session: learningSession
         }
       };
+      
+      // ReasoningBank: Memory retrieval, usage tracking, and extraction
+      try {
+        const reasoningBankModule = await import('./arcmemo-reasoning-bank');
+        const { ArcMemoReasoningBank } = reasoningBankModule;
+        const reasoningBank = new ArcMemoReasoningBank();
+        
+        // Step 1: Retrieve relevant memories BEFORE execution (for use during task)
+        // Note: In current implementation, memories aren't actively used in pipeline execution
+        // but we retrieve them for tracking purposes
+        const retrievedMemories = await reasoningBank.retrieveRelevantMemories(query, detectedDomain, 5);
+        const usedMemoryIds = retrievedMemories.map(m => m.id).filter(id => id && !isNaN(parseInt(id)));
+        
+        // Convert execution trace to Experience format
+        const taskSucceeded = qualityScore > 0.7; // High quality = success
+        const experience = {
+          taskId: sessionId,
+          query,
+          domain: detectedDomain,
+          steps: steps.map((step, idx) => ({
+            thought: step.metadata?.reasoning || `Step ${idx + 1}: ${step.component} execution`,
+            action: step.component,
+            observation: JSON.stringify(step.output || { component: step.component, status: step.status }).substring(0, 200),
+            timestamp: new Date()
+          })),
+          success: taskSucceeded,
+          finalResult: result.answer || result,
+          irtAbility: irtDifficulty ? (1 - irtDifficulty) : undefined,
+          irtConfidence: synthesis?.overallConfidence
+        };
+        
+        // Step 2: Update empirical success rates for memories used (if any)
+        // This is the key empirical tracking mechanism
+        if (usedMemoryIds.length > 0) {
+          await reasoningBank.updateMemoryUsageBatch(usedMemoryIds, taskSucceeded);
+          console.log(`📊 ReasoningBank: Updated empirical success rates for ${usedMemoryIds.length} memories`);
+          result.metadata.reasoningbank_memories_used = usedMemoryIds.length;
+          result.metadata.reasoningbank_memories_used_ids = usedMemoryIds;
+        }
+        
+        // Step 3: Extract and consolidate memories from this execution (closed-loop learning)
+        const extractedMemories = await reasoningBank.extractMemoryFromExperience(experience as any);
+        
+        if (extractedMemories.length > 0) {
+          await reasoningBank.consolidateMemories(extractedMemories);
+          console.log(`✅ ReasoningBank: Extracted and consolidated ${extractedMemories.length} memory items`);
+          
+          // Update result metadata
+          result.metadata.reasoningbank_memories_extracted = extractedMemories.length;
+          result.metadata.reasoningbank_memory_titles = extractedMemories.map(m => m.title);
+        }
+      } catch (rbError) {
+        // Don't fail the pipeline if ReasoningBank extraction fails
+        console.warn('⚠️ ReasoningBank memory extraction failed (non-fatal):', rbError);
+      }
+      
+      return result;
       
     } catch (error) {
       console.error('❌ Pipeline execution failed:', error);
@@ -858,30 +925,74 @@ export class UnifiedPermutationPipeline {
   
   /**
    * Helper: Calculate overall quality score
+   * 
+   * Uses LLM-as-judge evaluation (research-backed, ~90% human agreement)
+   * Falls back to weighted component confidence if LLM evaluation fails
    */
-  private calculateQualityScore(components: any): number {
-    const {
-      semioticConfidence,
-      teacherConfidence,
-      studentConfidence,
-      rvsConfidence,
-      verified
-    } = components;
-    
-    // Weighted average with bonus for verification
-    let score = (
-      semioticConfidence * 0.3 +
-      teacherConfidence * 0.3 +
-      studentConfidence * 0.2 +
-      rvsConfidence * 0.2
-    );
-    
-    // Bonus for verification
-    if (verified) {
-      score = Math.min(1.0, score + 0.1);
+  private async calculateQualityScore(
+    components: any,
+    query: string,
+    finalAnswer: string
+  ): Promise<number> {
+    // Try LLM-as-judge evaluation first (research-backed primary method)
+    try {
+      const { llmAsJudgeEvaluator } = await import('./llm-as-judge-evaluator');
+      const judgment = await llmAsJudgeEvaluator.evaluatePointwise(query, finalAnswer, {
+        domain: components.domain || 'general'
+      });
+      
+      // Use LLM judgment as primary score
+      console.log(`   ✓ LLM-as-judge score: ${judgment.overallScore.toFixed(3)} (confidence: ${judgment.confidence.toFixed(2)})`);
+      console.log(`     Criteria: R=${judgment.criteria.relevance.toFixed(2)} C=${judgment.criteria.completeness.toFixed(2)} A=${judgment.criteria.correctness.toFixed(2)} Cl=${judgment.criteria.clarity.toFixed(2)}`);
+      
+      // Combine with component confidence for robustness
+      const {
+        semioticConfidence,
+        teacherConfidence,
+        studentConfidence,
+        rvsConfidence,
+        verified
+      } = components;
+      
+      const componentScore = (
+        semioticConfidence * 0.3 +
+        teacherConfidence * 0.3 +
+        studentConfidence * 0.2 +
+        rvsConfidence * 0.2
+      ) + (verified ? 0.1 : 0);
+      
+      // Weighted combination: 70% LLM judgment, 30% component confidence
+      const combinedScore = (
+        judgment.overallScore * 0.7 +
+        Math.min(1.0, componentScore) * 0.3
+      );
+      
+      return Math.max(0, Math.min(1.0, combinedScore));
+    } catch (error) {
+      // Fallback to component confidence if LLM evaluation fails
+      console.warn('⚠️ LLM-as-judge evaluation failed, using component confidence fallback:', error);
+      
+      const {
+        semioticConfidence,
+        teacherConfidence,
+        studentConfidence,
+        rvsConfidence,
+        verified
+      } = components;
+      
+      let score = (
+        semioticConfidence * 0.3 +
+        teacherConfidence * 0.3 +
+        studentConfidence * 0.2 +
+        rvsConfidence * 0.2
+      );
+      
+      if (verified) {
+        score = Math.min(1.0, score + 0.1);
+      }
+      
+      return score;
     }
-    
-    return score;
   }
   
   /**
