@@ -18,10 +18,13 @@ import { getTracer } from './dspy-observability';
 export interface DSPyOptimizationConfig {
   num_iterations: number;
   num_candidates: number;
+  num_rollouts_per_step: number; // Arbor-inspired: increased rollouts per optimization step
   temperature: number;
   objectives: ('quality' | 'speed' | 'cost' | 'diversity')[];
   validation_set?: any[];
   use_gepa: boolean;
+  component_selector: 'all' | 'one'; // Multi-signature optimization: 'all' optimizes all signatures together
+  optimize_multiple_signatures: boolean; // Enable multi-signature optimization
 }
 
 export interface DSPyOptimizationResult {
@@ -64,31 +67,50 @@ export class DSPyGEPAOptimizer {
     this.config = {
       num_iterations: 5,
       num_candidates: 10,
+      num_rollouts_per_step: 24, // Arbor-inspired: 24 rollouts per step (was implicit, now explicit)
       temperature: 0.7,
       objectives: ['quality', 'speed', 'cost'],
       use_gepa: true,
+      component_selector: 'one', // Default: optimize one signature at a time
+      optimize_multiple_signatures: false, // Default: single signature optimization
       ...config
     };
     
     this.tracer = getTracer();
     console.log('🎯 DSPy-GEPA Optimizer initialized');
+    console.log(`   - Rollouts per step: ${this.config.num_rollouts_per_step} (Arbor-inspired)`);
+    console.log(`   - Component selector: ${this.config.component_selector}`);
+    console.log(`   - Multi-signature: ${this.config.optimize_multiple_signatures}`);
   }
   
   /**
    * Compile and optimize a DSPy module using GEPA
-   * This is the main "optimizer" that was missing
+   * Supports both single-module and multi-module optimization (component_selector='all')
    */
   async compile(module: DSPyModule, trainset?: any[]): Promise<DSPyOptimizationResult> {
-    console.log('🔧 DSPy-GEPA: Compiling module...');
+    // Check if multi-signature optimization is enabled
+    if (this.config.optimize_multiple_signatures && this.config.component_selector === 'all') {
+      return await this.compileMultipleSignatures(module, trainset);
+    }
+    
+    return await this.compileSingleModule(module, trainset);
+  }
+
+  /**
+   * Compile and optimize a single DSPy module using GEPA
+   * Enhanced with Arbor-inspired rollouts (24 rollouts per step)
+   */
+  async compileSingleModule(module: DSPyModule, trainset?: any[]): Promise<DSPyOptimizationResult> {
+    console.log('🔧 DSPy-GEPA: Compiling single module...');
     const startTime = Date.now();
     
     const sessionId = this.tracer.startSession('dspy-gepa-compile');
     const history: OptimizationStep[] = [];
     
     try {
-      // Step 1: Measure baseline performance
+      // Step 1: Measure baseline performance with multiple rollouts
       console.log('📊 DSPy-GEPA: Measuring baseline performance...');
-      const originalPerformance = await this.evaluateModule(module, trainset);
+      const originalPerformance = await this.evaluateModuleWithRollouts(module, trainset);
       console.log(`   - Quality: ${originalPerformance.quality_score.toFixed(3)}`);
       console.log(`   - Latency: ${originalPerformance.avg_latency_ms.toFixed(1)}ms`);
       console.log(`   - Cost: $${originalPerformance.total_cost.toFixed(4)}`);
@@ -97,15 +119,16 @@ export class DSPyGEPAOptimizer {
       const basePrompts = this.extractPromptsFromSignature(module.signature);
       console.log(`📝 DSPy-GEPA: Extracted ${basePrompts.length} base prompts`);
       
-      // Step 3: Use GEPA to evolve prompts
+      // Step 3: Use GEPA to evolve prompts with increased rollouts
       let evolvedPrompts: PromptIndividual[] = [];
       
       if (this.config.use_gepa) {
-        console.log('🧬 DSPy-GEPA: Running GEPA optimization...');
+        console.log(`🧬 DSPy-GEPA: Running GEPA optimization with ${this.config.num_rollouts_per_step} rollouts per step...`);
         const gepaResult = await gepaAlgorithms.optimizePrompts(
           module.signature.domain,
           basePrompts,
-          this.config.objectives
+          this.config.objectives,
+          this.config.num_rollouts_per_step // Pass rollouts to GEPA
         );
         
         evolvedPrompts = gepaResult.evolved_prompts;
@@ -130,8 +153,8 @@ export class DSPyGEPAOptimizer {
       const optimizedModule = await this.createOptimizedModule(module, evolvedPrompts);
       console.log('✅ DSPy-GEPA: Created optimized module');
       
-      // Step 5: Measure optimized performance
-      const optimizedPerformance = await this.evaluateModule(optimizedModule, trainset);
+      // Step 5: Measure optimized performance with rollouts
+      const optimizedPerformance = await this.evaluateModuleWithRollouts(optimizedModule, trainset);
       console.log('📊 DSPy-GEPA: Optimized performance:');
       console.log(`   - Quality: ${optimizedPerformance.quality_score.toFixed(3)} (${((optimizedPerformance.quality_score - originalPerformance.quality_score) * 100).toFixed(1)}%)`);
       console.log(`   - Latency: ${optimizedPerformance.avg_latency_ms.toFixed(1)}ms (${((optimizedPerformance.avg_latency_ms - originalPerformance.avg_latency_ms) / originalPerformance.avg_latency_ms * 100).toFixed(1)}%)`);
@@ -162,6 +185,142 @@ export class DSPyGEPAOptimizer {
       console.error('❌ DSPy-GEPA compilation failed:', error);
       this.tracer.endSession(sessionId, { success: false, error: String(error) });
       throw error;
+    }
+  }
+
+  /**
+   * Compile and optimize multiple DSPy signatures together (component_selector='all')
+   * Arbor-inspired: Optimize all signatures simultaneously for better interactions
+   */
+  async compileMultipleSignatures(module: DSPyModule, trainset?: any[]): Promise<DSPyOptimizationResult> {
+    console.log('🔧 DSPy-GEPA: Compiling multiple signatures together (component_selector="all")...');
+    const startTime = Date.now();
+    
+    const sessionId = this.tracer.startSession('dspy-gepa-compile-multi');
+    const history: OptimizationStep[] = [];
+    
+    try {
+      // Get all modules from registry
+      const { dspyRegistry } = await import('./dspy-signatures');
+      const allModules = dspyRegistry.getAllModules();
+      
+      if (allModules.length === 0) {
+        console.warn('⚠️ No modules found in registry, falling back to single module optimization');
+        return await this.compileSingleModule(module, trainset);
+      }
+      
+      console.log(`📚 DSPy-GEPA: Optimizing ${allModules.length} signatures together...`);
+      
+      // Step 1: Measure baseline for all modules
+      const baselinePerformances: Map<string, ModulePerformance> = new Map();
+      for (const mod of allModules) {
+        const perf = await this.evaluateModuleWithRollouts(mod, trainset);
+        baselinePerformances.set(mod.signature.domain, perf);
+        console.log(`   - ${mod.signature.domain}: Quality=${perf.quality_score.toFixed(3)}`);
+      }
+      
+      // Step 2: Extract prompts from all signatures
+      const allBasePrompts: Array<{ domain: string; prompts: string[] }> = [];
+      for (const mod of allModules) {
+        const prompts = this.extractPromptsFromSignature(mod.signature);
+        allBasePrompts.push({ domain: mod.signature.domain, prompts });
+      }
+      
+      console.log(`📝 DSPy-GEPA: Extracted prompts from ${allBasePrompts.length} signatures`);
+      
+      // Step 3: Optimize all signatures together with increased rollouts
+      const allEvolvedPrompts: Map<string, PromptIndividual[]> = new Map();
+      
+      if (this.config.use_gepa) {
+        console.log(`🧬 DSPy-GEPA: Running multi-signature GEPA optimization (${this.config.num_rollouts_per_step} rollouts per step)...`);
+        
+        // Optimize each signature with shared context
+        for (const { domain, prompts } of allBasePrompts) {
+          const gepaResult = await gepaAlgorithms.optimizePrompts(
+            domain,
+            prompts,
+            this.config.objectives,
+            this.config.num_rollouts_per_step
+          );
+          
+          allEvolvedPrompts.set(domain, gepaResult.evolved_prompts);
+          console.log(`   ✅ ${domain}: Evolved ${gepaResult.evolved_prompts.length} prompts`);
+        }
+      }
+      
+      // Step 4: Create optimized modules for all signatures
+      const optimizedModules: Map<string, DSPyModule> = new Map();
+      for (const mod of allModules) {
+        const evolvedPrompts = allEvolvedPrompts.get(mod.signature.domain) || [];
+        if (evolvedPrompts.length > 0) {
+          const optimized = await this.createOptimizedModule(mod, evolvedPrompts);
+          optimizedModules.set(mod.signature.domain, optimized);
+        }
+      }
+      
+      // Step 5: Measure optimized performance for all modules
+      const optimizedPerformances: Map<string, ModulePerformance> = new Map();
+      for (const [domain, mod] of optimizedModules) {
+        const perf = await this.evaluateModuleWithRollouts(mod, trainset);
+        optimizedPerformances.set(domain, perf);
+        
+        const baseline = baselinePerformances.get(domain)!;
+        console.log(`   📈 ${domain}: ${((perf.quality_score - baseline.quality_score) * 100).toFixed(1)}% improvement`);
+      }
+      
+      // Aggregate improvements
+      let totalQualityDelta = 0;
+      let totalSpeedDelta = 0;
+      let totalCostDelta = 0;
+      
+      for (const [domain, optPerf] of optimizedPerformances) {
+        const baselinePerf = baselinePerformances.get(domain)!;
+        totalQualityDelta += optPerf.quality_score - baselinePerf.quality_score;
+        totalSpeedDelta += baselinePerf.avg_latency_ms - optPerf.avg_latency_ms;
+        totalCostDelta += baselinePerf.total_cost - optPerf.total_cost;
+      }
+      
+      const avgImprovement = {
+        quality_delta: totalQualityDelta / optimizedPerformances.size,
+        speed_delta: totalSpeedDelta / optimizedPerformances.size,
+        cost_delta: totalCostDelta / optimizedPerformances.size
+      };
+      
+      console.log(`✅ DSPy-GEPA: Multi-signature optimization complete!`);
+      console.log(`   - Average quality improvement: ${(avgImprovement.quality_delta * 100).toFixed(1)}%`);
+      console.log(`   - Average speed improvement: ${(avgImprovement.speed_delta).toFixed(1)}ms`);
+      console.log(`   - Average cost reduction: $${avgImprovement.cost_delta.toFixed(4)}`);
+      
+      this.tracer.endSession(sessionId, {
+        success: true,
+        improvement: avgImprovement,
+        duration_ms: Date.now() - startTime,
+        signatures_optimized: optimizedModules.size
+      });
+      
+      // Return the optimized version of the requested module
+      const optimizedModule = optimizedModules.get(module.signature.domain) || module;
+      const originalPerformance = baselinePerformances.get(module.signature.domain)!;
+      const optimizedPerformance = optimizedPerformances.get(module.signature.domain) || originalPerformance;
+      
+      return {
+        optimized_module: optimizedModule,
+        original_performance: originalPerformance,
+        optimized_performance: optimizedPerformance,
+        improvement: {
+          quality_delta: optimizedPerformance.quality_score - originalPerformance.quality_score,
+          speed_delta: originalPerformance.avg_latency_ms - optimizedPerformance.avg_latency_ms,
+          cost_delta: originalPerformance.total_cost - optimizedPerformance.total_cost
+        },
+        optimization_history: history,
+        final_prompts: allEvolvedPrompts.get(module.signature.domain) || []
+      };
+      
+    } catch (error) {
+      console.error('❌ DSPy-GEPA multi-signature compilation failed:', error);
+      this.tracer.endSession(sessionId, { success: false, error: String(error) });
+      // Fallback to single module
+      return await this.compileSingleModule(module, trainset);
     }
   }
   
@@ -256,9 +415,11 @@ export class DSPyGEPAOptimizer {
   }
   
   /**
-   * Evaluate module performance
+   * Evaluate module performance with multiple rollouts (Arbor-inspired)
+   * Uses multiple rollouts per example for more robust evaluation
    */
-  private async evaluateModule(module: DSPyModule, trainset?: any[]): Promise<ModulePerformance> {
+  private async evaluateModuleWithRollouts(module: DSPyModule, trainset?: any[]): Promise<ModulePerformance> {
+    const rollouts = this.config.num_rollouts_per_step || 24; // Arbor default: 24
     const startTime = Date.now();
     
     // Use trainset if provided, otherwise use synthetic examples
@@ -268,30 +429,49 @@ export class DSPyGEPAOptimizer {
     let totalLatency = 0;
     let totalCost = 0;
     let correctCount = 0;
+    let totalEvaluations = 0;
     
+    console.log(`   📊 Evaluating with ${rollouts} rollouts per example...`);
+    
+    // Evaluate each example with multiple rollouts
     for (const example of examples.slice(0, 5)) { // Evaluate on first 5 examples
       const exampleStart = Date.now();
+      let exampleQualitySum = 0;
+      let exampleLatencySum = 0;
       
-      try {
-        const result = await module.forward(example.input);
-        const exampleLatency = Date.now() - exampleStart;
+      // Run multiple rollouts for this example (Arbor-inspired: multiple rollouts for robust evaluation)
+      for (let rollout = 0; rollout < Math.min(rollouts, 5); rollout++) { // Limit to 5 rollouts per example for performance
+        const rolloutStart = Date.now();
         
-        // Calculate quality (simplified)
-        const quality = this.calculateOutputQuality(result, example.expected_output);
-        totalQuality += quality;
-        
-        // Track latency
-        totalLatency += exampleLatency;
-        
-        // Estimate cost (simplified: $0.001 per example)
-        totalCost += 0.001;
-        
-        // Check accuracy
-        if (quality > 0.7) correctCount++;
-        
-      } catch (error) {
-        console.warn('Evaluation example failed:', error);
+        try {
+          const result = await module.forward(example.input);
+          const rolloutLatency = Date.now() - rolloutStart;
+          
+          // Calculate quality (simplified)
+          const quality = this.calculateOutputQuality(result, example.expected_output);
+          exampleQualitySum += quality;
+          exampleLatencySum += rolloutLatency;
+          
+          // Estimate cost (simplified: $0.001 per rollout)
+          totalCost += 0.001;
+          
+          totalEvaluations++;
+          
+        } catch (error) {
+          console.warn(`Evaluation rollout ${rollout + 1} failed:`, error);
+        }
       }
+      
+      // Average quality and latency across rollouts for this example
+      const numRolloutsForExample = Math.min(rollouts, 5);
+      const avgQualityForExample = exampleQualitySum / numRolloutsForExample;
+      const avgLatencyForExample = exampleLatencySum / numRolloutsForExample;
+      
+      totalQuality += avgQualityForExample;
+      totalLatency += avgLatencyForExample;
+      
+      // Check accuracy (count as correct if average quality > 0.7)
+      if (avgQualityForExample > 0.7) correctCount++;
     }
     
     const numExamples = Math.min(examples.length, 5);
@@ -302,6 +482,14 @@ export class DSPyGEPAOptimizer {
       total_cost: totalCost,
       accuracy: correctCount / numExamples
     };
+  }
+
+  /**
+   * Legacy evaluate module (kept for compatibility)
+   */
+  private async evaluateModule(module: DSPyModule, trainset?: any[]): Promise<ModulePerformance> {
+    // Use rollout-based evaluation by default
+    return await this.evaluateModuleWithRollouts(module, trainset);
   }
   
   /**

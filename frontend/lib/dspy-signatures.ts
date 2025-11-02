@@ -264,6 +264,10 @@ export class DSPySignatureRegistry {
   listModules(): string[] {
     return Array.from(this.modules.keys());
   }
+
+  getAllModules(): DSPyModule[] {
+    return Array.from(this.modules.values());
+  }
 }
 
 // ============================================================================

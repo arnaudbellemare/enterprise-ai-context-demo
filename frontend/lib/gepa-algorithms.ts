@@ -53,6 +53,7 @@ export class GEPAAlgorithms {
   private populationSize = 50;
   private mutationRate = 0.1;
   private crossoverRate = 0.8;
+  private numRolloutsPerStep: number = 24; // Arbor-inspired: default 24 rollouts per step
 
   constructor() {
     // Initialize GEPA algorithms
@@ -60,11 +61,21 @@ export class GEPAAlgorithms {
 
   /**
    * Run GEPA optimization for prompt evolution
+   * Enhanced with Arbor-inspired rollouts for better evaluation signal
    */
-  async optimizePrompts(domain: string, basePrompts: string[], objectives: string[]): Promise<GEPAResult> {
+  async optimizePrompts(
+    domain: string, 
+    basePrompts: string[], 
+    objectives: string[],
+    numRolloutsPerStep: number = 24 // Arbor-inspired: 24 rollouts per step
+  ): Promise<GEPAResult> {
     console.log(`🧬 GEPA: Starting optimization for ${domain} domain`);
     console.log(`   - Base prompts: ${basePrompts.length}`);
     console.log(`   - Objectives: ${objectives.join(', ')}`);
+    console.log(`   - Rollouts per step: ${numRolloutsPerStep} (Arbor-inspired)`);
+    
+    // Store rollouts for use in fitness evaluation
+    this.numRolloutsPerStep = numRolloutsPerStep;
     
     const startTime = Date.now();
     

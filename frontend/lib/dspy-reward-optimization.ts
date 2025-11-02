@@ -4,11 +4,18 @@
  * Based on "Reasoning-Intensive Regression" paper:
  * https://arxiv.org/pdf/2508.21762
  * 
+ * Enhanced with insights from Arbor (GRPO) framework:
+ * - Multiple rollouts per optimization step (Arbor: 24 rollouts per step)
+ * - Reward scaling strategies (Arbor: scale_rewards option)
+ * - Trajectory-based reward evaluation
+ * 
  * Implements reward-based optimization for tasks without single answers:
  * - Summarization
  * - Presentation generation
  * - Creative writing
  * - Multi-perspective analysis
+ * 
+ * Reference: https://github.com/Ziems/arbor
  */
 
 import { z } from 'zod';
