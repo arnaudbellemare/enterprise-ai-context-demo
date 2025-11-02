@@ -90,10 +90,12 @@ export type { Experience as ReasoningBankExperience };
 // ARCMEMO REASONING BANK CLASS
 // ============================================================================
 
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 export class ArcMemoReasoningBank {
   private memoryBank: Map<string, ReasoningMemoryItem> = new Map();
   private anthropic: Anthropic;
-  private supabase: any = null;
+  private supabase: SupabaseClient | null = null;
   
   constructor(anthropicApiKey?: string) {
     this.anthropic = new Anthropic({
@@ -104,15 +106,83 @@ export class ArcMemoReasoningBank {
     this.initSupabase();
   }
   
+  /**
+   * Extract Supabase URL from POSTGRES_URL if NEXT_PUBLIC_SUPABASE_URL is not set
+   * Example: postgres://...@db.ofvbywlqztkgugrkibcp.supabase.co:5432/...
+   * Extracts: https://ofvbywlqztkgugrkibcp.supabase.co
+   */
+  private extractSupabaseUrlFromPostgresUrl(postgresUrl: string): string | null {
+    try {
+      // Extract host from POSTGRES_URL
+      // Format: postgres://user:pass@host:port/db
+      const match = postgresUrl.match(/@([^:]+):\d+\//);
+      if (match && match[1]) {
+        const host = match[1];
+        
+        // Check if it's a Supabase host (db.xxx.supabase.co or xxx.pooler.supabase.com)
+        if (host.includes('supabase')) {
+          // Extract project ID from host
+          let projectId: string | null = null;
+          
+          if (host.startsWith('db.')) {
+            // db.ofvbywlqztkgugrkibcp.supabase.co -> ofvbywlqztkgugrkibcp
+            projectId = host.replace('db.', '').replace('.supabase.co', '');
+          } else if (host.includes('.pooler.supabase.com')) {
+            // postgres.xxx.pooler.supabase.com -> extract project part
+            const poolerMatch = host.match(/([^.]+)\.pooler\.supabase\.com/);
+            if (poolerMatch) {
+              // The project ID might be in the username part
+              const userMatch = postgresUrl.match(/postgres\.([^:]+)/);
+              if (userMatch) {
+                projectId = userMatch[1].split('.')[0]; // ofvbywlqztkgugrkibcp from postgres.ofvbywlqztkgugrkibcp
+              }
+            }
+          }
+          
+          if (projectId) {
+            return `https://${projectId}.supabase.co`;
+          }
+        }
+      }
+    } catch (error) {
+      // Silently fail
+    }
+    return null;
+  }
+
   private async initSupabase(): Promise<void> {
     try {
       const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      // Try NEXT_PUBLIC_SUPABASE_URL first
+      let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      
+      // If not set, try to extract from POSTGRES_URL
+      if (!supabaseUrl && process.env.POSTGRES_URL) {
+        const extractedUrl = this.extractSupabaseUrlFromPostgresUrl(process.env.POSTGRES_URL);
+        if (extractedUrl) {
+          supabaseUrl = extractedUrl;
+          console.log(`🔗 ReasoningBank: Extracted Supabase URL from POSTGRES_URL: ${supabaseUrl}`);
+        }
+      }
+      
+      // Try various environment variable names for the API key
+      const supabaseKey = 
+        process.env.SUPABASE_SERVICE_ROLE_KEY || 
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+        process.env.SUPABASE_ANON_KEY ||
+        process.env.SUPABASE_KEY;
       
       if (supabaseUrl && supabaseKey) {
         this.supabase = createClient(supabaseUrl, supabaseKey);
         console.log('✅ ReasoningBank: Supabase client initialized');
+      } else {
+        if (!supabaseUrl) {
+          console.warn('⚠️ ReasoningBank: Supabase URL not found (set NEXT_PUBLIC_SUPABASE_URL or provide POSTGRES_URL)');
+        }
+        if (!supabaseKey) {
+          console.warn('⚠️ ReasoningBank: Supabase API key not found (set SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY)');
+        }
       }
     } catch (error) {
       console.warn('⚠️ ReasoningBank: Supabase not available, using in-memory storage');
@@ -335,8 +405,13 @@ export class ArcMemoReasoningBank {
     const extractionPrompt = this.buildExtractionPrompt(experience, '');
     
     // Call LLM for extraction (temperature 1.0 as per paper)
+    // Add timeout to prevent hangs (30 seconds)
     try {
-      const response = await fetch("http://localhost:11434/v1/chat/completions", {
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Memory extraction timeout after 30s')), 30000);
+      });
+
+      const fetchPromise = fetch("http://localhost:11434/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -357,6 +432,12 @@ export class ArcMemoReasoningBank {
           max_tokens: 1500
         })
       });
+
+      const response = await Promise.race([fetchPromise, timeoutPromise]) as Response;
+      
+      if (!response.ok) {
+        throw new Error(`Ollama API returned status ${response.status}`);
+      }
       
       const data = await response.json();
       const extractedItems = this.parseExtractedMemories(
@@ -381,6 +462,7 @@ export class ArcMemoReasoningBank {
       return extractedItems;
     } catch (error) {
       console.error('❌ Memory extraction failed:', error);
+      // Return empty array on timeout or error to allow pipeline to continue
       return [];
     }
   }

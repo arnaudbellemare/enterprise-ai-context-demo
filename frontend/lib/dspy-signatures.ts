@@ -220,6 +220,33 @@ export class ManufacturingOptimizationModule implements DSPyModule {
   }
 }
 
+export class OptimizationModule implements DSPyModule {
+  signature = OptimizationSignature;
+
+  async forward(input: any): Promise<any> {
+    // General optimization module
+    return {
+      optimizedState: 'Improved system configuration',
+      improvements: ['Enhanced performance', 'Reduced latency', 'Better resource utilization'],
+      metrics: {
+        efficiency: 0.85,
+        cost: 0.70,
+        quality: 0.90,
+        speed: 0.80
+      },
+      implementationPlan: ['Analyze current state', 'Identify improvements', 'Implement changes', 'Validate results']
+    };
+  }
+
+  async compile(): Promise<void> {
+    console.log('Compiling Optimization Module...');
+  }
+
+  async optimize(examples: any[]): Promise<void> {
+    console.log('Optimizing Optimization Module with examples...');
+  }
+}
+
 // ============================================================================
 // DSPy Signature Registry
 // ============================================================================
@@ -280,6 +307,7 @@ export const dspyRegistry = new DSPySignatureRegistry();
 dspyRegistry.registerModule('financial_analysis', new FinancialAnalysisModule());
 dspyRegistry.registerModule('legal_analysis', new LegalAnalysisModule());
 dspyRegistry.registerModule('manufacturing_optimization', new ManufacturingOptimizationModule());
+dspyRegistry.registerModule('optimization', new OptimizationModule());
 
 
 

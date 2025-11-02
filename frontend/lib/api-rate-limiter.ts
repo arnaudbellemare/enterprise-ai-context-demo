@@ -31,6 +31,15 @@ class APIRateLimiter {
     this.initializeProviders();
   }
 
+  /**
+   * Reinitialize providers (useful after environment variables are loaded)
+   */
+  reinitializeProviders() {
+    this.providers.clear();
+    this.initializeProviders();
+    console.log(`🔄 Reinitialized ${this.providers.size} API providers`);
+  }
+
   private initializeProviders() {
     // OpenRouter configuration
     if (process.env.OPENROUTER_API_KEY) {

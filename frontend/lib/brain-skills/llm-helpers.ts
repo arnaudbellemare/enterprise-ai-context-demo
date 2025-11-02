@@ -10,8 +10,21 @@
 
 import { apiRateLimiter } from '../api-rate-limiter';
 import { createLogger } from '../walt/logger';
+import { circuitBreakerRegistry } from '../circuit-breaker';
 
 const logger = createLogger('LLMHelpers', 'info');
+const perplexityBreaker = circuitBreakerRegistry.getOrCreate('perplexity', {
+  failureThreshold: 5,
+  resetTimeout: 60000,
+  halfOpenMaxAttempts: 3,
+  successThreshold: 2,
+});
+const ollamaBreaker = circuitBreakerRegistry.getOrCreate('ollama', {
+  failureThreshold: 5,
+  resetTimeout: 30000,
+  halfOpenMaxAttempts: 3,
+  successThreshold: 2,
+});
 
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
@@ -52,24 +65,40 @@ export async function callPerplexityWithRateLimiting(
   } = options;
 
   try {
+    // Prefer Perplexity if available, fallback to Ollama
     const result = await apiRateLimiter.makeRequest(
       async (provider) => {
         if (provider.name === 'Perplexity') {
-          // Use Perplexity API
-          return fetch('https://api.perplexity.ai/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${provider.apiKey}`,
-              'Content-Type': 'application/json'
+          // Use Perplexity API with circuit breaker
+          return await perplexityBreaker.execute(
+            async () => {
+              const response = await fetch('https://api.perplexity.ai/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${provider.apiKey}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  model,
+                  messages,
+                  temperature,
+                  max_tokens: maxTokens,
+                  stream
+                })
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Perplexity API error: ${response.status} ${response.statusText}`);
+              }
+              
+              return response;
             },
-            body: JSON.stringify({
-              model,
-              messages,
-              temperature,
-              max_tokens: maxTokens,
-              stream
-            })
-          });
+            async () => {
+              // Fallback to Ollama if Perplexity circuit is open
+              logger.warn('Perplexity circuit breaker open, falling back to Ollama', { provider: 'Ollama Local' });
+              throw new Error('Perplexity circuit breaker open');
+            }
+          );
         } else if (provider.name === 'Ollama Local') {
           // Fallback to Ollama
           logger.info('Using Ollama fallback', { provider: 'Ollama Local' });
@@ -87,22 +116,38 @@ export async function callPerplexityWithRateLimiting(
             }
           }
           
-          return fetch('http://localhost:11434/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: 'gemma3:4b',
-              messages: normalizedMessages.map(m => ({
-                role: m.role,
-                content: m.content
-              })),
-              stream: false,
-              options: {
-                temperature,
-                num_predict: maxTokens
+          // Use Ollama with circuit breaker
+          return await ollamaBreaker.execute(
+            async () => {
+              const response = await fetch('http://localhost:11434/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: 'gemma3:4b',
+                  messages: normalizedMessages.map(m => ({
+                    role: m.role,
+                    content: m.content
+                  })),
+                  stream: false,
+                  options: {
+                    temperature,
+                    num_predict: maxTokens
+                  }
+                })
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
               }
-            })
-          });
+              
+              return response;
+            },
+            async () => {
+              // Fallback to simple error message
+              logger.error('Ollama circuit breaker open', { provider: 'Ollama Local' });
+              throw new Error('Ollama circuit breaker open');
+            }
+          );
         } else if (provider.name === 'OpenRouter') {
           // Use OpenRouter as fallback
           logger.info('Using OpenRouter fallback', { provider: 'OpenRouter' });

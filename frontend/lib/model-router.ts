@@ -91,7 +91,7 @@ export const MODEL_PROFILES: Record<string, ModelProfile> = {
   
   'perplexity-online': {
     provider: 'perplexity',
-    model: 'llama-3.1-sonar-small-128k-online',
+    model: 'sonar-pro',
     avgLatencyMs: 3000,
     costPer1kTokens: {
       input: 0.0002,

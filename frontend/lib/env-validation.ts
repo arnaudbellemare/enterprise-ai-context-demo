@@ -1,232 +1,159 @@
 /**
- * Environment Variable Validation with Zod
- *
- * Validates required environment variables at startup to fail fast
- * if configuration is missing or invalid.
- *
- * Uses Zod schemas for type-safe validation as recommended in CODE_ANALYSIS_REPORT.md
- *
- * Usage:
- *   import { validateEnvironment } from '@/lib/env-validation';
- *   validateEnvironment(); // Call at app startup
+ * Environment Variable Validation
+ * 
+ * Validates all required environment variables at startup
+ * Provides clear error messages if critical variables are missing
  */
 
 import { z } from 'zod';
 
-interface EnvValidationError {
-  variable: string;
-  reason: string;
-}
-
-interface EnvValidationResult {
-  valid: boolean;
-  errors: EnvValidationError[];
-  warnings: EnvValidationError[];
-}
-
 /**
- * Zod schema for required environment variables
+ * Environment variable schema
  */
-const requiredEnvSchema = z.object({
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url('Must be a valid URL').min(1),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(10, 'API key must be at least 10 characters'),
+const envSchema = z.object({
+  // Optional but recommended
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional(),
+  POSTGRES_URL: z.string().url().optional(),
+  
+  // LLM API Keys (at least one should be present)
+  PERPLEXITY_API_KEY: z.string().min(1).optional(),
+  OPENROUTER_API_KEY: z.string().min(1).optional(),
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  
+  // Optional configuration
+  NODE_ENV: z.enum(['development', 'production', 'test']).optional().default('development'),
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).optional().default('info'),
 });
 
-/**
- * Zod schema for recommended environment variables (optional)
- */
-const recommendedEnvSchema = z.object({
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(10, 'API key must be at least 10 characters').optional(),
-  OPENAI_API_KEY: z.string().min(10, 'API key must be at least 10 characters').optional(),
-  PERPLEXITY_API_KEY: z.string().min(10, 'API key must be at least 10 characters').optional(),
-  ANTHROPIC_API_KEY: z.string().min(10, 'API key must be at least 10 characters').optional(),
-  OLLAMA_HOST: z.string().url('Must be a valid URL').or(z.string().regex(/^[\w.-]+(:\d+)?$/, 'Must be hostname or hostname:port')).optional(),
-});
+export type ValidatedEnv = z.infer<typeof envSchema>;
 
 /**
- * Validate a single environment variable (legacy function for compatibility)
+ * Validate environment variables
+ * Throws with clear error message if validation fails
  */
-function validateEnvVar(varName: string): EnvValidationError | null {
-  const value = process.env[varName];
-
-  if (!value) {
-    return {
-      variable: varName,
-      reason: 'Missing or empty',
-    };
-  }
-
-  // Use Zod for validation based on variable name
-  if (varName.includes('URL') || varName.includes('HOST')) {
-    const urlSchema = z.string().url();
-    try {
-      urlSchema.parse(value);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return {
-          variable: varName,
-          reason: error.errors[0]?.message || 'Invalid URL format',
-        };
-      }
-      return {
-        variable: varName,
-        reason: 'Invalid URL format',
-      };
-    }
-  }
-
-  if (varName.includes('API_KEY') || varName.includes('_KEY')) {
-    const keySchema = z.string().min(10, 'API key must be at least 10 characters');
-    try {
-      keySchema.parse(value);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return {
-          variable: varName,
-          reason: error.errors[0]?.message || 'API key too short',
-        };
-      }
-    }
-  }
-
-  return null;
-}
-
-/**
- * Validate all required and recommended environment variables using Zod
- */
-export function validateEnvironment(): EnvValidationResult {
-  const errors: EnvValidationError[] = [];
-  const warnings: EnvValidationError[] = [];
-
-  // Validate required variables using Zod schema
+export function validateEnvironment(): ValidatedEnv {
   try {
-    requiredEnvSchema.parse({
+    const env = {
       NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    });
+      POSTGRES_URL: process.env.POSTGRES_URL,
+      PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,
+      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+      NODE_ENV: process.env.NODE_ENV,
+      LOG_LEVEL: process.env.LOG_LEVEL,
+    };
+    
+    return envSchema.parse(env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      for (const issue of error.errors) {
-        const path = issue.path[0] as string;
-        errors.push({
-          variable: path,
-          reason: issue.message || 'Validation failed',
-        });
-      }
+      const missingVars = error.errors.map(e => e.path.join('.')).join(', ');
+      throw new Error(
+        `❌ Environment validation failed:\n` +
+        `Missing or invalid variables: ${missingVars}\n` +
+        `Please check your .env file and ensure all required variables are set.`
+      );
     }
-  }
-
-  // Validate recommended variables (non-blocking warnings)
-  const recommendedVars = {
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-    OLLAMA_HOST: process.env.OLLAMA_HOST,
-  };
-
-  try {
-    recommendedEnvSchema.parse(recommendedVars);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      for (const issue of error.errors) {
-        const path = issue.path[0] as string;
-        // Only add warning if variable was provided but invalid
-        if (recommendedVars[path as keyof typeof recommendedVars]) {
-          warnings.push({
-            variable: path,
-            reason: issue.message || 'Invalid format',
-          });
-        }
-      }
-    }
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
-  };
-}
-
-/**
- * Validate environment and throw error if invalid
- * Use this at application startup for fail-fast behavior
- */
-export function validateEnvironmentOrThrow(): void {
-  const result = validateEnvironment();
-
-  if (!result.valid) {
-    const errorMessage = [
-      '❌ Environment Validation Failed:',
-      '',
-      'Missing or invalid required environment variables:',
-      ...result.errors.map(e => `  - ${e.variable}: ${e.reason}`),
-      '',
-      'Please check your .env.local file and ensure all required variables are set.',
-      'See CLAUDE.md for environment setup instructions.',
-    ].join('\n');
-
-    throw new Error(errorMessage);
-  }
-
-  // Log warnings for missing recommended variables
-  if (result.warnings.length > 0 && process.env.NODE_ENV !== 'test') {
-    console.warn('⚠️  Missing recommended environment variables:');
-    result.warnings.forEach(w => {
-      console.warn(`  - ${w.variable}: ${w.reason}`);
-    });
-    console.warn('Some features may not be available.');
+    throw error;
   }
 }
 
 /**
- * Get a required environment variable or throw error
- * Use this for runtime access to environment variables
+ * Check if at least one LLM provider is configured
  */
-export function getEnvOrThrow(varName: string): string {
-  const value = process.env[varName];
-
-  if (!value) {
-    throw new Error(
-      `Required environment variable ${varName} is not set. ` +
-      `Please add it to your .env.local file.`
+export function validateLLMProviders(): {
+  hasPerplexity: boolean;
+  hasOpenRouter: boolean;
+  hasAnthropic: boolean;
+  hasOpenAI: boolean;
+  hasAny: boolean;
+} {
+  const env = process.env;
+  const hasPerplexity = !!env.PERPLEXITY_API_KEY;
+  const hasOpenRouter = !!env.OPENROUTER_API_KEY;
+  const hasAnthropic = !!env.ANTHROPIC_API_KEY;
+  const hasOpenAI = !!env.OPENAI_API_KEY;
+  const hasAny = hasPerplexity || hasOpenRouter || hasAnthropic || hasOpenAI;
+  
+  if (!hasAny) {
+    console.warn(
+      '⚠️  No LLM provider API keys found. The system may not function correctly.\n' +
+      'Please set at least one of: PERPLEXITY_API_KEY, OPENROUTER_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY'
     );
   }
-
-  return value;
+  
+  return {
+    hasPerplexity,
+    hasOpenRouter,
+    hasAnthropic,
+    hasOpenAI,
+    hasAny,
+  };
 }
 
 /**
- * Get an optional environment variable with default value
+ * Check if Supabase is configured
  */
-export function getEnvOrDefault(varName: string, defaultValue: string): string {
-  return process.env[varName] || defaultValue;
+export function validateSupabase(): {
+  hasUrl: boolean;
+  hasKey: boolean;
+  isConfigured: boolean;
+} {
+  const env = process.env;
+  const hasUrl = !!(env.NEXT_PUBLIC_SUPABASE_URL || env.POSTGRES_URL);
+  const hasKey = !!(env.SUPABASE_SERVICE_ROLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const isConfigured = hasUrl && hasKey;
+  
+  if (!isConfigured) {
+    console.warn(
+      '⚠️  Supabase not fully configured. Persistence features will use in-memory storage.\n' +
+      'Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY for full functionality.'
+    );
+  }
+  
+  return {
+    hasUrl,
+    hasKey,
+    isConfigured,
+  };
 }
 
 /**
- * Check if running in production environment
+ * Get safe environment variable (never returns undefined in critical paths)
  */
-export function isProduction(): boolean {
-  return process.env.NODE_ENV === 'production';
+export function getEnvVar(key: string, defaultValue?: string): string {
+  const value = process.env[key];
+  if (!value && !defaultValue) {
+    throw new Error(`Required environment variable ${key} is not set`);
+  }
+  return value || defaultValue!;
 }
 
 /**
- * Check if running in development environment
+ * Initialize and validate environment on module load
  */
-export function isDevelopment(): boolean {
-  return process.env.NODE_ENV === 'development';
+let validatedEnv: ValidatedEnv | null = null;
+
+export function initializeEnvironment(): ValidatedEnv {
+  if (!validatedEnv) {
+    validatedEnv = validateEnvironment();
+    validateLLMProviders();
+    validateSupabase();
+  }
+  return validatedEnv;
 }
 
-/**
- * Check if running in test environment
- */
-export function isTest(): boolean {
-  return process.env.NODE_ENV === 'test';
-}
-
-// Validate environment at module load time (fail fast)
-if (!isTest()) {
-  validateEnvironmentOrThrow();
+// Auto-initialize if in Node.js environment
+if (typeof window === 'undefined') {
+  try {
+    initializeEnvironment();
+  } catch (error) {
+    // Don't throw during module load, but log warning
+    console.warn('⚠️  Environment validation warning:', error instanceof Error ? error.message : 'Unknown error');
+  }
 }

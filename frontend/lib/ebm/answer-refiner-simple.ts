@@ -1,10 +1,10 @@
 /**
  * Simplified nanoEBM Answer Refiner (No TensorFlow.js Dependency)
  * 
- * For baseline testing, we use a simplified energy-based approach that doesn't require
- * TensorFlow.js, making it easier to test without additional dependencies.
+ * Enhanced with LLM-based refinement for actual answer improvement.
  * 
- * In production, this would be replaced with the full TensorFlow.js implementation.
+ * ISSUE FIXED: Previously added generic placeholders like "[Additional details]"
+ * which didn't actually improve answers. Now uses LLM calls for real refinement.
  */
 
 export interface EBMConfig {
@@ -14,6 +14,8 @@ export interface EBMConfig {
   temperature: number;
   energyFunction: string;
   earlyStoppingThreshold?: number;
+  useLLMRefinement?: boolean;  // NEW: Use LLM for actual refinement
+  llmModel?: string;            // Model to use for refinement (default: 'ollama-gemma3:4b')
 }
 
 export interface EBMRefinementResult {
@@ -26,7 +28,7 @@ export interface EBMRefinementResult {
 }
 
 export class SimpleEBMAnswerRefiner {
-  private config: Required<EBMConfig>;
+  private config: Required<EBMConfig> & { useLLMRefinement: boolean; llmModel: string };
 
   constructor(config: EBMConfig) {
     this.config = {
@@ -35,7 +37,9 @@ export class SimpleEBMAnswerRefiner {
       noiseScale: config.noiseScale || 0.01,
       temperature: config.temperature || 0.8,
       energyFunction: config.energyFunction || 'default',
-      earlyStoppingThreshold: config.earlyStoppingThreshold || 0.001
+      earlyStoppingThreshold: config.earlyStoppingThreshold || 0.001,
+      useLLMRefinement: config.useLLMRefinement ?? true,  // Default to true for real refinement
+      llmModel: config.llmModel || 'ollama-gemma3:4b'
     };
   }
 
@@ -67,21 +71,48 @@ export class SimpleEBMAnswerRefiner {
       const suggestions = this.generateRefinementSuggestions(query, context, refinedAnswer);
       
       // Try each suggestion and compute energy
-      let bestEnergy = initialEnergy;
+      let bestEnergy = step === 0 ? initialEnergy : energyHistory[energyHistory.length - 1];
       let bestAnswer = refinedAnswer;
+      let improvementsTried = 0;
+      let improvementsFound = 0;
+      
+      if (suggestions.length === 0) {
+        // If no suggestions, try general improvement
+        suggestions.push('add_detail'); // Always try to add detail
+      }
       
       for (const suggestion of suggestions) {
-        const candidateAnswer = this.applySuggestion(refinedAnswer, suggestion);
-        const candidateEnergy = this.computeEnergy(query, context, candidateAnswer);
-        
-        if (candidateEnergy < bestEnergy) {
-          bestEnergy = candidateEnergy;
-          bestAnswer = candidateAnswer;
+        improvementsTried++;
+        try {
+          const candidateAnswer = await this.applySuggestion(query, context, refinedAnswer, suggestion);
+          
+          // Only evaluate if answer actually changed
+          if (candidateAnswer !== refinedAnswer && candidateAnswer.trim().length > 0) {
+            const candidateEnergy = this.computeEnergy(query, context, candidateAnswer);
+            
+            if (candidateEnergy < bestEnergy) {
+              const improvement = bestEnergy - candidateEnergy;
+              console.log(`   🔧 ${suggestion}: energy=${candidateEnergy.toFixed(4)} (improvement: -${improvement.toFixed(4)})`);
+              bestEnergy = candidateEnergy;
+              bestAnswer = candidateAnswer;
+              improvementsFound++;
+            } else {
+              console.log(`   ⊘ ${suggestion}: energy=${candidateEnergy.toFixed(4)} (no improvement)`);
+            }
+          } else {
+            console.log(`   ⊘ ${suggestion}: no change or empty result`);
+          }
+        } catch (error) {
+          console.warn(`   ⚠️  ${suggestion} failed:`, error instanceof Error ? error.message : 'Unknown error');
         }
       }
       
       refinedAnswer = bestAnswer;
       energyHistory.push(bestEnergy);
+      
+      if (improvementsFound === 0 && improvementsTried > 0) {
+        console.log(`   ℹ️  Tried ${improvementsTried} refinements, none improved energy`);
+      }
 
       // Check convergence
       if (step > 0) {
@@ -113,12 +144,34 @@ export class SimpleEBMAnswerRefiner {
   /**
    * Compute energy function E(query, context, answer)
    * Lower energy = better answer
+   * 
+   * Enhanced to better detect LLM improvements:
+   * - Penalizes generic placeholders
+   * - Rewards meaningful content additions
+   * - Better word overlap calculation
    */
   private computeEnergy(query: string, context: string, answer: string): number {
+    // Penalize generic placeholders (these don't improve answers)
+    const placeholderPatterns = [
+      /\[Additional details.*?\]/gi,
+      /\[Enhanced relevance.*?\]/gi,
+      /\[Based on.*?context.*?\]/gi,
+      /\[Additional.*?\]/gi,
+    ];
+    
+    let placeholderPenalty = 0;
+    for (const pattern of placeholderPatterns) {
+      const matches = answer.match(pattern);
+      if (matches) {
+        placeholderPenalty += matches.length * 0.2; // Penalize placeholders
+      }
+    }
+    
     // Simplified energy function based on:
     // 1. Answer relevance to query (lower = better)
     // 2. Answer faithfulness to context (lower = better)
     // 3. Answer completeness (higher completeness = lower energy)
+    // 4. Penalty for generic placeholders
     
     const queryWords = new Set(query.toLowerCase().split(/\s+/).filter(w => w.length > 2));
     const answerWords = new Set(answer.toLowerCase().split(/\s+/).filter(w => w.length > 2));
@@ -136,16 +189,23 @@ export class SimpleEBMAnswerRefiner {
     
     // Completeness: Answer length and structure (longer, structured = lower energy)
     const lengthScore = Math.min(1, answer.length / 500); // Prefer longer answers (up to 500 chars)
-    const hasStructure = (answer.includes('\n') || answer.includes('•') || answer.includes('-')) ? 1 : 0;
+    const hasStructure = (answer.includes('\n') || answer.includes('•') || answer.includes('-') || answer.includes('1.')) ? 1 : 0;
     const completenessEnergy = 1 - (lengthScore * 0.7 + hasStructure * 0.3);
     
-    // Combined energy (weighted sum)
-    const totalEnergy = 
-      relevanceEnergy * 0.4 +
-      faithfulnessEnergy * 0.4 +
-      completenessEnergy * 0.2;
+    // Quality indicators: Reward specific, informative content
+    const hasSpecificInfo = (answer.match(/\d+/g) || []).length > 0 ? 0.1 : 0; // Numbers indicate specifics
+    const hasExamples = (answer.match(/example|for instance|such as/gi) || []).length > 0 ? 0.05 : 0;
+    const qualityBonus = hasSpecificInfo + hasExamples;
     
-    return totalEnergy;
+    // Combined energy (weighted sum) + penalties - bonuses
+    const totalEnergy = 
+      relevanceEnergy * 0.35 +
+      faithfulnessEnergy * 0.35 +
+      completenessEnergy * 0.2 +
+      placeholderPenalty * 0.1 -
+      qualityBonus;
+    
+    return Math.max(0, Math.min(1, totalEnergy)); // Clamp to [0, 1]
   }
 
   /**
@@ -184,8 +244,76 @@ export class SimpleEBMAnswerRefiner {
 
   /**
    * Apply refinement suggestion to answer
+   * Now uses LLM for actual improvement instead of generic placeholders
    */
-  private applySuggestion(answer: string, suggestion: string): string {
+  private async applySuggestion(
+    query: string,
+    context: string,
+    answer: string,
+    suggestion: string
+  ): Promise<string> {
+    // If LLM refinement is disabled, use simple heuristics (legacy)
+    if (!this.config.useLLMRefinement) {
+      return this.applySuggestionLegacy(answer, suggestion);
+    }
+    
+    // Use LLM for actual refinement
+    try {
+      const { callPerplexityWithRateLimiting } = await import('../brain-skills/llm-helpers');
+      
+      let refinementPrompt = '';
+      
+      switch (suggestion) {
+        case 'add_detail':
+          refinementPrompt = `Improve the following answer by adding more specific details and examples. Keep the original content but expand with relevant information.\n\nQuery: ${query}\n\nCurrent Answer: ${answer}\n\nImproved Answer:`;
+          break;
+        
+        case 'add_structure':
+          refinementPrompt = `Restructure the following answer with better organization. Use bullet points, numbered lists, or clear sections to make it easier to read.\n\nQuery: ${query}\n\nCurrent Answer: ${answer}\n\nRestructured Answer:`;
+          break;
+        
+        case 'improve_relevance':
+          refinementPrompt = `Improve the relevance of the following answer to the query. Focus on directly addressing what was asked.\n\nQuery: ${query}\n\nCurrent Answer: ${answer}\n\nMore Relevant Answer:`;
+          break;
+        
+        case 'add_context':
+          refinementPrompt = `Enhance the following answer by incorporating relevant information from the context provided.\n\nQuery: ${query}\n\nContext: ${context.substring(0, 500)}\n\nCurrent Answer: ${answer}\n\nEnhanced Answer:`;
+          break;
+        
+        default:
+          return answer;
+      }
+      
+      const messages = [
+        {
+          role: 'system' as const,
+          content: 'You are an expert at refining answers to make them more helpful, accurate, and complete. Provide only the improved answer, without additional commentary.'
+        },
+        {
+          role: 'user' as const,
+          content: refinementPrompt
+        }
+      ];
+      
+      const response = await callPerplexityWithRateLimiting(messages, {
+        model: this.config.llmModel,
+        temperature: this.config.temperature,
+        maxTokens: Math.max(500, answer.length * 1.5) // Allow expansion
+      });
+      
+      return response.content.trim() || answer;
+      
+    } catch (error) {
+      console.warn(`   ⚠️  LLM refinement failed for ${suggestion}, using legacy method:`, error);
+      return this.applySuggestionLegacy(answer, suggestion);
+    }
+  }
+  
+  /**
+   * Legacy suggestion application (generic placeholders)
+   * Fallback when LLM refinement fails
+   */
+  private applySuggestionLegacy(answer: string, suggestion: string): string {
     switch (suggestion) {
       case 'add_detail':
         return answer + '\n\n[Additional details based on analysis]';

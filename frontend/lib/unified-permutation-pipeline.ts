@@ -26,6 +26,12 @@ import { decideSRL_EBM_Routing } from './srl-ebm-router';
 import { EBMAnswerRefiner } from './ebm/answer-refiner-simple';
 import { SWiRLSRLEnhancer } from './srl/swirl-srl-enhancer';
 import { SWiRLDecompositionResult } from './swirl-decomposer';
+import { validateQuery, sanitizeQuery, validateDomain, validateConfig } from './input-validation';
+import { PipelineError, ValidationError } from './errors';
+import { createLogger } from './walt/logger';
+import { pipelineCache } from './pipeline-cache';
+import { circuitBreakerRegistry } from './circuit-breaker';
+import { parallelExecutor } from './parallel-executor';
 
 export interface UnifiedPipelineConfig {
   enableACE: boolean;
@@ -50,10 +56,10 @@ export interface UnifiedPipelineConfig {
 export interface UnifiedPipelineResult {
   answer: string;
   reasoning: {
-    deduction: any;      // Formal logic
-    induction: any;      // Experience-based
-    abduction: any;      // Creative hypothesis
-    synthesis: any;      // Combined semiotic
+    deduction: Record<string, unknown>;      // Formal logic
+    induction: Record<string, unknown>;      // Experience-based
+    abduction: Record<string, unknown>;      // Creative hypothesis
+    synthesis: Record<string, unknown>;      // Combined semiotic
   };
   metadata: {
     domain: string;
@@ -84,20 +90,20 @@ export interface UnifiedPipelineResult {
         };
   trace: {
     steps: PipelineStep[];
-    optimization_history: any[];
-    semiotic_analysis: any;
-    learning_session: any;
+    optimization_history: Array<Record<string, unknown>>;
+    semiotic_analysis: Record<string, unknown> | null;
+    learning_session: Record<string, unknown> | null;
   };
 }
 
 export interface PipelineStep {
   component: string;
   phase: 'routing' | 'optimization' | 'inference' | 'verification' | 'learning';
-  input: any;
-  output: any;
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
   duration_ms: number;
   status: 'success' | 'failed' | 'skipped';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -111,6 +117,19 @@ export class UnifiedPermutationPipeline {
   private rvs: RVS;
   private semioticSystem: ComprehensiveSemioticSystem;
   private tracer: any;
+  private logger = createLogger('UnifiedPermutationPipeline');
+  private perplexityBreaker = circuitBreakerRegistry.getOrCreate('perplexity', {
+    failureThreshold: 5,
+    resetTimeout: 60000,
+    halfOpenMaxAttempts: 3,
+    successThreshold: 2,
+  });
+  private ollamaBreaker = circuitBreakerRegistry.getOrCreate('ollama', {
+    failureThreshold: 5,
+    resetTimeout: 30000,
+    halfOpenMaxAttempts: 3,
+    successThreshold: 2,
+  });
   
   // Performance tracking
   private executionCount = 0;
@@ -137,30 +156,75 @@ export class UnifiedPermutationPipeline {
 
     // Initialize with null model - will be set when executing queries
     // Use optimized ACE framework if GEPA is enabled (lazy load in processQuery)
-    this.aceFramework = new ACEFramework(null as any);
+    this.aceFramework = new ACEFramework(null as any); // Lazy initialization - model set at runtime
     this.irtCalculator = calculateIRT;
     this.rvs = new RVS();
     this.semioticSystem = new ComprehensiveSemioticSystem();
     this.tracer = getTracer();
     
-    console.log('🚀 Unified Permutation Pipeline initialized');
-    console.log('   Components:', this.getEnabledComponents());
+    this.logger.info('Unified Permutation Pipeline initialized', { 
+      components: this.getEnabledComponents() 
+    });
   }
   
   /**
    * MAIN PIPELINE EXECUTION
    * Orchestrates all components in optimal order
    */
-  async execute(query: string, domain?: string, context?: any): Promise<UnifiedPipelineResult> {
+  async execute(
+    query: string, 
+    domain?: string, 
+    context?: any, 
+    configOverride?: Partial<UnifiedPipelineConfig>,
+    streamWriter?: (event: { type: string; phase?: string; data?: any }) => void
+  ): Promise<UnifiedPipelineResult> {
+    // Validate inputs BEFORE sanitization to provide clear errors
+    try {
+      // First validate (checks length, etc.) - this throws if invalid
+      const validatedQuery = validateQuery({ query, domain, context });
+      const validatedDomain = validateDomain(domain);
+      
+      // Then sanitize (only if validation passes)
+      const sanitizedQuery = sanitizeQuery(validatedQuery.query);
+      
+      if (configOverride) {
+        validateConfig(configOverride);
+        // Merge with existing config
+        this.config = { ...this.config, ...configOverride } as Required<UnifiedPipelineConfig>;
+      }
+      
+      return this.executeInternal(sanitizedQuery, validatedDomain, validatedQuery.context, streamWriter);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new PipelineError(
+        `Failed to execute pipeline: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'validation',
+        undefined,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+  
+  private async executeInternal(
+    query: string, 
+    domain: string | undefined, 
+    context: Record<string, unknown> | undefined,
+    streamWriter?: (event: { type: string; phase?: string; data?: any }) => void
+  ): Promise<UnifiedPipelineResult> {
     const startTime = Date.now();
     const sessionId = this.tracer.startSession(`unified-pipeline-${Date.now()}`);
     
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🎯 UNIFIED PERMUTATION PIPELINE EXECUTION');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`📝 Query: ${query.substring(0, 60)}...`);
-    console.log(`🏢 Domain: ${domain || 'auto-detect'}`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    this.logger.info('Pipeline execution started', { 
+      query: query.substring(0, 60), 
+      domain: domain || 'auto-detect',
+      sessionId 
+    });
+    
+    if (streamWriter) {
+      streamWriter({ type: 'phase_start', phase: 'initialization' });
+    }
     
     const steps: PipelineStep[] = [];
     const optimizationHistory: any[] = [];
@@ -170,91 +234,137 @@ export class UnifiedPermutationPipeline {
     
     try {
       // ============================================================
-      // PHASE 1: ROUTING & DIFFICULTY ASSESSMENT (IRT)
+      // PHASE 1 & 2: PARALLEL EXECUTION (IRT & Semiotic run together)
       // ============================================================
-      console.log('📊 PHASE 1: ROUTING & DIFFICULTY ASSESSMENT');
-      const routingStart = Date.now();
+      this.logger.info('Starting Phase 1 & 2 (parallel execution)', { query: query.substring(0, 60) });
+      const parallelStart = Date.now();
       
       const detectedDomain = domain || await this.detectDomain(query);
-      let irtDifficulty = 0.5;
       
-      if (this.config.enableIRT) {
-        irtDifficulty = await this.irtCalculator(query, detectedDomain);
-        console.log(`   ✓ IRT Difficulty: ${irtDifficulty.toFixed(3)} (${this.getDifficultyLabel(irtDifficulty)})`);
-        
-        steps.push({
-          component: 'IRT Calculator',
-          phase: 'routing',
-          input: { query, domain: detectedDomain },
-          output: { difficulty: irtDifficulty, expectedAccuracy: 0.85 }, // PERMUTATION's ability
-          duration_ms: Date.now() - routingStart,
-          status: 'success'
-        });
-      }
+      // Execute IRT and Semiotic in parallel
+      const [irtResult, semioticResult] = await parallelExecutor.executeParallel(
+        async () => {
+          const routingStart = Date.now();
+          let irtDifficulty = 0.5;
+          
+          if (this.config.enableIRT) {
+            const cachedDifficulty = pipelineCache.getIRTDifficulty(query, detectedDomain);
+            if (cachedDifficulty !== null) {
+              irtDifficulty = cachedDifficulty;
+              this.logger.info('IRT Difficulty (cached)', { 
+                difficulty: irtDifficulty, 
+                label: this.getDifficultyLabel(irtDifficulty),
+                duration: Date.now() - routingStart 
+              });
+            } else {
+              irtDifficulty = await this.irtCalculator(query, detectedDomain);
+              pipelineCache.setIRTDifficulty(query, detectedDomain, irtDifficulty);
+              this.logger.info('IRT Difficulty calculated', { 
+                difficulty: irtDifficulty, 
+                label: this.getDifficultyLabel(irtDifficulty),
+                duration: Date.now() - routingStart 
+              });
+            }
+            
+            steps.push({
+              component: 'IRT Calculator',
+              phase: 'routing',
+              input: { query, domain: detectedDomain },
+              output: { difficulty: irtDifficulty, expectedAccuracy: 0.85 },
+              duration_ms: Date.now() - routingStart,
+              status: 'success'
+            });
+          }
+          
+          return { irtDifficulty, duration: Date.now() - routingStart };
+        },
+        async () => {
+          const semioticStart = Date.now();
+          let semioticAnalysis: any = null;
+          
+          if (this.config.enableSemiotic) {
+            const cachedSemiotic = pipelineCache.getSemioticAnalysis(query, detectedDomain);
+            if (cachedSemiotic) {
+              semioticAnalysis = cachedSemiotic;
+              this.logger.info('Using cached semiotic inference');
+            } else {
+              this.logger.info('Performing comprehensive semiotic inference');
+              semioticAnalysis = await this.semioticSystem.executeSemioticAnalysis(query, context || {});
+              pipelineCache.setSemioticAnalysis(query, detectedDomain, semioticAnalysis);
+            }
+            
+            const deduction = semioticAnalysis.inference.deduction;
+            const induction = semioticAnalysis.inference.induction;
+            const abduction = semioticAnalysis.inference.abduction;
+            const synthesis = semioticAnalysis.inference.synthesis;
+            
+            this.logger.info('Semiotic inference complete', {
+              deduction: deduction.confidence.toFixed(2),
+              induction: induction.confidence.toFixed(2),
+              abduction: abduction.confidence.toFixed(2),
+              synthesis: synthesis.overallConfidence.toFixed(2),
+              duration: Date.now() - semioticStart
+            });
+            
+            steps.push({
+              component: 'Semiotic Inference System',
+              phase: 'inference',
+              input: { query, context },
+              output: {
+                deduction: { confidence: deduction.confidence, evidence: deduction.evidence.length },
+                induction: { confidence: induction.confidence, patterns: induction.evidence.length },
+                abduction: { confidence: abduction.confidence, hypotheses: abduction.evidence.length },
+                synthesis: { confidence: synthesis.overallConfidence }
+              },
+              duration_ms: Date.now() - semioticStart,
+              status: 'success',
+              metadata: semioticAnalysis
+            });
+            
+            return {
+              semioticAnalysis,
+              deduction,
+              induction,
+              abduction,
+              synthesis,
+              duration: Date.now() - semioticStart
+            };
+          } else {
+            return {
+              semioticAnalysis: null,
+              deduction: { type: 'deduction', confidence: 0.7, reasoning: 'Simple logical inference', evidence: [] },
+              induction: { type: 'induction', confidence: 0.6, reasoning: 'Pattern-based inference', evidence: [] },
+              abduction: { type: 'abduction', confidence: 0.5, reasoning: 'Hypothesis formation', evidence: [] },
+              synthesis: { overallConfidence: 0.6 },
+              duration: Date.now() - semioticStart
+            };
+          }
+        },
+        'Phase 1 (IRT)',
+        'Phase 2 (Semiotic)'
+      );
       
-      console.log(`   ⏱️  Phase 1 completed in ${Date.now() - routingStart}ms\n`);
+      const irtDifficulty = irtResult.irtDifficulty;
+      const { semioticAnalysis, deduction, induction, abduction, synthesis } = semioticResult;
       
-      // ============================================================
-      // PHASE 2: SEMIOTIC INFERENCE (Deduction + Induction + Abduction)
-      // ============================================================
-      console.log('🔮 PHASE 2: SEMIOTIC INFERENCE');
-      const semioticStart = Date.now();
-      
-      let semioticAnalysis: any = null;
-      let deduction: any = null;
-      let induction: any = null;
-      let abduction: any = null;
-      let synthesis: any = null;
-      
-      if (this.config.enableSemiotic) {
-        console.log('   → Performing comprehensive semiotic inference...');
-        semioticAnalysis = await this.semioticSystem.executeSemioticAnalysis(query, context || {});
-        
-        deduction = semioticAnalysis.inference.deduction;
-        induction = semioticAnalysis.inference.induction;
-        abduction = semioticAnalysis.inference.abduction;
-        synthesis = semioticAnalysis.inference.synthesis;
-        
-        console.log(`   ✓ Deduction (Formal Logic): ${deduction.confidence.toFixed(2)} confidence`);
-        console.log(`   ✓ Induction (Experience): ${induction.confidence.toFixed(2)} confidence`);
-        console.log(`   ✓ Abduction (Imagination): ${abduction.confidence.toFixed(2)} confidence`);
-        console.log(`   ✓ Synthesis: ${synthesis.overallConfidence.toFixed(2)} overall confidence`);
-        
-        steps.push({
-          component: 'Semiotic Inference System',
-          phase: 'inference',
-          input: { query, context },
-          output: {
-            deduction: { confidence: deduction.confidence, evidence: deduction.evidence.length },
-            induction: { confidence: induction.confidence, patterns: induction.evidence.length },
-            abduction: { confidence: abduction.confidence, hypotheses: abduction.evidence.length },
-            synthesis: { confidence: synthesis.overallConfidence }
-          },
-          duration_ms: Date.now() - semioticStart,
-          status: 'success',
-          metadata: semioticAnalysis
-        });
-      } else {
-        // Fallback to simple logical inference
-        deduction = { type: 'deduction', confidence: 0.7, reasoning: 'Simple logical inference', evidence: [] };
-        induction = { type: 'induction', confidence: 0.6, reasoning: 'Pattern-based inference', evidence: [] };
-        abduction = { type: 'abduction', confidence: 0.5, reasoning: 'Hypothesis formation', evidence: [] };
-        synthesis = { overallConfidence: 0.6 };
-      }
-      
-      console.log(`   ⏱️  Phase 2 completed in ${Date.now() - semioticStart}ms\n`);
+      this.logger.info('Phase 1 & 2 completed (parallel)', { 
+        totalDuration: Date.now() - parallelStart,
+        irtDuration: irtResult.duration,
+        semioticDuration: semioticResult.duration
+      });
       
       // ============================================================
       // PHASE 3: ACE FRAMEWORK (for complex queries)
       // ============================================================
-      console.log('🧠 PHASE 3: ACE FRAMEWORK');
-      const aceStart = Date.now();
+      this.logger.info('Starting Phase 3: ACE Framework', { irtDifficulty, threshold: this.config.aceThreshold });
+      if (streamWriter) streamWriter({ type: 'phase_start', phase: 'ace_framework' });
       
+      const aceStart = Date.now();
       let aceResult: any = null;
       
       const aceThreshold = this.config.aceThreshold ?? 0.5;
       if (this.config.enableACE && irtDifficulty > aceThreshold) {
-        console.log('   → Running ACE (Generator → Reflector → Curator)...');
+        this.logger.info('Running ACE (Generator → Reflector → Curator)');
         
         // Use optimized ACE if GEPA is enabled
         if (this.config.enableGEPA) {
@@ -265,14 +375,17 @@ export class UnifiedPermutationPipeline {
             cacheOptimizations: true
           });
           aceResult = await optimizedACE.processQuery(query, detectedDomain);
-          console.log(`   ✓ PromptMII+GEPA optimization: Applied`);
+          this.logger.info('PromptMII+GEPA optimization applied');
         } else {
           aceResult = await this.aceFramework.processQuery(query, detectedDomain);
         }
         
-        console.log(`   ✓ Generator: ${aceResult.generator?.actions?.length || 0} actions`);
-        console.log(`   ✓ Reflector: ${aceResult.reflector?.insights?.length || 0} insights`);
-        console.log(`   ✓ Curator: ${aceResult.curator?.bullets?.length || 0} bullets curated`);
+        this.logger.info('ACE Framework complete', {
+          generatorActions: aceResult.generator?.actions?.length || 0,
+          reflectorInsights: aceResult.reflector?.insights?.length || 0,
+          curatorBullets: aceResult.curator?.bullets?.length || 0,
+          duration: Date.now() - aceStart
+        });
         
         steps.push({
           component: 'ACE Framework',
@@ -286,11 +399,22 @@ export class UnifiedPermutationPipeline {
           duration_ms: Date.now() - aceStart,
           status: 'success'
         });
+        
+        if (streamWriter) {
+          streamWriter({ 
+            type: 'phase_complete', 
+            phase: 'ace_framework',
+            data: { duration: Date.now() - aceStart, result: aceResult }
+          });
+        }
       } else {
-        console.log(`   ⊘ Skipped (difficulty ${irtDifficulty.toFixed(2)} < ${aceThreshold.toFixed(1)} threshold)`);
+        this.logger.info('ACE Framework skipped', { 
+          difficulty: irtDifficulty.toFixed(2), 
+          threshold: aceThreshold.toFixed(1) 
+        });
       }
       
-      console.log(`   ⏱️  Phase 3 completed in ${Date.now() - aceStart}ms\n`);
+      this.logger.info('Phase 3 completed', { duration: Date.now() - aceStart });
       
       // ============================================================
       // PHASE 4: DSPy MODULE OPTIMIZATION WITH GEPA
@@ -329,6 +453,13 @@ export class UnifiedPermutationPipeline {
             duration_ms: Date.now() - dspyStart,
             status: 'success'
           });
+        } else {
+          console.log(`   ⊘ DSPy module "${moduleName}" not found in registry`);
+          const availableModules = dspyRegistry.listModules();
+          if (availableModules.length > 0) {
+            console.log(`   ℹ️  Available modules: ${availableModules.join(', ')}`);
+            console.log(`   💡 Tip: Use one of the available modules or register "${moduleName}"`);
+          }
         }
       } else if (this.config.enableGEPA) {
         console.log('   → Running standalone GEPA optimization...');
@@ -350,7 +481,7 @@ export class UnifiedPermutationPipeline {
           component: 'GEPA Algorithms',
           phase: 'optimization',
           input: { basePrompts: [query], domain: detectedDomain },
-          output: gepaResult,
+          output: gepaResult as unknown as Record<string, unknown>, // Convert GEPAResult to Record
           duration_ms: Date.now() - dspyStart,
           status: 'success'
         });
@@ -604,7 +735,9 @@ export class UnifiedPermutationPipeline {
             learningRate: 0.5,
             noiseScale: 0.01,
             temperature: 0.8,
-            energyFunction: 'combined'
+            energyFunction: 'combined',
+            useLLMRefinement: true,  // Enable LLM-based refinement (actually improves answers)
+            llmModel: 'ollama-gemma3:4b'  // Use local model for refinement
           });
           
           // Build context for EBM
@@ -1179,9 +1312,10 @@ export async function executeUnifiedPipeline(
   query: string,
   domain?: string,
   context?: any,
-  config?: Partial<UnifiedPipelineConfig>
+  config?: Partial<UnifiedPipelineConfig>,
+  streamWriter?: (event: { type: string; phase?: string; data?: any }) => void
 ): Promise<UnifiedPipelineResult> {
   const pipeline = config ? new UnifiedPermutationPipeline(config) : unifiedPipeline;
-  return await pipeline.execute(query, domain, context);
+  return await pipeline.execute(query, domain, context, config, streamWriter);
 }
 

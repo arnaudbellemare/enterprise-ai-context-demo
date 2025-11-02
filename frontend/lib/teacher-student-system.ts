@@ -8,6 +8,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { callPerplexityWithRateLimiting } from './brain-skills/llm-helpers';
+import { getTracer } from './dspy-observability';
 
 export interface TeacherResponse {
   answer: string;
@@ -40,10 +41,20 @@ export class TeacherStudentSystem {
   private learningHistory: Map<string, LearningSession[]> = new Map();
   private teacherCache: Map<string, TeacherResponse> = new Map();
   private studentCache: Map<string, StudentResponse> = new Map();
+  private tracer: any;
 
   constructor() {
     this.initializeSupabase();
+    this.tracer = getTracer();
     console.log('🎓 Teacher-Student System initialized!');
+  }
+
+  /**
+   * Reinitialize Supabase connection (useful after environment variables are loaded)
+   */
+  reinitializeSupabase() {
+    this.supabase = null;
+    this.initializeSupabase();
   }
 
   private initializeSupabase() {
@@ -286,7 +297,7 @@ export class TeacherStudentSystem {
           }
         ],
         {
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar-pro',
           maxTokens: 1000,
           temperature: 0.7
         }
@@ -310,26 +321,48 @@ export class TeacherStudentSystem {
    * Generate Teacher response using Perplexity
    */
   private async generateTeacherResponse(query: string, sources: string[], domain?: string): Promise<{answer: string, confidence: number}> {
-    try {
-      const prompt = `You are an expert teacher with access to current information. Answer this question comprehensively: "${query}"
+    const startTime = Date.now();
+    const prompt = `You are an expert teacher with access to current information. Answer this question comprehensively: "${query}"
 
 ${sources.length > 0 ? `Sources: ${sources.join(', ')}` : ''}
 
 Provide a detailed, accurate answer with proper context and explanations.`;
 
+    try {
+      // Log teacher call start
+      this.tracer.logTeacherCall('start', prompt);
+
       const result = await callPerplexityWithRateLimiting(
         [{ role: 'user', content: prompt }],
         {
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar-pro',
           maxTokens: 1500,
           temperature: 0.7
         }
       );
 
       const answer = result.content || 'No response generated.';
+      const latency = Date.now() - startTime;
+
+      // Log teacher call end
+      this.tracer.logTeacherCall('end', undefined, answer, {
+        model: 'sonar-pro',
+        latency_ms: latency,
+        tokens: result.content?.length || 0,
+        cost: 0.001, // Estimate
+        confidence: 0.9
+      });
+
       return { answer, confidence: 0.9 };
     } catch (error) {
       console.warn('⚠️ Teacher response generation failed:', error);
+      
+      // Log teacher call error
+      this.tracer.logTeacherCall('error', undefined, undefined, {
+        model: 'sonar-pro',
+        latency_ms: Date.now() - startTime,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
 
     return { answer: 'I apologize, but I could not generate a response at this time.', confidence: 0.1 };
@@ -366,17 +399,21 @@ Provide a detailed, accurate answer with proper context and explanations.`;
    * Generate Student response using Gemma3:4b
    */
   private async generateStudentResponse(query: string, teacherResponse: TeacherResponse, hasLearned: boolean, domain?: string): Promise<{answer: string, confidence: number}> {
-    try {
-      // Use Ollama with Gemma3:4b
-      const prompt = hasLearned 
-        ? `Based on what I've learned from my teacher, here's my answer to: "${query}"
+    const startTime = Date.now();
+    // Use Ollama with Gemma3:4b
+    const prompt = hasLearned 
+      ? `Based on what I've learned from my teacher, here's my answer to: "${query}"
 
 Teacher's approach: ${teacherResponse.answer.substring(0, 200)}...
 
 Provide a thoughtful response based on this learning.`
-        : `I'm still learning, but let me try to answer: "${query}"
+      : `I'm still learning, but let me try to answer: "${query}"
 
 I don't have much experience with this yet, but here's what I think:`;
+
+    try {
+      // Log student call start
+      this.tracer.logStudentCall('start', prompt);
 
       // Let Ollama run without artificial timeout - real system
       const response = await fetch('http://localhost:11434/api/chat', {
@@ -395,10 +432,30 @@ I don't have much experience with this yet, but here's what I think:`;
         const data = await response.json();
         const answer = data.message?.content || 'I need more practice to answer this question.';
         const confidence = hasLearned ? 0.7 : 0.4;
+        const latency = Date.now() - startTime;
+
+        // Log student call end
+        this.tracer.logStudentCall('end', undefined, answer, {
+          model: 'gemma3:4b',
+          latency_ms: latency,
+          tokens: answer.length,
+          cost: 0.0001, // Estimate for local model
+          confidence: confidence
+        });
+
         return { answer, confidence };
+      } else {
+        throw new Error(`Ollama API returned status ${response.status}`);
       }
     } catch (error) {
       console.warn('⚠️ Student response generation failed:', error);
+      
+      // Log student call error
+      this.tracer.logStudentCall('error', undefined, undefined, {
+        model: 'gemma3:4b',
+        latency_ms: Date.now() - startTime,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
 
     return { answer: 'I need more practice to answer this question.', confidence: 0.2 };
