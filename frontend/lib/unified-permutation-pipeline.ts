@@ -40,9 +40,9 @@ export interface UnifiedPipelineConfig {
   enableEBM?: boolean;        // Energy-based answer refinement
   optimizationMode: 'quality' | 'speed' | 'balanced';
   // Threshold configuration for testing
-  aceThreshold?: number;     // IRT threshold for ACE activation (default: 0.7)
-  swirlThreshold?: number;   // IRT threshold for SWiRL activation (default: 0.6)
-  rvsThreshold?: number;     // IRT threshold for RVS activation (default: 0.6)
+  aceThreshold?: number;     // IRT threshold for ACE activation (default: 0.5, optimal from testing)
+  swirlThreshold?: number;   // IRT threshold for SWiRL activation (default: 0.7, optimal from testing)
+  rvsThreshold?: number;     // IRT threshold for RVS activation (default: 0.3, optimal from testing)
 }
 
 export interface UnifiedPipelineResult {
@@ -237,7 +237,7 @@ export class UnifiedPermutationPipeline {
       
       let aceResult: any = null;
       
-      const aceThreshold = this.config.aceThreshold ?? 0.7;
+      const aceThreshold = this.config.aceThreshold ?? 0.5;
       if (this.config.enableACE && irtDifficulty > aceThreshold) {
         console.log('   → Running ACE (Generator → Reflector → Curator)...');
         
@@ -404,7 +404,7 @@ export class UnifiedPermutationPipeline {
       let swirlResult: any[] | null = null;
       let srlReward = 0;
       
-      const swirlThreshold = this.config.swirlThreshold ?? 0.6;
+      const swirlThreshold = this.config.swirlThreshold ?? 0.7;
       if (this.config.enableSWiRL && irtDifficulty > swirlThreshold) {
         console.log('   → Decomposing query into multi-step reasoning...');
         
@@ -490,7 +490,7 @@ export class UnifiedPermutationPipeline {
       
       let rvsResult: RVSResult | null = null;
       
-      const rvsThreshold = this.config.rvsThreshold ?? 0.6;
+      const rvsThreshold = this.config.rvsThreshold ?? 0.3;
       if (this.config.enableRVS && irtDifficulty > rvsThreshold) {
         console.log('   → Running recursive verification with adaptive computation...');
         
