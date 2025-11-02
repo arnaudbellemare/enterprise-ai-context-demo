@@ -1,0 +1,615 @@
+/**
+ * Tool Synthesis Engine - Alita-G Inspired
+ * 
+ * Synthesizes tools from successful agent trajectories and abstracts them
+ * into reusable, parameterized primitives stored in domain-specific repositories.
+ * 
+ * Based on: Alita-G: Self-Evolving Generative Agent for Agent GENERATION
+ * Paper: https://arxiv.org/pdf/2510.23601
+ * 
+ * Key Concepts:
+ * 1. Extract tools from successful trajectories
+ * 2. Abstract concrete usage → parameterized primitives
+ * 3. Store in domain-specific repositories (MCP Box equivalent)
+ * 4. Retrieve-augmented tool selection at inference
+ */
+
+import { ArcMemoReasoningBank, type Experience } from './arcmemo-reasoning-bank';
+
+export interface ToolPrimitive {
+  id: string;
+  name: string;
+  description: string;
+  parameters: Record<string, {
+    type: string;
+    description: string;
+    required: boolean;
+    default?: any;
+  }>;
+  useCases: string[]; // When to use this tool
+  domain: string;
+  abstractionLevel: 'concrete' | 'parameterized' | 'primitive';
+  
+  // Success metrics
+  successRate: number;
+  usageCount: number;
+  
+  // Tool metadata
+  toolType: 'api' | 'function' | 'composite' | 'mcp';
+  invocationPattern: string; // How it was used in trajectory
+  
+  // Relationships
+  derivedFrom?: string[]; // Parent tool IDs
+  evolvedInto?: string[]; // Child tool IDs
+  
+  // Embedding for retrieval
+  embedding?: number[];
+  
+  // Timestamps
+  createdAt: Date;
+  lastUsed: Date;
+}
+
+export interface DomainToolRepository {
+  domain: string;
+  tools: Map<string, ToolPrimitive>;
+  supabase: any;
+}
+
+/**
+ * Tool Synthesis Engine
+ * 
+ * Synthesizes tools from successful trajectories (Alita-G style)
+ */
+export class ToolSynthesisEngine {
+  private repositories: Map<string, DomainToolRepository> = new Map();
+  private reasoningBank: ArcMemoReasoningBank;
+  
+  constructor(reasoningBank: ArcMemoReasoningBank) {
+    this.reasoningBank = reasoningBank;
+  }
+  
+  /**
+   * Extract tools from successful trajectory (Alita-G Step 1)
+   */
+  async extractToolsFromTrajectory(experience: Experience): Promise<ToolPrimitive[]> {
+    /**
+     * Extract tool usage patterns from trajectory steps
+     * 
+     * Example trajectory step:
+     * {
+     *   thought: "I need to search for quantum computing hardware",
+     *   action: "web_search",
+     *   observation: "Found IBM quantum processors..."
+     * }
+     * 
+     * Extracted tool:
+     * {
+     *   name: "domain_research",
+     *   parameters: { domain: "{{domain}}", query_type: "{{type}}" },
+     *   invocationPattern: "web_search"
+     * }
+     */
+    
+    const extractedTools: ToolPrimitive[] = [];
+    
+    for (const step of experience.steps) {
+      // Detect tool usage in step.action or step.observation
+      const toolUsage = this.detectToolUsage(step);
+      
+      if (toolUsage) {
+        const tool = await this.createToolPrimitive(
+          toolUsage,
+          experience,
+          step
+        );
+        
+        if (tool) {
+          extractedTools.push(tool);
+        }
+      }
+    }
+    
+    return extractedTools;
+  }
+  
+  /**
+   * Detect tool usage from trajectory step
+   */
+  private detectToolUsage(step: any): any | null {
+    // Detect common tool patterns
+    const toolPatterns = {
+      web_search: /(?:search|lookup|find|query|research).*web/i,
+      calculator: /(?:calculate|compute|solve|math|formula)/i,
+      sql: /(?:sql|database|query|select|from|where)/i,
+      api_call: /(?:api|endpoint|call|request|fetch)/i,
+      data_analysis: /(?:analyze|process|extract|transform)/i
+    };
+    
+    const action = step.action || '';
+    const thought = step.thought || '';
+    const observation = step.observation || '';
+    
+    const combined = `${action} ${thought} ${observation}`;
+    
+    for (const [toolType, pattern] of Object.entries(toolPatterns)) {
+      if (pattern.test(combined)) {
+        return {
+          toolType,
+          invocation: action,
+          context: { thought, observation }
+        };
+    }
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Create tool primitive from concrete usage (Alita-G abstraction)
+   */
+  private async createToolPrimitive(
+    toolUsage: any,
+    experience: Experience,
+    step: any
+  ): Promise<ToolPrimitive | null> {
+    /**
+     * Abstract concrete tool usage → parameterized primitive
+     * 
+     * Example abstraction:
+     * Concrete: "web_search('quantum computing financial risk')"
+     * Abstracted: "domain_research({ domain: '{{domain}}', research_type: '{{type}}' })"
+     */
+    
+    const tool = await this.abstractToolUsage(toolUsage, experience, step);
+    
+    if (!tool) return null;
+    
+    // Generate embedding for retrieval
+    const embedding = await this.generateEmbedding(
+      `${tool.description} ${tool.useCases.join(' ')}`
+    );
+    
+    return {
+      ...tool,
+      embedding,
+      createdAt: new Date(),
+      lastUsed: new Date()
+    };
+  }
+  
+  /**
+   * Abstract concrete tool usage to parameterized primitive (Alita-G key step)
+   */
+  private async abstractToolUsage(
+    toolUsage: any,
+    experience: Experience,
+    step: any
+  ): Promise<Omit<ToolPrimitive, 'embedding' | 'createdAt' | 'lastUsed'> | null> {
+    /**
+     * Use LLM to abstract concrete usage → parameterized primitive
+     * Similar to ReasoningBank's memory extraction
+     */
+    
+    const abstractionPrompt = `Extract and abstract a reusable tool from this agent execution step.
+
+Concrete Usage:
+Action: ${step.action}
+Thought: ${step.thought}
+Observation: ${step.observation}
+Context: ${experience.domain}
+Success: ${experience.success}
+
+Abstract this into a parameterized tool primitive:
+1. Tool name (generalized)
+2. Parameters (with placeholders like {{domain}}, {{type}})
+3. Description
+4. Use cases
+5. Tool type
+
+Return JSON:
+{
+  "name": "generalized_tool_name",
+  "description": "What this tool does",
+  "parameters": {
+    "param1": { "type": "string", "description": "...", "required": true }
+  },
+  "useCases": ["when to use this tool"],
+  "toolType": "api|function|composite",
+  "abstractionLevel": "parameterized"
+}`;
+
+    try {
+      const response = await fetch("http://localhost:11434/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gemma3:4b",
+          messages: [
+            { role: "system", content: "You are an expert at abstracting concrete tool usage into reusable primitives." },
+            { role: "user", content: abstractionPrompt }
+          ],
+          temperature: 0.0 // Deterministic abstraction
+        })
+      });
+      
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+      
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const abstracted = JSON.parse(jsonMatch[0]);
+        
+        return {
+          id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: abstracted.name,
+          description: abstracted.description,
+          parameters: abstracted.parameters || {},
+          useCases: abstracted.useCases || [],
+          domain: experience.domain,
+          abstractionLevel: abstracted.abstractionLevel || 'parameterized',
+          successRate: experience.success ? 1.0 : 0.0,
+          usageCount: 1,
+          toolType: abstracted.toolType || 'function',
+          invocationPattern: step.action,
+          derivedFrom: [],
+          evolvedInto: []
+        };
+      }
+    } catch (error) {
+      console.warn('⚠️ Tool abstraction failed:', error);
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Synthesize tools from multiple executions (Alita-G multi-execution)
+   */
+  async synthesizeToolsFromMultipleExecutions(
+    experiences: Experience[],
+    domain: string
+  ): Promise<ToolPrimitive[]> {
+    /**
+     * Alita-G: Synthesize diverse tools from multiple task executions
+     * 
+     * 1. Extract tools from all successful trajectories
+     * 2. Consolidate similar tools
+     * 3. Abstract to primitives
+     * 4. Return consolidated tool set
+     */
+    
+    console.log(`🔧 Synthesizing tools from ${experiences.length} executions...`);
+    
+    const allTools: ToolPrimitive[] = [];
+    
+    // Extract tools from each experience
+    for (const experience of experiences) {
+      if (experience.success) {
+        const tools = await this.extractToolsFromTrajectory(experience);
+        allTools.push(...tools);
+      }
+    }
+    
+    // Consolidate similar tools
+    const consolidated = await this.consolidateTools(allTools);
+    
+    console.log(`✅ Synthesized ${consolidated.length} unique tools from ${experiences.length} executions`);
+    
+    return consolidated;
+  }
+  
+  /**
+   * Consolidate similar tools (merge duplicates, track evolution)
+   */
+  private async consolidateTools(tools: ToolPrimitive[]): Promise<ToolPrimitive[]> {
+    const consolidated: ToolPrimitive[] = [];
+    const seen = new Map<string, ToolPrimitive>();
+    
+    for (const tool of tools) {
+      const key = `${tool.name}_${tool.domain}`;
+      const existing = seen.get(key);
+      
+      if (existing) {
+        // Merge: update success rate, usage count
+        existing.successRate = (existing.successRate * existing.usageCount + tool.successRate) / (existing.usageCount + 1);
+        existing.usageCount += tool.usageCount;
+        
+        // Track evolution if more abstract
+        if (this.isMoreAbstract(tool.abstractionLevel, existing.abstractionLevel)) {
+          tool.derivedFrom = [existing.id];
+          existing.evolvedInto = [...(existing.evolvedInto || []), tool.id];
+          seen.set(key, tool); // Replace with more abstract version
+        }
+      } else {
+        seen.set(key, tool);
+      }
+    }
+    
+    return Array.from(seen.values());
+  }
+  
+  private isMoreAbstract(level1: string, level2: string): boolean {
+    const levels: Record<string, number> = {
+      concrete: 1,
+      parameterized: 2,
+      primitive: 3
+    };
+    return (levels[level1] || 1) > (levels[level2] || 1);
+  }
+  
+  /**
+   * Get or create domain tool repository (Alita-G MCP Box)
+   */
+  async getDomainToolRepository(domain: string): Promise<DomainToolRepository> {
+    if (!this.repositories.has(domain)) {
+      const repo: DomainToolRepository = {
+        domain,
+        tools: new Map(),
+        supabase: null
+      };
+      
+      // Initialize Supabase connection
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        
+        if (supabaseUrl && supabaseKey) {
+          repo.supabase = createClient(supabaseUrl, supabaseKey);
+          // Load existing tools from database
+          await this.loadToolsFromSupabase(repo);
+        }
+      } catch (error) {
+        console.warn('⚠️ Supabase not available for tool repository');
+      }
+      
+      this.repositories.set(domain, repo);
+    }
+    
+    return this.repositories.get(domain)!;
+  }
+  
+  /**
+   * Add tools to domain repository
+   */
+  async addToolsToRepository(
+    domain: string,
+    tools: ToolPrimitive[]
+  ): Promise<void> {
+    const repo = await this.getDomainToolRepository(domain);
+    
+    for (const tool of tools) {
+      repo.tools.set(tool.id, tool);
+      
+      // Persist to Supabase if available
+      if (repo.supabase) {
+        await this.persistToolToSupabase(repo, tool);
+      }
+    }
+    
+    console.log(`✅ Added ${tools.length} tools to ${domain} repository`);
+  }
+  
+  /**
+   * Retrieval-augmented tool selection (Alita-G inference-time selection)
+   */
+  async selectTools(
+    query: string,
+    domain: string,
+    topK: number = 5
+  ): Promise<ToolPrimitive[]> {
+    /**
+     * Alita-G: Retrieval-augmented MCP selection using tool descriptions + use cases
+     * 
+     * Uses vector similarity search on tool descriptions and use cases
+     */
+    
+    const repo = await this.getDomainToolRepository(domain);
+    
+    // If Supabase available, use vector search
+    if (repo.supabase) {
+      try {
+        const queryEmbedding = await this.generateEmbedding(query);
+        
+        // Use RPC function for vector search (similar to ReasoningBank)
+        const { data, error } = await repo.supabase.rpc('find_similar_tools', {
+          query_embedding: queryEmbedding,
+          target_domain: domain,
+          similarity_threshold: 0.7,
+          match_count: topK
+        });
+        
+        if (data && !error) {
+          return data.map((record: any) => this.toolFromSupabaseRecord(record));
+        }
+      } catch (error) {
+        console.warn('⚠️ Vector search failed, using fallback:', error);
+      }
+    }
+    
+    // Fallback: simple similarity matching
+    const tools = Array.from(repo.tools.values());
+    const queryLower = query.toLowerCase();
+    
+    return tools
+      .map(tool => ({
+        tool,
+        score: this.calculateToolRelevance(tool, queryLower)
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK)
+      .map(item => item.tool);
+  }
+  
+  private calculateToolRelevance(tool: ToolPrimitive, query: string): number {
+    let score = 0;
+    
+    // Match in description
+    if (tool.description.toLowerCase().includes(query)) score += 0.4;
+    
+    // Match in use cases
+    const useCaseMatches = tool.useCases.filter(uc => 
+      uc.toLowerCase().includes(query)
+    ).length;
+    score += useCaseMatches * 0.3;
+    
+    // Success rate bonus
+    score += tool.successRate * 0.2;
+    
+    // Usage count bonus (popular tools)
+    score += Math.min(0.1, tool.usageCount / 100);
+    
+    return score;
+  }
+  
+  /**
+   * Generate embedding for tool/text
+   */
+  private async generateEmbedding(text: string): Promise<number[]> {
+    try {
+      const openaiKey = process.env.OPENAI_API_KEY;
+      if (openaiKey) {
+        const response = await fetch('https://api.openai.com/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'text-embedding-3-small',
+            input: text
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data.data[0].embedding;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Embedding generation failed:', error);
+    }
+    
+    // Fallback: zero vector
+    return new Array(1536).fill(0);
+  }
+  
+  /**
+   * Persist tool to Supabase
+   */
+  private async persistToolToSupabase(
+    repo: DomainToolRepository,
+    tool: ToolPrimitive
+  ): Promise<void> {
+    try {
+      const { error } = await repo.supabase
+        .from('tool_primitives') // Would need to create this table
+        .upsert({
+          id: tool.id,
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters,
+          use_cases: tool.useCases,
+          domain: tool.domain,
+          abstraction_level: tool.abstractionLevel,
+          success_rate: tool.successRate,
+          usage_count: tool.usageCount,
+          tool_type: tool.toolType,
+          invocation_pattern: tool.invocationPattern,
+          derived_from: tool.derivedFrom,
+          evolved_into: tool.evolvedInto,
+          embedding: tool.embedding,
+          created_at: tool.createdAt.toISOString(),
+          last_used: tool.lastUsed.toISOString()
+        });
+      
+      if (error) {
+        console.error('❌ Failed to persist tool:', error);
+      }
+    } catch (error) {
+      console.error('❌ Error persisting tool:', error);
+    }
+  }
+  
+  /**
+   * Load tools from Supabase
+   */
+  private async loadToolsFromSupabase(repo: DomainToolRepository): Promise<void> {
+    if (!repo.supabase) return;
+    
+    try {
+      const { data, error } = await repo.supabase
+        .from('tool_primitives')
+        .select('*')
+        .eq('domain', repo.domain)
+        .order('success_rate', { ascending: false })
+        .limit(100);
+      
+      if (error) {
+        console.error('❌ Failed to load tools:', error);
+        return;
+      }
+      
+      if (data) {
+        for (const record of data) {
+          const tool = this.toolFromSupabaseRecord(record);
+          repo.tools.set(tool.id, tool);
+        }
+        
+        console.log(`✅ Loaded ${data.length} tools for ${repo.domain}`);
+      }
+    } catch (error) {
+      console.error('❌ Error loading tools:', error);
+    }
+  }
+  
+  private toolFromSupabaseRecord(record: any): ToolPrimitive {
+    return {
+      id: record.id,
+      name: record.name,
+      description: record.description,
+      parameters: record.parameters || {},
+      useCases: record.use_cases || [],
+      domain: record.domain,
+      abstractionLevel: record.abstraction_level || 'parameterized',
+      successRate: record.success_rate || 0,
+      usageCount: record.usage_count || 0,
+      toolType: record.tool_type || 'function',
+      invocationPattern: record.invocation_pattern || '',
+      derivedFrom: record.derived_from || [],
+      evolvedInto: record.evolved_into || [],
+      embedding: record.embedding,
+      createdAt: new Date(record.created_at),
+      lastUsed: new Date(record.last_used)
+    };
+  }
+  
+  /**
+   * Format tools for agent use (Alita-G tool injection)
+   */
+  formatToolsForAgent(tools: ToolPrimitive[]): string {
+    if (tools.length === 0) return '';
+    
+    return `## Available Tools:
+
+${tools.map(tool => `
+### ${tool.name}
+**Description**: ${tool.description}
+**Parameters**: ${Object.entries(tool.parameters).map(([name, param]) => 
+  `- ${name} (${param.type}): ${param.description}${param.required ? ' [required]' : ''}`
+).join('\n')}
+**Use Cases**: ${tool.useCases.join(', ')}
+**Success Rate**: ${(tool.successRate * 100).toFixed(0)}%
+`).join('\n')}
+
+Use these tools when appropriate for the task.`;
+  }
+}
+
+// Note: toolSynthesisEngine should be instantiated with an existing ReasoningBank instance
+// This is a factory function for convenience
+export function createToolSynthesisEngine(reasoningBank?: ArcMemoReasoningBank): ToolSynthesisEngine {
+  return new ToolSynthesisEngine(reasoningBank || new ArcMemoReasoningBank());
+}
+

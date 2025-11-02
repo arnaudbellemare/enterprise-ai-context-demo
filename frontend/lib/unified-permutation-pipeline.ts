@@ -38,6 +38,7 @@ export interface UnifiedPipelineConfig {
   enableSWiRL?: boolean;     // Multi-step reasoning decomposition
   enableSRL?: boolean;        // SRL enhancement for SWiRL
   enableEBM?: boolean;        // Energy-based answer refinement
+  enableToolSynthesis?: boolean; // Alita-G: Synthesize tools from trajectories
   optimizationMode: 'quality' | 'speed' | 'balanced';
   // Threshold configuration for testing
   aceThreshold?: number;     // IRT threshold for ACE activation (default: 0.5, optimal from testing)
@@ -68,11 +69,14 @@ export interface UnifiedPipelineResult {
     ebm_refined?: boolean;
     ebm_refinement_steps?: number;
     ebm_energy_improvement?: number;
-    reasoningbank_memories_extracted?: number;
-    reasoningbank_memory_titles?: string[];
-    reasoningbank_memories_used?: number;
-    reasoningbank_memories_used_ids?: string[];
-  };
+          reasoningbank_memories_extracted?: number;
+          reasoningbank_memory_titles?: string[];
+          reasoningbank_memories_used?: number;
+          reasoningbank_memories_used_ids?: string[];
+          // Alita-G tool synthesis
+          tools_synthesized?: number;
+          tool_names?: string[];
+        };
   trace: {
     steps: PipelineStep[];
     optimization_history: any[];
@@ -120,6 +124,7 @@ export class UnifiedPermutationPipeline {
       enableSWiRL: true,
       enableSRL: true,
       enableEBM: true,
+      enableToolSynthesis: true, // Alita-G: Enable tool synthesis by default
       optimizationMode: 'balanced',
       ...config
     };
@@ -716,16 +721,31 @@ export class UnifiedPermutationPipeline {
       };
       
       // ReasoningBank: Memory retrieval, usage tracking, and extraction
+      // Alita-G Enhancement: Also synthesize tools from successful trajectories
       try {
         const reasoningBankModule = await import('./arcmemo-reasoning-bank');
         const { ArcMemoReasoningBank } = reasoningBankModule;
         const reasoningBank = new ArcMemoReasoningBank();
         
         // Step 1: Retrieve relevant memories BEFORE execution (for use during task)
-        // Note: In current implementation, memories aren't actively used in pipeline execution
-        // but we retrieve them for tracking purposes
         const retrievedMemories = await reasoningBank.retrieveRelevantMemories(query, detectedDomain, 5);
         const usedMemoryIds = retrievedMemories.map(m => m.id).filter(id => id && !isNaN(parseInt(id)));
+        
+        // Step 1.5: Alita-G Enhancement - Retrieve relevant tools (if enabled)
+        let selectedTools: any[] = [];
+        if (this.config.enableToolSynthesis !== false) {
+          try {
+            const { createToolSynthesisEngine } = await import('./tool-synthesis-engine');
+            const toolEngine = createToolSynthesisEngine(reasoningBank);
+            selectedTools = await toolEngine.selectTools(query, detectedDomain, 5);
+            if (selectedTools.length > 0) {
+              console.log(`🔧 Alita-G: Selected ${selectedTools.length} tools for execution`);
+              // Tools are available but not yet injected into pipeline (future enhancement)
+            }
+          } catch (toolError) {
+            console.warn('⚠️ Tool synthesis not available:', toolError);
+          }
+        }
         
         // Convert execution trace to Experience format
         const taskSucceeded = qualityScore > 0.7; // High quality = success
@@ -746,7 +766,6 @@ export class UnifiedPermutationPipeline {
         };
         
         // Step 2: Update empirical success rates for memories used (if any)
-        // This is the key empirical tracking mechanism
         if (usedMemoryIds.length > 0) {
           await reasoningBank.updateMemoryUsageBatch(usedMemoryIds, taskSucceeded);
           console.log(`📊 ReasoningBank: Updated empirical success rates for ${usedMemoryIds.length} memories`);
@@ -761,9 +780,28 @@ export class UnifiedPermutationPipeline {
           await reasoningBank.consolidateMemories(extractedMemories);
           console.log(`✅ ReasoningBank: Extracted and consolidated ${extractedMemories.length} memory items`);
           
-          // Update result metadata
           result.metadata.reasoningbank_memories_extracted = extractedMemories.length;
           result.metadata.reasoningbank_memory_titles = extractedMemories.map(m => m.title);
+        }
+        
+        // Step 4: Alita-G Enhancement - Synthesize tools from successful trajectory
+        if (taskSucceeded && this.config.enableToolSynthesis !== false) {
+          try {
+            const { createToolSynthesisEngine } = await import('./tool-synthesis-engine');
+            const toolEngine = createToolSynthesisEngine(reasoningBank);
+            const synthesizedTools = await toolEngine.extractToolsFromTrajectory(experience as any);
+            
+            if (synthesizedTools.length > 0) {
+              await toolEngine.addToolsToRepository(detectedDomain, synthesizedTools);
+              console.log(`🔧 Alita-G: Synthesized ${synthesizedTools.length} tools from successful execution`);
+              
+              // Track in metadata
+              result.metadata.tools_synthesized = synthesizedTools.length;
+              result.metadata.tool_names = synthesizedTools.map(t => t.name);
+            }
+          } catch (toolError) {
+            console.warn('⚠️ Tool synthesis failed (non-fatal):', toolError);
+          }
         }
       } catch (rbError) {
         // Don't fail the pipeline if ReasoningBank extraction fails
