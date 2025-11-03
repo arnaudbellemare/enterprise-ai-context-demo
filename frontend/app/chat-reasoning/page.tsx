@@ -23,6 +23,7 @@ export default function ChatReasoningPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentReasoning, setCurrentReasoning] = useState<ReasoningStep[]>([]);
   const [currentTime, setCurrentTime] = useState('');
+  const [mode, setMode] = useState<'expert' | 'lite'>('expert'); // 'expert' = unified pipeline, 'lite' = permutation-lite
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -70,7 +71,12 @@ export default function ChatReasoningPage() {
       const response = await fetch('/api/chat-reasoning', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: input, domain: 'general' })
+        body: JSON.stringify({ 
+          query: input, 
+          domain: 'general',
+          mode: mode, // Pass mode to API
+          stream: true // Enable streaming
+        })
       });
 
       if (!response.ok) {
@@ -84,40 +90,129 @@ export default function ChatReasoningPage() {
         throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      // Check if response is streaming (text/event-stream) or JSON
+      const contentType = response.headers.get('content-type') || '';
       
-      if (!data.success) {
-        // Log detailed error for debugging
-        console.error('API returned error:', data);
-        throw new Error(data.error || data.details || 'API request failed');
-      }
-
-      // Use real reasoning steps from pipeline (or fallback to metadata)
-      const reasoningSteps: ReasoningStep[] = data.reasoningSteps || data.processingSteps?.map((step: string, idx: number) => ({
-        step: String(idx + 1),
-        title: step.split(':')[0] || `Step ${idx + 1}`,
-        content: step.split(':').slice(1).join(':') || step,
-        status: 'complete' as const
-      })) || [];
-
-      // Add assistant message with reasoning
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.response || 'No response generated',
-        reasoning: reasoningSteps,
-        metadata: {
-          ...data.metrics,
-          domain: data.domain,
-          quality_score: data.confidence || data.metrics?.quality_score,
-          components_used: data.systemComponents?.length || data.metrics?.components_used?.length || 0,
-          cost: data.metrics?.cost || 0,
-          duration: `${data.metrics?.processing_time || 0}ms`,
-          parallel_execution: data.metrics?.parallel_execution || false,
-          streaming_enabled: data.metrics?.streaming_enabled || false
+      if (contentType.includes('text/event-stream')) {
+        // Handle streaming response (SSE)
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let accumulatedAnswer = '';
+        const reasoningSteps: ReasoningStep[] = [];
+        
+        if (!reader) {
+          throw new Error('Stream reader not available');
         }
-      };
-      setMessages(prev => [...prev, assistantMessage]);
-      setCurrentReasoning([]);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            
+            const [eventLine, dataLine] = line.split('\ndata: ');
+            const eventMatch = eventLine.match(/event: (\w+)/);
+            const event = eventMatch ? eventMatch[1] : 'message';
+            
+            if (dataLine) {
+              try {
+                const data = JSON.parse(dataLine);
+                
+                if (event === 'reasoning') {
+                  // Update or add reasoning step
+                  const existingIndex = reasoningSteps.findIndex(s => s.step === data.step);
+                  const step: ReasoningStep = {
+                    step: data.step,
+                    title: data.title,
+                    content: data.content,
+                    status: data.status,
+                    data: data.data
+                  };
+                  
+                  if (existingIndex >= 0) {
+                    reasoningSteps[existingIndex] = step;
+                  } else {
+                    reasoningSteps.push(step);
+                  }
+                  
+                  // Update current reasoning in real-time
+                  setCurrentReasoning([...reasoningSteps]);
+                } else if (event === 'answer') {
+                  // Final answer received
+                  accumulatedAnswer = data.text || '';
+                  const metadata = data.metadata || {};
+                  
+                  // Add complete message
+                  const assistantMessage: Message = {
+                    role: 'assistant',
+                    content: accumulatedAnswer,
+                    reasoning: reasoningSteps,
+                    metadata: {
+                      mode: metadata.mode || mode,
+                      domain: metadata.domain,
+                      quality_score: metadata.quality_score,
+                      cost: metadata.cost,
+                      duration: `${metadata.processing_time_ms || 0}ms`,
+                      ...metadata
+                    }
+                  };
+                  
+                  setMessages(prev => [...prev, assistantMessage]);
+                  setCurrentReasoning([]);
+                } else if (event === 'error') {
+                  throw new Error(data.error || 'Streaming error occurred');
+                }
+              } catch (parseError) {
+                console.error('Failed to parse SSE data:', parseError, dataLine);
+              }
+            }
+          }
+        }
+      } else {
+        // Handle non-streaming JSON response (fallback)
+        const data = await response.json();
+        
+        if (!data.success) {
+          console.error('API returned error:', data);
+          throw new Error(data.error || data.details || 'API request failed');
+        }
+
+        // Use real reasoning steps from pipeline (or fallback to metadata)
+        const reasoningSteps: ReasoningStep[] = data.reasoningSteps || data.processingSteps?.map((step: string, idx: number) => ({
+          step: String(idx + 1),
+          title: step.split(':')[0] || `Step ${idx + 1}`,
+          content: step.split(':').slice(1).join(':') || step,
+          status: 'complete' as const
+        })) || [];
+
+        // Add assistant message with reasoning
+        // Handle both expert (data.response) and lite (data.answer) response formats
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: data.response || data.answer || 'No response generated',
+          reasoning: reasoningSteps,
+          metadata: {
+            ...data.metadata,
+            ...data.metrics,
+            mode: data.metadata?.mode || mode,
+            domain: data.domain || data.metadata?.domain,
+            quality_score: data.confidence || data.metadata?.quality_score || data.metrics?.quality_score,
+            components_used: data.systemComponents?.length || data.metrics?.components_used?.length || 0,
+            cost: data.metadata?.cost || data.metrics?.cost || 0,
+            duration: `${data.metadata?.processing_time_ms || data.metrics?.processing_time || 0}ms`,
+            parallel_execution: data.metrics?.parallel_execution || false,
+            streaming_enabled: data.metrics?.streaming_enabled || false
+          }
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+        setCurrentReasoning([]);
+      }
     } catch (error) {
       console.error('Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -180,12 +275,41 @@ export default function ChatReasoningPage() {
           <div className="bg-white border-2 border-gray-900 shadow-xl">
             {/* Header */}
             <div className="bg-black text-white p-4 border-b-2 border-white">
-              <h2 
-                className="text-xl font-bold tracking-tight"
-                style={{ fontFamily: 'var(--font-quicksand), Quicksand, sans-serif' }}
-              >
-                CONVERSATION WITH REASONING
-              </h2>
+              <div className="flex justify-between items-center">
+                <h2 
+                  className="text-xl font-bold tracking-tight"
+                  style={{ fontFamily: 'var(--font-quicksand), Quicksand, sans-serif' }}
+                >
+                  CONVERSATION WITH REASONING
+                </h2>
+                
+                {/* Mode Selector */}
+                <div className="flex gap-2 items-center">
+                  <span className="text-xs text-gray-300 mr-2">Mode:</span>
+                  <button
+                    onClick={() => setMode('expert')}
+                    className={`px-3 py-1 text-xs font-bold transition-all ${
+                      mode === 'expert'
+                        ? 'bg-cyan-400 text-black'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    title="Expert Mode: Full Unified Permutation Pipeline (11+ components)"
+                  >
+                    EXPERT
+                  </button>
+                  <button
+                    onClick={() => setMode('lite')}
+                    className={`px-3 py-1 text-xs font-bold transition-all ${
+                      mode === 'lite'
+                        ? 'bg-cyan-400 text-black'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    title="Lite Mode: Permutation-Lite (4-layer streamlined pipeline)"
+                  >
+                    LITE
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Messages */}
@@ -341,7 +465,9 @@ export default function ChatReasoningPage() {
                 </button>
               </div>
               <div className="mt-2 text-xs text-gray-500" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>
-                Real-time reasoning visualization - Watch all 11 components work together
+                {mode === 'expert' 
+                  ? 'Expert Mode: Full Unified Permutation Pipeline (11+ components)'
+                  : 'Lite Mode: Permutation-Lite (4-layer streamlined pipeline)'}
               </div>
             </form>
           </div>

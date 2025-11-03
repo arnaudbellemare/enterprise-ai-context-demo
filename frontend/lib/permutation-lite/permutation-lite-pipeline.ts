@@ -83,6 +83,21 @@ export interface PermutationLiteConfig {
   vectorPassingProvider?: 'perplexity' | 'ollama'; // LLM provider for vector-passing
   difficultyThreshold?: number; // Routing threshold (default: 0.5)
   maxVerificationIterations?: number; // RVS max iterations
+  // GEPA-Arbor Workflow (MPC-first)
+  useGEPAArborWorkflow?: boolean; // Use GEPA → Arbor workflow instead of GEPA only (default: false)
+  gepaArborConfig?: {
+    gepa?: {
+      num_iterations?: number;
+      convergence_threshold?: number;
+      max_iterations?: number;
+    };
+    arbor?: {
+      prediction_threshold?: number;
+      use_planning?: boolean;
+      use_joint_embeddings?: boolean;
+      rl_update_frequency?: number;
+    };
+  };
 }
 
 export interface PermutationLiteResult {
@@ -113,6 +128,7 @@ export class PermutationLitePipeline {
   private config: Required<PermutationLiteConfig>;
   private reasoningBank: ArcMemoReasoningBank;
   private refragSystem: any = null;
+  private gepaArborWorkflow: any = null; // GEPA-Arbor workflow (MPC-first)
 
   constructor(config?: Partial<PermutationLiteConfig>) {
     this.config = {
@@ -126,6 +142,8 @@ export class PermutationLitePipeline {
       vectorPassingProvider: config?.vectorPassingProvider ?? 'ollama', // Ollama is free, better for cost-effectiveness
       difficultyThreshold: config?.difficultyThreshold ?? 0.5,
       maxVerificationIterations: config?.maxVerificationIterations ?? 3,
+      useGEPAArborWorkflow: config?.useGEPAArborWorkflow ?? false, // GEPA-Arbor off by default
+      gepaArborConfig: config?.gepaArborConfig ?? {},
     };
     
     this.reasoningBank = new ArcMemoReasoningBank();
@@ -134,8 +152,16 @@ export class PermutationLitePipeline {
     if (this.config.enableREFRAG || this.config.enableVectorPassing) {
       this.initializeREFRAG();
     }
+
+    // Initialize GEPA-Arbor workflow if enabled
+    if (this.config.useGEPAArborWorkflow) {
+      this.initializeGEPAArbor();
+    }
     
-    const componentCount = 4 + (this.config.enableTeacherStudent ? 1 : 0) + (this.config.enableREFRAG ? 1 : 0);
+    const componentCount = 4 + 
+      (this.config.enableTeacherStudent ? 1 : 0) + 
+      (this.config.enableREFRAG ? 1 : 0) + 
+      (this.config.useGEPAArborWorkflow ? 1 : 0);
     console.log('🔧 PERMUTATION Lite initialized', {
       layers: 4,
       components: componentCount,
@@ -143,7 +169,8 @@ export class PermutationLitePipeline {
       teacherStudent: this.config.enableTeacherStudent ? 'enabled' : 'disabled',
       alitaG: this.config.enableToolSynthesis ? 'enabled' : 'disabled',
       refrag: this.config.enableREFRAG ? 'enabled' : 'disabled',
-      vectorPassing: this.config.enableVectorPassing ? `enabled (${this.config.vectorPassingProvider})` : 'disabled'
+      vectorPassing: this.config.enableVectorPassing ? `enabled (${this.config.vectorPassingProvider})` : 'disabled',
+      gepaArbor: this.config.useGEPAArborWorkflow ? 'enabled (MPC-first)' : 'disabled'
     });
   }
 
@@ -170,6 +197,66 @@ export class PermutationLitePipeline {
       console.log('   ✅ REFRAG initialized for faster answer generation');
     } catch (error) {
       console.warn('⚠️ REFRAG initialization failed (non-fatal):', error);
+    }
+  }
+
+  /**
+   * Initialize GEPA-Arbor workflow (MPC-first)
+   * GEPA offline first, then Arbor continues online with MPC
+   */
+  private async initializeGEPAArbor() {
+    try {
+      const { createGEPAArborWorkflow } = await import('../gepa-arbor-workflow');
+      
+      // Create base LM for Arbor (Ollama for cost-effectiveness)
+      const baseLM = {
+        generate: async (prompt: string) => {
+          const ollamaUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+          const response = await fetch(`${ollamaUrl}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              model: 'gemma3:4b', 
+              prompt,
+              stream: false
+            })
+          });
+          const data = await response.json();
+          return data.response || '';
+        }
+      };
+
+      // Configure GEPA-Arbor workflow
+      const workflowConfig = {
+        gepa: {
+          num_iterations: this.config.gepaArborConfig?.gepa?.num_iterations || 10,
+          convergence_threshold: this.config.gepaArborConfig?.gepa?.convergence_threshold || 0.01,
+          max_iterations: this.config.gepaArborConfig?.gepa?.max_iterations || 20
+        },
+        arbor: {
+          prediction_threshold: this.config.gepaArborConfig?.arbor?.prediction_threshold || 0.1,
+          use_planning: this.config.gepaArborConfig?.arbor?.use_planning ?? true,
+          use_joint_embeddings: this.config.gepaArborConfig?.arbor?.use_joint_embeddings ?? true,
+          rl_update_frequency: this.config.gepaArborConfig?.arbor?.rl_update_frequency || 5
+        },
+        enable_arbor: true,
+        auto_switch: true,
+        enable_monitoring: true
+      };
+
+      this.gepaArborWorkflow = createGEPAArborWorkflow(baseLM, workflowConfig);
+      
+      // Load offline test set if available
+      // await this.gepaArborWorkflow.loadOfflineTestSet();
+
+      console.log('   ✅ GEPA-Arbor workflow initialized (MPC-first)');
+      console.log(`      - GEPA: ${workflowConfig.gepa.num_iterations} iterations until plateau`);
+      console.log(`      - Arbor: MPC-first, RL fallback when planning fails`);
+      console.log(`      - Joint embeddings: ${workflowConfig.arbor.use_joint_embeddings}`);
+    } catch (error) {
+      console.warn('⚠️ GEPA-Arbor workflow initialization failed (non-fatal):', error);
+      // Fallback to GEPA-only if workflow fails
+      this.config.useGEPAArborWorkflow = false;
     }
   }
 
@@ -464,6 +551,31 @@ export class PermutationLitePipeline {
       // Fallback to generating answer
       answer = await this.generateAnswer(optimizedQuery, routingResult.domain, learningResult);
     }
+
+    // If using GEPA-Arbor workflow, plan and execute with MPC for answer generation
+    // This allows Arbor to adapt prompts in production (MPC-first approach)
+    if (this.config.useGEPAArborWorkflow && this.gepaArborWorkflow && optimizationResult) {
+      try {
+        console.log('   🌳 Planning answer generation with Arbor-MPC...');
+        const mpcResult = await this.gepaArborWorkflow.planAndExecute(
+          optimizedQuery,
+          JSON.stringify(learningResult?.memoriesStored || 0),
+          optimizationResult.optimizedPrompt
+        );
+
+        if (mpcResult && mpcResult.planning_succeeded) {
+          console.log(`   ✅ MPC planning succeeded (no RL needed)`);
+          console.log(`      - Prediction error: ${mpcResult.prediction_error.toFixed(4)}`);
+        } else if (mpcResult && !mpcResult.planning_succeeded) {
+          console.log(`   🔄 MPC planning failed, RL adjusted critic`);
+          console.log(`      - Prediction error: ${mpcResult.prediction_error.toFixed(4)}`);
+          // Answer still generated, but critic was improved for next time
+        }
+      } catch (error: any) {
+        console.warn('⚠️ Arbor-MPC planning failed (non-fatal):', error.message);
+        // Continue with generated answer
+      }
+    }
     
     const answerDuration = Date.now() - answerStartTime;
     console.log(`   ⏱️  Answer generation: ${answerDuration}ms`);
@@ -634,6 +746,65 @@ export class PermutationLitePipeline {
   // ============================================================
   
   private async executeOptimization(
+    query: string,
+    routingResult: RoutingResult
+  ): Promise<OptimizationResult> {
+    // Use GEPA-Arbor workflow if enabled (MPC-first)
+    if (this.config.useGEPAArborWorkflow && this.gepaArborWorkflow) {
+      console.log('   🌳 Using GEPA-Arbor workflow (MPC-first)...');
+      
+      try {
+        // Create a simple DSPy module for optimization
+        const dspyModule = {
+          signature: `query -> answer`,
+          forward: async (input: { query: string }) => {
+            return { answer: input.query };
+          }
+        };
+
+        // Run GEPA → Arbor workflow
+        const workflowResult = await this.gepaArborWorkflow.optimize(dspyModule, []);
+        
+        // Extract optimized prompt from workflow result
+        const optimizedPrompt = Object.values(workflowResult.final_prompts)[0] as string || query;
+        
+        // Calculate quality improvement
+        const gepaQuality = workflowResult.gepa_result.optimized_performance.quality_score;
+        const arborQuality = workflowResult.arbor_improvement ? 
+          Math.min(1.0, gepaQuality + workflowResult.arbor_improvement) : 
+          gepaQuality;
+
+        console.log(`   ✅ GEPA-Arbor workflow complete`);
+        console.log(`      - GEPA improvement: ${(workflowResult.gepa_improvement * 100).toFixed(1)}%`);
+        if (workflowResult.arbor_improvement) {
+          console.log(`      - Arbor improvement: ${(workflowResult.arbor_improvement * 100).toFixed(1)}%`);
+        }
+        if (workflowResult.arbor_provider?.getMPCStats) {
+          const mpcStats = workflowResult.arbor_provider.getMPCStats();
+          console.log(`      - MPC stats: ${mpcStats.successful_plans} successful plans, ${mpcStats.rl_updates} RL updates`);
+        }
+
+        return {
+          optimizedPrompt,
+          quality: arborQuality,
+          cost: 0.001, // Estimated cost
+          generations: workflowResult.gepa_result.optimization_history?.length || 10,
+        };
+      } catch (error: any) {
+        console.warn('⚠️ GEPA-Arbor workflow failed, falling back to GEPA-only:', error.message);
+        // Fall back to GEPA-only
+        return await this.executeOptimizationGEPAOnly(query, routingResult);
+      }
+    }
+
+    // Fallback: GEPA-only optimization
+    return await this.executeOptimizationGEPAOnly(query, routingResult);
+  }
+
+  /**
+   * GEPA-only optimization (fallback or when GEPA-Arbor disabled)
+   */
+  private async executeOptimizationGEPAOnly(
     query: string,
     routingResult: RoutingResult
   ): Promise<OptimizationResult> {

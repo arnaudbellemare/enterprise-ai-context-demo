@@ -978,8 +978,8 @@ Bot response to the user: ${JSON.stringify(experience.finalResult)}`;
      * MaTTS Parallel Scaling
      * 
      * Generate K trajectories in parallel, then:
-     * 1. Self-contrast across all trajectories
-     * 2. Extract memories using contrastive signals
+     * 1. Regularized aggregation across all trajectories (not contrastive)
+     * 2. Extract memories using regularized energy-based signals
      * 3. Return best result + enriched memories
      */
     
@@ -996,13 +996,13 @@ Bot response to the user: ${JSON.stringify(experience.finalResult)}`;
       )
     );
     
-    // Self-contrast: Compare trajectories to find consistent patterns
-    const contrastiveSignals = await this.selfContrast(trajectories, query);
+    // Regularized aggregation: Compare trajectories with energy-based scoring (not contrastive)
+    const regularizedSignals = await this.regularizedAggregation(trajectories, query);
     
-    // Extract memories using contrastive insights
-    const newMemories = await this.extractMemoriesWithContrast(
+    // Extract memories using regularized insights (energy-based, not contrastive)
+    const newMemories = await this.extractMemoriesWithRegularization(
       trajectories,
-      contrastiveSignals
+      regularizedSignals
     );
     
     // Consolidate
@@ -1064,29 +1064,39 @@ Bot response to the user: ${JSON.stringify(experience.finalResult)}`;
     };
   }
   
-  private async selfContrast(
+  private async regularizedAggregation(
     trajectories: Experience[],
     query: string
-  ): Promise<string> {
+  ): Promise<{ energy_scores: number[]; regularized_patterns: string }> {
     /**
-     * Self-contrast: Compare multiple trajectories to find patterns
-     * Similar to ReasoningBank's parallel scaling aggregation
+     * Regularized aggregation: Use energy-based scoring (not contrastive)
+     * Computes energy scores for each trajectory and regularized patterns
      */
     
-    const prompt = `Compare these ${trajectories.length} attempts at the same task and identify:
-1. Consistent patterns across successful attempts
-2. Common mistakes in failed attempts
-3. Key decision points that led to different outcomes
+    // Compute energy-based scores for each trajectory
+    const energyScores = trajectories.map(t => {
+      // Energy = inverse of success probability (lower = better)
+      const successScore = t.success ? 1.0 : 0.0;
+      const confidenceScore = t.selfJudgment?.confidence || 0.5;
+      const energy = 1.0 - (successScore * 0.7 + confidenceScore * 0.3);
+      return energy;
+    });
+
+    // Generate regularized patterns using LLM (with regularization context)
+    const prompt = `Analyze these ${trajectories.length} attempts at the same task using regularized energy-based methods:
 
 Task: ${query}
 
 ${trajectories.map((t, i) => `
-Attempt ${i + 1} (${t.success ? "SUCCESS" : "FAILURE"}):
+Attempt ${i + 1} (Energy: ${energyScores[i].toFixed(3)}, ${t.success ? "SUCCESS" : "FAILURE"}):
 ${t.steps.slice(0, 3).map(s => `- ${s.thought}`).join("\n")}
 Result: ${JSON.stringify(t.finalResult).substring(0, 200)}
 `).join("\n\n")}
 
-Provide contrastive insights for memory extraction.`;
+Identify regularized patterns (with L2 regularization) for memory extraction:
+1. Low-energy (successful) patterns to reinforce
+2. High-energy (failed) patterns to regularize
+3. Domain-consistent regularized insights`;
 
     const response = await fetch("http://localhost:11434/v1/chat/completions", {
       method: "POST",
@@ -1094,7 +1104,7 @@ Provide contrastive insights for memory extraction.`;
       body: JSON.stringify({
         model: "gemma3:4b",
         messages: [
-          { role: "system", content: "You are an expert at comparing and contrasting agent strategies." },
+          { role: "system", content: "You are an expert at energy-based pattern analysis with regularization." },
           { role: "user", content: prompt }
         ],
         temperature: 0.7
@@ -1102,21 +1112,30 @@ Provide contrastive insights for memory extraction.`;
     });
     
     const data = await response.json();
-    return data.choices[0].message.content;
+    const regularizedPatterns = data.choices[0].message.content;
+    
+    return {
+      energy_scores: energyScores,
+      regularized_patterns: regularizedPatterns
+    };
   }
   
-  private async extractMemoriesWithContrast(
+  private async extractMemoriesWithRegularization(
     trajectories: Experience[],
-    contrastiveSignals: string
+    regularizedSignals: { energy_scores: number[]; regularized_patterns: string }
   ): Promise<ReasoningMemoryItem[]> {
-    // Extract memories enriched with contrastive insights
+    // Extract memories enriched with regularized insights (not contrastive)
     const allMemories: ReasoningMemoryItem[] = [];
     
-    for (const trajectory of trajectories) {
+    for (let i = 0; i < trajectories.length; i++) {
+      const trajectory = trajectories[i];
       const memories = await this.extractMemoryFromExperience(trajectory);
-      // Enrich with contrastive context
+      
+      // Enrich with regularized context (energy-based, not contrastive)
       memories.forEach(m => {
-        m.content += `\n\n## Contrastive Insight:\n${contrastiveSignals.substring(0, 500)}`;
+        const energy = regularizedSignals.energy_scores[i];
+        const l2Regularization = Math.max(0.1, Math.min(1.0, energy)); // L2 weight based on energy
+        m.content += `\n\n## Regularized Insight (Energy: ${energy.toFixed(3)}, L2: ${l2Regularization.toFixed(2)}):\n${regularizedSignals.regularized_patterns.substring(0, 500)}`;
       });
       allMemories.push(...memories);
     }

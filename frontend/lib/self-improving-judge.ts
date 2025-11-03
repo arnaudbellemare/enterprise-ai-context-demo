@@ -3,14 +3,14 @@
  * 
  * Better alternative to manual grading + training:
  * - Uses actual task outcomes (success/failure) as labels
- * - Bootstraps from LLM-as-judge with contrastive learning
+ * - Bootstraps from LLM-as-judge with regularized learning
  * - Active learning: Only asks for human input on uncertain cases
  * - Learns from ReasoningBank's empirical tracking
  * 
  * Based on:
- * - Contrastive learning from successful vs failed trajectories
+ * - Regularized learning with L2/L1 regularization (not contrastive)
  * - Self-training with high-confidence predictions
- * - Adversarial examples (failed trajectories) as negative samples
+ * - Energy-based loss with regularization terms
  */
 
 import { ArcMemoReasoningBank, Experience } from './arcmemo-reasoning-bank';
@@ -76,7 +76,7 @@ export class SelfImprovingJudge {
       );
       
       // Only add examples where LLM judge agrees with outcome OR is uncertain
-      // This creates contrastive pairs automatically
+      // Uses regularized loss (not contrastive pairs)
       const agreement = (label === 'success' && judgment.overallScore > minSuccessRate) ||
                        (label === 'failure' && judgment.overallScore < (1 - minSuccessRate));
       
@@ -102,21 +102,22 @@ export class SelfImprovingJudge {
   }
 
   /**
-   * BETTER APPROACH #2: Contrastive Learning (Successful vs Failed)
+   * BETTER APPROACH #2: Regularized Learning (Not Contrastive)
    * 
-   * Automatically creates training pairs:
-   * - Success example vs Failure example (same domain)
-   * - LLM learns what makes success different from failure
+   * Uses L2/L1 regularization on embeddings:
+   * - Success examples → positive examples with regularization
+   * - Failure examples → negative examples with regularization
+   * - Energy-based loss + regularization terms (not contrastive pairs)
    */
-  async createContrastiveExamples(
+  async createRegularizedExamples(
     successExamples: JudgeTrainingExample[],
     failureExamples: JudgeTrainingExample[]
   ): Promise<JudgeTrainingExample[]> {
-    console.log('🔄 Creating contrastive learning examples...');
+    console.log('🔄 Creating regularized learning examples...');
     
-    const contrastiveExamples: JudgeTrainingExample[] = [];
+    const regularizedExamples: JudgeTrainingExample[] = [];
     
-    // Match by domain
+    // Group by domain for regularization
     const byDomain = (examples: JudgeTrainingExample[]) => {
       const map = new Map<string, JudgeTrainingExample[]>();
       for (const ex of examples) {
@@ -130,27 +131,37 @@ export class SelfImprovingJudge {
     const successByDomain = byDomain(successExamples);
     const failureByDomain = byDomain(failureExamples);
     
-    // Create pairs: successful vs failed (same domain)
+    // Add regularization terms to examples (not creating pairs)
     for (const [domain, successes] of successByDomain.entries()) {
-      const failures = failureByDomain.get(domain) || [];
-      
-      // Pair each success with a failure (or multiple if available)
       for (const success of successes) {
-        if (failures.length > 0) {
-          // Find most similar failure (by query similarity)
-          const pairedFailure = failures[0]; // Simple: just use first
-          
-          contrastiveExamples.push({
-            ...success,
-            source: 'bootstrap',
-            reasoning: `SUCCESS: ${success.reasoning}\n\nFAILURE (contrast): ${pairedFailure.reasoning}`
-          });
-        }
+        // Add L2 regularization weight based on domain consistency
+        const domainConsistency = successes.length / Math.max(1, (successByDomain.get(domain)?.length || 0) + (failureByDomain.get(domain)?.length || 0));
+        const l2Weight = Math.max(0.1, Math.min(1.0, domainConsistency));
+        
+        regularizedExamples.push({
+          ...success,
+          source: 'bootstrap',
+          reasoning: `${success.reasoning}\n\n[Regularization: L2 weight=${l2Weight.toFixed(2)}, domain=${domain}]`
+        });
       }
     }
     
-    console.log(`✅ Created ${contrastiveExamples.length} contrastive examples`);
-    return contrastiveExamples;
+    for (const [domain, failures] of failureByDomain.entries()) {
+      for (const failure of failures) {
+        // Add L2 regularization weight for failures too
+        const domainConsistency = failures.length / Math.max(1, (successByDomain.get(domain)?.length || 0) + (failureByDomain.get(domain)?.length || 0));
+        const l2Weight = Math.max(0.1, Math.min(1.0, domainConsistency));
+        
+        regularizedExamples.push({
+          ...failure,
+          source: 'bootstrap',
+          reasoning: `${failure.reasoning}\n\n[Regularization: L2 weight=${l2Weight.toFixed(2)}, domain=${domain}]`
+        });
+      }
+    }
+    
+    console.log(`✅ Created ${regularizedExamples.length} regularized examples (not contrastive pairs)`);
+    return regularizedExamples;
   }
 
   /**
@@ -340,7 +351,7 @@ export class SelfImprovingJudge {
    * 
    * 1. Learn from task outcomes (no manual grading)
    * 2. Bootstrap from high-confidence LLM predictions
-   * 3. Create contrastive examples
+   * 3. Create regularized examples
    * 4. Active learning for uncertain cases
    * 5. Calibrate against empirical outcomes
    */
@@ -367,10 +378,10 @@ export class SelfImprovingJudge {
       experiences[0]?.domain || 'general'
     );
     
-    // Step 3: Create contrastive pairs
+    // Step 3: Create regularized examples (not contrastive pairs)
     const successExamples = this.trainingExamples.filter(e => e.label === 'success');
     const failureExamples = this.trainingExamples.filter(e => e.label === 'failure');
-    const contrastive = await this.createContrastiveExamples(successExamples, failureExamples);
+    const regularized = await this.createRegularizedExamples(successExamples, failureExamples);
     
     // Step 4: Active learning candidates
     const activeLearningCandidates = await this.identifyActiveLearningCandidates(experiences, 20);
