@@ -4,6 +4,16 @@ import { ContextEvolutionTracker } from './context-evolution-tracker';
 import { ContextOptimizer } from './context-optimizer';
 import { ContextQualityMonitor } from './context-quality-monitor';
 import { ContextDelta, ContextQuality, ConversationSession, ContextManagerConfig } from './types';
+import {
+  createEntropyReducer,
+  createLayeredMemory,
+  createContextIsolation,
+  createContextAbstraction,
+  createProactiveInference,
+  createContextSelector,
+  type EntropyReductionConfig,
+  type LayeredMemoryConfig
+} from './context-engineering-2';
 
 export class AdvancedContextSystem {
   private contextManager: DynamicContextManager;
@@ -12,6 +22,14 @@ export class AdvancedContextSystem {
   private optimizer: ContextOptimizer;
   private qualityMonitor: ContextQualityMonitor;
   private config: ContextManagerConfig;
+  
+  // Context Engineering 2.0 components
+  private entropyReducer: ReturnType<typeof createEntropyReducer>;
+  private layeredMemory: ReturnType<typeof createLayeredMemory>;
+  private contextIsolation: ReturnType<typeof createContextIsolation>;
+  private contextAbstraction: ReturnType<typeof createContextAbstraction>;
+  private proactiveInference: ReturnType<typeof createProactiveInference>;
+  private contextSelector: ReturnType<typeof createContextSelector>;
 
   constructor(config?: Partial<ContextManagerConfig>) {
     this.config = {
@@ -35,10 +53,28 @@ export class AdvancedContextSystem {
     this.optimizer = new ContextOptimizer(this.contextManager, this.memory, this.tracker);
     this.qualityMonitor = new ContextQualityMonitor(this.config.qualityThresholds);
 
+    // Initialize Context Engineering 2.0 components
+    this.entropyReducer = createEntropyReducer({
+      compressionRatio: 0.3,
+      semanticPreservation: true,
+      structurePreservation: true,
+      enableSummarization: true
+    });
+    this.layeredMemory = createLayeredMemory({
+      workingMemorySize: 10,
+      episodicMemorySize: 100,
+      semanticMemorySize: 1000,
+      enableLifelongUpdate: true
+    });
+    this.contextIsolation = createContextIsolation();
+    this.contextAbstraction = createContextAbstraction();
+    this.proactiveInference = createProactiveInference();
+    this.contextSelector = createContextSelector();
+
     // Start monitoring
     this.qualityMonitor.startMonitoring();
 
-    console.log('🧠 Advanced Context System initialized');
+    console.log('🧠 Advanced Context System initialized with Context Engineering 2.0');
   }
 
   /**
@@ -63,16 +99,59 @@ export class AdvancedContextSystem {
       metadata: { timestamp: new Date() }
     });
 
-    // 3. Get relevant context
-    const relevantContext = await this.memory.getContext(sessionId, query, 20);
-    console.log(`📚 Retrieved ${relevantContext.length} relevant context bullets`);
+    // 3. Get relevant context (with Context Engineering 2.0)
+    const rawContext = await this.memory.getContext(sessionId, query, 20);
+    
+    // Context Engineering 2.0: Select context for understanding
+    const selectionResult = await this.contextSelector.selectForUnderstanding(
+      query,
+      rawContext,
+      10
+    );
+    const relevantContext = selectionResult.selected;
+    
+    // Context Engineering 2.0: Proactive need inference (using session data)
+    const sessionData = await this.memory.getSession(sessionId);
+    const conversationHistory = sessionData?.conversationHistory || [];
+    const inferredNeeds = await this.proactiveInference.inferNeeds(
+      query,
+      conversationHistory.map((m: any) => ({ content: m.content, timestamp: m.timestamp?.getTime() || Date.now() })),
+      { domain: this.detectDomain(query) }
+    );
+    
+    console.log(`📚 Retrieved ${relevantContext.length} relevant context bullets (Context Engineering 2.0)`);
+    if (inferredNeeds.inferredNeeds.length > 0) {
+      console.log(`🔮 Proactive inference: ${inferredNeeds.inferredNeeds.length} needs inferred (confidence: ${inferredNeeds.confidence.toFixed(2)})`);
+    }
 
-    // 4. Add new context delta
-    const newDelta = await this.contextManager.addToContext(query, {
-      domain: this.detectDomain(query),
+    // 4. Add new context delta (with entropy reduction)
+    const domain = this.detectDomain(query);
+    
+    // Context Engineering 2.0: Reduce entropy before storing
+    const entropyReduced = await this.entropyReducer.reduceEntropy(query, query, domain);
+    
+    // Context Engineering 2.0: Store in layered memory
+    const memoryResult = await this.layeredMemory.storeContext(
+      { content: entropyReduced.lowEntropyContext, query, domain },
+      this.analyzeComplexity(query) > 0.7 ? 0.8 : 0.5, // Importance based on complexity
+      1.0 // Recent (current query)
+    );
+    
+    // Context Engineering 2.0: Create isolated context for task
+    this.contextIsolation.createIsolatedContext(sessionId, domain);
+    this.contextIsolation.storeInIsolatedContext(sessionId, domain, {
+      query,
+      reducedContext: entropyReduced.lowEntropyContext,
+      entropyReduction: entropyReduced.entropyReduction
+    });
+    
+    const newDelta = await this.contextManager.addToContext(entropyReduced.lowEntropyContext, {
+      domain,
       complexity: this.analyzeComplexity(query),
       sessionId,
-      userId
+      userId,
+      entropyReduction: entropyReduced.entropyReduction,
+      memoryLayer: memoryResult.layer
     });
 
     await this.memory.addContextDelta(sessionId, newDelta);

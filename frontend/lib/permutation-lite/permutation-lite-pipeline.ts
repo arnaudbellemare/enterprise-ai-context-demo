@@ -29,6 +29,7 @@ import { detectDomain, type Domain } from '../domain-detector';
 import { RVS, type RVSResult } from '../trm';
 import { ArcMemoReasoningBank } from '../arcmemo-reasoning-bank';
 import { teacherStudentSystem } from '../teacher-student-system';
+import { AdvancedContextSystem } from '../advanced-context-system';
 
 // ============================================================
 // INTERFACES (All ≤7 fields to respect Miller's Law)
@@ -129,6 +130,7 @@ export class PermutationLitePipeline {
   private reasoningBank: ArcMemoReasoningBank;
   private refragSystem: any = null;
   private gepaArborWorkflow: any = null; // GEPA-Arbor workflow (MPC-first)
+  private contextSystem: AdvancedContextSystem; // Context Engineering 2.0
 
   constructor(config?: Partial<PermutationLiteConfig>) {
     this.config = {
@@ -147,6 +149,9 @@ export class PermutationLitePipeline {
     };
     
     this.reasoningBank = new ArcMemoReasoningBank();
+    
+    // Initialize Context Engineering 2.0
+    this.contextSystem = new AdvancedContextSystem();
     
     // Initialize REFRAG if enabled
     if (this.config.enableREFRAG || this.config.enableVectorPassing) {
@@ -415,6 +420,19 @@ export class PermutationLitePipeline {
     const startTime = Date.now();
     const layersExecuted: string[] = [];
     let totalCost = 0;
+
+    // ============================================================
+    // CONTEXT ENGINEERING 2.0: Process query with context management
+    // ============================================================
+    const sessionId = `permutation-lite-${Date.now()}`;
+    try {
+      const contextResult = await this.contextSystem.processQuery(sessionId, query);
+      const qualityScore = contextResult.quality.relevance || 0.5;
+      console.log(`🧠 Context Engineering 2.0: ${contextResult.context.length} contexts selected, ${qualityScore.toFixed(2)} quality`);
+    } catch (error) {
+      console.warn('⚠️ Context Engineering 2.0 failed (non-fatal):', error);
+      // Continue without context engineering
+    }
 
     // ============================================================
     // LAYER 1: ROUTING

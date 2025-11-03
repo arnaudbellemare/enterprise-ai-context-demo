@@ -35,6 +35,7 @@ import { circuitBreakerRegistry } from './circuit-breaker';
 import { parallelExecutor } from './parallel-executor';
 import { competenceTracker } from './competence-tracker';
 import { detectDomain, detectDomainWithJudge, type Domain } from './domain-detector';
+import { AdvancedContextSystem } from './advanced-context-system';
 
 export interface UnifiedPipelineConfig {
   enableACE: boolean;
@@ -130,6 +131,7 @@ export class UnifiedPermutationPipeline {
   private semioticSystem: ComprehensiveSemioticSystem;
   private tracer: any;
   private logger = createLogger('UnifiedPermutationPipeline');
+  private contextSystem: AdvancedContextSystem; // Context Engineering 2.0
   private perplexityBreaker = circuitBreakerRegistry.getOrCreate('perplexity', {
     failureThreshold: 5,
     resetTimeout: 60000,
@@ -173,8 +175,9 @@ export class UnifiedPermutationPipeline {
     this.rvs = new RVS();
     this.semioticSystem = new ComprehensiveSemioticSystem();
     this.tracer = getTracer();
+    this.contextSystem = new AdvancedContextSystem(); // Context Engineering 2.0
     
-    this.logger.info('Unified Permutation Pipeline initialized', { 
+    this.logger.info('Unified Permutation Pipeline initialized with Context Engineering 2.0', { 
       components: this.getEnabledComponents() 
     });
   }
@@ -248,6 +251,22 @@ export class UnifiedPermutationPipeline {
       domain: domain || 'auto-detect',
       sessionId 
     });
+    
+    // ============================================================
+    // CONTEXT ENGINEERING 2.0: Process query with context management
+    // ============================================================
+    try {
+      const contextResult = await this.contextSystem.processQuery(sessionId, query);
+      const qualityScore = contextResult.quality.relevance || 0.5;
+      this.logger.info('Context Engineering 2.0 applied', {
+        contextsSelected: contextResult.context.length,
+        qualityScore: qualityScore.toFixed(3),
+        optimizationsApplied: contextResult.optimizations.length
+      });
+    } catch (error) {
+      this.logger.warn('Context Engineering 2.0 failed (non-fatal)', { error });
+      // Continue without context engineering
+    }
     
     if (streamWriter) {
       streamWriter({ type: 'phase_start', phase: 'initialization' });
