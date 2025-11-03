@@ -92,7 +92,7 @@ export class CircuitBreaker {
                            (error instanceof Error && error.message.includes('config error'));
       
       if (!isConfigError) {
-        this.onFailure();
+      this.onFailure();
       }
       
       // Try fallback if provided

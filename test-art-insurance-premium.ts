@@ -74,11 +74,12 @@ async function testArtInsurancePremium() {
     console.log('✅ RESULTS');
     console.log('✅ ===========================================\n');
 
-    console.log('📊 Answer:');
-    console.log(result.answer.substring(0, 500));
-    if (result.answer.length > 500) {
-      console.log(`\n... (${result.answer.length - 500} more characters)`);
-    }
+    console.log('\n📊 ===========================================');
+    console.log('📊 FULL ANSWER');
+    console.log('📊 ===========================================');
+    console.log(result.answer);
+    console.log('📊 ===========================================');
+    console.log(`\n📏 Answer length: ${result.answer.length} characters`);
 
     console.log('\n📈 Performance Metrics:');
     console.log(`   Duration: ${duration}ms`);

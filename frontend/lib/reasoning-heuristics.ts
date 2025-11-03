@@ -170,7 +170,7 @@ export class ReasoningHeuristicSelector {
     for (const heuristic of REASONING_HEURISTICS) {
       const similarity = calculateSemanticSimilarity(query, heuristic, domain);
       similarities.push({ heuristic, similarity });
-    }
+      }
     
     // Sort by similarity (highest first) and take top N
     similarities.sort((a, b) => b.similarity - a.similarity);

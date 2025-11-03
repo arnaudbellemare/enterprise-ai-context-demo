@@ -288,6 +288,8 @@ IMPORTANT: The generated code MUST follow FastMCP protocol:
             { role: "user", content: abstractionPrompt }
           ],
           temperature: 0.0, // Deterministic abstraction
+          // Increase max tokens to prevent truncation (Ollama uses num_predict)
+          num_predict: 4000, // Increased from default to handle full JSON responses
           // Force JSON mode if supported (some Ollama versions support this)
           response_format: { type: "json_object" }
         })
@@ -349,7 +351,45 @@ IMPORTANT: The generated code MUST follow FastMCP protocol:
           // This is tricky, so we'll be conservative
           jsonText = jsonText.replace(/(:\s*"[^"]*)\n([^"]*")/g, '$1\\n$2');
           
-          // Pass 7: Validate and parse with retry logic
+          // Pass 7: Handle truncated JSON (when Ollama hits token limits)
+          // Check if JSON looks incomplete (missing closing braces)
+          const openBraces = (jsonText.match(/{/g) || []).length;
+          const closeBraces = (jsonText.match(/}/g) || []).length;
+          if (openBraces > closeBraces) {
+            // JSON is truncated - try to close it gracefully
+            const missingBraces = openBraces - closeBraces;
+            // Close any open string values first
+            if (jsonText.match(/":\s*"[^"]*$/)) {
+              jsonText = jsonText.replace(/":\s*"([^"]*)$/, '": "$1"');
+            }
+            // Close any open arrays/objects
+            for (let i = 0; i < missingBraces; i++) {
+              if (jsonText.endsWith(',')) {
+                jsonText = jsonText.slice(0, -1); // Remove trailing comma
+              }
+              jsonText += '}';
+            }
+          }
+          
+          // Pass 8: Fix Python code leaking into JSON strings (especially in "code" field)
+          // Remove Python type hints like ": str", ": int", ": dict", etc. from string values
+          jsonText = jsonText.replace(/("code"\s*:\s*"[^"]*?)(:\s*str|:\s*int|:\s*float|:\s*bool|:\s*dict|:\s*list)([^"]*")/g, (match: string, prefix: string, typeHint: string, suffix: string) => {
+            // Only remove if it's clearly a Python type hint in a string value
+            return prefix + suffix;
+          });
+          
+          // Pass 9: Fix incomplete Python function signatures in code strings
+          // Handle cases like: "code": "...refinement_details": str" where Python syntax leaks in
+          jsonText = jsonText.replace(/"code"\s*:\s*"([^"]*?)"([^,}\]]*?)"/g, (match: string, codeContent: string, leakedContent: string) => {
+            // If we see leaked Python syntax after a closing quote, try to fix it
+            if (leakedContent && leakedContent.match(/:\s*(str|int|float|bool|dict|list|Any)/)) {
+              // Remove the leaked content (it's outside the JSON string)
+              return `"code": "${codeContent}"`;
+            }
+            return match;
+          });
+          
+          // Pass 10: Validate and parse with retry logic
           let abstracted: any;
           let parseAttempts = 0;
           const maxAttempts = 3;
@@ -367,11 +407,40 @@ IMPORTANT: The generated code MUST follow FastMCP protocol:
                 jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1');
                 // Try to fix missing quotes around keys (aggressive)
                 jsonText = jsonText.replace(/([{,]\s+)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+                // Remove any remaining Python syntax in strings
+                jsonText = jsonText.replace(/:\s*"([^"]*?)(:\s*(str|int|float|bool|dict|list))([^"]*?)"/g, ': "$1$3"');
               } else {
                 // Final attempt failed - log and throw
                 console.warn('⚠️ JSON parsing failed after', maxAttempts, 'repair attempts');
                 console.warn('   Original JSON text (first 800 chars):', jsonText.substring(0, 800));
                 console.warn('   Parse error:', parseError instanceof Error ? parseError.message : parseError);
+                
+                // Try one last time with very aggressive cleanup
+                try {
+                  // Remove everything after the last complete property
+                  const lastCompleteProp = jsonText.lastIndexOf('"');
+                  if (lastCompleteProp > 0) {
+                    const truncated = jsonText.substring(0, lastCompleteProp + 1);
+                    // Find matching brace
+                    const openCount = (truncated.match(/{/g) || []).length;
+                    const closeCount = (truncated.match(/}/g) || []).length;
+                    let finalJson = truncated;
+                    if (openCount > closeCount && truncated.match(/"[^"]*"\s*[,}]/)) {
+                      // We have a complete property, try to close the JSON
+                      finalJson = truncated.replace(/,\s*$/, '');
+                      for (let i = 0; i < openCount - closeCount; i++) {
+                        finalJson += '}';
+                      }
+                      abstracted = JSON.parse(finalJson);
+                      console.warn('   ✅ Successfully parsed truncated JSON');
+                      break;
+                    }
+                  }
+                } catch (finalError) {
+                  // Give up
+                  throw parseError;
+                }
+                
                 throw parseError;
               }
             }

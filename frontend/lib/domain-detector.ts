@@ -638,7 +638,7 @@ Respond with JSON:
           // Validate the detected domain is valid
           const validDomains = getAvailableDomains();
           if (validDomains.includes(detectedDomain)) {
-            return {
+  return {
               domain: detectedDomain,
               confidence: Math.min(1.0, Math.max(0.0, parsed.confidence || 0.5)),
               reasoning: `Judge-detected: ${parsed.reasoning || 'No reasoning provided'}`,

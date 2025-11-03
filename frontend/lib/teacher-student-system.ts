@@ -319,27 +319,55 @@ export class TeacherStudentSystem {
     const sources: string[] = [];
 
     try {
-      // Use Perplexity API for web search with rate limiting
-      const result = await callPerplexityWithRateLimiting(
-        [
-          {
-            role: 'user',
-            content: `Search for information about: ${searchQueries.join(', ')}. Provide sources.`
-          }
-        ],
-        {
+      // Call Perplexity API directly to get citations
+      // (callPerplexityWithRateLimiting doesn't return citations)
+      const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
+      if (!perplexityApiKey) {
+        console.warn('⚠️ PERPLEXITY_API_KEY not set, skipping web search');
+        return sources;
+      }
+
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${perplexityApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           model: 'sonar-pro',
-          maxTokens: 1000,
-          temperature: 0.7
-        }
-      );
+          messages: [
+            {
+              role: 'user',
+              content: `Search for information about: ${searchQueries.join(', ')}. Provide sources.`
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.7,
+          return_citations: true // Request citations explicitly
+        })
+      });
 
-      const content = result.content;
+      if (!response.ok) {
+        throw new Error(`Perplexity API error: ${response.status}`);
+      }
 
-      // Extract sources from response (simple extraction)
-      const sourceMatches = content.match(/https?:\/\/[^\s]+/g);
+      const data = await response.json();
+
+      // Extract citations from Perplexity API response
+      // Perplexity returns citations in the response.citations array
+      if (data.citations && Array.isArray(data.citations)) {
+        sources.push(...data.citations.slice(0, 10)); // Limit to 10 sources
+      }
+
+      // Also extract URLs from content text as fallback
+      const content = data.choices?.[0]?.message?.content || '';
+      const sourceMatches = content.match(/https?:\/\/[^\s\)]+/g);
       if (sourceMatches) {
-        sources.push(...sourceMatches.slice(0, 5)); // Limit to 5 sources
+        // Deduplicate and add new sources
+        const newSources = sourceMatches
+          .map((url: string) => url.replace(/[.,;:!?)]+$/, '')) // Remove trailing punctuation
+          .filter((url: string) => !sources.includes(url));
+        sources.push(...newSources.slice(0, 5)); // Limit to 5 additional sources
       }
     } catch (error) {
       console.warn('⚠️ Web search failed:', error);
