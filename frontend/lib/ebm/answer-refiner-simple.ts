@@ -39,7 +39,7 @@ export class SimpleEBMAnswerRefiner {
       energyFunction: config.energyFunction || 'default',
       earlyStoppingThreshold: config.earlyStoppingThreshold || 0.001,
       useLLMRefinement: config.useLLMRefinement ?? true,  // Default to true for real refinement
-      llmModel: config.llmModel || 'ollama-gemma3:4b'
+      llmModel: config.llmModel || 'sonar-pro' // Use Perplexity model by default
     };
   }
 

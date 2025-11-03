@@ -37,6 +37,7 @@ const PUBLIC_ROUTES = [
   '/api/art-deco-cartier-valuation',
   '/api/unified-pipeline',
   '/api/arena/execute-swirl-trm-full',
+  '/api/chat-reasoning',  // Public chat interface
 ];
 
 /**

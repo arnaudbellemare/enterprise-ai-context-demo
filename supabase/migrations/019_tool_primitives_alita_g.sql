@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS tool_primitives (
   evolved_into TEXT[] DEFAULT '{}',
   
   -- Embedding for retrieval-augmented selection (Alita-G style)
-  embedding vector(1536), -- OpenAI text-embedding-3-small
+  embedding vector(384), -- Local embeddings (Xenova/all-MiniLM-L6-v2) - 100% local, $0 cost
   
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -102,7 +102,7 @@ CREATE INDEX IF NOT EXISTS idx_tool_exec_history_success ON tool_execution_histo
 
 -- Function: Find similar tools (Alita-G retrieval-augmented selection)
 CREATE OR REPLACE FUNCTION find_similar_tools(
-  query_embedding vector(1536),
+  query_embedding vector(384), -- Local embeddings (Xenova/all-MiniLM-L6-v2)
   target_domain TEXT DEFAULT NULL,
   similarity_threshold FLOAT DEFAULT 0.7,
   match_count INT DEFAULT 5

@@ -54,6 +54,7 @@ export class GEPAAlgorithms {
   private mutationRate = 0.1;
   private crossoverRate = 0.8;
   private numRolloutsPerStep: number = 24; // Arbor-inspired: default 24 rollouts per step
+  private reasoningHeuristics: string[] = []; // Reasoning heuristics to guide mutation
 
   constructor() {
     // Initialize GEPA algorithms
@@ -62,20 +63,28 @@ export class GEPAAlgorithms {
   /**
    * Run GEPA optimization for prompt evolution
    * Enhanced with Arbor-inspired rollouts for better evaluation signal
+   * Now also supports reasoning heuristics to guide mutation strategy
    */
   async optimizePrompts(
     domain: string, 
     basePrompts: string[], 
     objectives: string[],
-    numRolloutsPerStep: number = 24 // Arbor-inspired: 24 rollouts per step
+    numRolloutsPerStep: number = 24, // Arbor-inspired: 24 rollouts per step
+    reasoningHeuristics?: string[] // Optional: reasoning heuristics to guide mutation
   ): Promise<GEPAResult> {
     console.log(`🧬 GEPA: Starting optimization for ${domain} domain`);
     console.log(`   - Base prompts: ${basePrompts.length}`);
     console.log(`   - Objectives: ${objectives.join(', ')}`);
     console.log(`   - Rollouts per step: ${numRolloutsPerStep} (Arbor-inspired)`);
+    if (reasoningHeuristics && reasoningHeuristics.length > 0) {
+      console.log(`   - Reasoning heuristics: ${reasoningHeuristics.length} (guiding mutation)`);
+    }
     
     // Store rollouts for use in fitness evaluation
     this.numRolloutsPerStep = numRolloutsPerStep;
+    
+    // Store reasoning heuristics for mutation guidance
+    this.reasoningHeuristics = reasoningHeuristics || [];
     
     const startTime = Date.now();
     
@@ -447,19 +456,76 @@ Create a hybrid prompt that combines the strengths of both. Return only the new 
 
   /**
    * Mutate an individual
+   * Enhanced with reasoning heuristics to guide mutation strategy
    */
   private async mutateIndividual(individual: PromptIndividual, domain?: string): Promise<PromptIndividual> {
     try {
+      // Select a reasoning heuristic to guide mutation (if available)
+      const heuristic = this.reasoningHeuristics.length > 0
+        ? this.reasoningHeuristics[Math.floor(Math.random() * this.reasoningHeuristics.length)]
+        : null;
+
+      // Use centralized strategy mapping from ReasoningHeuristicSelector
+      let mutationGuidance = '';
+      let mutationFocus = 'stepwise';
+      
+      if (heuristic) {
+        try {
+          const { ReasoningHeuristicSelector } = await import('./reasoning-heuristics');
+          const strategy = ReasoningHeuristicSelector.mapHeuristicToGEPAStrategy(heuristic as any);
+          mutationFocus = strategy.mutationFocus;
+          mutationGuidance = strategy.mutationHint;
+        } catch (error) {
+          // Fallback if import fails
+          console.warn('Failed to use centralized strategy mapping, using fallback:', error);
+          mutationGuidance = `Apply this reasoning approach: ${heuristic.substring(0, 100)}`;
+        }
+      }
+
       const mutationPrompt = `Improve this prompt by making small modifications:
 
 ORIGINAL PROMPT: "${individual.prompt}"
 ${domain ? `DOMAIN: ${domain}` : ''}
+${mutationGuidance ? `MUTATION GUIDANCE: ${mutationGuidance}` : ''}
+${mutationFocus ? `MUTATION FOCUS: ${mutationFocus}` : ''}
 
 Make one or two small improvements to make it more effective. Return only the improved prompt text.`;
       
-      // Use fallback mutation (simplified for now)
+      // Apply mutation based on strategy focus (enhanced from simple prefix approach)
+      let enhancedPrompt = individual.prompt;
+      
+      switch (mutationFocus) {
+        case 'simplify':
+          // Simplify: remove redundant words, clarify structure
+          enhancedPrompt = this.simplifyPrompt(individual.prompt);
+          break;
+        case 'creative':
+          // Creative: add exploratory language, unconventional framing
+          enhancedPrompt = this.addCreativeFraming(individual.prompt);
+          break;
+        case 'stepwise':
+          // Stepwise: add structured reasoning instructions
+          enhancedPrompt = `${individual.prompt}\n\nThink through this step by step, showing your reasoning clearly.`;
+          break;
+        case 'expand':
+          // Expand: add systemic context
+          enhancedPrompt = `${individual.prompt}\n\nConsider the broader system and interconnections involved.`;
+          break;
+        case 'analyze':
+          // Analyze: emphasize data-driven approach
+          enhancedPrompt = `${individual.prompt}\n\nApproach this analytically with careful evaluation of evidence and data.`;
+          break;
+        case 'reframe':
+          // Reframe: alternative perspectives
+          enhancedPrompt = `${individual.prompt}\n\nConsider alternative perspectives and reframe the problem if helpful.`;
+          break;
+        default:
+          // Default: minimal enhancement
+          enhancedPrompt = `${individual.prompt}\n\nEnhance clarity and effectiveness.`;
+      }
+      
       const response = {
-        text: `Improved prompt: ${individual.prompt} [enhanced]`
+        text: enhancedPrompt
       };
       
       const mutatedPrompt = response.text.trim();
@@ -478,6 +544,41 @@ Make one or two small improvements to make it more effective. Return only the im
       console.error('Mutation failed:', error);
       return this.createFallbackIndividual(individual.prompt + ' [improved]');
     }
+  }
+
+  /**
+   * Simplify prompt by removing redundancy and clarifying structure
+   */
+  private simplifyPrompt(prompt: string): string {
+    // Remove redundant phrases and simplify structure
+    let simplified = prompt
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/\bvery\s+(\w+)\b/gi, '$1') // Remove "very"
+      .replace(/\bquite\s+(\w+)\b/gi, '$1') // Remove "quite"
+      .replace(/\breally\s+(\w+)\b/gi, '$1') // Remove "really"
+      .trim();
+    
+    // Ensure clear structure
+    if (!simplified.endsWith('.')) {
+      simplified += '.';
+    }
+    
+    return simplified;
+  }
+
+  /**
+   * Add creative framing to prompt for innovative approaches
+   */
+  private addCreativeFraming(prompt: string): string {
+    const creativeFramings = [
+      'Think outside the box and explore unconventional approaches.',
+      'Consider innovative perspectives and creative solutions.',
+      'Approach this with fresh thinking and original ideas.',
+      'Explore novel angles and unexpected connections.'
+    ];
+    
+    const randomFraming = creativeFramings[Math.floor(Math.random() * creativeFramings.length)];
+    return `${prompt}\n\n${randomFraming}`;
   }
 
   /**

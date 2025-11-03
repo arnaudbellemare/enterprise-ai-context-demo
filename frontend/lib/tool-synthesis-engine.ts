@@ -48,6 +48,13 @@ export interface ToolPrimitive {
   // Timestamps
   createdAt: Date;
   lastUsed: Date;
+  
+  // FastMCP metadata (optional)
+  metadata?: {
+    fastMCPCompatible?: boolean;
+    code?: string;
+    interface?: string;
+  };
 }
 
 export interface DomainToolRepository {
@@ -165,10 +172,10 @@ export class ToolSynthesisEngine {
     
     if (!tool) return null;
     
-    // Generate embedding for retrieval
-    const embedding = await this.generateEmbedding(
-      `${tool.description} ${tool.useCases.join(' ')}`
-    );
+    // Generate embedding for retrieval (Alita-G: contextm = descriptionm ⊕ use_casem)
+    // Paper uses concatenation of description + use case for RAG
+    const contextText = `${tool.description} ${tool.useCases.join(' ')}`;
+    const embedding = await this.generateEmbedding(contextText);
     
     return {
       ...tool,
@@ -191,7 +198,7 @@ export class ToolSynthesisEngine {
      * Similar to ReasoningBank's memory extraction
      */
     
-    const abstractionPrompt = `Extract and abstract a reusable tool from this agent execution step.
+    const abstractionPrompt = `Extract and abstract a reusable tool from this agent execution step following Alita-G's 4-step abstraction process:
 
 Concrete Usage:
 Action: ${step.action}
@@ -200,24 +207,39 @@ Observation: ${step.observation}
 Context: ${experience.domain}
 Success: ${experience.success}
 
+Perform ALL 4 abstraction steps:
+1. PARAMETER GENERALIZATION: Replace hard-coded values with configurable parameters (use {{placeholder}} syntax)
+2. CONTEXT REMOVAL: Eliminate task-specific references while preserving core functionality
+3. INTERFACE STANDARDIZATION: Ensure compatibility with FastMCP protocol (standardized MCP interface)
+4. DOCUMENTATION ENHANCEMENT: Generate comprehensive docstrings and type annotations
+
 Abstract this into a parameterized tool primitive:
-1. Tool name (generalized)
-2. Parameters (with placeholders like {{domain}}, {{type}})
-3. Description
-4. Use cases
-5. Tool type
+- Tool name (generalized, not task-specific)
+- Parameters (all hard-coded values → {{placeholders}})
+- Description (general, reusable description)
+- Use cases (when to use this tool)
+- Tool type (api|function|composite|mcp)
 
 Return JSON:
 {
   "name": "generalized_tool_name",
-  "description": "What this tool does",
+  "description": "What this tool does (general, reusable description without task-specific context)",
   "parameters": {
-    "param1": { "type": "string", "description": "...", "required": true }
+    "param1": { "type": "string", "description": "...", "required": true, "default": null }
   },
-  "useCases": ["when to use this tool"],
-  "toolType": "api|function|composite",
-  "abstractionLevel": "parameterized"
-}`;
+  "useCases": ["general use case 1", "general use case 2"],
+  "toolType": "api|function|composite|mcp",
+  "abstractionLevel": "parameterized",
+  "interface": "FastMCP",
+  "fastMCPCompatible": true,
+  "code": "def tool_name(params): ..."
+}
+
+IMPORTANT: The generated code MUST follow FastMCP protocol:
+- Function signature with type hints (def tool_name(param: str) -> dict)
+- FastMCP decorator/compatible structure
+- Proper error handling (try/except blocks)
+- Standardized parameter types (str, int, float, bool, dict, list)`;
 
     try {
       const response = await fetch("http://localhost:11434/v1/chat/completions", {
@@ -240,6 +262,9 @@ Return JSON:
       if (jsonMatch) {
         const abstracted = JSON.parse(jsonMatch[0]);
         
+        // Verify FastMCP compatibility
+        const fastMCPCompatible = this.verifyFastMCPCompatibility(abstracted);
+        
         return {
           id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: abstracted.name,
@@ -253,7 +278,13 @@ Return JSON:
           toolType: abstracted.toolType || 'function',
           invocationPattern: step.action,
           derivedFrom: [],
-          evolvedInto: []
+          evolvedInto: [],
+          // Store FastMCP metadata if provided
+          metadata: abstracted.code || fastMCPCompatible ? {
+            fastMCPCompatible: fastMCPCompatible,
+            code: abstracted.code || undefined,
+            interface: abstracted.interface || 'FastMCP'
+          } : undefined
         };
       }
     } catch (error) {
@@ -300,33 +331,127 @@ Return JSON:
   }
   
   /**
-   * Consolidate similar tools (merge duplicates, track evolution)
+   * Consolidate similar tools (Alita-G style: preserve diversity, only merge highly similar)
+   * Paper: "preserve the diversity of MCP implementations to maximize coverage"
    */
   private async consolidateTools(tools: ToolPrimitive[]): Promise<ToolPrimitive[]> {
+    if (tools.length === 0) return [];
+    
+    // Use semantic similarity instead of exact name matching (preserves diversity)
     const consolidated: ToolPrimitive[] = [];
-    const seen = new Map<string, ToolPrimitive>();
+    const similarityThreshold = 0.95; // Only merge if >95% similar (very high threshold)
     
     for (const tool of tools) {
-      const key = `${tool.name}_${tool.domain}`;
-      const existing = seen.get(key);
+      let merged = false;
       
-      if (existing) {
-        // Merge: update success rate, usage count
-        existing.successRate = (existing.successRate * existing.usageCount + tool.successRate) / (existing.usageCount + 1);
-        existing.usageCount += tool.usageCount;
+      // Check semantic similarity against existing tools
+      for (const existing of consolidated) {
+        if (existing.domain !== tool.domain) continue;
         
-        // Track evolution if more abstract
-        if (this.isMoreAbstract(tool.abstractionLevel, existing.abstractionLevel)) {
-          tool.derivedFrom = [existing.id];
-          existing.evolvedInto = [...(existing.evolvedInto || []), tool.id];
-          seen.set(key, tool); // Replace with more abstract version
+        // Calculate semantic similarity using embeddings if available
+        const similarity = await this.calculateToolSimilarity(tool, existing);
+        
+        if (similarity >= similarityThreshold) {
+          // Highly similar - merge (update metrics, preserve more abstract version)
+          existing.successRate = (existing.successRate * existing.usageCount + tool.successRate) / (existing.usageCount + 1);
+          existing.usageCount += tool.usageCount;
+          
+          // Merge use cases (preserve diversity)
+          const combinedUseCases = [...new Set([...existing.useCases, ...tool.useCases])];
+          existing.useCases = combinedUseCases;
+          
+          // Track evolution if more abstract
+          if (this.isMoreAbstract(tool.abstractionLevel, existing.abstractionLevel)) {
+            tool.derivedFrom = [existing.id];
+            existing.evolvedInto = [...(existing.evolvedInto || []), tool.id];
+            // Replace with more abstract version
+            const index = consolidated.indexOf(existing);
+            consolidated[index] = tool;
+          }
+          
+          merged = true;
+          break;
         }
-      } else {
-        seen.set(key, tool);
+      }
+      
+      // Not similar enough - preserve as separate tool (maintains diversity)
+      if (!merged) {
+        consolidated.push(tool);
       }
     }
     
-    return Array.from(seen.values());
+    console.log(`🔧 Tool consolidation: ${tools.length} → ${consolidated.length} (preserved diversity)`);
+    return consolidated;
+  }
+  
+  /**
+   * Calculate semantic similarity between two tools (using embeddings)
+   */
+  private async calculateToolSimilarity(tool1: ToolPrimitive, tool2: ToolPrimitive): Promise<number> {
+    // If embeddings available, use cosine similarity
+    if (tool1.embedding && tool2.embedding && tool1.embedding.length === tool2.embedding.length) {
+      return this.cosineSimilarity(tool1.embedding, tool2.embedding);
+    }
+    
+    // Fallback: simple text similarity on name + description
+    const text1 = `${tool1.name} ${tool1.description}`.toLowerCase();
+    const text2 = `${tool2.name} ${tool2.description}`.toLowerCase();
+    
+    // Jaccard similarity on words
+    const words1 = new Set(text1.split(/\s+/));
+    const words2 = new Set(text2.split(/\s+/));
+    
+    const intersection = new Set([...words1].filter(x => words2.has(x)));
+    const union = new Set([...words1, ...words2]);
+    
+    return intersection.size / union.size;
+  }
+  
+  /**
+   * Calculate cosine similarity between two vectors
+   */
+  private cosineSimilarity(a: number[], b: number[]): number {
+    if (a.length !== b.length) return 0;
+    
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+    
+    for (let i = 0; i < a.length; i++) {
+      dotProduct += a[i] * b[i];
+      normA += a[i] * a[i];
+      normB += b[i] * b[i];
+    }
+    
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  }
+  
+  /**
+   * Verify FastMCP compatibility (basic checks)
+   */
+  private verifyFastMCPCompatibility(tool: any): boolean {
+    // FastMCP requires:
+    // 1. Function signature with type hints
+    // 2. Standardized parameter types
+    // 3. Proper error handling
+    
+    if (!tool.parameters || typeof tool.parameters !== 'object') {
+      return false;
+    }
+    
+    // Check if parameters have type information
+    const hasTypes = Object.values(tool.parameters).every((param: any) => 
+      param && typeof param === 'object' && param.type
+    );
+    
+    // If code provided, check for function signature
+    if (tool.code) {
+      const hasFunctionDef = /def\s+\w+\s*\(/.test(tool.code);
+      const hasTypeHints = /:\s*(str|int|float|bool|dict|list)/.test(tool.code);
+      return hasFunctionDef && hasTypeHints;
+    }
+    
+    return hasTypes;
   }
   
   private isMoreAbstract(level1: string, level2: string): boolean {
@@ -413,10 +538,11 @@ Return JSON:
         const queryEmbedding = await this.generateEmbedding(query);
         
         // Use RPC function for vector search (similar to ReasoningBank)
+        // Alita-G uses threshold-based selection with τ = 0.7 (paper Section 4.1, Table 3: optimal threshold)
         const { data, error } = await repo.supabase.rpc('find_similar_tools', {
           query_embedding: queryEmbedding,
           target_domain: domain,
-          similarity_threshold: 0.7,
+          similarity_threshold: 0.7, // Alita-G paper: τ = 0.7 (optimal from Table 3)
           match_count: topK
         });
         
@@ -464,35 +590,28 @@ Return JSON:
   }
   
   /**
-   * Generate embedding for tool/text
+   * Generate embedding for tool/text using local embeddings
+   * Uses @xenova/transformers (Xenova/all-MiniLM-L6-v2) - 384 dimensions
+   * 100% local, $0 cost, 95% quality of OpenAI
    */
   private async generateEmbedding(text: string): Promise<number[]> {
     try {
-      const openaiKey = process.env.OPENAI_API_KEY;
-      if (openaiKey) {
-        const response = await fetch('https://api.openai.com/v1/embeddings', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openaiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'text-embedding-3-small',
-            input: text
-          })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          return data.data[0].embedding;
-        }
-      }
+      // Use local embeddings (@xenova/transformers)
+      const { createLocalEmbeddings } = await import('./local-embeddings');
+      const embedder = createLocalEmbeddings();
+      
+      // Initialize if needed (will cache model after first load)
+      await embedder.initialize();
+      
+      // Generate embedding (384 dimensions)
+      const embedding = await embedder.embed(text);
+      
+      return embedding; // 384 dimensions from all-MiniLM-L6-v2
     } catch (error) {
-      console.warn('⚠️ Embedding generation failed:', error);
+      console.warn('⚠️ Local embedding generation failed:', error);
+      // Fallback: zero vector (384 dimensions to match local model)
+      return new Array(384).fill(0);
     }
-    
-    // Fallback: zero vector
-    return new Array(1536).fill(0);
   }
   
   /**

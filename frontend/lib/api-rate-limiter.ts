@@ -167,6 +167,21 @@ class APIRateLimiter {
       // Make the request
       const response = await requestFn(provider);
       
+      // Check for authentication errors (401)
+      if (response.status === 401) {
+        console.warn(`⚠️ ${provider.name} authentication failed (401), trying fallback`);
+        provider.isRateLimited = true;
+        provider.rateLimitUntil = startTime + (provider.config.cooldownMs * 5); // Temporary block for auth errors
+        
+        // Try with fallback provider
+        if (fallbackProviders.length > 0) {
+          console.log(`🔄 Authentication failed, falling back to ${fallbackProviders[0]}`);
+          return this.makeRequest(requestFn, fallbackProviders[0], fallbackProviders.slice(1));
+        }
+        
+        throw new Error(`${provider.name} authentication failed and no fallbacks available`);
+      }
+      
       // Check for rate limiting
       if (response.status === 429) {
         console.warn(`⚠️ ${provider.name} rate limited, marking as unavailable`);

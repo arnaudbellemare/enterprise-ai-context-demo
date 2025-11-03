@@ -14,8 +14,8 @@ import { circuitBreakerRegistry } from '../circuit-breaker';
 
 const logger = createLogger('LLMHelpers', 'info');
 const perplexityBreaker = circuitBreakerRegistry.getOrCreate('perplexity', {
-  failureThreshold: 5,
-  resetTimeout: 60000,
+  failureThreshold: 10, // More lenient - only trip after 10 real failures (not config errors)
+  resetTimeout: 30000,   // Shorter timeout - 30 seconds instead of 60
   halfOpenMaxAttempts: 3,
   successThreshold: 2,
 });
@@ -57,19 +57,24 @@ export async function callPerplexityWithRateLimiting(
   messages: LLMMessage[],
   options: LLMOptions = {}
 ): Promise<LLMResponse> {
-  const {
+  let {
     temperature = 0.7,
     maxTokens = 4000,
     model = 'sonar-pro',
     stream = false
   } = options;
+  
+  // Ensure Perplexity uses a valid model (not Ollama model names)
+  if (model && (model.startsWith('ollama-') || model.includes('gemma') || model.includes('llama'))) {
+    model = 'sonar-pro'; // Default to valid Perplexity model
+  }
 
   try {
     // Prefer Perplexity if available, fallback to Ollama
     const result = await apiRateLimiter.makeRequest(
       async (provider) => {
         if (provider.name === 'Perplexity') {
-          // Use Perplexity API with circuit breaker
+          // Use Perplexity API with circuit breaker (but don't count 400 errors as circuit failures if it's a config issue)
           return await perplexityBreaker.execute(
             async () => {
               const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -82,13 +87,46 @@ export async function callPerplexityWithRateLimiting(
                   model,
                   messages,
                   temperature,
-                  max_tokens: maxTokens,
+                  max_tokens: Math.floor(maxTokens), // Ensure integer for Perplexity API
                   stream
                 })
               });
               
               if (!response.ok) {
-                throw new Error(`Perplexity API error: ${response.status} ${response.statusText}`);
+                // Get error details for debugging
+                let errorDetails = '';
+                try {
+                  const errorBody = await response.clone().text();
+                  errorDetails = errorBody.substring(0, 200);
+                } catch {
+                  errorDetails = response.statusText;
+                }
+                
+                // Handle specific status codes
+                if (response.status === 401) {
+                  logger.warn('Perplexity API key invalid or missing, will fallback to Ollama', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    details: errorDetails
+                  });
+                  throw new Error('Perplexity authentication failed - falling back to Ollama');
+                }
+                
+                if (response.status === 400) {
+                  // 400 errors are usually config issues (model name, format) - don't trip circuit breaker
+                  logger.warn('Perplexity API request format error, will fallback to Ollama', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    details: errorDetails,
+                    model: model
+                  });
+                  // Throw a special error that won't trip circuit breaker
+                  const configError = new Error(`Perplexity API config error: ${response.status} ${response.statusText} - ${errorDetails}`);
+                  (configError as any).isConfigError = true; // Mark as config error
+                  throw configError;
+                }
+                
+                throw new Error(`Perplexity API error: ${response.status} ${response.statusText} - ${errorDetails}`);
               }
               
               return response;
@@ -176,6 +214,18 @@ export async function callPerplexityWithRateLimiting(
 
     if (!result.response.ok) {
       const errorText = await result.response.text();
+      
+      // Handle 401 Unauthorized - try fallback
+      if (result.response.status === 401) {
+        logger.warn('API authentication failed, trying fallback providers', {
+          provider: result.provider.name,
+          status: result.response.status
+        });
+        
+        // If Perplexity failed, apiRateLimiter will automatically try fallback providers
+        throw new Error('Authentication failed - fallback provider will be attempted');
+      }
+      
       throw new Error(`API call failed: ${result.response.status} - ${errorText}`);
     }
 
@@ -210,6 +260,18 @@ export async function callPerplexityWithRateLimiting(
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('LLM call failed completely', { error: errorMessage });
+
+    // If it's an auth error, provide helpful message and don't fail completely
+    if (errorMessage.includes('Unauthorized') || errorMessage.includes('authentication failed') || errorMessage.includes('401')) {
+      logger.warn('Authentication error detected, returning graceful fallback');
+      const lastUserMessage = messages[messages.length - 1]?.content || 'your question';
+      return {
+        content: `I'm currently having authentication issues with external APIs. However, I can still help you with your query: "${lastUserMessage}". Please note that real-time web search may not be available, but I'll provide the best answer I can with available resources.`,
+        provider: 'fallback',
+        fallbackUsed: true,
+        cost: 0
+      };
+    }
 
     // Final fallback: return error message
     return {

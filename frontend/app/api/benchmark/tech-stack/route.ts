@@ -211,7 +211,8 @@ async function testIRTReal(query: string): Promise<Omit<BenchmarkResult, 'latenc
     const { calculateIRTWithDetails } = await import('@/lib/irt-calculator');
     const { detectDomain } = await import('@/lib/domain-detector');
     
-    const domain = await detectDomain(query);
+    const domainResult = await detectDomain(query);
+    const domain = domainResult.domain; // Extract domain string from result
     const irtDetails = await calculateIRTWithDetails(query, domain);
     
     const irtScore = irtDetails.difficulty;
@@ -586,8 +587,8 @@ async function testKVCacheReal(query: string): Promise<Omit<BenchmarkResult, 'la
 async function testDomainDetectionReal(query: string): Promise<Omit<BenchmarkResult, 'latency_ms'>> {
   try {
     // ✅ REAL DOMAIN DETECTION using standalone module
-    const { detectDomainWithDetails } = await import('@/lib/domain-detector');
-    const domainDetails = await detectDomainWithDetails(query);
+    const { detectDomain } = await import('@/lib/domain-detector');
+    const domainDetails = await detectDomain(query);
     
     const accuracy = Math.round(domainDetails.confidence * 100);
     

@@ -86,7 +86,14 @@ export class CircuitBreaker {
       this.onSuccess();
       return result;
     } catch (error) {
-      this.onFailure();
+      // Don't count config errors (400 Bad Request) as circuit failures
+      // These are usually fixable issues, not service failures
+      const isConfigError = (error as any)?.isConfigError || 
+                           (error instanceof Error && error.message.includes('config error'));
+      
+      if (!isConfigError) {
+        this.onFailure();
+      }
       
       // Try fallback if provided
       if (fallback) {

@@ -28,10 +28,13 @@ import { SWiRLSRLEnhancer } from './srl/swirl-srl-enhancer';
 import { SWiRLDecompositionResult } from './swirl-decomposer';
 import { validateQuery, sanitizeQuery, validateDomain, validateConfig } from './input-validation';
 import { PipelineError, ValidationError } from './errors';
+import { ReasoningHeuristicSelector } from './reasoning-heuristics';
 import { createLogger } from './walt/logger';
 import { pipelineCache } from './pipeline-cache';
 import { circuitBreakerRegistry } from './circuit-breaker';
 import { parallelExecutor } from './parallel-executor';
+import { competenceTracker } from './competence-tracker';
+import { detectDomain, detectDomainWithJudge, type Domain } from './domain-detector';
 
 export interface UnifiedPipelineConfig {
   enableACE: boolean;
@@ -45,6 +48,7 @@ export interface UnifiedPipelineConfig {
   enableSRL?: boolean;        // SRL enhancement for SWiRL
   enableEBM?: boolean;        // Energy-based answer refinement
   enableToolSynthesis?: boolean; // Alita-G: Synthesize tools from trajectories
+  toolSynthesisIterations?: number; // Alita-G: K iterations for multi-execution (default: 1, paper uses 3)
   enableSelfImprovingJudge?: boolean; // Self-improving judge (learns from outcomes)
   optimizationMode: 'quality' | 'speed' | 'balanced';
   // Threshold configuration for testing
@@ -67,6 +71,12 @@ export interface UnifiedPipelineResult {
     quality_score: number;
     confidence: number;
     components_used: string[];
+    competence_metrics?: {
+      formal: number;
+      functional: number;
+      brain_alignment: number;
+      formal_saturated: boolean;
+    };
     performance: {
       total_time_ms: number;
       cost: number;
@@ -104,6 +114,7 @@ export interface PipelineStep {
   duration_ms: number;
   status: 'success' | 'failed' | 'skipped';
   metadata?: Record<string, unknown>;
+  reasoning_heuristic?: string;  // Which reasoning heuristic guided this step
 }
 
 /**
@@ -182,7 +193,22 @@ export class UnifiedPermutationPipeline {
     try {
       // First validate (checks length, etc.) - this throws if invalid
       const validatedQuery = validateQuery({ query, domain, context });
-      const validatedDomain = validateDomain(domain);
+      
+      // Auto-detect domain if not provided
+      let detectedDomain = domain;
+      if (!detectedDomain) {
+        const detectionResult = this.config.enableTeacherStudent && teacherStudentSystem
+          ? await detectDomainWithJudge(validatedQuery.query, JSON.stringify(validatedQuery.context), teacherStudentSystem)
+          : detectDomain(validatedQuery.query, JSON.stringify(validatedQuery.context));
+        
+        detectedDomain = detectionResult.domain;
+        this.logger.info(`Auto-detected domain: ${detectedDomain} (confidence: ${detectionResult.confidence.toFixed(2)})`, {
+          reasoning: detectionResult.reasoning,
+          keywords: detectionResult.keywords
+        });
+      }
+      
+      const validatedDomain = validateDomain(detectedDomain);
       
       // Then sanitize (only if validation passes)
       const sanitizedQuery = sanitizeQuery(validatedQuery.query);
@@ -239,7 +265,19 @@ export class UnifiedPermutationPipeline {
       this.logger.info('Starting Phase 1 & 2 (parallel execution)', { query: query.substring(0, 60) });
       const parallelStart = Date.now();
       
-      const detectedDomain = domain || await this.detectDomain(query);
+        const detectedDomain = domain || await this.detectDomain(query);
+      
+      // Select reasoning heuristics for this query/domain (to guide GEPA)
+      let selectedHeuristics: string[] = [];
+      try {
+        selectedHeuristics = await ReasoningHeuristicSelector.select(query, detectedDomain, 3);
+        this.logger.info('Reasoning heuristics selected', { 
+          count: selectedHeuristics.length,
+          heuristics: selectedHeuristics.map(h => h.substring(0, 50))
+        });
+      } catch (error) {
+        this.logger.warn('Reasoning heuristic selection failed', { error });
+      }
       
       // Execute IRT and Semiotic in parallel
       const [irtResult, semioticResult] = await parallelExecutor.executeParallel(
@@ -445,13 +483,19 @@ export class UnifiedPermutationPipeline {
           console.log(`   ✓ Speed improvement: ${dspyResult.improvement.speed_delta.toFixed(0)}ms`);
           console.log(`   ✓ Cost reduction: $${dspyResult.improvement.cost_delta.toFixed(4)}`);
           
+          // Get primary heuristic used (if available)
+          const primaryHeuristic = selectedHeuristics.length > 0 
+            ? ReasoningHeuristicSelector.getDescription(selectedHeuristics[0] as string)
+            : undefined;
+          
           steps.push({
             component: 'DSPy-GEPA Optimizer',
             phase: 'optimization',
             input: { module: moduleName, domain: detectedDomain },
             output: dspyResult,
             duration_ms: Date.now() - dspyStart,
-            status: 'success'
+            status: 'success',
+            reasoning_heuristic: primaryHeuristic
           });
         } else {
           console.log(`   ⊘ DSPy module "${moduleName}" not found in registry`);
@@ -466,7 +510,9 @@ export class UnifiedPermutationPipeline {
         const gepaResult = await gepaAlgorithms.optimizePrompts(
           detectedDomain,
           [query],
-          ['quality', 'speed', 'cost']
+          ['quality', 'speed', 'cost'],
+          24, // rollouts per step
+          selectedHeuristics // Pass reasoning heuristics to guide mutation
         );
         
         optimizationHistory.push({
@@ -477,8 +523,13 @@ export class UnifiedPermutationPipeline {
         
         console.log(`   ✓ GEPA: ${gepaResult.evolved_prompts.length} prompts evolved`);
         
+        const gepaHeuristic = selectedHeuristics.length > 0 
+          ? ReasoningHeuristicSelector.getDescription(selectedHeuristics[0] as string)
+          : undefined;
+        
         steps.push({
           component: 'GEPA Algorithms',
+          reasoning_heuristic: gepaHeuristic,
           phase: 'optimization',
           input: { basePrompts: [query], domain: detectedDomain },
           output: gepaResult as unknown as Record<string, unknown>, // Convert GEPAResult to Record
@@ -704,6 +755,58 @@ export class UnifiedPermutationPipeline {
         finalAnswer
       );
       
+      // Track formal vs functional competence (brain alignment insights)
+      // Safely access deduction/induction/abduction with fallbacks
+      try {
+        const formalCompetence = competenceTracker.calculateFormalCompetence({
+          semiotic: { 
+            deduction: { 
+              confidence: (deduction as any)?.confidence ?? 0.7 
+            } 
+          },
+          aceResult,
+          irtDifficulty
+        });
+        
+        const functionalCompetence = competenceTracker.calculateFunctionalCompetence({
+          semiotic: {
+            induction: { 
+              confidence: (induction as any)?.confidence ?? 0.6 
+            },
+            abduction: { 
+              confidence: (abduction as any)?.confidence ?? 0.5 
+            }
+          },
+          teacherResponse,
+          rvsResult: rvsResult || undefined,
+          qualityScore
+        });
+        
+        const competenceTracking = competenceTracker.trackCompetence(
+          formalCompetence,
+          functionalCompetence,
+          this.executionCount
+        );
+        
+        this.logger.info('Competence tracking', {
+          formal: formalCompetence.overall.toFixed(3),
+          functional: functionalCompetence.overall.toFixed(3),
+          brainAlignment: competenceTracking.brainAlignmentScore.toFixed(3),
+          formalSaturated: competenceTracking.formalSaturated
+        });
+        
+        // Store for metadata
+        (this as any).lastFormalCompetence = formalCompetence;
+        (this as any).lastFunctionalCompetence = functionalCompetence;
+        (this as any).lastCompetenceTracking = competenceTracking;
+      } catch (competenceError) {
+        this.logger.warn('Competence tracking failed', { error: competenceError });
+        // Continue without competence tracking if it fails
+        (this as any).lastFormalCompetence = null;
+        (this as any).lastFunctionalCompetence = null;
+        (this as any).lastCompetenceTracking = null;
+      }
+      
       console.log(`   ✓ Final answer synthesized`);
       console.log(`   ✓ Quality score: ${qualityScore.toFixed(3)}`);
       
@@ -841,6 +944,12 @@ export class UnifiedPermutationPipeline {
           quality_score: qualityScore,
           confidence: synthesis?.overallConfidence || 0.5,
           components_used: steps.map(s => s.component),
+          competence_metrics: (this as any).lastCompetenceTracking ? {
+            formal: (this as any).lastFormalCompetence.overall,
+            functional: (this as any).lastFunctionalCompetence.overall,
+            brain_alignment: (this as any).lastCompetenceTracking.brainAlignmentScore,
+            formal_saturated: (this as any).lastCompetenceTracking.formalSaturated
+          } : undefined,
           performance: {
             total_time_ms: totalTime,
             cost: totalCost,
@@ -924,11 +1033,22 @@ export class UnifiedPermutationPipeline {
         }
         
         // Step 4: Alita-G Enhancement - Synthesize tools from successful trajectory
+        // Paper uses multi-execution (K iterations) - accumulate tools across multiple runs
         if (taskSucceeded && this.config.enableToolSynthesis !== false) {
           try {
             const { createToolSynthesisEngine } = await import('./tool-synthesis-engine');
             const toolEngine = createToolSynthesisEngine(reasoningBank);
+            
+            // Single execution (current approach) - extract from this trajectory
             const synthesizedTools = await toolEngine.extractToolsFromTrajectory(experience as any);
+            
+            // TODO: Multi-execution support (K iterations)
+            // For full Alita-G, we'd run this query K times and accumulate tools:
+            // const k = this.config.toolSynthesisIterations || 1;
+            // if (k > 1) {
+            //   const allExperiences = await this.executeQueryMultipleTimes(query, k);
+            //   synthesizedTools = await toolEngine.synthesizeToolsFromMultipleExecutions(allExperiences, detectedDomain);
+            // }
             
             if (synthesizedTools.length > 0) {
               await toolEngine.addToolsToRepository(detectedDomain, synthesizedTools);

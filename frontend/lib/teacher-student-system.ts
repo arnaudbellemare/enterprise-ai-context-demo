@@ -59,17 +59,48 @@ export class TeacherStudentSystem {
 
   private initializeSupabase() {
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      // Check multiple env var sources for Supabase URL
+      const supabaseUrl = 
+        process.env.NEXT_PUBLIC_SUPABASE_URL ||
+        process.env.SUPABASE_URL ||
+        (process.env.POSTGRES_URL ? this.extractSupabaseUrlFromPostgres(process.env.POSTGRES_URL) : null);
+      
+      // Check multiple env var sources for Supabase key
+      const supabaseKey = 
+        process.env.SUPABASE_SERVICE_ROLE_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+        process.env.SUPABASE_ANON_KEY;
+      
       if (supabaseUrl && supabaseKey) {
         this.supabase = createClient(supabaseUrl, supabaseKey);
         console.log('✅ Teacher-Student: Supabase initialized');
       } else {
-        console.warn('⚠️ Teacher-Student: Supabase not configured');
+        if (!supabaseUrl && !supabaseKey) {
+          // Only warn if completely missing, not if partial
+          console.warn('⚠️ Teacher-Student: Supabase not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)');
+        }
       }
     } catch (error) {
       console.error('❌ Teacher-Student: Supabase initialization failed:', error);
     }
+  }
+
+  /**
+   * Extract Supabase URL from POSTGRES_URL if available
+   */
+  private extractSupabaseUrlFromPostgres(postgresUrl: string): string | null {
+    try {
+      // Extract project ID from POSTGRES_URL
+      // Format: postgres://postgres.XXX@... or postgres://...@db.XXX.supabase.co
+      const match = postgresUrl.match(/postgres\.([^.]+)|db\.([^.]+)\.supabase\.co/);
+      if (match) {
+        const projectId = match[1] || match[2];
+        return `https://${projectId}.supabase.co`;
+      }
+    } catch (error) {
+      // Silent fail
+    }
+    return null;
   }
 
   /**

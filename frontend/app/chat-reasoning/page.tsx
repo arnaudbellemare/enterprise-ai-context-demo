@@ -73,11 +73,24 @@ export default function ChatReasoningPage() {
         body: JSON.stringify({ query: input, domain: 'general' })
       });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText || `HTTP error! status: ${response.status}` };
+        }
+        throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
       
-      if (!data.success) throw new Error(data.error || 'API request failed');
+      if (!data.success) {
+        // Log detailed error for debugging
+        console.error('API returned error:', data);
+        throw new Error(data.error || data.details || 'API request failed');
+      }
 
       // Use real reasoning steps from pipeline (or fallback to metadata)
       const reasoningSteps: ReasoningStep[] = data.reasoningSteps || data.processingSteps?.map((step: string, idx: number) => ({
@@ -107,9 +120,10 @@ export default function ChatReasoningPage() {
       setCurrentReasoning([]);
     } catch (error) {
       console.error('Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, there was an error processing your request.'
+        content: `Sorry, there was an error processing your request: ${errorMessage}. Please try again or rephrase your question.`
       }]);
     } finally {
       setIsLoading(false);

@@ -26,12 +26,12 @@ export interface LoRAConfig {
 }
 
 export async function getLoRAParameters(query: string): Promise<LoRAConfig> {
-  const domain = await detectDomain(query);
-  return getLoRAParametersByDomain(domain);
+  const domainResult = await detectDomain(query);
+  return getLoRAParametersByDomain(domainResult.domain);
 }
 
 export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
-  const configs: Record<Domain, LoRAConfig> = {
+  const configs: Partial<Record<Domain, LoRAConfig>> = {
     crypto: {
       rank: 8,
       alpha: 16,                    // 2*rank
@@ -230,7 +230,7 @@ export function getLoRAParametersByDomain(domain: Domain): LoRAConfig {
     }
   };
   
-  const config = configs[domain] || configs.general;
+  const config = configs[domain] || configs.general!; // general is always defined
   
   // Add runtime metadata
   return {

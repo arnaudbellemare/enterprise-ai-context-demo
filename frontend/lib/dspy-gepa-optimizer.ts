@@ -124,11 +124,27 @@ export class DSPyGEPAOptimizer {
       
       if (this.config.use_gepa) {
         console.log(`🧬 DSPy-GEPA: Running GEPA optimization with ${this.config.num_rollouts_per_step} rollouts per step...`);
+        
+        // Select reasoning heuristics to guide GEPA mutation (if available)
+        let reasoningHeuristics: string[] | undefined;
+        try {
+          const { ReasoningHeuristicSelector } = await import('./reasoning-heuristics');
+          reasoningHeuristics = await ReasoningHeuristicSelector.select(
+            module.signature.description || '',
+            module.signature.domain || 'general',
+            3 // Select 3 relevant heuristics
+          );
+          console.log(`   - Selected ${reasoningHeuristics.length} reasoning heuristics to guide mutation`);
+        } catch (error) {
+          console.warn('   - Reasoning heuristics not available, using default mutation');
+        }
+        
         const gepaResult = await gepaAlgorithms.optimizePrompts(
           module.signature.domain,
           basePrompts,
           this.config.objectives,
-          this.config.num_rollouts_per_step // Pass rollouts to GEPA
+          this.config.num_rollouts_per_step, // Pass rollouts to GEPA
+          reasoningHeuristics // Pass heuristics to guide mutation
         );
         
         evolvedPrompts = gepaResult.evolved_prompts;
