@@ -28,6 +28,7 @@ describe('SelfSupervisedLearningFramework', () => {
   let sampleTask: LearningTask;
 
   beforeEach(() => {
+    jest.clearAllMocks();
 
     config = {
       learningRate: 0.001,
@@ -58,6 +59,10 @@ describe('SelfSupervisedLearningFramework', () => {
   describe('Initialization', () => {
     it('should initialize framework with provided config', () => {
       expect(framework).toBeInstanceOf(SelfSupervisedLearningFramework);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Self-Supervised Learning Framework initialized',
+        { config }
+      );
     });
 
     it('should handle different configuration values', () => {
@@ -72,6 +77,10 @@ describe('SelfSupervisedLearningFramework', () => {
       const customFramework = new SelfSupervisedLearningFramework(customConfig);
 
       expect(customFramework).toBeInstanceOf(SelfSupervisedLearningFramework);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Self-Supervised Learning Framework initialized',
+        { config: customConfig }
+      );
     });
   });
 
@@ -90,6 +99,12 @@ describe('SelfSupervisedLearningFramework', () => {
       expect(result.representations.dimensions).toBe(128);
       expect(result.methodology).toHaveLength(4);
       expect(result.methodology[0]).toContain('Contrastive Learning');
+
+      // Verify logger was called
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting contrastive learning',
+        { taskId: 'test-task-001' }
+      );
     });
 
     it('should handle empty data arrays in contrastive learning', async () => {
@@ -162,6 +177,11 @@ describe('SelfSupervisedLearningFramework', () => {
       expect(result.methodology).toHaveLength(4);
       expect(result.methodology[0]).toContain('Generative Learning');
 
+      // Verify logger was called
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting generative learning',
+        { taskId: 'test-task-001' }
+      );
     });
 
     it('should handle empty data in generative learning', async () => {
@@ -217,6 +237,11 @@ describe('SelfSupervisedLearningFramework', () => {
       expect(result.methodology).toHaveLength(4);
       expect(result.methodology[0]).toContain('Predictive Learning');
 
+      // Verify logger was called
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting predictive learning',
+        { taskId: 'test-task-001' }
+      );
     });
 
     it('should handle empty data in predictive learning', async () => {
@@ -372,6 +397,7 @@ describe('SurvivalAnalysisEngine', () => {
   let sampleData: SurvivalData[];
 
   beforeEach(() => {
+    jest.clearAllMocks();
 
     engine = new SurvivalAnalysisEngine();
 
@@ -406,6 +432,7 @@ describe('SurvivalAnalysisEngine', () => {
   describe('Initialization', () => {
     it('should initialize survival analysis engine', () => {
       expect(engine).toBeInstanceOf(SurvivalAnalysisEngine);
+      expect(mockLogger.info).toHaveBeenCalledWith('Survival Analysis Engine initialized');
     });
   });
 
@@ -426,6 +453,14 @@ describe('SurvivalAnalysisEngine', () => {
       expect(result.methodology).toHaveLength(4);
       expect(result.methodology[0]).toContain('Cox Regression');
 
+      // Verify logger was called
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Fitting Cox Proportional Hazards model',
+        {
+          sampleSize: sampleData.length,
+          covariates: covariates.length
+        }
+      );
     });
 
     it('should handle empty covariate list', async () => {
@@ -434,6 +469,13 @@ describe('SurvivalAnalysisEngine', () => {
 
       // Assert
       expect(result.modelType).toBe('cox');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Fitting Cox Proportional Hazards model',
+        {
+          sampleSize: sampleData.length,
+          covariates: 0
+        }
+      );
     });
 
     it('should handle small datasets', async () => {
@@ -461,6 +503,11 @@ describe('SurvivalAnalysisEngine', () => {
       expect(result.methodology).toHaveLength(4);
       expect(result.methodology[0]).toContain('Kaplan-Meier');
 
+      // Verify logger was called
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Performing Kaplan-Meier survival analysis',
+        { sampleSize: sampleData.length }
+      );
     });
 
     it('should handle empty survival data', async () => {
@@ -469,6 +516,10 @@ describe('SurvivalAnalysisEngine', () => {
 
       // Assert
       expect(result.survivalTimes).toBeDefined();
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Performing Kaplan-Meier survival analysis',
+        { sampleSize: 0 }
+      );
     });
   });
 
@@ -486,6 +537,14 @@ describe('SurvivalAnalysisEngine', () => {
       expect(result.survivalFunction).toBeDefined();
       expect(result.methodology).toHaveLength(4);
 
+      // Verify logger was called
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Fitting parametric survival model',
+        {
+          distribution: 'weibull',
+          sampleSize: sampleData.length
+        }
+      );
     });
 
     it('should fit exponential distribution model', async () => {
@@ -557,6 +616,13 @@ describe('SurvivalAnalysisEngine', () => {
 
       // Assert
       expect(result.coefficients).toBeDefined();
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Fitting Cox Proportional Hazards model',
+        {
+          sampleSize: complexData.length,
+          covariates: 6
+        }
+      );
     });
   });
 
