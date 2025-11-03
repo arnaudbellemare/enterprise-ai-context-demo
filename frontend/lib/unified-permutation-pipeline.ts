@@ -93,6 +93,7 @@ export interface UnifiedPipelineResult {
           // Alita-G tool synthesis
           tools_synthesized?: number;
           tool_names?: string[];
+          tool_synthesis_iterations?: number;
           // Self-improving judge
           judge_learned_from_outcome?: boolean;
           judge_calibration_accuracy?: number;

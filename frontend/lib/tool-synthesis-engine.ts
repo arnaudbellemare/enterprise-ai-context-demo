@@ -273,22 +273,32 @@ IMPORTANT: The generated code MUST follow FastMCP protocol:
 - Standardized parameter types (str, int, float, bool, dict, list)`;
 
     try {
-      // Use Perplexity API for better JSON generation (instead of Ollama)
-      const { callPerplexityWithRateLimiting } = await import('./brain-skills/llm-helpers');
-      
-      const llmResponse = await callPerplexityWithRateLimiting(
-        [
-          { role: "system", content: "You are an expert at abstracting concrete tool usage into reusable primitives. You MUST return valid JSON only, no markdown, no explanations." },
-          { role: "user", content: abstractionPrompt }
-        ],
-        {
-          model: 'sonar-pro',
+      // Use local Ollama for cost-effectiveness (tool synthesis doesn't need recent data)
+      // Improved JSON repair handles Ollama's imperfect JSON generation
+      const response = await fetch("http://localhost:11434/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gemma3:4b",
+          messages: [
+            { 
+              role: "system", 
+              content: "You are an expert at abstracting concrete tool usage into reusable primitives. CRITICAL: You MUST return ONLY valid JSON. No markdown, no code blocks, no explanations, no text before or after the JSON. Just the raw JSON object."
+            },
+            { role: "user", content: abstractionPrompt }
+          ],
           temperature: 0.0, // Deterministic abstraction
-          maxTokens: 2000
-        }
-      );
+          // Force JSON mode if supported (some Ollama versions support this)
+          response_format: { type: "json_object" }
+        })
+      });
       
-      const content = llmResponse.content || '';
+      if (!response.ok) {
+        throw new Error(`Ollama request failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || data.message?.content || '';
       
       // Extract JSON with improved error handling
       let jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -309,7 +319,7 @@ IMPORTANT: The generated code MUST follow FastMCP protocol:
           jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1');
           
           // Pass 2: Fix unquoted keys (but preserve already-quoted keys)
-          jsonText = jsonText.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, (match, prefix, key) => {
+          jsonText = jsonText.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, (match: string, prefix: string, key: string) => {
             // Only quote if not already quoted
             if (!key.startsWith('"') && !key.startsWith("'")) {
               return `${prefix}"${key}":`;
@@ -317,28 +327,54 @@ IMPORTANT: The generated code MUST follow FastMCP protocol:
             return match;
           });
           
-          // Pass 3: Fix single quotes to double quotes (careful - only unquoted strings)
-          // Note: This is risky, so we do it carefully
-          // Only replace single quotes that look like JSON keys/string delimiters
-          jsonText = jsonText.replace(/([{,]\s*)'([^']+)':/g, '$1"$2":'); // Fix keys
-          jsonText = jsonText.replace(/:\s*'([^']+)'(?=\s*[,}\]])/g, ': "$1"'); // Fix values
+          // Pass 3: Fix single quotes to double quotes (careful - only JSON delimiters)
+          // Fix keys: 'key': → "key":
+          jsonText = jsonText.replace(/([{,]\s*)'([^']+)':/g, '$1"$2":');
+          // Fix string values: : 'value' → : "value"
+          jsonText = jsonText.replace(/:\s*'([^']*)'(?=\s*[,}\]])/g, ': "$1"');
           
-          // Pass 4: Remove comments (JSON doesn't support comments)
-          jsonText = jsonText.replace(/\/\/.*$/gm, '');
-          jsonText = jsonText.replace(/\/\*[\s\S]*?\*\//g, '');
+          // Pass 4: Remove comments and extra whitespace
+          jsonText = jsonText.replace(/\/\/.*$/gm, ''); // Line comments
+          jsonText = jsonText.replace(/\/\*[\s\S]*?\*\//g, ''); // Block comments
           
-          // Pass 5: Fix escaped quotes inside strings (basic)
-          // This is complex, so we'll try parsing and if it fails, provide better error
+          // Pass 5: Fix common JSON issues from local LLMs
+          // Remove any text before first { or after last }
+          const firstBrace = jsonText.indexOf('{');
+          const lastBrace = jsonText.lastIndexOf('}');
+          if (firstBrace >= 0 && lastBrace > firstBrace) {
+            jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+          }
           
+          // Pass 6: Fix unescaped newlines in strings (replace with \n)
+          // This is tricky, so we'll be conservative
+          jsonText = jsonText.replace(/(:\s*"[^"]*)\n([^"]*")/g, '$1\\n$2');
+          
+          // Pass 7: Validate and parse with retry logic
           let abstracted: any;
-          try {
-            abstracted = JSON.parse(jsonText);
-          } catch (parseError) {
-            // Try one more aggressive fix: wrap in try-catch and use eval as last resort (safe here)
-            // Actually, let's just provide better error info
-            console.warn('⚠️ JSON parsing failed even after repair attempts');
-            console.warn('   Original JSON text (first 500 chars):', jsonText.substring(0, 500));
-            throw parseError;
+          let parseAttempts = 0;
+          const maxAttempts = 3;
+          
+          while (parseAttempts < maxAttempts) {
+            try {
+              abstracted = JSON.parse(jsonText);
+              break; // Success!
+            } catch (parseError) {
+              parseAttempts++;
+              
+              if (parseAttempts < maxAttempts) {
+                // Try more aggressive fixes
+                // Fix trailing commas (more aggressive)
+                jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1');
+                // Try to fix missing quotes around keys (aggressive)
+                jsonText = jsonText.replace(/([{,]\s+)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+              } else {
+                // Final attempt failed - log and throw
+                console.warn('⚠️ JSON parsing failed after', maxAttempts, 'repair attempts');
+                console.warn('   Original JSON text (first 800 chars):', jsonText.substring(0, 800));
+                console.warn('   Parse error:', parseError instanceof Error ? parseError.message : parseError);
+                throw parseError;
+              }
+            }
           }
           
           // Validate required fields
