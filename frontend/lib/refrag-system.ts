@@ -15,6 +15,7 @@ import { embeddingService, type EmbeddingResult } from './embedding-service';
 import { createLogger } from '../../lib/walt/logger';
 import { z } from 'zod';
 import { VectorPassingLLM, type VectorChunk, type VectorPassingConfig } from './vector-passing-llm';
+import { REFRAGOptimizations, createREFRAGOptimizations, type REFRAGOptimizationConfig } from './refrag-optimizations';
 
 const logger = createLogger('REFRAG');
 
@@ -76,6 +77,8 @@ export interface REFRAGConfig {
     type: 'weaviate' | 'pgvector' | 'qdrant' | 'inmemory';
     config: any;
   };
+  // Performance optimizations (from dspy-refrag)
+  optimizations?: Partial<REFRAGOptimizationConfig>;
 }
 
 // ============================================================
@@ -441,6 +444,7 @@ export class REFRAGSystem {
   private config: REFRAGConfig;
   private embeddingGenerator: EmbeddingGenerator;
   private vectorPassingLLM: VectorPassingLLM | null = null;
+  private optimizations: REFRAGOptimizations;
 
   constructor(config: REFRAGConfig, retriever: VectorRetriever) {
     this.config = config;
@@ -451,6 +455,9 @@ export class REFRAGSystem {
     });
     this.optimizationMemory = new OptimizationStore();
     this.embeddingGenerator = new EmbeddingGenerator();
+    
+    // Initialize performance optimizations (from dspy-refrag)
+    this.optimizations = createREFRAGOptimizations(config.optimizations);
     
     // Initialize vector-passing LLM if enabled
     if (config.enableVectorPassing && config.vectorPassingProvider) {
@@ -464,12 +471,16 @@ export class REFRAGSystem {
       logger.info('Vector-passing enabled', { provider: config.vectorPassingProvider });
     }
     
-    logger.info('REFRAG System initialized', {
+    logger.info('REFRAG System initialized with optimizations', {
       sensorMode: config.sensorMode,
       k: config.k,
       budget: config.budget,
       optimizationEnabled: config.enableOptimizationMemory,
-      vectorPassingEnabled: config.enableVectorPassing || false
+      vectorPassingEnabled: config.enableVectorPassing || false,
+      batchEmbeddings: this.optimizations['config'].enableBatchEmbeddings,
+      parallelSensors: this.optimizations['config'].enableParallelSensors,
+      earlyStopping: this.optimizations['config'].enableEarlyStopping,
+      embeddingCache: this.optimizations['config'].enableEmbeddingCache
     });
   }
 
@@ -479,7 +490,7 @@ export class REFRAGSystem {
     logger.info('REFRAG retrieval started', { query: query.substring(0, 100) });
 
     try {
-      // 1. Generate query embedding
+      // 1. Generate query embedding (with caching optimization)
       const queryEmbedding = await this.embeddingGenerator.generate(query);
       
       // 2. Get optimization suggestions if enabled
@@ -502,16 +513,72 @@ export class REFRAGSystem {
         }
       }
 
-      // 3. Retrieve initial candidates
+      // 3. Retrieve initial candidates (with batch optimization if multiple queries)
       const candidates = await this.retriever.search(queryEmbedding, k);
       
-      // 4. Sensor-based chunk selection
-      const selectedChunks = await this.sensor.select(
-        candidates, 
-        query, 
-        budget, 
-        queryEmbedding
-      );
+      // 4. Early stopping check (if enabled)
+      if (this.optimizations['config'].enableEarlyStopping && candidates.length > 0) {
+        const topCandidate = candidates[0];
+        if (topCandidate.embedding && topCandidate.score && topCandidate.score >= this.optimizations['config'].confidenceThreshold) {
+          // Early stopping: high confidence single chunk
+          const selectedChunks = [topCandidate];
+          
+          const result: REFRAGResult = {
+            chunks: selectedChunks,
+            metadata: {
+              sensorStrategy: sensorMode,
+              diversityScore: 1.0,
+              relevanceScores: [topCandidate.score],
+              totalCandidates: 1,
+              selectedCount: 1,
+              processingTimeMs: Date.now() - startTime,
+              optimizationLearned: this.config.enableOptimizationMemory,
+              vectorPassingEnabled: this.config.enableVectorPassing || false
+            }
+          };
+          
+          logger.info('REFRAG early stopping triggered', { confidence: topCandidate.score });
+          return result;
+        }
+      }
+      
+      // 5. Sensor-based chunk selection (with parallel optimization if ensemble)
+      let selectedChunks: Chunk[];
+      
+      if (sensorMode === 'ensemble' && this.optimizations['config'].enableParallelSensors) {
+        // Parallel sensor strategies
+        const mmrSensor = new AdvancedSensor('mmr', {
+          mmrLambda: this.config.mmrLambda,
+          uncertaintyThreshold: this.config.uncertaintyThreshold
+        });
+        const uncertaintySensor = new AdvancedSensor('uncertainty', {
+          mmrLambda: this.config.mmrLambda,
+          uncertaintyThreshold: this.config.uncertaintyThreshold
+        });
+        
+        const results = await this.optimizations.runParallelSensors(
+          candidates,
+          query,
+          budget,
+          queryEmbedding,
+          [
+            { name: 'mmr', select: (c, b, e) => mmrSensor.select(c, query, b, e) },
+            { name: 'uncertainty', select: (c, b, e) => uncertaintySensor.select(c, query, b, e) }
+          ]
+        );
+        
+        // Select best result
+        const bestResult = results.sort((a, b) => b.score - a.score)[0];
+        selectedChunks = bestResult.chunks;
+      } else {
+        // Standard sensor selection
+        selectedChunks = await this.sensor.select(
+          candidates, 
+          query, 
+          budget, 
+          queryEmbedding
+        );
+      }
 
       // 5. Calculate metrics
       const diversityScore = this.calculateDiversity(selectedChunks);

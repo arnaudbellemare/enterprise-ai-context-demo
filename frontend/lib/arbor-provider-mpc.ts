@@ -83,6 +83,9 @@ class EBMCritic {
     this.ebmRefiner = new EBMAnswerRefiner({
       refinementSteps: config.refinementSteps || 3,
       learningRate: config.learningRate || 0.5,
+      noiseScale: 0.01,
+      temperature: 0.8,
+      energyFunction: 'default',
       useLLMRefinement: false  // Prediction only, no refinement
     });
   }
@@ -313,8 +316,10 @@ export class ArborProviderMPC {
     };
 
     this.ebmCritic = new EBMCritic({
-      refinementSteps: this.config.ebm_critic_steps
-    });
+      refinementSteps: this.config.ebm_critic_steps,
+      learningRate: 0.5,
+      useLLMRefinement: false
+    } as any); // EBMConfig type mismatch - simplified config for MPC critic
 
     this.jointEmbedding = new JointEmbeddingArchitecture(
       this.config.embedding_dimension

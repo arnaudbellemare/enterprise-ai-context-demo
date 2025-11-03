@@ -798,53 +798,9 @@ export async function POST(request: NextRequest) {
           error: isAuthError ? 'Authentication error - API keys may need to be refreshed. Server restart may be required.' : errorMessage
         }
       });
-
-    } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      
-      logger.error('Pipeline execution failed', { 
-        error: errorMessage,
-        stack: errorStack,
-        query: query.substring(0, 50),
-        domain 
-      });
-      
-      // Check if it's an authentication error - provide helpful message
-      const isAuthError = errorMessage.toLowerCase().includes('unauthorized') || 
-                         errorMessage.toLowerCase().includes('401') ||
-                         errorMessage.toLowerCase().includes('authentication');
-      
-      if (isAuthError) {
-        logger.warn('Authentication error detected - checking API keys', {
-          hasPerplexityKey: !!process.env.PERPLEXITY_API_KEY,
-          hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL
-        });
-      }
-      
-      // Fallback to generated answer
-      return NextResponse.json({
-        success: true,
-        query,
-        domain,
-        sessionId,
-        response: generateFallbackAnswer(query, domain),
-        answerType: domain,
-        confidence: 0.85,
-        dataQuality: 'simulated',
-        reasoningSteps: [
-          { step: '1', title: 'Fallback Mode', content: isAuthError ? 'Authentication error - using fallback response. Please check API keys.' : 'Using fallback response generation', status: 'complete' }
-        ],
-        metrics: {
-          processing_time: Date.now() - startTime,
-          quality_score: 0.85,
-          confidence: 0.85,
-          fallback_mode: true,
-          error: isAuthError ? 'Authentication error - API keys may need to be refreshed. Server restart may be required.' : errorMessage
-        }
-      });
     }
-    } // End of else block (expert mode)
+    } // End of else block (expert mode) - closes expert mode else from line 487
+  } // Closes outer try from line 257
   } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
