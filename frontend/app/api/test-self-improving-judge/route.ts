@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 import { UnifiedPermutationPipeline } from '@/lib/unified-permutation-pipeline';
 import { SelfImprovingJudge } from '@/lib/self-improving-judge';
 import { ArcMemoReasoningBank } from '@/lib/arcmemo-reasoning-bank';
@@ -162,4 +165,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
 

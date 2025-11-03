@@ -279,3 +279,4 @@ if (result.optimized_modules) {
 3. **Optimize Adaptation**: Enhance `ReasoningModuleAdapter` with more sophisticated adaptation
 4. **Integrate with Pipeline**: Add reasoning structure generation to `unified-permutation-pipeline.ts`
 
+
