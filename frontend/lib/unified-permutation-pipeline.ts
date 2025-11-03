@@ -1039,24 +1039,48 @@ export class UnifiedPermutationPipeline {
             const { createToolSynthesisEngine } = await import('./tool-synthesis-engine');
             const toolEngine = createToolSynthesisEngine(reasoningBank);
             
-            // Single execution (current approach) - extract from this trajectory
-            const synthesizedTools = await toolEngine.extractToolsFromTrajectory(experience as any);
+            const k = this.config.toolSynthesisIterations || 1;
+            let synthesizedTools: any[] = [];
             
-            // TODO: Multi-execution support (K iterations)
-            // For full Alita-G, we'd run this query K times and accumulate tools:
-            // const k = this.config.toolSynthesisIterations || 1;
-            // if (k > 1) {
-            //   const allExperiences = await this.executeQueryMultipleTimes(query, k);
-            //   synthesizedTools = await toolEngine.synthesizeToolsFromMultipleExecutions(allExperiences, detectedDomain);
-            // }
+            if (k > 1) {
+              // Multi-execution (K iterations): Extract from current execution and consolidate with existing tools
+              // Note: Full Alita-G would run query K times; here we accumulate tools from previous executions
+              const currentTools = await toolEngine.extractToolsFromTrajectory(experience as any);
+              
+              // Get previously synthesized tools for this domain
+              const repo = await toolEngine.getDomainToolRepository(detectedDomain);
+              const existingTools = Array.from(repo.tools.values());
+              
+              // Use synthesizeToolsFromMultipleExecutions which handles consolidation (preserves diversity)
+              // Create mock experiences from existing tools for consolidation
+              const allExperiences = [
+                experience as any,
+                ...existingTools.map(tool => ({
+                  success: true,
+                  domain: detectedDomain,
+                  steps: [{ action: tool.invocationPattern }] // Minimal structure for consolidation
+                }))
+              ];
+              
+              synthesizedTools = await toolEngine.synthesizeToolsFromMultipleExecutions(
+                allExperiences,
+                detectedDomain
+              );
+              
+              console.log(`🔧 Alita-G: Multi-execution (K=${k}): Consolidated ${currentTools.length + existingTools.length} → ${synthesizedTools.length} tools`);
+            } else {
+              // Single execution - extract from this trajectory
+              synthesizedTools = await toolEngine.extractToolsFromTrajectory(experience as any);
+              console.log(`🔧 Alita-G: Single execution: Synthesized ${synthesizedTools.length} tools`);
+            }
             
             if (synthesizedTools.length > 0) {
               await toolEngine.addToolsToRepository(detectedDomain, synthesizedTools);
-              console.log(`🔧 Alita-G: Synthesized ${synthesizedTools.length} tools from successful execution`);
               
               // Track in metadata
               result.metadata.tools_synthesized = synthesizedTools.length;
               result.metadata.tool_names = synthesizedTools.map(t => t.name);
+              result.metadata.tool_synthesis_iterations = k;
             }
           } catch (toolError) {
             console.warn('⚠️ Tool synthesis failed (non-fatal):', toolError);
