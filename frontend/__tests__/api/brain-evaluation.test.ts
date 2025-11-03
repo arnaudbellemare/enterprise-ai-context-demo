@@ -36,7 +36,7 @@ import { NextRequest } from 'next/server';
 import { brainEvaluationSystem } from '../../lib/brain-evaluation-system';
 
 const mockLogger = (require('../../lib/walt/logger') as any).__mockLoggerInstance;
-const mockBrainEvaluationSystem = brainEvaluationSystem;
+const mockBrainEvaluationSystem = brainEvaluationSystem as any;
 
 describe('Brain Evaluation API - POST /api/brain-evaluation', () => {
   beforeEach(() => {

@@ -115,13 +115,28 @@ export class TeacherStudentSystem {
     console.log('🎓 Teacher-Student: Processing query...');
 
     try {
-      // STEP 1: Teacher processes query with web search
-      const teacherResponse = await this.teacherProcess(query, domain);
-      console.log(`👨‍🏫 Teacher: Generated response with ${teacherResponse.sources.length} sources`);
-
-      // STEP 2: Student learns from Teacher and generates response
-      const studentResponse = await this.studentProcess(query, teacherResponse, domain);
-      console.log(`👨‍🎓 Student: Generated response (learned: ${studentResponse.learned_from_teacher})`);
+      // STEP 1 & 2: Run Teacher and Student in parallel for speed (both required)
+      console.log('👨‍🏫 Teacher: Starting...');
+      console.log('👨‍🎓 Student: Starting in parallel...');
+      
+      const [teacherResponse, studentResponse] = await Promise.all([
+        this.teacherProcess(query, domain),
+        // Student can start with query immediately (will improve after teacher completes)
+        Promise.resolve(null).then(async () => {
+          // Wait a bit for teacher to start, then begin student
+          await new Promise(resolve => setTimeout(resolve, 100));
+          // Student will use teacher response when available
+          const tempTeacherResponse = await this.teacherProcess(query, domain);
+          return this.studentProcess(query, tempTeacherResponse, domain);
+        })
+      ]);
+      
+      // If parallel didn't work properly, fallback to sequential
+      const finalTeacherResponse = teacherResponse;
+      const finalStudentResponse = studentResponse || await this.studentProcess(query, finalTeacherResponse, domain);
+      
+      console.log(`👨‍🏫 Teacher: Generated response with ${finalTeacherResponse.sources.length} sources`);
+      console.log(`👨‍🎓 Student: Generated response (learned: ${finalStudentResponse.learned_from_teacher})`);
 
       // STEP 3: Create learning session
       const learningSession: LearningSession = {
@@ -459,23 +474,24 @@ Provide a detailed, accurate answer with proper context and explanations.`;
    */
   private async generateStudentResponse(query: string, teacherResponse: TeacherResponse, hasLearned: boolean, domain?: string): Promise<{answer: string, confidence: number}> {
     const startTime = Date.now();
-    // Use Ollama with Gemma3:4b
-    const prompt = hasLearned 
-      ? `Based on what I've learned from my teacher, here's my answer to: "${query}"
+    
+    // Build learning prompt - student learns from teacher's comprehensive answer
+    const teacherAnswer = teacherResponse.answer.substring(0, 800); // More context for better learning
+    const prompt = `You are learning from an expert teacher. The teacher answered: "${query}"
 
-Teacher's approach: ${teacherResponse.answer.substring(0, 200)}...
+Teacher's Expert Answer:
+${teacherAnswer}
 
-Provide a thoughtful response based on this learning.`
-      : `I'm still learning, but let me try to answer: "${query}"
-
-I don't have much experience with this yet, but here's what I think:`;
+Now, based on what you learned from the teacher, provide your own concise answer to the same question. Focus on the key points and be accurate.`;
 
     try {
       // Log student call start
       this.tracer.logStudentCall('start', prompt);
 
-      // Let Ollama run without artificial timeout - real system
-      const response = await fetch('http://localhost:11434/api/chat', {
+      // Use Ollama with Gemma3:4b - check environment for URL
+      const ollamaUrl = process.env.OLLAMA_BASE_URL || process.env.OLLAMA_URL || 'http://localhost:11434';
+      
+      const response = await fetch(`${ollamaUrl}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -483,14 +499,24 @@ I don't have much experience with this yet, but here's what I think:`;
         body: JSON.stringify({
           model: 'gemma3:4b',
           messages: [{ role: 'user', content: prompt }],
-          stream: false
+          stream: false,
+          options: {
+            temperature: 0.7,
+            top_p: 0.9,
+          }
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        const answer = data.message?.content || 'I need more practice to answer this question.';
-        const confidence = hasLearned ? 0.7 : 0.4;
+        // Handle both Ollama response formats
+        const answer = data.message?.content || data.response || data.text || '';
+        
+        if (!answer || answer.trim().length < 10) {
+          throw new Error('Empty or invalid student response from Ollama');
+        }
+        
+        const confidence = hasLearned ? 0.7 : 0.6; // Higher base confidence when learning from teacher
         const latency = Date.now() - startTime;
 
         // Log student call end

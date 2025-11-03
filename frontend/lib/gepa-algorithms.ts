@@ -55,9 +55,15 @@ export class GEPAAlgorithms {
   private crossoverRate = 0.8;
   private numRolloutsPerStep: number = 24; // Arbor-inspired: default 24 rollouts per step
   private reasoningHeuristics: string[] = []; // Reasoning heuristics to guide mutation
+  private fastMode: boolean = false; // Fast mode for PERMUTATION Lite
 
-  constructor() {
+  constructor(options?: { fastMode?: boolean; maxGenerations?: number; populationSize?: number }) {
     // Initialize GEPA algorithms
+    if (options?.fastMode) {
+      this.fastMode = true;
+      this.maxGenerations = options.maxGenerations || 3; // Fast: 3 generations vs 10
+      this.populationSize = options.populationSize || 20; // Fast: 20 individuals vs 50
+    }
   }
 
   /**

@@ -280,3 +280,5 @@ if (result.optimized_modules) {
 4. **Integrate with Pipeline**: Add reasoning structure generation to `unified-permutation-pipeline.ts`
 
 
+
+

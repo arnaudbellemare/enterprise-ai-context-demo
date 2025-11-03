@@ -153,29 +153,53 @@ export class ToolSynthesisEngine {
    * Detect tool usage from trajectory step
    */
   private detectToolUsage(step: any): any | null {
-    // Detect common tool patterns
+    // Detect common tool patterns - including PERMUTATION Lite actions
     const toolPatterns = {
       web_search: /(?:search|lookup|find|query|research).*web/i,
       calculator: /(?:calculate|compute|solve|math|formula)/i,
+      domain_detection: /domain_detection|detected domain/i,
+      gepa_optimization: /gepa.*optimization|optimized.*gepa/i,
+      memory_retrieval: /memory.*retrieval|retrieved.*memories/i,
+      teacher_student_generation: /teacher.*student|teacher_student/i,
+      rvs_verification: /rvs.*verification|verified.*rvs/i,
       sql: /(?:sql|database|query|select|from|where)/i,
       api_call: /(?:api|endpoint|call|request|fetch)/i,
       data_analysis: /(?:analyze|process|extract|transform)/i
     };
     
-    const action = step.action || '';
-    const thought = step.thought || '';
-    const observation = step.observation || '';
+    const action = (step.action || '').toLowerCase();
+    const thought = (step.thought || '').toLowerCase();
+    const observation = (step.observation || '').toLowerCase();
     
     const combined = `${action} ${thought} ${observation}`;
     
+    // Direct action name matching (for PERMUTATION Lite actions)
+    const directActions: Record<string, string> = {
+      'domain_detection': 'domain_detection',
+      'gepa_optimization': 'gepa_optimization',
+      'memory_retrieval': 'memory_retrieval',
+      'teacher_student_generation': 'teacher_student_generation',
+      'rvs_verification': 'rvs_verification',
+    };
+    
+    // Check direct action match first (more reliable)
+    if (directActions[action]) {
+      return {
+        toolType: directActions[action],
+        invocation: step.action,
+        context: { thought: step.thought, observation: step.observation }
+      };
+    }
+    
+    // Pattern matching for other tools
     for (const [toolType, pattern] of Object.entries(toolPatterns)) {
       if (pattern.test(combined)) {
         return {
           toolType,
-          invocation: action,
-          context: { thought, observation }
+          invocation: step.action,
+          context: { thought: step.thought, observation: step.observation }
         };
-    }
+      }
     }
     
     return null;
