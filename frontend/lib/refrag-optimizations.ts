@@ -338,7 +338,9 @@ export class REFRAGOptimizations {
     // Cache similarity (LRU)
     if (this.similarityCache.size >= this.config.cacheSize) {
       const firstKey = this.similarityCache.keys().next().value;
-      this.similarityCache.delete(firstKey);
+      if (firstKey) {
+        this.similarityCache.delete(firstKey);
+      }
     }
     this.similarityCache.set(key, similarity);
 

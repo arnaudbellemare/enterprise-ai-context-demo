@@ -296,8 +296,9 @@ export class GEPAArborWorkflow {
       }, {} as Record<string, string>),
       best_score: gepaResult.optimized_performance.quality_score,
       best_candidate: {
-        prompts: gepaResult.final_prompts.reduce((acc, p) => {
-          acc[p.signature || 'default'] = p.prompt;
+        prompts: gepaResult.final_prompts.reduce((acc, p: any) => {
+          const key = p.id || p.prompt?.substring(0, 50) || 'default';
+          acc[key] = p.prompt || '';
           return acc;
         }, {} as Record<string, string>)
       }
