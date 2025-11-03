@@ -100,21 +100,50 @@ export class ToolSynthesisEngine {
     
     const extractedTools: ToolPrimitive[] = [];
     
+    if (!experience.steps || experience.steps.length === 0) {
+      console.log('ℹ️ No trajectory steps found in experience');
+      return [];
+    }
+    
+    console.log(`🔍 Extracting tools from ${experience.steps.length} trajectory steps...`);
+    
+    let toolsDetected = 0;
+    let toolsCreated = 0;
+    let toolsFailed = 0;
+    
     for (const step of experience.steps) {
       // Detect tool usage in step.action or step.observation
       const toolUsage = this.detectToolUsage(step);
       
       if (toolUsage) {
-        const tool = await this.createToolPrimitive(
-          toolUsage,
-          experience,
-          step
-        );
+        toolsDetected++;
+        console.log(`   🔧 Detected tool usage: ${toolUsage.toolType}`);
         
-        if (tool) {
-          extractedTools.push(tool);
+        try {
+          const tool = await this.createToolPrimitive(
+            toolUsage,
+            experience,
+            step
+          );
+          
+          if (tool) {
+            extractedTools.push(tool);
+            toolsCreated++;
+          } else {
+            toolsFailed++;
+          }
+        } catch (error) {
+          toolsFailed++;
+          console.warn(`   ⚠️ Failed to create tool from ${toolUsage.toolType}:`, error);
         }
       }
+    }
+    
+    if (toolsDetected === 0) {
+      console.log(`ℹ️ No tool usage patterns detected in ${experience.steps.length} steps`);
+      console.log('   (This is normal for queries that use reasoning/calculations rather than external tools)');
+    } else {
+      console.log(`✅ Tool extraction: ${toolsDetected} detected → ${toolsCreated} created (${toolsFailed} failed)`);
     }
     
     return extractedTools;
@@ -220,7 +249,7 @@ Abstract this into a parameterized tool primitive:
 - Use cases (when to use this tool)
 - Tool type (api|function|composite|mcp)
 
-Return JSON:
+Return ONLY valid JSON (no markdown, no code blocks, no explanations):
 {
   "name": "generalized_tool_name",
   "description": "What this tool does (general, reusable description without task-specific context)",
@@ -235,6 +264,8 @@ Return JSON:
   "code": "def tool_name(params): ..."
 }
 
+CRITICAL: Return ONLY the JSON object, nothing else. No markdown code blocks, no explanations, no text before or after.
+
 IMPORTANT: The generated code MUST follow FastMCP protocol:
 - Function signature with type hints (def tool_name(param: str) -> dict)
 - FastMCP decorator/compatible structure
@@ -242,53 +273,119 @@ IMPORTANT: The generated code MUST follow FastMCP protocol:
 - Standardized parameter types (str, int, float, bool, dict, list)`;
 
     try {
-      const response = await fetch("http://localhost:11434/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "gemma3:4b",
-          messages: [
-            { role: "system", content: "You are an expert at abstracting concrete tool usage into reusable primitives." },
-            { role: "user", content: abstractionPrompt }
-          ],
-          temperature: 0.0 // Deterministic abstraction
-        })
-      });
+      // Use Perplexity API for better JSON generation (instead of Ollama)
+      const { callPerplexityWithRateLimiting } = await import('./brain-skills/llm-helpers');
       
-      const data = await response.json();
-      const content = data.choices[0].message.content;
+      const llmResponse = await callPerplexityWithRateLimiting(
+        [
+          { role: "system", content: "You are an expert at abstracting concrete tool usage into reusable primitives. You MUST return valid JSON only, no markdown, no explanations." },
+          { role: "user", content: abstractionPrompt }
+        ],
+        {
+          model: 'sonar-pro',
+          temperature: 0.0, // Deterministic abstraction
+          maxTokens: 2000
+        }
+      );
       
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const content = llmResponse.content || '';
+      
+      // Extract JSON with improved error handling
+      let jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        // Try finding JSON between markdown code blocks
+        const codeBlockMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+        if (codeBlockMatch) {
+          jsonMatch = [codeBlockMatch[1]];
+        }
+      }
+      
       if (jsonMatch) {
-        const abstracted = JSON.parse(jsonMatch[0]);
+        let jsonText = jsonMatch[0];
         
-        // Verify FastMCP compatibility
-        const fastMCPCompatible = this.verifyFastMCPCompatibility(abstracted);
-        
-        return {
-          id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          name: abstracted.name,
-          description: abstracted.description,
-          parameters: abstracted.parameters || {},
-          useCases: abstracted.useCases || [],
-          domain: experience.domain,
-          abstractionLevel: abstracted.abstractionLevel || 'parameterized',
-          successRate: experience.success ? 1.0 : 0.0,
-          usageCount: 1,
-          toolType: abstracted.toolType || 'function',
-          invocationPattern: step.action,
-          derivedFrom: [],
-          evolvedInto: [],
-          // Store FastMCP metadata if provided
-          metadata: abstracted.code || fastMCPCompatible ? {
-            fastMCPCompatible: fastMCPCompatible,
-            code: abstracted.code || undefined,
-            interface: abstracted.interface || 'FastMCP'
-          } : undefined
-        };
+        // Try to fix common JSON issues from LLMs (multi-pass repair)
+        try {
+          // Pass 1: Remove trailing commas before closing braces/brackets
+          jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1');
+          
+          // Pass 2: Fix unquoted keys (but preserve already-quoted keys)
+          jsonText = jsonText.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, (match, prefix, key) => {
+            // Only quote if not already quoted
+            if (!key.startsWith('"') && !key.startsWith("'")) {
+              return `${prefix}"${key}":`;
+            }
+            return match;
+          });
+          
+          // Pass 3: Fix single quotes to double quotes (careful - only unquoted strings)
+          // Note: This is risky, so we do it carefully
+          // Only replace single quotes that look like JSON keys/string delimiters
+          jsonText = jsonText.replace(/([{,]\s*)'([^']+)':/g, '$1"$2":'); // Fix keys
+          jsonText = jsonText.replace(/:\s*'([^']+)'(?=\s*[,}\]])/g, ': "$1"'); // Fix values
+          
+          // Pass 4: Remove comments (JSON doesn't support comments)
+          jsonText = jsonText.replace(/\/\/.*$/gm, '');
+          jsonText = jsonText.replace(/\/\*[\s\S]*?\*\//g, '');
+          
+          // Pass 5: Fix escaped quotes inside strings (basic)
+          // This is complex, so we'll try parsing and if it fails, provide better error
+          
+          let abstracted: any;
+          try {
+            abstracted = JSON.parse(jsonText);
+          } catch (parseError) {
+            // Try one more aggressive fix: wrap in try-catch and use eval as last resort (safe here)
+            // Actually, let's just provide better error info
+            console.warn('⚠️ JSON parsing failed even after repair attempts');
+            console.warn('   Original JSON text (first 500 chars):', jsonText.substring(0, 500));
+            throw parseError;
+          }
+          
+          // Validate required fields
+          if (!abstracted.name || !abstracted.description) {
+            throw new Error('Missing required fields: name or description');
+          }
+          
+          // Verify FastMCP compatibility
+          const fastMCPCompatible = this.verifyFastMCPCompatibility(abstracted);
+          
+          return {
+            id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            name: abstracted.name,
+            description: abstracted.description,
+            parameters: abstracted.parameters || {},
+            useCases: abstracted.useCases || [],
+            domain: experience.domain,
+            abstractionLevel: abstracted.abstractionLevel || 'parameterized',
+            successRate: experience.success ? 1.0 : 0.0,
+            usageCount: 1,
+            toolType: abstracted.toolType || 'function',
+            invocationPattern: step.action,
+            derivedFrom: [],
+            evolvedInto: [],
+            // Store FastMCP metadata if provided
+            metadata: abstracted.code || fastMCPCompatible ? {
+              fastMCPCompatible: fastMCPCompatible,
+              code: abstracted.code || undefined,
+              interface: abstracted.interface || 'FastMCP'
+            } : undefined
+          };
+        } catch (parseError) {
+          // If JSON parsing still fails, log the actual content for debugging
+          console.warn('⚠️ Tool abstraction JSON parse failed:', parseError);
+          console.warn('   Attempted to parse:', jsonText.substring(0, 500));
+          console.warn('   Full LLM response:', content.substring(0, 1000));
+          return null;
+        }
+      } else {
+        console.warn('⚠️ Tool abstraction: No JSON found in LLM response');
+        console.warn('   Response preview:', content.substring(0, 500));
       }
     } catch (error) {
       console.warn('⚠️ Tool abstraction failed:', error);
+      if (error instanceof Error) {
+        console.warn('   Error details:', error.message);
+      }
     }
     
     return null;
