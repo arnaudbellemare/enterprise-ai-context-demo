@@ -11,6 +11,17 @@
  * Mental Model: Route → Optimize → Learn → Verify (4 items, within 7±2)
  */
 
+// Load environment variables early (before any imports that might need them)
+try {
+  // Try to load dotenv if available (for Node.js scripts)
+  const dotenv = require('dotenv');
+  const { resolve } = require('path');
+  dotenv.config({ path: resolve(process.cwd(), '.env.local') });
+  dotenv.config({ path: resolve(process.cwd(), '.env') });
+} catch (e) {
+  // dotenv not available or already loaded - ignore
+}
+
 import { calculateIRT } from '../irt-calculator';
 import { detectDomain, type Domain } from '../domain-detector';
 // GEPA imported dynamically for faster initial load
@@ -67,6 +78,9 @@ export interface PermutationLiteConfig {
   enableVerification?: boolean; // Layer 4: RVS
   enableTeacherStudent?: boolean; // Teacher-Student-Judge pattern (optional)
   enableToolSynthesis?: boolean; // Alita-G: Synthesize tools from trajectories (part of learning layer)
+  enableREFRAG?: boolean; // REFRAG vector-passing RAG (optional enhancement)
+  enableVectorPassing?: boolean; // Vector-passing mode for REFRAG (31x faster TTFT)
+  vectorPassingProvider?: 'perplexity' | 'ollama'; // LLM provider for vector-passing
   difficultyThreshold?: number; // Routing threshold (default: 0.5)
   maxVerificationIterations?: number; // RVS max iterations
 }
@@ -98,6 +112,7 @@ export interface PermutationLiteResult {
 export class PermutationLitePipeline {
   private config: Required<PermutationLiteConfig>;
   private reasoningBank: ArcMemoReasoningBank;
+  private refragSystem: any = null;
 
   constructor(config?: Partial<PermutationLiteConfig>) {
     this.config = {
@@ -106,20 +121,56 @@ export class PermutationLitePipeline {
       enableVerification: config?.enableVerification ?? true,
       enableTeacherStudent: config?.enableTeacherStudent ?? false, // Off by default (adds complexity)
       enableToolSynthesis: config?.enableToolSynthesis ?? true, // Alita-G: On by default (part of learning)
+      enableREFRAG: config?.enableREFRAG ?? false, // REFRAG off by default
+      enableVectorPassing: config?.enableVectorPassing ?? false, // Vector-passing off by default
+      vectorPassingProvider: config?.vectorPassingProvider ?? 'ollama', // Ollama is free, better for cost-effectiveness
       difficultyThreshold: config?.difficultyThreshold ?? 0.5,
       maxVerificationIterations: config?.maxVerificationIterations ?? 3,
     };
     
     this.reasoningBank = new ArcMemoReasoningBank();
     
-    const componentCount = 4 + (this.config.enableTeacherStudent ? 1 : 0);
+    // Initialize REFRAG if enabled
+    if (this.config.enableREFRAG || this.config.enableVectorPassing) {
+      this.initializeREFRAG();
+    }
+    
+    const componentCount = 4 + (this.config.enableTeacherStudent ? 1 : 0) + (this.config.enableREFRAG ? 1 : 0);
     console.log('🔧 PERMUTATION Lite initialized', {
       layers: 4,
       components: componentCount,
       millersLaw: componentCount <= 7 ? '7±2 compliant' : '⚠️ exceeds 7±2',
       teacherStudent: this.config.enableTeacherStudent ? 'enabled' : 'disabled',
-      alitaG: this.config.enableToolSynthesis ? 'enabled' : 'disabled'
+      alitaG: this.config.enableToolSynthesis ? 'enabled' : 'disabled',
+      refrag: this.config.enableREFRAG ? 'enabled' : 'disabled',
+      vectorPassing: this.config.enableVectorPassing ? `enabled (${this.config.vectorPassingProvider})` : 'disabled'
     });
+  }
+
+  private async initializeREFRAG() {
+    try {
+      const refragModule = await import('../refrag-system');
+      const { createVectorRetriever } = await import('../vector-databases');
+      
+      const retriever = createVectorRetriever('inmemory', {});
+      
+      const refragConfig = {
+        sensorMode: 'adaptive' as const,
+        k: 5,
+        budget: 3,
+        mmrLambda: 0.7,
+        uncertaintyThreshold: 0.5,
+        enableOptimizationMemory: false, // Keep simple for lite
+        enableVectorPassing: this.config.enableVectorPassing,
+        vectorPassingProvider: this.config.vectorPassingProvider,
+        vectorDB: { type: 'inmemory' as const, config: {} }
+      };
+      
+      this.refragSystem = new refragModule.REFRAGSystem(refragConfig, retriever);
+      console.log('   ✅ REFRAG initialized for faster answer generation');
+    } catch (error) {
+      console.warn('⚠️ REFRAG initialization failed (non-fatal):', error);
+    }
   }
 
   /**
@@ -196,7 +247,7 @@ export class PermutationLitePipeline {
         answerConfidence = teacherConfidence;
       }
     } else {
-      answer = await this.generateAnswer(optimizedQuery, routingResult.domain);
+      answer = await this.generateAnswer(optimizedQuery, routingResult.domain, learningResult);
     }
 
     // Send initial answer immediately (before RVS)
@@ -411,7 +462,7 @@ export class PermutationLitePipeline {
       }
     } else {
       // Fallback to generating answer
-      answer = await this.generateAnswer(optimizedQuery, routingResult.domain);
+      answer = await this.generateAnswer(optimizedQuery, routingResult.domain, learningResult);
     }
     
     const answerDuration = Date.now() - answerStartTime;
@@ -836,12 +887,17 @@ export class PermutationLitePipeline {
       console.warn('⚠️ Failed to set LLM client for RVS:', error);
     }
     
+    // Initialize confidence based on answer quality
+    // High-quality answers (>500 chars, structured) start with higher confidence
+    const answerQuality = answer.length > 500 ? 0.85 : 
+                         answer.length > 200 ? 0.75 : 0.65;
+    
     const verificationSteps = [{
       step: 1,
       action: 'Verify and refine answer quality using RVS',
       tool: 'rvs-refinement',
       reasoning: answer.substring(0, 1000),
-      confidence: 0.7,
+      confidence: answerQuality,
     }];
 
     try {
@@ -909,7 +965,50 @@ export class PermutationLitePipeline {
   // HELPER METHODS
   // ============================================================
 
-  private async generateAnswer(query: string, domain: string): Promise<string> {
+  private async generateAnswer(query: string, domain: string, learningResult?: LearningResult): Promise<string> {
+    // Try REFRAG vector-passing first if enabled (fastest)
+    if (this.config.enableVectorPassing && this.refragSystem) {
+      try {
+        const startTime = Date.now();
+        
+        // Use memories from learning if available for context
+        let contextChunks: any[] = [];
+        if (learningResult?.memoriesUsed && learningResult.memoriesUsed > 0) {
+          const memories = await this.reasoningBank.retrieveRelevantMemories(query, domain, learningResult.memoriesUsed);
+          // Convert memories to chunks for REFRAG
+          const { embeddingService } = await import('../embedding-service');
+          contextChunks = await Promise.all(
+            memories.map(async (mem: any) => {
+              const embedding = await embeddingService.generate(mem.content || '');
+              return {
+                id: mem.id || `mem-${Date.now()}`,
+                content: mem.content || '',
+                embedding: embedding.embedding,
+                metadata: { source: 'memory', domain: mem.domain || domain }
+              };
+            })
+          );
+        }
+
+        // Use REFRAG with vector-passing
+        const result = await this.refragSystem.retrieveAndGenerate(query);
+        
+        if (result.generation?.response) {
+          const duration = Date.now() - startTime;
+          console.log(`✅ Used REFRAG vector-passing (${duration}ms, ${result.generation.metrics.ttft_ms}ms TTFT)`);
+          return result.generation.response;
+        } else if (result.retrieval?.chunks.length > 0) {
+          // Fallback: Use retrieved chunks but generate answer normally
+          const chunks = result.retrieval.chunks;
+          const context = chunks.map((c: any) => c.content).join('\n\n');
+          query = `${query}\n\nContext:\n${context}`;
+          console.log(`✅ Used REFRAG retrieval (${chunks.length} chunks)`);
+        }
+      } catch (refragError) {
+        console.warn('⚠️ REFRAG vector-passing failed, falling back to standard:', refragError);
+      }
+    }
+
     // Real LLM call - try multiple approaches
     try {
       // Try Perplexity first (if available) for real data
@@ -923,7 +1022,7 @@ export class PermutationLitePipeline {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'sonar',
+              model: 'sonar-pro',
               messages: [{
                 role: 'user',
                 content: query
@@ -952,7 +1051,7 @@ export class PermutationLitePipeline {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query,
-          preferredModel: 'gemma-3',
+          preferredModel: 'gemma3:4b',
           autoSelectModel: true,
         }),
       });

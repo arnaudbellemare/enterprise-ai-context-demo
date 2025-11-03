@@ -14,6 +14,7 @@
 import { embeddingService, type EmbeddingResult } from './embedding-service';
 import { createLogger } from '../../lib/walt/logger';
 import { z } from 'zod';
+import { VectorPassingLLM, type VectorChunk, type VectorPassingConfig } from './vector-passing-llm';
 
 const logger = createLogger('REFRAG');
 
@@ -48,6 +49,13 @@ export const REFRAGResultSchema = z.object({
     selectedCount: z.number(),
     processingTimeMs: z.number(),
     optimizationLearned: z.boolean(),
+    vectorPassingEnabled: z.boolean().optional(),
+    vectorPassingMetrics: z.object({
+      ttft_ms: z.number(),
+      ttit_ms: z.number(),
+      throughput_improvement: z.number(),
+      vectorTokensSaved: z.number(),
+    }).optional(),
   }),
 });
 
@@ -62,6 +70,8 @@ export interface REFRAGConfig {
   mmrLambda: number;            // MMR diversity parameter (0-1)
   uncertaintyThreshold: number; // Uncertainty sampling threshold
   enableOptimizationMemory: boolean;
+  enableVectorPassing?: boolean; // Pass vectors directly to LLM (31x faster TTFT)
+  vectorPassingProvider?: 'perplexity' | 'ollama'; // LLM provider for vector passing
   vectorDB: {
     type: 'weaviate' | 'pgvector' | 'qdrant' | 'inmemory';
     config: any;
@@ -342,7 +352,7 @@ export class OptimizationStore {
     let bestStrategy: SensorMode = 'adaptive';
     let bestAvgEffectiveness = 0;
 
-    for (const [strategy, effectivenesses] of strategyEffectiveness) {
+    for (const [strategy, effectivenesses] of Array.from(strategyEffectiveness.entries())) {
       const avgEffectiveness = effectivenesses.reduce((a, b) => a + b, 0) / effectivenesses.length;
       if (avgEffectiveness > bestAvgEffectiveness) {
         bestAvgEffectiveness = avgEffectiveness;
@@ -430,6 +440,7 @@ export class REFRAGSystem {
   private optimizationMemory: OptimizationStore;
   private config: REFRAGConfig;
   private embeddingGenerator: EmbeddingGenerator;
+  private vectorPassingLLM: VectorPassingLLM | null = null;
 
   constructor(config: REFRAGConfig, retriever: VectorRetriever) {
     this.config = config;
@@ -441,11 +452,24 @@ export class REFRAGSystem {
     this.optimizationMemory = new OptimizationStore();
     this.embeddingGenerator = new EmbeddingGenerator();
     
+    // Initialize vector-passing LLM if enabled
+    if (config.enableVectorPassing && config.vectorPassingProvider) {
+      this.vectorPassingLLM = new VectorPassingLLM({
+        provider: config.vectorPassingProvider,
+        model: config.vectorPassingProvider === 'ollama' ? 'gemma3:4b' : 'sonar-pro',
+        compressionRatio: 8,
+        quantizationBits: 8,
+        enableSpeculativeDecoding: true
+      });
+      logger.info('Vector-passing enabled', { provider: config.vectorPassingProvider });
+    }
+    
     logger.info('REFRAG System initialized', {
       sensorMode: config.sensorMode,
       k: config.k,
       budget: config.budget,
-      optimizationEnabled: config.enableOptimizationMemory
+      optimizationEnabled: config.enableOptimizationMemory,
+      vectorPassingEnabled: config.enableVectorPassing || false
     });
   }
 
@@ -524,7 +548,8 @@ export class REFRAGSystem {
           totalCandidates: candidates.length,
           selectedCount: selectedChunks.length,
           processingTimeMs: processingTime,
-          optimizationLearned: this.config.enableOptimizationMemory
+          optimizationLearned: this.config.enableOptimizationMemory,
+          vectorPassingEnabled: this.config.enableVectorPassing || false
         }
       };
 
@@ -532,7 +557,8 @@ export class REFRAGSystem {
         candidates: candidates.length,
         selected: selectedChunks.length,
         diversityScore: diversityScore.toFixed(3),
-        processingTimeMs: processingTime
+        processingTimeMs: processingTime,
+        vectorPassingEnabled: this.config.enableVectorPassing
       });
 
       return result;
@@ -541,6 +567,58 @@ export class REFRAGSystem {
       logger.error('REFRAG retrieval failed', error);
       throw error;
     }
+  }
+
+  /**
+   * Generate response using vector-passing if enabled
+   * Returns both the retrieval result and the LLM response
+   */
+  async retrieveAndGenerate(query: string, context?: any): Promise<{
+    retrieval: REFRAGResult;
+    generation?: {
+      response: string;
+      metrics: any;
+      method: 'vector' | 'text_fallback';
+    };
+  }> {
+    const retrieval = await this.retrieve(query, context);
+    
+    // If vector passing is enabled, generate response
+    if (this.config.enableVectorPassing && this.vectorPassingLLM && retrieval.chunks.length > 0) {
+      try {
+        const vectorChunks: VectorChunk[] = retrieval.chunks.map(chunk => ({
+          id: chunk.id,
+          embedding: chunk.embedding || [],
+          content: chunk.content,
+          metadata: chunk.metadata
+        }));
+
+        const generation = await this.vectorPassingLLM.generate(query, vectorChunks);
+        
+        // Update retrieval metadata with vector passing metrics
+        retrieval.metadata.vectorPassingMetrics = {
+          ttft_ms: generation.metrics.ttft_ms,
+          ttit_ms: generation.metrics.ttit_ms,
+          throughput_improvement: generation.metrics.throughput_improvement,
+          vectorTokensSaved: generation.metrics.vectorTokensSaved
+        };
+
+        logger.info('Vector-passing generation completed', {
+          ttft_ms: generation.metrics.ttft_ms,
+          throughput_improvement: generation.metrics.throughput_improvement
+        });
+
+        return {
+          retrieval,
+          generation
+        };
+      } catch (error: any) {
+        logger.error('Vector-passing generation failed', { error: error.message });
+        return { retrieval };
+      }
+    }
+
+    return { retrieval };
   }
 
   private calculateDiversity(chunks: Chunk[]): number {

@@ -6,6 +6,16 @@
  * Learning: Student learns from Teacher's responses
  */
 
+// Load environment variables early (before Supabase initialization)
+try {
+  const dotenv = require('dotenv');
+  const { resolve } = require('path');
+  dotenv.config({ path: resolve(process.cwd(), '.env.local') });
+  dotenv.config({ path: resolve(process.cwd(), '.env') });
+} catch (e) {
+  // dotenv not available or already loaded - ignore
+}
+
 import { createClient } from '@supabase/supabase-js';
 import { callPerplexityWithRateLimiting } from './brain-skills/llm-helpers';
 import { getTracer } from './dspy-observability';
