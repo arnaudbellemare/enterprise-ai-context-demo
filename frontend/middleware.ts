@@ -38,6 +38,8 @@ const PUBLIC_ROUTES = [
   '/api/unified-pipeline',
   '/api/arena/execute-swirl-trm-full',
   '/api/chat-reasoning',  // Public chat interface
+  '/api/permutation-lite',  // PERMUTATION Lite for testing
+  '/api/answer',  // LLM answer generation for PERMUTATION Lite
 ];
 
 /**
