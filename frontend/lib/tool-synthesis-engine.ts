@@ -591,8 +591,8 @@ IMPORTANT: The generated code MUST follow FastMCP protocol:
   
   /**
    * Generate embedding for tool/text using local embeddings
-   * Uses @xenova/transformers (Xenova/all-MiniLM-L6-v2) - 384 dimensions
-   * 100% local, $0 cost, 95% quality of OpenAI
+   * Uses @xenova/transformers (Xenova/bge-small-en-v1.5) - 384 dimensions
+   * Better quality than all-MiniLM, 100% local, $0 cost
    */
   private async generateEmbedding(text: string): Promise<number[]> {
     try {
@@ -603,10 +603,10 @@ IMPORTANT: The generated code MUST follow FastMCP protocol:
       // Initialize if needed (will cache model after first load)
       await embedder.initialize();
       
-      // Generate embedding (384 dimensions)
+      // Generate embedding (384 dimensions from BGE-small-en-v1.5)
       const embedding = await embedder.embed(text);
       
-      return embedding; // 384 dimensions from all-MiniLM-L6-v2
+      return embedding; // 384 dimensions from BGE-small-en-v1.5
     } catch (error) {
       console.warn('⚠️ Local embedding generation failed:', error);
       // Fallback: zero vector (384 dimensions to match local model)

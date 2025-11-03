@@ -2,7 +2,8 @@
  * Local Embeddings - Replace OpenAI with sentence-transformers
  * 
  * Uses @xenova/transformers for 100% local, free embeddings
- * Quality: 95% as good as OpenAI
+ * Model: BAAI/bge-small-en-v1.5 (better than all-MiniLM-L6-v2)
+ * Quality: Better than all-MiniLM (SOTA for compact models)
  * Cost: $0 (vs $1-5/month for OpenAI)
  * Privacy: 100% local (no data sent to cloud)
  */
@@ -14,7 +15,7 @@ env.allowLocalModels = true;
 env.useBrowserCache = false;
 
 export interface EmbeddingConfig {
-  model_name: string;              // Default: 'Xenova/all-MiniLM-L6-v2'
+  model_name: string;              // Default: 'Xenova/bge-small-en-v1.5' (better than all-MiniLM)
   pooling: 'mean' | 'cls';         // Pooling strategy
   normalize: boolean;              // L2 normalization
   batch_size: number;              // Batch size for efficiency
@@ -34,7 +35,7 @@ export class LocalEmbeddings {
 
   constructor(config: Partial<EmbeddingConfig> = {}) {
     this.config = {
-      model_name: config.model_name || 'Xenova/all-MiniLM-L6-v2',
+      model_name: config.model_name || 'Xenova/bge-small-en-v1.5', // Better than all-MiniLM-L6-v2
       pooling: config.pooling || 'mean',
       normalize: config.normalize ?? true,
       batch_size: config.batch_size || 32
@@ -64,9 +65,14 @@ export class LocalEmbeddings {
       this.initialized = true;
       const loadTime = Date.now() - startTime;
 
+      // Get actual dimensions from model output (BGE-small is 384, same as all-MiniLM)
+      const testOutput = await this.model('test', { pooling: 'mean', normalize: false });
+      const actualDims = testOutput.data.length;
+
       console.log(`✅ Model loaded in ${loadTime}ms`);
       console.log(`   Model: ${this.config.model_name}`);
-      console.log(`   Dimensions: 384 (all-MiniLM-L6-v2)`);
+      console.log(`   Dimensions: ${actualDims}`);
+      console.log(`   Quality: Better than all-MiniLM-L6-v2 (BGE models are SOTA)`);
       console.log(`   Cost: $0 (100% local!)`);
 
     } catch (error) {
@@ -125,10 +131,12 @@ export class LocalEmbeddings {
     console.log(`   Avg time per text: ${(execution_time_ms / texts.length).toFixed(2)}ms`);
     console.log(`   Cost: $0 (local!)`);
 
+    const actualDims = embeddings[0]?.length || 384;
+    
     return {
       embeddings,
       model: this.config.model_name,
-      dimensions: embeddings[0]?.length || 384,
+      dimensions: actualDims, // BGE-small: 384 dims
       execution_time_ms
     };
   }
@@ -186,9 +194,10 @@ export class LocalEmbeddings {
    * Get model info
    */
   getInfo(): { model: string; dimensions: number; cost: string; local: boolean } {
+    // BGE-small-en-v1.5 is 384 dimensions (same as all-MiniLM but better quality)
     return {
       model: this.config.model_name,
-      dimensions: 384,
+      dimensions: 384, // BGE-small has 384 dims
       cost: '$0 (local)',
       local: true
     };
