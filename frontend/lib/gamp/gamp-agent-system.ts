@@ -800,81 +800,119 @@ export class GAMPMultiAgentSystem {
     // Convert to GAMP paths
     const gampPaths = await this.pathExplorer.convertPathsToGAMP(graphPaths, validTriplets);
     
-    // Step 3: Domain Experts evaluate scientific rationality
-    console.log('   🎓 Domain Experts: Evaluating scientific rationality...');
-    const evaluatedPaths = await Promise.all(
-      gampPaths.map(async (path) => {
-        const expertEvaluations = await Promise.all(
-          this.domainExperts.map(async (expert) => {
-            const evaluation = await expert.evaluatePath(path);
-            return {
-              agentId: expert['agentId'],
-              score: evaluation.score,
-              reasoning: evaluation.reasoning,
-            };
-          })
-        );
-        
-        const avgRationality = expertEvaluations.reduce((sum, e) => sum + e.score, 0) / expertEvaluations.length;
-        
-        return {
-          ...path,
-          scientificRationality: avgRationality,
-          evaluations: [
-            ...path.evaluations,
-            ...expertEvaluations,
-          ],
-        };
+    // Step 3-5: Fully parallel agent evaluations across all paths
+    // OPTIMIZATION: Run ALL agent evaluations in parallel (across all paths and all agents)
+    // This maximizes parallelism by flattening the nested structure
+    // 
+    // QUALITY PRESERVATION: This parallel execution does NOT impact quality because:
+    // 1. Each agent is stateless - no shared mutable state
+    // 2. All agents read-only access to inputs (path, knowledgeGraph, sourceDocuments)
+    // 3. Results are combined deterministically after all evaluations complete
+    // 4. Same inputs produce same outputs regardless of execution order
+    // 5. historicalPaths is read-only and not modified during evaluation
+    console.log('   🎓 Domain Experts, Innovation Assessor, Fact Checker: Evaluating all paths and agents in parallel...');
+    
+    const historicalPaths: NoveltyPath[] = []; // Could be loaded from previous discoveries (read-only, safe for parallel access)
+    
+    // Create all evaluation tasks upfront (flattened structure)
+    const evaluationTasks: Array<{
+      pathIndex: number;
+      path: GAMPPath;
+      type: 'domain_expert' | 'innovation' | 'fact_check';
+      expertIndex?: number;
+    }> = [];
+    
+    gampPaths.forEach((path, pathIndex) => {
+      // Add all domain expert evaluations
+      this.domainExperts.forEach((_, expertIndex) => {
+        evaluationTasks.push({ pathIndex, path, type: 'domain_expert', expertIndex });
+      });
+      // Add innovation assessment
+      evaluationTasks.push({ pathIndex, path, type: 'innovation' });
+      // Add fact checking
+      evaluationTasks.push({ pathIndex, path, type: 'fact_check' });
+    });
+    
+    // Execute ALL evaluations in parallel (maximum parallelism)
+    const evaluationResults = await Promise.all(
+      evaluationTasks.map(async (task) => {
+        if (task.type === 'domain_expert') {
+          const expert = this.domainExperts[task.expertIndex!];
+          const evaluation = await expert.evaluatePath(task.path);
+          return {
+            pathIndex: task.pathIndex,
+            type: 'domain_expert' as const,
+            expertIndex: task.expertIndex!,
+            agentId: expert['agentId'],
+            score: evaluation.score,
+            reasoning: evaluation.reasoning,
+          };
+        } else if (task.type === 'innovation') {
+          const innovation = await this.innovationAssessor.assessPath(task.path, historicalPaths);
+          return {
+            pathIndex: task.pathIndex,
+            type: 'innovation' as const,
+            innovation,
+          };
+        } else {
+          const verification = await this.factChecker.verifyPath(
+            task.path,
+            knowledgeGraph,
+            sourceDocuments
+          );
+          return {
+            pathIndex: task.pathIndex,
+            type: 'fact_check' as const,
+            verification,
+          };
+        }
       })
     );
     
-    // Step 4: Innovation Assessor scores novelty
-    console.log('   💡 Innovation Assessor: Scoring novelty...');
-    const historicalPaths: NoveltyPath[] = []; // Could be loaded from previous discoveries
-    const noveltyScoredPaths = await Promise.all(
-      evaluatedPaths.map(async (path) => {
-        const innovation = await this.innovationAssessor.assessPath(path, historicalPaths);
-        return {
-          ...path,
-          novelty: innovation.overallScore,
-          evaluations: [
-            ...path.evaluations,
-            {
-              agentId: 'innovation_assessor',
-              score: innovation.overallScore,
-              reasoning: `Novelty: ${innovation.novelty.toFixed(2)}, Impact: ${innovation.potentialImpact.toFixed(2)}`,
-            },
-          ],
-        };
-      })
-    );
-    
-    // Step 5: Fact Checker verifies reliability
-    console.log('   ✅ Fact Checker: Verifying factuality...');
-    const verifiedPaths = await Promise.all(
-      noveltyScoredPaths.map(async (path) => {
-        const verification = await this.factChecker.verifyPath(
-          path,
-          knowledgeGraph,
-          sourceDocuments
-        );
-        return {
-          ...path,
-          factuality: verification.factuality,
-          verified: verification.verified,
-          evaluations: [
-            ...path.evaluations,
-            {
-              agentId: 'fact_checker',
-              score: verification.factuality,
-              reasoning: verification.verified
-                ? `Verified: ${verification.evidence.length} evidence points`
-                : `Issues: ${verification.issues.join(', ')}`,
-            },
-          ],
-        };
-      })
-    );
+    // Reassemble results by path
+    const verifiedPaths = gampPaths.map((path, pathIndex) => {
+      // Extract all evaluations for this path
+      const pathEvaluations = evaluationResults.filter(r => r.pathIndex === pathIndex);
+      
+      const expertEvaluations = pathEvaluations
+        .filter((r): r is typeof r & { type: 'domain_expert' } => r.type === 'domain_expert')
+        .map(r => ({
+          agentId: r.agentId,
+          score: r.score,
+          reasoning: r.reasoning,
+        }));
+      
+      const innovationResult = pathEvaluations.find((r): r is typeof r & { type: 'innovation' } => r.type === 'innovation');
+      const factCheckResult = pathEvaluations.find((r): r is typeof r & { type: 'fact_check' } => r.type === 'fact_check');
+      
+      const avgRationality = expertEvaluations.length > 0
+        ? expertEvaluations.reduce((sum, e) => sum + e.score, 0) / expertEvaluations.length
+        : 0.5;
+      
+      return {
+        ...path,
+        scientificRationality: avgRationality,
+        novelty: innovationResult?.innovation.overallScore || path.novelty || 0.5,
+        factuality: factCheckResult?.verification.factuality || 0.5,
+        verified: factCheckResult?.verification.verified || false,
+        evaluations: [
+          ...path.evaluations,
+          ...expertEvaluations,
+          ...(innovationResult ? [{
+            agentId: 'innovation_assessor',
+            score: innovationResult.innovation.overallScore,
+            reasoning: `Novelty: ${innovationResult.innovation.novelty.toFixed(2)}, Impact: ${innovationResult.innovation.potentialImpact.toFixed(2)}`,
+          }] : []),
+          ...(factCheckResult ? [{
+            agentId: 'fact_checker',
+            score: factCheckResult.verification.factuality,
+            reasoning: factCheckResult.verification.verified
+              ? `Verified: ${factCheckResult.verification.evidence.length} evidence points`
+              : `Issues: ${factCheckResult.verification.issues.join(', ')}`,
+          }] : []),
+        ],
+      };
+    });
     
     // Step 6: Chief Scientist ranks and returns
     console.log('   👨‍🔬 Chief Scientist: Ranking final paths...');

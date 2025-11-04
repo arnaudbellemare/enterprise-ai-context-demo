@@ -197,8 +197,54 @@ export class PipelineCache {
 
     return cleaned;
   }
+
+  /**
+   * Cache GAMP graph construction result
+   */
+  getGAMPGraph(query: string, domain: string): KnowledgeGraph | null {
+    const key = this.generateKey(query, domain, 'gamp:graph');
+    return this.get<KnowledgeGraph>(key);
+  }
+
+  setGAMPGraph(query: string, domain: string, graph: KnowledgeGraph, ttl?: number): void {
+    const key = this.generateKey(query, domain, 'gamp:graph');
+    this.set(key, graph, ttl || 3600000); // 1 hour default
+  }
+
+  /**
+   * Cache GAMP path discovery result
+   */
+  getGAMPPaths(query: string, domain: string): any[] | null {
+    const key = this.generateKey(query, domain, 'gamp:paths');
+    return this.get<any[]>(key);
+  }
+
+  setGAMPPaths(query: string, domain: string, paths: any[], ttl?: number): void {
+    const key = this.generateKey(query, domain, 'gamp:paths');
+    this.set(key, paths, ttl || 900000); // 15 minutes default
+  }
+
+  /**
+   * Cache DO-RAG hybrid retrieval result
+   */
+  getDORAGRetrieval(query: string, domain: string): any | null {
+    const key = this.generateKey(query, domain, 'dorag:retrieval');
+    return this.get<any>(key);
+  }
+
+  setDORAGRetrieval(query: string, domain: string, retrieval: any, ttl?: number): void {
+    const key = this.generateKey(query, domain, 'dorag:retrieval');
+    this.set(key, retrieval, ttl || 1800000); // 30 minutes default
+  }
 }
 
 // Singleton instance
 export const pipelineCache = new PipelineCache();
+
+// Type definition for KnowledgeGraph (imported from gamp modules)
+// This is a placeholder - actual type should be imported from gamp modules
+interface KnowledgeGraph {
+  nodes: Array<{ id: string; label: string; type?: string; [key: string]: any }>;
+  edges: Array<{ id: string; from: string; to: string; [key: string]: any }>;
+}
 

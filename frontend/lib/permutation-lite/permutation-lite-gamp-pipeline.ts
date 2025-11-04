@@ -48,6 +48,7 @@ import { doragHybridRetrieval } from '../gamp/dorag-hybrid-retrieval';
 
 // Chain Association Activation imports
 import { chainAssociationActivation } from '../gamp/chain-association-activation';
+import { pipelineCache } from '../pipeline-cache';
 
 // ============================================================
 // INTERFACES
@@ -623,8 +624,20 @@ export class PermutationLiteGAMPPipeline {
     const startTime = Date.now();
 
     try {
-      // Build lightweight knowledge graph from ReasoningBank memories
-      const knowledgeGraph = await this.buildLightweightKnowledgeGraph(query, domain);
+      // Check cache for graph construction result
+      const cacheKey = `gamp:graph:${domain}:${query.substring(0, 100)}`;
+      const cachedGraph = pipelineCache.get<KnowledgeGraph>(cacheKey);
+      
+      let knowledgeGraph: KnowledgeGraph;
+      if (cachedGraph) {
+        console.log('   💾 GAMP: Using cached knowledge graph');
+        knowledgeGraph = cachedGraph;
+      } else {
+        // Build lightweight knowledge graph from ReasoningBank memories
+        knowledgeGraph = await this.buildLightweightKnowledgeGraph(query, domain);
+        // Cache graph for 1 hour (TTL: 3600000ms)
+        pipelineCache.set(cacheKey, knowledgeGraph, 3600000);
+      }
 
       console.log(`   🔬 GAMP: Built graph with ${knowledgeGraph.nodes.length} nodes, ${knowledgeGraph.edges.length} edges`);
 
@@ -641,21 +654,39 @@ export class PermutationLiteGAMPPipeline {
       // DO-RAG Hybrid Retrieval: Combine graph + vector with novelty scoring
       console.log('   🔍 DO-RAG: Performing hybrid retrieval with novelty scoring...');
       
-      const vectorChunks = sourceDocuments.map(doc => ({
-        content: doc.content,
-        metadata: doc.metadata,
-      }));
+      // Check cache for hybrid retrieval result
+      const retrievalCacheKey = `gamp:retrieval:${domain}:${query.substring(0, 100)}`;
+      let hybridRetrieval: any;
       
-      const hybridRetrieval = await doragHybridRetrieval.retrieve(
-        query,
-        knowledgeGraph,
-        vectorChunks
-      );
+      const cachedRetrieval = pipelineCache.get<any>(retrievalCacheKey);
+      if (cachedRetrieval) {
+        console.log('   💾 DO-RAG: Using cached hybrid retrieval');
+        hybridRetrieval = cachedRetrieval;
+      } else {
+        const vectorChunks = sourceDocuments.map(doc => ({
+          content: doc.content,
+          metadata: doc.metadata,
+        }));
+        
+        hybridRetrieval = await doragHybridRetrieval.retrieve(
+          query,
+          knowledgeGraph,
+          vectorChunks
+        );
+        // Cache retrieval for 30 minutes (TTL: 1800000ms)
+        pipelineCache.set(retrievalCacheKey, hybridRetrieval, 1800000);
+      }
       
       console.log(`   ✓ Hybrid retrieval: ${hybridRetrieval.fusedResults.length} fused results, avg novelty: ${hybridRetrieval.statistics.avgNovelty.toFixed(3)}`);
       
       // Enhance source documents with hybrid retrieval results
-      const enhancedDocuments = hybridRetrieval.fusedResults.map((result, i) => ({
+      const enhancedDocuments = hybridRetrieval.fusedResults.map((result: {
+        content: string;
+        source: 'graph' | 'vector' | 'hybrid';
+        score: number;
+        novelty?: number;
+        metadata?: any;
+      }, i: number) => ({
         id: `hybrid-${i}`,
         content: result.content,
         metadata: {
@@ -667,12 +698,24 @@ export class PermutationLiteGAMPPipeline {
       }));
       
       // Discover paths using GAMP multi-agent system (with DO-RAG enhanced retrieval)
-      const paths = await gampAgentSystem.discoverPaths(
-        query,
-        knowledgeGraph,
-        enhancedDocuments,
-        domain
-      );
+      // Check cache for path discovery result
+      const pathsCacheKey = `gamp:paths:${domain}:${query.substring(0, 100)}`;
+      let paths: any[];
+      
+      const cachedPaths = pipelineCache.get<any[]>(pathsCacheKey);
+      if (cachedPaths) {
+        console.log('   💾 GAMP: Using cached paths');
+        paths = cachedPaths;
+      } else {
+        paths = await gampAgentSystem.discoverPaths(
+          query,
+          knowledgeGraph,
+          enhancedDocuments,
+          domain
+        );
+        // Cache paths for 15 minutes (TTL: 900000ms) - shorter TTL as paths may change
+        pipelineCache.set(pathsCacheKey, paths, 900000);
+      }
 
       // Chain Association Activation: Self-supervised learning with gradient optimization
       console.log('   🔗 Chain Association Activation: Optimizing path activations...');
@@ -680,7 +723,7 @@ export class PermutationLiteGAMPPipeline {
       // Convert GAMP paths to Path format for chain activation
       const pathObjects: Path[] = paths.map(p => {
         // Find nodes in knowledge graph that match path
-        const pathNodes = p.nodes.map(nodeId => 
+        const pathNodes = p.nodes.map((nodeId: string) => 
           knowledgeGraph.nodes.find(n => n.id === nodeId || n.label.includes(nodeId))
         ).filter(Boolean) as GraphNode[];
         
