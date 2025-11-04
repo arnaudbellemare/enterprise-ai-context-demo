@@ -5,6 +5,10 @@
 
 **Context**: Our system already has multi-agent collaboration, but GAMP provides a structured framework for scientific discovery pathfinding.
 
+**Related Documents**:
+- `frontend/__tests__/lib/gamp/GAMP_APPLICATIONS.md` - Ideal domains and use cases for GAMP
+- `frontend/__tests__/lib/gamp/GAMP_INTEGRATION_STATUS.md` - Current integration status
+
 ---
 
 ## Core GAMP Concepts → Our System Mapping

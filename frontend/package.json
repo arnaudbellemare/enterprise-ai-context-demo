@@ -11,6 +11,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:improved": "jest --testPathPatterns='(brain-evaluation|benchmark-fast|advanced-learning-methods)' --coverage",
+    "test:e2e": "jest --config=jest.config.e2e.js",
+    "test:e2e:ollama": "ENABLE_OLLAMA_TESTS=true jest --config=jest.config.e2e.js",
     "promptmii:preprocess": "node scripts/promptmii-preprocessing.js",
     "promptmii:postprocess": "node scripts/promptmii-postprocessing.js",
     "promptmii:train": "node scripts/promptmii-training.js",

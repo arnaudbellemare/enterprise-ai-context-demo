@@ -1,9 +1,9 @@
-// Jest setup file for global test configuration
+// Jest setup for E2E tests with REAL API calls
+// Use this setup when ENABLE_OLLAMA_TESTS=true
+
 import '@testing-library/jest-dom'
 
-// Use real environment variables for tests (from .env.local or system env)
-// These will be used by real Supabase client and API calls
-// NOTE: Do not hardcode secrets here - use environment variables or .env.local
+// Use real environment variables for tests
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
   process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.SUPABASE_URL || ''
 }
@@ -17,15 +17,10 @@ if (!process.env.PERPLEXITY_API_KEY) {
   process.env.PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY || ''
 }
 
-// Global test utilities
+// Enable verbose console output for E2E tests
 global.console = {
   ...console,
-  // Suppress console logs during tests (uncomment to see logs)
-  // log: jest.fn(),
-  // debug: jest.fn(),
-  // info: jest.fn(),
-  // warn: jest.fn(),
-  // error: jest.fn(),
+  // Keep all console output for debugging E2E tests
 }
 
 // Mock Next.js router
@@ -46,7 +41,7 @@ jest.mock('next/navigation', () => ({
   },
 }))
 
-// Mock Next.js server components (Request/Response)
+// Mock Next.js server components
 global.Request = class MockRequest {
   constructor(input, init) {
     this.url = typeof input === 'string' ? input : input.url
@@ -72,7 +67,6 @@ global.Response = class MockResponse {
   }
 }
 
-// Mock NextResponse specifically
 jest.mock('next/server', () => ({
   NextResponse: {
     json: (data, init) => {
@@ -88,56 +82,33 @@ jest.mock('next/server', () => ({
 }))
 
 // ============================================================================
-// Web Streams API Mocks (Required by AI SDK and Streaming APIs)
+// REAL FETCH FOR E2E TESTS
 // ============================================================================
-// These are browser/Web APIs not available in Node.js < 18 or Jest's jsdom
-// They're required when importing AI SDK code that uses eventsource-parser
+// IMPORTANT: This setup uses REAL fetch for integration testing
+// Tests will make REAL HTTP requests to:
+// - Ollama (http://localhost:11434)
+// - Perplexity (https://api.perplexity.ai)
+// - Other external APIs
 
-// Fetch configuration for tests
-// IMPORTANT: Use REAL fetch (Node.js 18+ has native fetch)
-// Tests will make REAL HTTP requests - this is intentional for integration testing
-// If services aren't available, requests will timeout/fail (tests error handling)
-
-// Node.js 18+ includes native fetch - use it directly
-// This is REAL fetch, not a mock - tests will make real HTTP requests
-if (typeof global.fetch === 'undefined') {
-  // In Node.js 18+, fetch is available globally
-  // We're using real fetch, which means:
-  // - Real HTTP requests to Ollama (http://localhost:11434)
-  // - Real HTTP requests to Perplexity (https://api.perplexity.ai)
-  // - Real timeouts if services aren't running
-  // - Real responses if services ARE running
-  
-  // For Jest's test environment, we need to ensure fetch is available
-  // Node.js 22 (current version) has native fetch
-  if (typeof fetch !== 'undefined') {
-    global.fetch = fetch;
-  } else {
-    // Fallback: Try to use node-fetch if available
-    try {
-      const nodeFetch = require('node-fetch');
-      global.fetch = nodeFetch;
-    } catch (e) {
-      // Last resort: Provide a mock that fails immediately
-      // This is only for environments without fetch support
-      global.fetch = jest.fn((url, options) => {
-        return Promise.resolve({
-          ok: false,
-          status: 500,
-          statusText: 'fetch not available',
-          json: async () => ({ error: 'fetch not available' }),
-          text: async () => 'fetch not available',
-          headers: new Map(),
-        });
-      });
-    }
+// Ensure fetch is available globally (Node.js 18+ native fetch)
+if (typeof globalThis.fetch === 'function') {
+  // Use native fetch from Node.js 18+
+  global.fetch = globalThis.fetch;
+  console.log('✅ Using native Node.js fetch for E2E tests');
+} else {
+  // Try to import node-fetch as fallback
+  try {
+    const nodeFetch = require('node-fetch');
+    global.fetch = nodeFetch;
+    console.log('✅ Using node-fetch for E2E tests');
+  } catch (e) {
+    console.error('❌ ERROR: fetch not available for E2E tests');
+    console.error('Node.js 18+ required, or install node-fetch');
+    throw new Error('fetch not available - E2E tests cannot run');
   }
 }
 
-// Mock TransformStream for Node.js environment
-// Required by: eventsource-parser (AI SDK dependency)
-// Available in: Node.js 18+, browsers
-// Why: AI SDK imports this immediately when loaded, causing test failures
+// Mock Web Streams API (required by AI SDK)
 if (!global.TransformStream) {
   global.TransformStream = class TransformStream {
     constructor() {
@@ -159,9 +130,6 @@ if (!global.TransformStream) {
   }
 }
 
-// Mock ReadableStream for Node.js environment
-// Required by: AI SDK streaming responses, TransformStream
-// Available in: Node.js 18+, browsers
 if (!global.ReadableStream) {
   global.ReadableStream = class ReadableStream {
     constructor() {
@@ -174,7 +142,6 @@ if (!global.ReadableStream) {
   }
 }
 
-// Mock WritableStream for completeness (if needed by streaming APIs)
 if (!global.WritableStream) {
   global.WritableStream = class WritableStream {
     constructor() {
@@ -186,3 +153,10 @@ if (!global.WritableStream) {
     }
   }
 }
+
+// Log test environment setup
+console.log('📝 E2E Test Environment:');
+console.log(`  - ENABLE_OLLAMA_TESTS: ${process.env.ENABLE_OLLAMA_TESTS || 'false'}`);
+console.log(`  - Ollama URL: ${process.env.OLLAMA_HOST || 'http://localhost:11434'}`);
+console.log(`  - Real fetch: ${typeof global.fetch === 'function' ? 'YES' : 'NO'}`);
+console.log(`  - Supabase: ${process.env.NEXT_PUBLIC_SUPABASE_URL ? 'CONFIGURED' : 'NOT CONFIGURED'}`);

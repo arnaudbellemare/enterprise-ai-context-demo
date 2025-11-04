@@ -33,6 +33,7 @@
     "test:walt": "npx tsx test-walt-basic.ts",
     "test:walt:complete": "npx tsx test-walt-complete.ts",
     "test:walt:native": "npx tsx test-walt-native.ts",
+    "test:gamp-pipeline": "npx tsx test-gamp-pipeline-api.ts",
     "eval:quick": "npx tsx scripts/run-permutation-evals.ts quick",
     "eval:full": "npx tsx scripts/run-permutation-evals.ts full",
     "eval:single": "npx tsx scripts/run-permutation-evals.ts single",

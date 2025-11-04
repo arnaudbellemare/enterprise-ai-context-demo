@@ -416,6 +416,6 @@ describe('GAMPMultiAgentSystem', () => {
       const paths = await system.discoverPaths('test query', mockGraph, [], 'biology');
 
       expect(Array.isArray(paths)).toBe(true);
-    }, 20000);
+    }, 30000); // 30 second timeout for full pipeline
   });
 });
