@@ -289,12 +289,31 @@ export class PathExplorationAgent {
     return paths.map((path, index) => {
       const triplet = triplets[index] || triplets[0];
       
+      // Extract P-S-E from path nodes if triplet not available
+      let problem = triplet?.problem;
+      let solution = triplet?.solution;
+      let effect = triplet?.effect;
+      
+      if (!problem || !solution || !effect) {
+        // Try to extract from path nodes
+        const nodeLabels = path.nodes.map(n => n.label || n.id).join(' ');
+        if (!problem) {
+          problem = `Research problem related to: ${nodeLabels.substring(0, 100)}`;
+        }
+        if (!solution) {
+          solution = `Solution approach involving: ${nodeLabels.substring(0, 100)}`;
+        }
+        if (!effect) {
+          effect = `Expected effect: ${nodeLabels.substring(0, 100)}`;
+        }
+      }
+      
       return {
         id: `path_${index}`,
         nodes: path.nodes.map(n => n.label || n.id),
-        problem: triplet?.problem || 'Unknown problem',
-        solution: triplet?.solution || 'Unknown solution',
-        effect: triplet?.effect || 'Unknown effect',
+        problem: problem || 'Research problem to be identified',
+        solution: solution || 'Solution approach to be determined',
+        effect: effect || 'Expected effect to be analyzed',
         novelty: path.novelty || 0.5,
         scientificRationality: 0.5, // Will be evaluated by domain experts
         factuality: 0.5, // Will be evaluated by fact-checker

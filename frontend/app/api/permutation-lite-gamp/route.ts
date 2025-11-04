@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       enableLearning,
       enableVerification,
       gampConfig: {
-        ...DEFAULT_CONFIG.gampConfig,
+        ...(DEFAULT_CONFIG.gampConfig || {}),
         ...gampConfig
       }
     };
@@ -147,10 +147,10 @@ export async function POST(req: NextRequest) {
         routing: result.metadata.routing,
 
         optimization: result.metadata.optimization ? {
-          strategy: result.metadata.optimization.strategy,
-          qualityScore: result.metadata.optimization.qualityScore,
+          optimizedPrompt: result.metadata.optimization.optimizedPrompt,
+          quality: result.metadata.optimization.quality,
           cost: result.metadata.optimization.cost,
-          latency: result.metadata.optimization.latency
+          generations: result.metadata.optimization.generations
         } : undefined,
 
         graphReasoning: result.metadata.graphReasoning ? {
@@ -166,28 +166,22 @@ export async function POST(req: NextRequest) {
         },
 
         learning: result.metadata.learning ? {
-          memoriesRetrieved: result.metadata.learning.memoriesRetrieved,
-          patternsApplied: result.metadata.learning.patternsApplied,
-          stored: result.metadata.learning.stored
+          memoriesStored: result.metadata.learning.memoriesStored,
+          memoriesUsed: result.metadata.learning.memoriesUsed,
+          successRate: result.metadata.learning.successRate
         } : undefined,
 
         verification: result.metadata.verification ? {
           verified: result.metadata.verification.verified,
-          score: result.metadata.verification.score,
-          refinementCount: result.metadata.verification.refinementCount,
-          depth: result.metadata.verification.depth
+          confidence: result.metadata.verification.confidence,
+          iterations: result.metadata.verification.iterations,
+          refinedAnswer: result.metadata.verification.refinedAnswer
         } : undefined,
 
         // Performance metrics
         performance: {
           totalTime,
-          layerTimes: {
-            routing: result.metadata.routing?.executionTime,
-            optimization: result.metadata.optimization?.latency,
-            graphReasoning: result.metadata.graphReasoning?.executionTime,
-            learning: result.metadata.learning?.retrievalTime,
-            verification: result.metadata.verification?.verificationTime
-          }
+          graphReasoningTime: result.metadata.graphReasoning?.executionTime
         }
       }
     };
@@ -235,18 +229,18 @@ function determineNonActivationReason(
   const domain = routing.domain?.toLowerCase() || '';
   const difficulty = routing.difficulty || 0;
 
-  const isScientificDomain = config.gampConfig.scientificDomains?.some(
+  const isScientificDomain = config.gampConfig?.scientificDomains?.some(
     d => domain.includes(d.toLowerCase())
   );
 
-  const isHighDifficulty = difficulty > (config.gampConfig.irtThreshold || 0.7);
+  const isHighDifficulty = difficulty > (config.gampConfig?.irtThreshold || 0.7);
 
   if (!isScientificDomain) {
-    return `Domain "${domain}" is not a scientific domain. Scientific domains: ${config.gampConfig.scientificDomains.join(', ')}`;
+    return `Domain "${domain}" is not a scientific domain. Scientific domains: ${config.gampConfig?.scientificDomains?.join(', ') || 'none configured'}`;
   }
 
   if (!isHighDifficulty) {
-    return `Query difficulty (${difficulty.toFixed(2)}) is below threshold (${config.gampConfig.irtThreshold}). GAMP only activates for high-difficulty queries.`;
+    return `Query difficulty (${difficulty.toFixed(2)}) is below threshold (${config.gampConfig?.irtThreshold || 0.7}). GAMP only activates for high-difficulty queries.`;
   }
 
   return 'Unknown reason - check configuration and routing metadata';
@@ -279,7 +273,7 @@ export async function GET() {
         maxGraphNodes: 50,
         maxGraphEdges: 100,
         maxPaths: 5,
-        scientificDomains: DEFAULT_CONFIG.gampConfig.scientificDomains,
+        scientificDomains: DEFAULT_CONFIG.gampConfig?.scientificDomains || ['biology', 'chemistry', 'physics'],
         irtThreshold: 0.7
       }
     },
@@ -321,7 +315,7 @@ export async function GET() {
         'enableGAMP must be true in configuration'
       ],
 
-      scientificDomains: DEFAULT_CONFIG.gampConfig.scientificDomains,
+      scientificDomains: DEFAULT_CONFIG.gampConfig?.scientificDomains || ['biology', 'chemistry', 'physics'],
 
       examples: {
         willActivate: [

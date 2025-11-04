@@ -10,6 +10,7 @@ export interface GraphNode {
   label: string;
   type: 'problem' | 'solution' | 'effect' | 'entity';
   metadata?: any;
+  embedding?: number[]; // For hybrid retrieval
 }
 
 export interface GraphEdge {

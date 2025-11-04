@@ -31,7 +31,7 @@ try {
 import { calculateIRT } from '../irt-calculator';
 import { detectDomain, type Domain } from '../domain-detector';
 import { RVS, type RVSResult } from '../trm';
-import { ArcMemoReasoningBank } from '../arcmemo-reasoning-bank';
+import { ArcMemoReasoningBank, type Experience } from '../arcmemo-reasoning-bank';
 import { teacherStudentSystem } from '../teacher-student-system';
 import { AdvancedContextSystem } from '../advanced-context-system';
 
@@ -39,7 +39,15 @@ import { AdvancedContextSystem } from '../advanced-context-system';
 import { gampAgentSystem } from '../gamp/gamp-agent-system';
 import { knowledgeGraphBuilder, type EnrichedChunkWithPSE } from '../gamp/knowledge-graph-builder';
 import { problemSolutionEffectExtractor, type ProblemSolutionEffect } from '../rag/problem-solution-effect-extractor';
-import type { KnowledgeGraph, Path } from '../gamp/graph-path-explorer';
+import type { KnowledgeGraph, Path, GraphNode } from '../gamp/graph-path-explorer';
+
+// DO-RAG integration imports
+import { doragMultiLevelExtractor } from '../gamp/dorag-multilevel-extractor';
+import { doragRefinement } from '../gamp/dorag-refinement';
+import { doragHybridRetrieval } from '../gamp/dorag-hybrid-retrieval';
+
+// Chain Association Activation imports
+import { chainAssociationActivation } from '../gamp/chain-association-activation';
 
 // ============================================================
 // INTERFACES
@@ -426,6 +434,47 @@ export class PermutationLiteGAMPPipeline {
     }
 
     // ============================================================
+    // DO-RAG REFINEMENT (if GAMP was activated)
+    // ============================================================
+    if (graphReasoningResult && this.config.enableGAMP) {
+      console.log('\n🔄 DO-RAG REFINEMENT: Applying multi-stage refinement...');
+      
+      try {
+        // Get knowledge graph and retrieved context for refinement
+        const knowledgeGraph = await this.buildLightweightKnowledgeGraph(query, routingResult.domain);
+        const retrievedContext = [
+          ...(learningResult?.memoriesUsed ? ['Retrieved from ReasoningBank memories'] : []),
+          ...(graphReasoningResult.topPath ? [
+            `Problem: ${graphReasoningResult.topPath.problem}`,
+            `Solution: ${graphReasoningResult.topPath.solution}`,
+            `Effect: ${graphReasoningResult.topPath.effect}`,
+          ] : []),
+        ];
+        
+        const refinementResult = await doragRefinement.refine(
+          answer,
+          query,
+          knowledgeGraph,
+          retrievedContext
+        );
+        
+        answer = refinementResult.condensedAnswer;
+        
+        console.log(`   ✓ Refinement complete: ${refinementResult.verified ? 'Verified' : 'Hallucinations detected'}`);
+        console.log(`   ✓ Confidence: ${refinementResult.confidence.toFixed(3)}`);
+        if (refinementResult.hallucinations.length > 0) {
+          console.log(`   ⚠️  Detected ${refinementResult.hallucinations.length} potential hallucinations`);
+        }
+        if (refinementResult.citations.length > 0) {
+          console.log(`   📚 Generated ${refinementResult.citations.length} citations`);
+        }
+      } catch (error) {
+        console.warn('⚠️ DO-RAG refinement failed (non-fatal):', error);
+        // Continue with original answer
+      }
+    }
+
+    // ============================================================
     // LAYER 4: VERIFICATION
     // ============================================================
     let verificationResult: VerificationResult | undefined;
@@ -503,8 +552,8 @@ export class PermutationLiteGAMPPipeline {
       domain => routingResult.domain.toLowerCase().includes(domain.toLowerCase())
     );
 
-    // Check if difficulty is high enough
-    const isHighDifficulty = routingResult.difficulty > (gampConfig.irtThreshold ?? 0.7);
+    // Check if difficulty is high enough (use >= to include threshold value)
+    const isHighDifficulty = routingResult.difficulty >= (gampConfig.irtThreshold ?? 0.7);
 
     return isScientificDomain && isHighDifficulty;
   }
@@ -589,25 +638,110 @@ export class PermutationLiteGAMPPipeline {
         },
       }));
 
-      // Discover paths using GAMP multi-agent system
+      // DO-RAG Hybrid Retrieval: Combine graph + vector with novelty scoring
+      console.log('   🔍 DO-RAG: Performing hybrid retrieval with novelty scoring...');
+      
+      const vectorChunks = sourceDocuments.map(doc => ({
+        content: doc.content,
+        metadata: doc.metadata,
+      }));
+      
+      const hybridRetrieval = await doragHybridRetrieval.retrieve(
+        query,
+        knowledgeGraph,
+        vectorChunks
+      );
+      
+      console.log(`   ✓ Hybrid retrieval: ${hybridRetrieval.fusedResults.length} fused results, avg novelty: ${hybridRetrieval.statistics.avgNovelty.toFixed(3)}`);
+      
+      // Enhance source documents with hybrid retrieval results
+      const enhancedDocuments = hybridRetrieval.fusedResults.map((result, i) => ({
+        id: `hybrid-${i}`,
+        content: result.content,
+        metadata: {
+          ...result.metadata,
+          source: result.source,
+          novelty: result.novelty,
+          score: result.score,
+        },
+      }));
+      
+      // Discover paths using GAMP multi-agent system (with DO-RAG enhanced retrieval)
       const paths = await gampAgentSystem.discoverPaths(
         query,
         knowledgeGraph,
-        sourceDocuments,
+        enhancedDocuments,
         domain
       );
 
-      const executionTime = Date.now() - startTime;
+      // Chain Association Activation: Self-supervised learning with gradient optimization
+      console.log('   🔗 Chain Association Activation: Optimizing path activations...');
+      
+      // Convert GAMP paths to Path format for chain activation
+      const pathObjects: Path[] = paths.map(p => {
+        // Find nodes in knowledge graph that match path
+        const pathNodes = p.nodes.map(nodeId => 
+          knowledgeGraph.nodes.find(n => n.id === nodeId || n.label.includes(nodeId))
+        ).filter(Boolean) as GraphNode[];
+        
+        // Find edges connecting these nodes
+        const pathEdges = knowledgeGraph.edges.filter(e => 
+          pathNodes.some(n => n.id === e.from) && pathNodes.some(n => n.id === e.to)
+        );
+        
+        return {
+          nodes: pathNodes.length > 0 ? pathNodes : knowledgeGraph.nodes.slice(0, Math.min(5, knowledgeGraph.nodes.length)),
+          edges: pathEdges,
+          score: p.overallScore || 0.5,
+          novelty: p.novelty,
+          length: pathNodes.length,
+        };
+      });
+      
+      const chainAssociations = await chainAssociationActivation.activateChainAssociations(
+        pathObjects,
+        knowledgeGraph,
+        query
+      );
 
-      // Extract top path
-      const topPath = paths.length > 0 ? {
-        problem: paths[0].problem,
-        solution: paths[0].solution,
-        effect: paths[0].effect,
-        novelty: paths[0].novelty,
-        scientificRationality: paths[0].scientificRationality,
-        factuality: paths[0].factuality,
-        overallScore: paths[0].overallScore,
+      // Enhance paths with activation information
+      const enhancedPaths = paths.map((path, index) => {
+        const association = chainAssociations[index];
+        if (association) {
+          return {
+            ...path,
+            activationScore: association.performance,
+            convergence: association.convergence,
+            transferFunction: association.transferFunction,
+          };
+        }
+        return path;
+      });
+
+      // Re-rank paths by activation performance (lower convergence = better)
+      const rankedPaths = enhancedPaths.sort((a, b) => {
+        const scoreA = ((a as any).activationScore || a.overallScore || 0) * (1 - Math.min(((a as any).convergence || 1), 1));
+        const scoreB = ((b as any).activationScore || b.overallScore || 0) * (1 - Math.min(((b as any).convergence || 1), 1));
+        return scoreB - scoreA;
+      });
+
+      const executionTime = Date.now() - startTime;
+      
+      console.log(`   ✓ Chain Activation: Avg convergence ${chainAssociations.reduce((sum, c) => sum + c.convergence, 0) / chainAssociations.length}, optimized ${rankedPaths.length} paths`);
+
+      // Extract top path (use ranked paths if available)
+      const finalPaths = rankedPaths.length > 0 ? rankedPaths : paths;
+      const topPath = finalPaths.length > 0 ? {
+        problem: finalPaths[0].problem,
+        solution: finalPaths[0].solution,
+        effect: finalPaths[0].effect,
+        novelty: finalPaths[0].novelty,
+        scientificRationality: finalPaths[0].scientificRationality,
+        factuality: finalPaths[0].factuality,
+        overallScore: finalPaths[0].overallScore,
+        activationScore: (finalPaths[0] as any).activationScore,
+        convergence: (finalPaths[0] as any).convergence,
+        transferFunction: (finalPaths[0] as any).transferFunction,
       } : null;
 
       // Count agent evaluations
@@ -638,6 +772,7 @@ export class PermutationLiteGAMPPipeline {
 
   /**
    * Build lightweight knowledge graph from ReasoningBank memories
+   * Uses DO-RAG multi-level extraction for enhanced graph construction
    * Extracts P-S-E triplets and builds graph with size limits
    */
   private async buildLightweightKnowledgeGraph(
@@ -647,7 +782,19 @@ export class PermutationLiteGAMPPipeline {
     // Retrieve relevant memories
     const memories = await this.reasoningBank.retrieveRelevantMemories(query, domain, 10);
 
-    // Extract P-S-E triplets from memories
+    // DO-RAG Integration: Use multi-level extraction for enhanced graph building
+    console.log('   🔬 DO-RAG: Applying multi-level extraction...');
+    
+    const chunks = memories.slice(0, 10).map(m => ({
+      id: m.id,
+      content: m.content,
+      domain,
+    }));
+    
+    // Extract multi-level entities and relations
+    const multiLevelResult = await doragMultiLevelExtractor.extract(chunks, domain);
+    
+    // Extract P-S-E triplets from memories (legacy support)
     const triplets: ProblemSolutionEffect[] = [];
 
     for (const memory of memories.slice(0, 10)) { // Limit to 10 memories
@@ -665,6 +812,8 @@ export class PermutationLiteGAMPPipeline {
         continue;
       }
     }
+    
+    console.log(`   ✅ DO-RAG: Extracted ${multiLevelResult.entities.length} entities across ${Object.keys(multiLevelResult.statistics).length} levels`);
 
     // If no triplets extracted, create a simple graph from query
     if (triplets.length === 0) {
@@ -680,7 +829,7 @@ export class PermutationLiteGAMPPipeline {
     }
 
     // Create enriched chunks
-    const chunks: EnrichedChunkWithPSE[] = triplets.map((triplet, i) => ({
+    const enrichedChunks: EnrichedChunkWithPSE[] = triplets.map((triplet, i) => ({
       id: `chunk-${i}`,
       content: `${triplet.problem} ${triplet.solution} ${triplet.effect}`,
       problemSolutionEffect: triplet,
@@ -688,12 +837,12 @@ export class PermutationLiteGAMPPipeline {
     }));
 
     // Build graph (don't use stored triplets for lightweight graph)
-    const graph = await knowledgeGraphBuilder.buildFromEnrichedChunks(chunks, false);
+    const graph = await knowledgeGraphBuilder.buildFromEnrichedChunks(enrichedChunks, false);
 
     // Apply size limits
     if (!this.config.gampConfig) return graph;
-    const maxNodes = this.config.gampConfig.maxGraphNodes;
-    const maxEdges = this.config.gampConfig.maxGraphEdges;
+    const maxNodes = this.config.gampConfig.maxGraphNodes || 50;
+    const maxEdges = this.config.gampConfig.maxGraphEdges || 100;
 
     if (graph.nodes.length > maxNodes) {
       graph.nodes = graph.nodes.slice(0, maxNodes);
@@ -737,7 +886,7 @@ export class PermutationLiteGAMPPipeline {
 
   private async executeTeacherStudent(query: string, domain: string): Promise<any> {
     try {
-      return await teacherStudentSystem.processQuery({ query, domain });
+      return await teacherStudentSystem.processQuery(query, domain);
     } catch (error) {
       console.error('❌ Teacher-Student failed:', error);
       return null;
@@ -748,14 +897,21 @@ export class PermutationLiteGAMPPipeline {
     query: string,
     answer: string
   ): Promise<VerificationResult> {
-    const rvs = new RVS(this.config.maxVerificationIterations);
-    const result = await rvs.verify({ query, response: answer, domain: 'general' });
+    const rvs = new RVS({ max_iterations: this.config.maxVerificationIterations });
+    const steps: any[] = [{
+      step: 1,
+      action: 'answer',
+      tool: 'response',
+      reasoning: answer,
+      result: answer
+    }];
+    const result = await rvs.processQuery(query, steps);
 
     return {
       verified: result.verified,
       confidence: result.confidence,
       iterations: result.iterations,
-      refinedAnswer: result.refinedResponse,
+      refinedAnswer: result.answer,
     };
   }
 
@@ -765,21 +921,75 @@ export class PermutationLiteGAMPPipeline {
     learningResult?: LearningResult,
     graphResult?: GraphReasoningResult
   ): Promise<string> {
-    // Generate answer with context from learning and graph reasoning
-    let context = '';
+    // Build comprehensive context
+    let context = `You are an expert in ${domain}. Provide a comprehensive answer to the following query.\n\n`;
+    context += `Query: ${query}\n\n`;
 
+    // Add GAMP insights
     if (graphResult?.topPath) {
-      context += `\n\n## Research Insight (GAMP):\n`;
-      context += `Problem: ${graphResult.topPath.problem}\n`;
-      context += `Solution: ${graphResult.topPath.solution}\n`;
-      context += `Effect: ${graphResult.topPath.effect}\n`;
-      context += `(Novelty: ${graphResult.topPath.novelty.toFixed(2)}, Rationality: ${graphResult.topPath.scientificRationality.toFixed(2)})\n`;
+      context += `## Research Insights from Graph Analysis:\n`;
+      context += `Problem Identified: ${graphResult.topPath.problem}\n`;
+      context += `Solution Approach: ${graphResult.topPath.solution}\n`;
+      context += `Expected Effect: ${graphResult.topPath.effect}\n`;
+      context += `Novelty Score: ${graphResult.topPath.novelty.toFixed(2)}\n`;
+      context += `Scientific Rationality: ${graphResult.topPath.scientificRationality.toFixed(2)}\n`;
+      context += `Factuality Score: ${graphResult.topPath.factuality.toFixed(2)}\n\n`;
     }
 
-    const fullQuery = context ? `${context}\n\nQuery: ${query}` : query;
+    // Add learning insights
+    if (learningResult?.memoriesUsed && learningResult.memoriesUsed > 0) {
+      context += `## Relevant Knowledge from Memory:\n`;
+      context += `Using ${learningResult.memoriesUsed} relevant memories from past experiences.\n\n`;
+    }
 
-    // Simple answer generation (would use LLM in production)
-    return `Answer based on ${domain} domain analysis${graphResult ? ' with GAMP graph reasoning' : ''}: ${fullQuery.substring(0, 500)}...`;
+    context += `Please provide a detailed, accurate answer based on the above information.`;
+
+    // Generate answer using Ollama
+    try {
+      const response = await fetch("http://localhost:11434/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gemma3:4b",
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert ${domain} researcher and analyst. Provide comprehensive, accurate answers based on the provided context.`
+            },
+            {
+              role: "user",
+              content: context
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const answer = data.choices[0].message.content;
+        return answer || `Answer based on ${domain} domain analysis: ${query.substring(0, 200)}...`;
+      }
+    } catch (error) {
+      console.warn('⚠️ LLM answer generation failed, using fallback:', error);
+    }
+
+    // Fallback: Generate structured answer from context
+    let fallbackAnswer = `Based on ${domain} domain analysis`;
+    
+    if (graphResult?.topPath) {
+      fallbackAnswer += ` with graph reasoning insights:\n\n`;
+      fallbackAnswer += `The research identifies the problem: ${graphResult.topPath.problem}\n\n`;
+      fallbackAnswer += `A potential solution approach involves: ${graphResult.topPath.solution}\n\n`;
+      fallbackAnswer += `This could lead to the following effects: ${graphResult.topPath.effect}\n\n`;
+      fallbackAnswer += `The path shows ${(graphResult.topPath.novelty * 100).toFixed(0)}% novelty and ${(graphResult.topPath.scientificRationality * 100).toFixed(0)}% scientific rationality.\n\n`;
+    }
+    
+    fallbackAnswer += `Regarding your query: ${query}\n\n`;
+    fallbackAnswer += `This analysis combines domain expertise with graph-based reasoning to provide insights into the problem space.`;
+    
+    return fallbackAnswer;
   }
 
   private calculateQualityScore(
@@ -815,16 +1025,31 @@ export class PermutationLiteGAMPPipeline {
     paths: any[]
   ): Promise<void> {
     try {
-      await this.reasoningBank.storeMemory({
+      // ReasoningBank uses Experience-based storage, not direct storeMemory
+      // Create a simple experience from the execution
+      const experience: Experience = {
+        taskId: `permutation-${Date.now()}-${Math.random().toString(36).substring(7)}`,
         query,
-        response: answer,
         domain,
-        quality_score: qualityScore,
-        metadata: {
-          gamp_paths: paths.length,
-          timestamp: new Date().toISOString(),
-        },
-      });
+        steps: [
+          {
+            thought: `Query processing with quality score ${qualityScore.toFixed(3)}`,
+            action: 'execute',
+            observation: `Generated answer with ${paths.length} GAMP paths`,
+            timestamp: new Date(),
+          },
+        ],
+        success: qualityScore >= 0.7, // Consider it successful if quality is good
+        finalResult: answer,
+        irtAbility: qualityScore,
+        irtConfidence: qualityScore,
+      };
+      
+      // Extract and consolidate memories from experience
+      const memories = await this.reasoningBank.extractMemoryFromExperience(experience);
+      if (memories.length > 0) {
+        await this.reasoningBank.consolidateMemories(memories);
+      }
     } catch (error) {
       console.warn('⚠️ Memory storage failed (non-fatal):', error);
     }
