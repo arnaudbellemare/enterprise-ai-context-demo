@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adaptiveThresholdManager } from '@/lib/adaptive-thresholds';
+import { wuWeiMetrics } from '@/lib/wu-wei-metrics';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,7 +34,7 @@ let performanceMetrics: PerformanceMetrics = {
   alerts: []
 };
 
-// Performance thresholds for alerts
+// Legacy fixed thresholds (for backward compatibility)
 const PERFORMANCE_THRESHOLDS = {
   maxLatency: 10000, // 10 seconds
   maxErrorRate: 0.1, // 10%
@@ -61,6 +63,17 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'record':
         await recordMetrics(component, metrics);
+        
+        // Update adaptive thresholds
+        if (metrics.latency !== undefined) {
+          await adaptiveThresholdManager.updateThreshold('latency', metrics.latency);
+        }
+        if (metrics.errorRate !== undefined) {
+          await adaptiveThresholdManager.updateThreshold('error_rate', metrics.errorRate);
+        }
+        if (metrics.cost !== undefined) {
+          await adaptiveThresholdManager.updateThreshold('cost_per_request', metrics.cost);
+        }
         break;
       case 'reset':
         performanceMetrics = {
@@ -77,6 +90,22 @@ export async function POST(request: NextRequest) {
           alerts: []
         };
         break;
+      
+      case 'get_adaptive_thresholds':
+        const states = adaptiveThresholdManager.getAllStates();
+        return NextResponse.json({
+          success: true,
+          adaptiveThresholds: states,
+          timestamp: new Date().toISOString()
+        });
+      
+      case 'get_wu_wei_metrics':
+        const wuWei = wuWeiMetrics.calculateWuWeiMetrics();
+        return NextResponse.json({
+          success: true,
+          wuWeiMetrics: wuWei,
+          timestamp: new Date().toISOString()
+        });
       default:
         return NextResponse.json(
           { error: 'Invalid action. Use: record or reset' },

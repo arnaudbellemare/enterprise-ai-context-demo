@@ -13,7 +13,9 @@
  * 6. Emergent Strategy Tracking
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import { embeddingService } from './embedding-service';
+import { reversibilityAuditor } from './reversibility-auditing';
+import { noveltyScorer, type Path } from './gamp/novelty-scorer';
 
 // ============================================================================
 // STRUCTURED MEMORY SCHEMA (ReasoningBank)
@@ -48,6 +50,19 @@ export interface ReasoningMemoryItem {
   
   // Vector embedding for retrieval
   embedding?: number[];
+  
+  // Novelty scoring (GAMP framework)
+  novelty?: number;  // 0-1: Novelty score based on frequency
+  noveltyLastCalculated?: Date;
+  
+  // Path frequency tracking (GAMP framework)
+  pathFrequency?: number;  // How many times this path pattern has been used
+  pathNodes?: string[];  // Graph path nodes representing this memory
+  gampPathIds?: string[];  // IDs of GAMP paths that correspond to this memory
+  
+  // Strategy classification
+  strategyType?: 'innovative' | 'conventional';  // Classification based on novelty
+  innovativenessScore?: number;  // 0-1: How innovative vs conventional (1 = highly innovative)
 }
 
 // ============================================================================
@@ -94,14 +109,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 export class ArcMemoReasoningBank {
   private memoryBank: Map<string, ReasoningMemoryItem> = new Map();
-  private anthropic: Anthropic;
   private supabase: SupabaseClient | null = null;
   
-  constructor(anthropicApiKey?: string) {
-    this.anthropic = new Anthropic({
-      apiKey: anthropicApiKey || process.env.ANTHROPIC_API_KEY || "",
-    });
-    
+  constructor() {
     // Initialize Supabase client if available
     this.initSupabase();
   }
@@ -282,12 +292,52 @@ export class ArcMemoReasoningBank {
     // Fallback: In-memory search
     const domainMemories = Array.from(this.memoryBank.values())
       .filter(m => m.domain === domain || m.domain === "general")
+      .map(m => {
+        // Calculate novelty if not already calculated or stale (> 24 hours)
+        if (!m.novelty || !m.noveltyLastCalculated || 
+            (Date.now() - m.noveltyLastCalculated.getTime()) > 24 * 60 * 60 * 1000) {
+          const memoryPath = this.memoryToPath(m);
+          const allMemoryPaths = Array.from(this.memoryBank.values())
+            .filter(other => other.id !== m.id)
+            .map(other => this.memoryToPath(other));
+          
+          noveltyScorer.addHistoricalPaths(allMemoryPaths);
+          const noveltyScore = noveltyScorer.calculateNovelty(memoryPath, allMemoryPaths);
+          
+          m.novelty = noveltyScore.novelty;
+          m.noveltyLastCalculated = new Date();
+        }
+        return m;
+      })
+      .map(m => {
+        // Calculate innovativeness score if not set
+        if (m.innovativenessScore === undefined) {
+          m.innovativenessScore = this.calculateInnovativenessScore(m);
+          m.strategyType = (m.innovativenessScore > 0.6) ? 'innovative' : 'conventional';
+        }
+        return m;
+      })
       .sort((a, b) => {
-        // Score by: success rate * usage count * recency
-        const scoreA = a.successRate * Math.log(a.usageCount + 1) / 
-          (Date.now() - a.lastUsed.getTime());
-        const scoreB = b.successRate * Math.log(b.usageCount + 1) / 
-          (Date.now() - b.lastUsed.getTime());
+        // Enhanced scoring: novelty-weighted (50% novelty, 50% success-based)
+        // Novelty is now weighted more heavily to favor innovative strategies
+        const noveltyWeight = 0.5;
+        const successWeight = 0.5;
+        
+        // Calculate novelty score (considering path frequency)
+        const noveltyA = this.getEffectiveNovelty(a);
+        const noveltyB = this.getEffectiveNovelty(b);
+        
+        // Score combines: success rate, novelty, usage (weighted), recency
+        const scoreA = (
+          successWeight * a.successRate * Math.log(a.usageCount + 1) +
+          noveltyWeight * noveltyA * 10
+        ) / (Date.now() - a.lastUsed.getTime() + 1); // +1 to avoid division by zero
+        
+        const scoreB = (
+          successWeight * b.successRate * Math.log(b.usageCount + 1) +
+          noveltyWeight * noveltyB * 10
+        ) / (Date.now() - b.lastUsed.getTime() + 1);
+        
         return scoreB - scoreA;
       });
     
@@ -402,9 +452,13 @@ export class ArcMemoReasoningBank {
       experience.success = experience.selfJudgment.success;
     }
     
-    const extractionPrompt = this.buildExtractionPrompt(experience, '');
+    // Build prompt with separate static and dynamic parts (good architecture even without caching)
+    const { staticInstructions, dynamicContent } = this.buildExtractionPromptWithCaching(experience);
     
-    // Call LLM for extraction (temperature 1.0 as per paper)
+    // Combine static + dynamic for Ollama (gemma3:4b) - cost-effective local model
+    const fullPrompt = `${staticInstructions}\n\n${dynamicContent}`;
+    
+    // Call Ollama API (temperature 1.0 as per paper)
     // Add timeout to prevent hangs (30 seconds)
     try {
       const timeoutPromise = new Promise((_, reject) => {
@@ -425,7 +479,7 @@ export class ArcMemoReasoningBank {
             },
             {
               role: "user",
-              content: extractionPrompt
+              content: fullPrompt
             }
           ],
           temperature: 1.0, // As per paper Appendix A.2
@@ -440,8 +494,10 @@ export class ArcMemoReasoningBank {
       }
       
       const data = await response.json();
+      const responseText = data.choices[0].message.content;
+      
       const extractedItems = this.parseExtractedMemories(
-        data.choices[0].message.content,
+        responseText,
         experience
       );
       
@@ -467,19 +523,22 @@ export class ArcMemoReasoningBank {
     }
   }
   
-  private buildExtractionPrompt(
-    experience: Experience,
-    strategy: string
-  ): string {
+  /**
+   * Build extraction prompt with separate static and dynamic parts
+   * Good architecture pattern (static instructions + dynamic content)
+   */
+  private buildExtractionPromptWithCaching(
+    experience: Experience
+  ): { staticInstructions: string; dynamicContent: string } {
     // Exact prompts from ReasoningBank paper Appendix A.1 (Figure 8)
     
     const trajectory = experience.steps.map((s, i) => 
       `<think> ${s.thought} </think>\n<action> ${s.action} </action>`
     ).join('\n');
     
-    if (experience.success) {
-      // SUCCESS extraction prompt (left panel, Figure 8)
-      return `You are an expert in web navigation. You will be given a user query, the corresponding trajectory that represents how an agent successfully accomplished the task.
+    // Static instructions (cacheable) - same across all extractions
+    const staticInstructions = experience.success
+      ? `You are an expert in web navigation. You will be given a user query, the corresponding trajectory that represents how an agent successfully accomplished the task.
 
 ## Guidelines
 
@@ -506,14 +565,8 @@ Your output must strictly follow the Markdown format shown below:
 ## Description <one sentence summary of the memory item>
 
 ## Content <1-3 sentences describing the insights learned to successfully accomplishing the task>
-\`\`\`
-
-Query: ${experience.query}
-
-Trajectory: ${trajectory}`;
-    } else {
-      // FAILURE extraction prompt (right panel, Figure 8)
-      return `You are an expert in web navigation. You will be given a user query, the corresponding trajectory that represents how an agent attempted to resolve the task but failed.
+\`\`\``
+      : `You are an expert in web navigation. You will be given a user query, the corresponding trajectory that represents how an agent attempted to resolve the task but failed.
 
 ## Guidelines
 
@@ -540,12 +593,26 @@ Your output must strictly follow the Markdown format shown below:
 ## Description <one sentence summary of the memory item>
 
 ## Content <1-3 sentences describing the insights learned to successfully accomplishing the task>
-\`\`\`
+\`\`\``;
 
-Query: ${experience.query}
+    // Dynamic content (not cached) - changes per extraction
+    const dynamicContent = `Query: ${experience.query}
 
 Trajectory: ${trajectory}`;
-    }
+
+    return { staticInstructions, dynamicContent };
+  }
+
+  /**
+   * Legacy method - kept for backward compatibility
+   * @deprecated Use buildExtractionPromptWithCaching instead
+   */
+  private buildExtractionPrompt(
+    experience: Experience,
+    strategy: string
+  ): string {
+    const { staticInstructions, dynamicContent } = this.buildExtractionPromptWithCaching(experience);
+    return `${staticInstructions}\n\n${dynamicContent}`;
   }
   
   private parseExtractedMemories(
@@ -654,7 +721,35 @@ The detailed final state of the webpage: \`\`\`md ${JSON.stringify(experience.fi
 
 Bot response to the user: ${JSON.stringify(experience.finalResult)}`;
 
+    // Combine static instructions with dynamic content for Ollama
+    const fullPrompt = `You are an expert in evaluating the performance of a web navigation agent. The agent is designed to help a human user navigate a website to complete a task. Given the user's intent, the agent's action history, the final state of the webpage, and the agent's response to the user, your goal is to decide whether the agent's execution is successful or not.
+
+There are three types of tasks:
+
+1. Information seeking: The user wants to obtain certain information from the webpage, such as the information of a product, reviews, map info, comparison of map routes, etc. The bot's response must contain the information the user wants, or explicitly state that the information is not available. Otherwise, e.g. the bot encounters an exception and respond with the error content, the task is considered a failure. Besides, be careful about the sufficiency of the agent's actions. For example, when asked to list the top-searched items in a shop, the agent should order the items by the number of searches, and then return the top items. If the ordering action is missing, the task is likely to fail.
+
+2. Site navigation: The user wants to navigate to a specific page. Carefully examine the bot's action history and the final state of the webpage to determine whether the bot successfully completes the task. No need to consider the bot's response.
+
+3. Content modification: The user wants to modify the content of a webpage or configuration. Carefully examine the bot's action history and the final state of the webpage to determine whether the bot successfully completes the task. No need to consider the bot's response.
+
+*IMPORTANT*
+
+Format your response into two lines as shown below:
+
+Thoughts: <your thoughts and reasoning process>
+
+Status: "success" or "failure"
+
+User Intent: ${experience.query}
+
+Trajectory: ${trajectory}
+
+The detailed final state of the webpage: \`\`\`md ${JSON.stringify(experience.finalResult)} \`\`\`
+
+Bot response to the user: ${JSON.stringify(experience.finalResult)}`;
+
     try {
+      // Use Ollama (gemma3:4b) - cost-effective local model
       const response = await fetch("http://localhost:11434/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -662,12 +757,16 @@ Bot response to the user: ${JSON.stringify(experience.finalResult)}`;
           model: "gemma3:4b",
           messages: [
             { role: "system", content: "You are an expert evaluator of web navigation agent performance." },
-            { role: "user", content: prompt }
+            { role: "user", content: fullPrompt }
           ],
           temperature: 0.0, // Deterministic as per paper
           max_tokens: 500
         })
       });
+      
+      if (!response.ok) {
+        throw new Error(`Ollama API returned status ${response.status}`);
+      }
       
       const data = await response.json();
       const content = data.choices[0].message.content;
@@ -708,22 +807,68 @@ Bot response to the user: ${JSON.stringify(experience.finalResult)}`;
      * 3. Merging (combine similar strategies)
      * 4. Evolution tracking (detect emergent patterns)
      * 5. Persist to Supabase (new)
+     * 6. Reversibility auditing (new - can undo operations)
      */
     
-    for (const memory of newMemories) {
-      // Check for similar existing memories
-      const similar = await this.findSimilarMemories(memory);
-      
-      if (similar.length > 0) {
-        // Merge or evolve
-        await this.mergeOrEvolveMemory(memory, similar);
-      } else {
-        // Add new
-        this.memoryBank.set(memory.id, memory);
+    // Create snapshot for reversibility
+    const snapshot = {
+      memoryBankSize: this.memoryBank.size,
+      memoryIds: Array.from(this.memoryBank.keys()),
+      newMemoryIds: newMemories.map(m => m.id),
+    };
+    
+    // Log decision for reversibility
+    const decisionLog = await reversibilityAuditor.logDecision(
+      'consolidate_memories',
+      {
+        newMemoriesCount: newMemories.length,
+        memoryIds: newMemories.map(m => m.id),
+      },
+      snapshot
+    );
+    
+    try {
+      for (const memory of newMemories) {
+        // Check for similar existing memories
+        const similar = await this.findSimilarMemories(memory);
         
-        // Persist to Supabase
-        await this.persistMemoryToSupabase(memory);
+        if (similar.length > 0) {
+          // Merge or evolve (with reversibility)
+          const beforeState = {
+            memoryId: memory.id,
+            similarIds: similar.map(s => s.id),
+            existingMemory: this.memoryBank.get(similar[0].id),
+          };
+          
+          await this.mergeOrEvolveMemory(memory, similar);
+          
+          // Register undo action for merge
+          reversibilityAuditor.registerUndoAction(decisionLog.id, async () => {
+            // Restore original memory state
+            if (beforeState.existingMemory) {
+              this.memoryBank.set(beforeState.existingMemory.id, beforeState.existingMemory);
+            }
+          });
+        } else {
+          // Add new (with reversibility)
+          this.memoryBank.set(memory.id, memory);
+          
+          // Persist to Supabase
+          await this.persistMemoryToSupabase(memory);
+          
+          // Register undo action for add
+          reversibilityAuditor.registerUndoAction(decisionLog.id, async () => {
+            // Remove memory
+            this.memoryBank.delete(memory.id);
+            // Note: Supabase deletion would require additional logic
+          });
+        }
       }
+    } catch (error) {
+      // On error, undo the operation
+      console.error('Error consolidating memories, attempting undo:', error);
+      await reversibilityAuditor.undoDecision(decisionLog.id);
+      throw error;
     }
   }
   
@@ -776,36 +921,296 @@ Bot response to the user: ${JSON.stringify(experience.finalResult)}`;
   }
   
   /**
-   * Generate embedding for text
+   * Convert memory to path for novelty scoring
+   */
+  private memoryToPath(memory: ReasoningMemoryItem): Path {
+    // Use existing path nodes if available, otherwise extract from memory
+    const nodes = memory.pathNodes || [
+      memory.domain,
+      ...memory.title.split(/\s+/).filter(w => w.length > 3),
+      ...memory.description.split(/\s+/).slice(0, 3),
+    ].filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
+    
+    return {
+      id: memory.id,
+      nodes,
+      type: 'memory',
+    };
+  }
+  
+  /**
+   * Get effective novelty score (considering path frequency)
+   */
+  private getEffectiveNovelty(memory: ReasoningMemoryItem): number {
+    // If novelty is already calculated, use it
+    if (memory.novelty !== undefined) {
+      // Adjust based on path frequency (lower frequency = higher novelty)
+      const frequencyPenalty = memory.pathFrequency 
+        ? Math.min(1.0, Math.log(memory.pathFrequency + 1) / 5) // Log scale penalty
+        : 0;
+      
+      return Math.max(0, memory.novelty - frequencyPenalty * 0.2);
+    }
+    
+    // Default novelty if not calculated
+    return 0.5;
+  }
+  
+  /**
+   * Calculate innovativeness score (how innovative vs conventional)
+   */
+  private calculateInnovativenessScore(memory: ReasoningMemoryItem): number {
+    const novelty = this.getEffectiveNovelty(memory);
+    const pathFreq = memory.pathFrequency || 0;
+    
+    // High novelty + low frequency = innovative
+    // Low novelty + high frequency = conventional
+    const frequencyScore = pathFreq === 0 ? 1.0 : 1 / (1 + Math.log(pathFreq + 1));
+    
+    // Weighted combination: 70% novelty, 30% frequency
+    return (novelty * 0.7 + frequencyScore * 0.3);
+  }
+  
+  /**
+   * Track path frequency from GAMP paths
+   */
+  async trackPathFrequency(
+    memoryId: string,
+    gampPathIds: string[],
+    pathNodes: string[]
+  ): Promise<void> {
+    const memory = this.memoryBank.get(memoryId);
+    if (!memory) return;
+    
+    // Update path nodes
+    memory.pathNodes = pathNodes;
+    
+    // Update GAMP path IDs
+    if (!memory.gampPathIds) {
+      memory.gampPathIds = [];
+    }
+    memory.gampPathIds.push(...gampPathIds);
+    
+    // Calculate path frequency by checking how many times this path pattern appears
+    const memoryPath = this.memoryToPath(memory);
+    const allMemoryPaths = Array.from(this.memoryBank.values())
+      .filter(m => m.id !== memoryId)
+      .map(m => this.memoryToPath(m));
+    
+    // Count how many times this path pattern appears
+    let frequency = 0;
+    for (const otherPath of allMemoryPaths) {
+      if (this.isPathSimilar(memoryPath, otherPath)) {
+        frequency++;
+      }
+    }
+    
+    // Also check against historical GAMP paths
+    const gampPaths = noveltyScorer['historicalPaths'] || [];
+    for (const gampPath of gampPaths) {
+      if (this.isPathSimilar(memoryPath, gampPath)) {
+        frequency++;
+      }
+    }
+    
+    memory.pathFrequency = frequency + 1; // +1 for current occurrence
+    
+    // Recalculate novelty based on updated frequency
+    noveltyScorer.addHistoricalPaths([memoryPath]);
+    const noveltyScore = noveltyScorer.calculateNovelty(memoryPath, allMemoryPaths);
+    memory.novelty = noveltyScore.novelty;
+    memory.noveltyLastCalculated = new Date();
+    
+    // Recalculate innovativeness
+    memory.innovativenessScore = this.calculateInnovativenessScore(memory);
+    memory.strategyType = (memory.innovativenessScore > 0.6) ? 'innovative' : 'conventional';
+    
+    // Persist to Supabase if available
+    if (this.supabase) {
+      try {
+        await this.supabase
+          .from('reasoning_memory_items')
+          .update({
+            path_frequency: memory.pathFrequency,
+            path_nodes: memory.pathNodes,
+            gamp_path_ids: memory.gampPathIds,
+            novelty: memory.novelty,
+            novelty_last_calculated: memory.noveltyLastCalculated.toISOString(),
+            innovativeness_score: memory.innovativenessScore,
+            strategy_type: memory.strategyType,
+          })
+          .eq('id', memoryId);
+      } catch (error) {
+        console.warn('Failed to update path frequency in Supabase:', error);
+      }
+    }
+  }
+  
+  /**
+   * Check if two paths are similar (for frequency calculation)
+   */
+  private isPathSimilar(path1: Path, path2: Path): boolean {
+    // Check if paths share significant overlap
+    const nodes1 = new Set(path1.nodes);
+    const nodes2 = new Set(path2.nodes);
+    
+    // Calculate Jaccard similarity
+    const intersection = new Set([...nodes1].filter(n => nodes2.has(n)));
+    const union = new Set([...nodes1, ...nodes2]);
+    
+    if (union.size === 0) return false;
+    
+    const similarity = intersection.size / union.size;
+    
+    // Consider similar if > 50% overlap
+    return similarity > 0.5;
+  }
+  
+  /**
+   * Retrieve memories ranked by innovativeness (most innovative first)
+   */
+  async retrieveInnovativeMemories(
+    domain: string,
+    topK: number = 10
+  ): Promise<ReasoningMemoryItem[]> {
+    // Get memories from memory bank
+    const allMemories = Array.from(this.memoryBank.values())
+      .filter(m => m.domain === domain || m.domain === "general");
+    
+    // Calculate innovativeness for all if not set
+    const scoredMemories = allMemories.map(m => {
+      if (m.innovativenessScore === undefined) {
+        m.innovativenessScore = this.calculateInnovativenessScore(m);
+        m.strategyType = (m.innovativenessScore > 0.6) ? 'innovative' : 'conventional';
+      }
+      return m;
+    });
+    
+    return scoredMemories
+      .filter((m: ReasoningMemoryItem) => m.strategyType === 'innovative' || (m.innovativenessScore || 0) > 0.6)
+      .sort((a: ReasoningMemoryItem, b: ReasoningMemoryItem) => {
+        const innovA = a.innovativenessScore || 0;
+        const innovB = b.innovativenessScore || 0;
+        return innovB - innovA;
+      })
+      .slice(0, topK);
+  }
+  
+  /**
+   * Retrieve memories ranked by conventionality (most proven/conventional first)
+   */
+  async retrieveConventionalMemories(
+    domain: string,
+    topK: number = 10
+  ): Promise<ReasoningMemoryItem[]> {
+    // Get memories from memory bank
+    const allMemories = Array.from(this.memoryBank.values())
+      .filter(m => m.domain === domain || m.domain === "general");
+    
+    // Calculate innovativeness for all if not set
+    const scoredMemories = allMemories.map(m => {
+      if (m.innovativenessScore === undefined) {
+        m.innovativenessScore = this.calculateInnovativenessScore(m);
+        m.strategyType = (m.innovativenessScore > 0.6) ? 'innovative' : 'conventional';
+      }
+      return m;
+    });
+    
+    return scoredMemories
+      .filter((m: ReasoningMemoryItem) => m.strategyType === 'conventional' || (m.innovativenessScore || 0) <= 0.6)
+      .sort((a: ReasoningMemoryItem, b: ReasoningMemoryItem) => {
+        // Rank by: success rate * usage count (proven strategies)
+        const scoreA = a.successRate * Math.log(a.usageCount + 1);
+        const scoreB = b.successRate * Math.log(b.usageCount + 1);
+        return scoreB - scoreA;
+      })
+      .slice(0, topK);
+  }
+  
+  /**
+   * Get ranking of innovative vs conventional strategies
+   */
+  getStrategyRanking(
+    domain: string,
+    topK: number = 20
+  ): {
+    innovative: ReasoningMemoryItem[];
+    conventional: ReasoningMemoryItem[];
+    statistics: {
+      totalInnovative: number;
+      totalConventional: number;
+      averageInnovativeness: number;
+      averageNovelty: number;
+      averagePathFrequency: number;
+    };
+  } {
+    const memories = Array.from(this.memoryBank.values())
+      .filter(m => m.domain === domain || m.domain === "general");
+    
+    // Calculate innovativeness for all if not set
+    const scoredMemories = memories.map(m => {
+      if (m.innovativenessScore === undefined) {
+        m.innovativenessScore = this.calculateInnovativenessScore(m);
+        m.strategyType = (m.innovativenessScore > 0.6) ? 'innovative' : 'conventional';
+      }
+      return m;
+    });
+    
+    const innovative = scoredMemories
+      .filter(m => m.strategyType === 'innovative')
+      .sort((a, b) => (b.innovativenessScore || 0) - (a.innovativenessScore || 0))
+      .slice(0, topK);
+    
+    const conventional = scoredMemories
+      .filter(m => m.strategyType === 'conventional')
+      .sort((a, b) => {
+        // Rank by proven success
+        const scoreA = a.successRate * Math.log(a.usageCount + 1);
+        const scoreB = b.successRate * Math.log(b.usageCount + 1);
+        return scoreB - scoreA;
+      })
+      .slice(0, topK);
+    
+    // Calculate statistics
+    const totalInnovative = scoredMemories.filter(m => m.strategyType === 'innovative').length;
+    const totalConventional = scoredMemories.filter(m => m.strategyType === 'conventional').length;
+    const averageInnovativeness = scoredMemories.length > 0
+      ? scoredMemories.reduce((sum, m) => sum + (m.innovativenessScore || 0), 0) / scoredMemories.length
+      : 0;
+    const averageNovelty = scoredMemories.length > 0
+      ? scoredMemories.reduce((sum, m) => sum + (m.novelty || 0.5), 0) / scoredMemories.length
+      : 0.5;
+    const averagePathFrequency = scoredMemories.length > 0
+      ? scoredMemories.reduce((sum, m) => sum + (m.pathFrequency || 0), 0) / scoredMemories.length
+      : 0;
+    
+    return {
+      innovative,
+      conventional,
+      statistics: {
+        totalInnovative,
+        totalConventional,
+        averageInnovativeness,
+        averageNovelty,
+        averagePathFrequency,
+      },
+    };
+  }
+  
+  /**
+   * Generate embedding for text using unified embedding service (BGE-small-en-v1.5 - much better than nomic!)
    */
   private async generateEmbedding(text: string): Promise<number[]> {
     try {
-      // Use OpenAI embeddings (1536 dimensions)
-      const openaiKey = process.env.OPENAI_API_KEY;
-      if (openaiKey) {
-        const response = await fetch('https://api.openai.com/v1/embeddings', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openaiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'text-embedding-3-small',
-            input: text
-          })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          return data.data[0].embedding;
-        }
-      }
+      // Use unified embedding service (BGE-small-en-v1.5 primary, Ollama fallback, hash last resort)
+      const result = await embeddingService.generate(text);
+      console.log(`✅ Generated embedding using ${result.provider} (${result.dimensions} dimensions)`);
+      return result.embedding;
     } catch (error) {
       console.warn('⚠️ Embedding generation failed, using zero vector:', error);
+      // Fallback: zero vector matching the service dimensions (384 for BGE-small)
+      return new Array(384).fill(0);
     }
-    
-    // Fallback: zero vector (will need to be updated later)
-    return new Array(1536).fill(0);
   }
   
   /**
@@ -1082,8 +1487,15 @@ Bot response to the user: ${JSON.stringify(experience.finalResult)}`;
       return energy;
     });
 
-    // Generate regularized patterns using LLM (with regularization context)
-    const prompt = `Analyze these ${trajectories.length} attempts at the same task using regularized energy-based methods:
+    // Combine static instructions with dynamic content for Ollama
+    const fullPrompt = `You are an expert at energy-based pattern analysis with regularization.
+
+Analyze attempts at the same task using regularized energy-based methods.
+
+Identify regularized patterns (with L2 regularization) for memory extraction:
+1. Low-energy (successful) patterns to reinforce
+2. High-energy (failed) patterns to regularize
+3. Domain-consistent regularized insights
 
 Task: ${query}
 
@@ -1091,12 +1503,7 @@ ${trajectories.map((t, i) => `
 Attempt ${i + 1} (Energy: ${energyScores[i].toFixed(3)}, ${t.success ? "SUCCESS" : "FAILURE"}):
 ${t.steps.slice(0, 3).map(s => `- ${s.thought}`).join("\n")}
 Result: ${JSON.stringify(t.finalResult).substring(0, 200)}
-`).join("\n\n")}
-
-Identify regularized patterns (with L2 regularization) for memory extraction:
-1. Low-energy (successful) patterns to reinforce
-2. High-energy (failed) patterns to regularize
-3. Domain-consistent regularized insights`;
+`).join("\n\n")}`;
 
     const response = await fetch("http://localhost:11434/v1/chat/completions", {
       method: "POST",
@@ -1105,11 +1512,16 @@ Identify regularized patterns (with L2 regularization) for memory extraction:
         model: "gemma3:4b",
         messages: [
           { role: "system", content: "You are an expert at energy-based pattern analysis with regularization." },
-          { role: "user", content: prompt }
+          { role: "user", content: fullPrompt }
         ],
-        temperature: 0.7
+        temperature: 0.7,
+        max_tokens: 2000
       })
     });
+    
+    if (!response.ok) {
+      throw new Error(`Ollama API returned status ${response.status}`);
+    }
     
     const data = await response.json();
     const regularizedPatterns = data.choices[0].message.content;

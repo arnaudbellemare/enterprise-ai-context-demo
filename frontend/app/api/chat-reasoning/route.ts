@@ -253,6 +253,7 @@ export async function POST(request: NextRequest) {
   let sessionId: string = 'default';
   let mode: 'expert' | 'lite' = 'expert'; // Default to expert (unified pipeline)
   let stream: boolean = true; // Enable streaming by default
+  let attachedDocuments: any[] = [];
 
   try {
     const body = await request.json();
@@ -261,6 +262,7 @@ export async function POST(request: NextRequest) {
     sessionId = body.sessionId || 'default';
     mode = body.mode || 'expert'; // 'expert' = unified pipeline, 'lite' = permutation-lite
     stream = body.stream !== false; // Default to streaming enabled
+    attachedDocuments = body.attachedDocuments || [];
 
     if (!query) {
       return NextResponse.json(
@@ -273,8 +275,17 @@ export async function POST(request: NextRequest) {
       query: query.substring(0, 50),
       domain,
       sessionId,
-      mode
+      mode,
+      attachedDocuments: attachedDocuments.length
     });
+
+    // If documents are attached, enhance query with document-aware context
+    if (attachedDocuments.length > 0) {
+      logger.info('Processing attached documents', { count: attachedDocuments.length });
+      // Documents are already processed and enriched via /api/documents/ingest-with-context
+      // The query already includes document context from the frontend
+      // The RAG pipeline will automatically retrieve relevant chunks from these documents
+    }
 
     const startTime = Date.now();
 

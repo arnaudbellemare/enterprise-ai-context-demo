@@ -85,6 +85,7 @@ export interface RerankingResult {
   qualityScore: number;
   latency: number;
   method: string;
+  metadata?: Record<string, any>; // Optional metadata for graph paths, etc.
 }
 
 /**

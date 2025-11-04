@@ -23,6 +23,7 @@ import { QueryReformulator, ReformulatedQuery, type ReformulationStrategy } from
 export interface RetrievalConfig {
   /**
    * Number of documents to retrieve per query
+   * Note: For best results, use 150 for initial retrieval, then rerank to 20
    */
   k: number;
 

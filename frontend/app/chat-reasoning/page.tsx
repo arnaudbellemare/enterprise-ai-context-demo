@@ -15,6 +15,24 @@ interface Message {
   content: string;
   reasoning?: ReasoningStep[];
   metadata?: any;
+  attachedDocument?: {
+    id: string;
+    name: string;
+    type: string;
+    size: number;
+    processed: boolean;
+  };
+}
+
+interface AttachedDocument {
+  id: string;
+  file: File;
+  name: string;
+  type: string;
+  size: number;
+  processed: boolean;
+  content?: string;
+  chunks?: number;
 }
 
 export default function ChatReasoningPage() {
@@ -24,6 +42,10 @@ export default function ChatReasoningPage() {
   const [currentReasoning, setCurrentReasoning] = useState<ReasoningStep[]>([]);
   const [currentTime, setCurrentTime] = useState('');
   const [mode, setMode] = useState<'expert' | 'lite'>('expert'); // 'expert' = unified pipeline, 'lite' = permutation-lite
+  const [attachedDocuments, setAttachedDocuments] = useState<AttachedDocument[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isProcessingDocument, setIsProcessingDocument] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -57,11 +79,145 @@ export default function ChatReasoningPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Handle file drop
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    await processFiles(files);
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      await processFiles(files);
+    }
+  };
+
+  const processFiles = async (files: File[]) => {
+    setIsProcessingDocument(true);
+    
+    for (const file of files) {
+      // Verify document
+      const verification = verifyDocument(file);
+      if (!verification.valid) {
+        alert(`Document verification failed: ${verification.error}`);
+        continue;
+      }
+
+      try {
+        // Upload and process document with contextual enrichment
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('enableEnrichment', 'true');
+
+        const uploadResponse = await fetch('/api/documents/ingest-with-context', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Document upload failed');
+        }
+
+        const uploadData = await uploadResponse.json();
+        const fileContent = await file.text();
+
+        // Store document in session
+        const doc: AttachedDocument = {
+          id: uploadData.documentId || `doc_${Date.now()}`,
+          file,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          processed: true,
+          content: fileContent,
+          chunks: uploadData.chunksProcessed || 0,
+        };
+
+        setAttachedDocuments(prev => [...prev, doc]);
+        
+        // Add message showing document was added
+        setMessages(prev => [...prev, {
+          role: 'user',
+          content: `📄 Document attached: ${file.name}`,
+          attachedDocument: {
+            id: doc.id,
+            name: doc.name,
+            type: doc.type,
+            size: doc.size,
+            processed: doc.processed,
+          }
+        }]);
+      } catch (error) {
+        console.error('Document processing error:', error);
+        alert(`Failed to process ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    setIsProcessingDocument(false);
+  };
+
+  const verifyDocument = (file: File): { valid: boolean; error?: string } => {
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return { valid: false, error: 'File size exceeds 10MB limit' };
+    }
+
+    // Check file type
+    const allowedTypes = [
+      'text/plain',
+      'text/markdown',
+      'application/pdf',
+      'text/csv',
+      'application/json',
+      'text/html',
+    ];
+    
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(txt|md|pdf|csv|json|html)$/i)) {
+      return { valid: false, error: 'Unsupported file type. Supported: txt, md, pdf, csv, json, html' };
+    }
+
+    return { valid: true };
+  };
+
+  const removeDocument = (docId: string) => {
+    setAttachedDocuments(prev => prev.filter(doc => doc.id !== docId));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
+    // Build query with attached documents context
+    let queryWithContext = input;
+    const documentContexts: string[] = [];
+
+    if (attachedDocuments.length > 0) {
+      documentContexts.push(`\n\n[Attached Documents (${attachedDocuments.length}):]`);
+      attachedDocuments.forEach((doc, idx) => {
+        // Include document name and summary
+        const preview = doc.content 
+          ? doc.content.substring(0, 200) + '...' 
+          : 'Document processed and ready';
+        documentContexts.push(`\n${idx + 1}. ${doc.name} (${doc.chunks || 0} chunks) - ${preview}`);
+      });
+      queryWithContext = input + documentContexts.join('\n');
+    }
+
+    const userMessage: Message = { 
+      role: 'user', 
+      content: input,
+      attachedDocument: attachedDocuments.length > 0 ? {
+        id: attachedDocuments[0].id,
+        name: attachedDocuments[0].name,
+        type: attachedDocuments[0].type,
+        size: attachedDocuments[0].size,
+        processed: attachedDocuments[0].processed,
+      } : undefined
+    };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -72,10 +228,16 @@ export default function ChatReasoningPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          query: input, 
+          query: queryWithContext, // Include document context
           domain: 'general',
           mode: mode, // Pass mode to API
-          stream: true // Enable streaming
+          stream: true, // Enable streaming
+          attachedDocuments: attachedDocuments.map(doc => ({
+            id: doc.id,
+            name: doc.name,
+            content: doc.content,
+            chunks: doc.chunks,
+          }))
         })
       });
 
@@ -445,29 +607,87 @@ export default function ChatReasoningPage() {
             </div>
 
             {/* Input */}
-            <form onSubmit={handleSubmit} className="border-t-2 border-gray-900 p-4 bg-gray-50">
+            <form 
+              onSubmit={handleSubmit} 
+              className="border-t-2 border-gray-900 p-4 bg-gray-50"
+              onDrop={handleDrop}
+              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+              onDragLeave={(e) => { e.preventDefault(); setIsDragOver(false); }}
+            >
+              {/* Attached Documents */}
+              {attachedDocuments.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {attachedDocuments.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center gap-2 px-3 py-1 bg-cyan-100 border border-cyan-300 rounded text-sm"
+                    >
+                      <span className="text-cyan-800">📄 {doc.name}</span>
+                      {doc.processed && (
+                        <span className="text-xs text-cyan-600">✓ {doc.chunks || 0} chunks</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeDocument(doc.id)}
+                        className="text-cyan-600 hover:text-cyan-800 ml-1"
+                        title="Remove document"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Drop Zone */}
+              {isDragOver && (
+                <div className="mb-3 p-4 border-2 border-dashed border-cyan-400 bg-cyan-50 rounded text-center">
+                  <p className="text-sm text-cyan-800">Drop document here to attach</p>
+                </div>
+              )}
+
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ask anything..."
-                  className="flex-1 px-4 py-3 border-2 border-gray-300 bg-white text-gray-900 focus:border-gray-900 focus:shadow-lg transition-all placeholder-gray-500"
-                  style={{ fontFamily: 'VT323, "Courier New", monospace', fontSize: '20px', letterSpacing: '1px' }}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  disabled={isLoading}
-                />
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder="Ask anything... (or drop a document)"
+                    className="w-full px-4 py-3 border-2 border-gray-300 bg-white text-gray-900 focus:border-gray-900 focus:shadow-lg transition-all placeholder-gray-500"
+                    style={{ fontFamily: 'VT323, "Courier New", monospace', fontSize: '20px', letterSpacing: '1px' }}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    disabled={isLoading || isProcessingDocument}
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".txt,.md,.pdf,.csv,.json,.html"
+                    onChange={handleFileSelect}
+                    multiple
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-3 bg-gray-700 text-white border-2 border-gray-700 hover:bg-gray-600 transition-all font-bold disabled:opacity-50"
+                  disabled={isLoading || isProcessingDocument}
+                  title="Attach document"
+                >
+                  📎
+                </button>
                 <button
                   type="submit"
                   className="px-6 py-3 bg-black text-white border-2 border-black hover:bg-white hover:text-black transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isLoading}
+                  disabled={isLoading || isProcessingDocument}
                 >
-                  {isLoading ? 'THINKING...' : 'SEND'}
+                  {isLoading ? 'THINKING...' : isProcessingDocument ? 'PROCESSING...' : 'SEND'}
                 </button>
               </div>
               <div className="mt-2 text-xs text-gray-500" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>
                 {mode === 'expert' 
                   ? 'Expert Mode: Full Unified Permutation Pipeline (11+ components)'
                   : 'Lite Mode: Permutation-Lite (4-layer streamlined pipeline)'}
+                {attachedDocuments.length > 0 && ` | ${attachedDocuments.length} document(s) attached`}
               </div>
             </form>
           </div>

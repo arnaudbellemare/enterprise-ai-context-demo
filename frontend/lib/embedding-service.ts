@@ -2,12 +2,13 @@
  * UNIFIED EMBEDDING SERVICE
  * 
  * Provides robust embedding generation with LOCAL fallbacks:
- * 1. Ollama Local (primary)
- * 2. Simple hash-based embeddings (fallback)
- * 3. Deterministic text-based embeddings (last resort)
+ * 1. BGE-small-en-v1.5 (primary) - Much better than nomic-embed-text!
+ * 2. Ollama nomic-embed-text (fallback)
+ * 3. Simple hash-based embeddings (last resort)
  */
 
 import { createLogger } from '../../lib/walt/logger';
+import { createLocalEmbeddings, type LocalEmbeddings } from './local-embeddings';
 
 const logger = createLogger('EmbeddingService');
 
@@ -19,8 +20,9 @@ export interface EmbeddingResult {
 
 export class UnifiedEmbeddingService {
   private static instance: UnifiedEmbeddingService | null = null;
-  private dimensions = 512;
+  private dimensions = 384; // BGE-small-en-v1.5 dimensions
   private cache = new Map<string, number[]>();
+  private localEmbedder: LocalEmbeddings | null = null;
   
   static getInstance(): UnifiedEmbeddingService {
     if (!UnifiedEmbeddingService.instance) {
@@ -41,7 +43,16 @@ export class UnifiedEmbeddingService {
       };
     }
     
-    // Try Ollama first (our primary local option)
+    // Try BGE-small-en-v1.5 first (our best local option - much better than nomic!)
+    try {
+      const result = await this.generateBGE(text);
+      this.cache.set(cacheKey, result.embedding);
+      return result;
+    } catch (error: any) {
+      logger.warn('BGE embedding failed, trying Ollama fallback', { error: error.message });
+    }
+    
+    // Fallback to Ollama nomic-embed-text
     try {
       const result = await this.generateOllama(text);
       this.cache.set(cacheKey, result.embedding);
@@ -54,6 +65,34 @@ export class UnifiedEmbeddingService {
     const result = this.generateHashBased(text);
     this.cache.set(cacheKey, result.embedding);
     return result;
+  }
+  
+  private async generateBGE(text: string): Promise<EmbeddingResult> {
+    try {
+      // Initialize local embedder if needed
+      if (!this.localEmbedder) {
+        this.localEmbedder = createLocalEmbeddings();
+        await this.localEmbedder.initialize();
+      }
+      
+      const embedding = await this.localEmbedder.embed(text);
+      
+      logger.info('BGE embedding generated successfully', { 
+        dimensions: embedding.length,
+        textLength: text.length,
+        model: 'Xenova/bge-small-en-v1.5'
+      });
+      
+      return { 
+        embedding, 
+        provider: 'bge-small-en-v1.5', 
+        dimensions: this.dimensions 
+      };
+
+    } catch (error: any) {
+      logger.warn('BGE embeddings not available', { error: error.message });
+      throw error;
+    }
   }
   
   private async generateOllama(text: string): Promise<EmbeddingResult> {
@@ -74,6 +113,7 @@ export class UnifiedEmbeddingService {
       const data = await response.json();
       let embedding = data.embedding || [];
       
+      // Normalize to BGE dimensions (384)
       if (embedding.length < this.dimensions) {
         embedding = [...embedding, ...new Array(this.dimensions - embedding.length).fill(0)];
       } else if (embedding.length > this.dimensions) {
@@ -86,7 +126,7 @@ export class UnifiedEmbeddingService {
         textLength: text.length 
       });
       
-      return { embedding, provider: 'ollama', dimensions: this.dimensions };
+      return { embedding, provider: 'ollama-nomic', dimensions: this.dimensions };
 
     } catch (error: any) {
       logger.warn('Ollama embeddings not available', { error: error.message });
