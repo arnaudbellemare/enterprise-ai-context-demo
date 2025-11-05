@@ -11,6 +11,7 @@ PERMUTATION is a multi-component AI system that orchestrates 11+ advanced techni
 3. **Observability**: Every step is traceable and explainable
 4. **Efficiency**: Adaptive routing to minimize cost and latency
 5. **Research-Grade**: Implements published techniques faithfully
+6. **Context as Intelligence**: Context is a first-class component of system intelligence—contexts can be augmented, improved, and refined just as much as algorithms. See [CONTEXT_AS_INTELLIGENCE.md](mdc:CONTEXT_AS_INTELLIGENCE.md)
 
 ## Core Components
 

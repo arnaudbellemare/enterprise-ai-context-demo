@@ -41,7 +41,7 @@ export default function ChatReasoningPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentReasoning, setCurrentReasoning] = useState<ReasoningStep[]>([]);
   const [currentTime, setCurrentTime] = useState('');
-  const [mode, setMode] = useState<'expert' | 'lite' | 'lite-gamp'>('expert'); // 'expert' = unified pipeline, 'lite' = permutation-lite, 'lite-gamp' = permutation-lite with GAMP
+  const [mode, setMode] = useState<'expert' | 'lite' | 'lite-gamp' | 'lite-officer'>('expert'); // 'expert' = unified pipeline, 'lite' = permutation-lite, 'lite-gamp' = permutation-lite with GAMP, 'lite-officer' = GEPA unified framework
   const [attachedDocuments, setAttachedDocuments] = useState<AttachedDocument[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessingDocument, setIsProcessingDocument] = useState(false);
@@ -481,6 +481,17 @@ export default function ChatReasoningPage() {
                   >
                     LITE-GAMP
                   </button>
+                  <button
+                    onClick={() => setMode('lite-officer')}
+                    className={`px-3 py-1 text-xs font-bold transition-all ${
+                      mode === 'lite-officer'
+                        ? 'bg-cyan-400 text-black'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    title="Lite-Officer Mode: Unified GEPA Framework (Goals-Evidence-Performance-Actions)"
+                  >
+                    LITE-OFFICER
+                  </button>
                 </div>
               </div>
             </div>
@@ -699,7 +710,9 @@ export default function ChatReasoningPage() {
                   ? 'Expert Mode: Full Unified Permutation Pipeline (11+ components)'
                   : mode === 'lite'
                   ? 'Lite Mode: Permutation-Lite (4-layer streamlined pipeline)'
-                  : 'Lite-GAMP Mode: Permutation-Lite with GAMP (5-layer with graph reasoning)'}
+                  : mode === 'lite-gamp'
+                  ? 'Lite-GAMP Mode: Permutation-Lite with GAMP (5-layer with graph reasoning)'
+                  : 'Lite-Officer Mode: Unified GEPA Framework (Goals-Evidence-Performance-Actions with self-optimization)'}
                 {attachedDocuments.length > 0 && ` | ${attachedDocuments.length} document(s) attached`}
               </div>
             </form>

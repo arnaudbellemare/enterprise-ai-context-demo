@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
   let query: string = '';
   let domain: string = 'general';
   let sessionId: string = 'default';
-  let mode: 'expert' | 'lite' | 'lite-gamp' = 'expert'; // Default to expert (unified pipeline)
+  let mode: 'expert' | 'lite' | 'lite-gamp' | 'lite-officer' = 'expert'; // Default to expert (unified pipeline)
   let stream: boolean = true; // Enable streaming by default
   let attachedDocuments: any[] = [];
 
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
     query = body.query || '';
     domain = body.domain || 'general';
     sessionId = body.sessionId || 'default';
-    mode = body.mode || 'expert'; // 'expert' = unified pipeline, 'lite' = permutation-lite, 'lite-gamp' = permutation-lite with GAMP
+    mode = body.mode || 'expert'; // 'expert' = unified pipeline, 'lite' = permutation-lite, 'lite-gamp' = permutation-lite with GAMP, 'lite-officer' = GEPA unified framework
     stream = body.stream !== false; // Default to streaming enabled
     attachedDocuments = body.attachedDocuments || [];
 
@@ -918,6 +918,256 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({
             success: false,
             error: error.message || 'Permutation-Lite execution failed',
+            details: error.stack
+          }, { status: 500 });
+        }
+      }
+    } else if (mode === 'lite-officer') {
+      // LITE-OFFICER MODE: Unified GEPA Framework (Goals-Evidence-Performance-Actions)
+      logger.info('Executing Lite-Officer (GEPA Unified Framework)', { stream });
+      
+      const { UnifiedGEPAEngine } = await import('@/lib/gepa-unified-engine');
+      const gepaEngine = new UnifiedGEPAEngine({
+        enableGAMP: true,
+        enableOptimization: true,
+        enableLearning: true,
+        enableTeacherStudent: true,
+        useGEPAArborWorkflow: true,
+        enableREFRAG: true,
+        fastMode: false,
+        gampConfig: {
+          maxGraphNodes: 50,
+          maxGraphEdges: 100,
+          scientificDomains: [],
+          irtThreshold: 0.5,
+          minNoveltyThreshold: 0.6,
+        }
+      });
+
+      if (stream) {
+        // Streaming mode: Use SSE for real-time updates
+        const encoder = new TextEncoder();
+        const readableStream = new ReadableStream({
+          async start(controller) {
+            const sendEvent = (event: string, data: any) => {
+              try {
+                const seen = new WeakSet();
+                const safeSerialize = (obj: any, depth = 0): any => {
+                  if (depth > 10) return '[Max Depth]';
+                  if (obj === null || obj === undefined) return null;
+                  if (typeof obj === 'function') return undefined;
+                  if (obj instanceof Error) return { message: obj.message, name: obj.name };
+                  if (obj instanceof Map) return Object.fromEntries(obj);
+                  if (obj instanceof Set) return Array.from(obj);
+                  if (typeof obj === 'object') {
+                    if (seen.has(obj)) return '[Circular]';
+                    seen.add(obj);
+                    if (Array.isArray(obj)) {
+                      return obj.map(item => safeSerialize(item, depth + 1));
+                    }
+                    const result: any = {};
+                    for (const key in obj) {
+                      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        try {
+                          const value = safeSerialize(obj[key], depth + 1);
+                          if (value !== undefined) {
+                            result[key] = value;
+                          }
+                        } catch (e) {
+                          result[key] = '[Serialize Error]';
+                        }
+                      }
+                    }
+                    return result;
+                  }
+                  return obj;
+                };
+                
+                const safeData = JSON.stringify(safeSerialize(data));
+                controller.enqueue(
+                  encoder.encode(`event: ${event}\ndata: ${safeData}\n\n`)
+                );
+              } catch (error) {
+                console.error('Error encoding event:', error);
+                try {
+                  controller.enqueue(
+                    encoder.encode(`event: ${event}\ndata: ${JSON.stringify({ error: 'Serialization failed', event })}\n\n`)
+                  );
+                } catch (e) {
+                  // Stream is closed, ignore
+                }
+              }
+            };
+
+            try {
+              // Define safeSerialize helper outside sendEvent
+              const safeSerialize = (obj: any, depth = 0): any => {
+                if (depth > 10) return '[Max Depth]';
+                if (obj === null || obj === undefined) return null;
+                if (typeof obj === 'function') return undefined;
+                if (obj instanceof Error) return { message: obj.message, name: obj.name };
+                if (obj instanceof Map) return Object.fromEntries(obj);
+                if (obj instanceof Set) return Array.from(obj);
+                if (typeof obj === 'object') {
+                  const seen = new WeakSet();
+                  if (seen.has(obj)) return '[Circular]';
+                  seen.add(obj);
+                  if (Array.isArray(obj)) {
+                    return obj.map(item => safeSerialize(item, depth + 1));
+                  }
+                  const result: any = {};
+                  for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                      try {
+                        const value = safeSerialize(obj[key], depth + 1);
+                        if (value !== undefined) {
+                          result[key] = value;
+                        }
+                      } catch (e) {
+                        result[key] = '[Serialize Error]';
+                      }
+                    }
+                  }
+                  return result;
+                }
+                return obj;
+              };
+
+              // G: Goals
+              sendEvent('reasoning', {
+                step: '0',
+                title: 'G: Goals',
+                content: 'Setting SMART objectives and leveraging strengths...',
+                status: 'in_progress'
+              });
+
+              // E: Evidence
+              sendEvent('reasoning', {
+                step: '1',
+                title: 'E: Evidence',
+                content: 'Gathering multi-sensory data with SQRRR and ReasoningBank...',
+                status: 'in_progress'
+              });
+
+              // Execute GEPA cycle
+              const result = await gepaEngine.execute(query, domain);
+              const processingTime = Date.now() - startTime;
+
+              // P: Performance
+              sendEvent('reasoning', {
+                step: '2',
+                title: 'P: Performance',
+                content: `SOAR & AAR: Quality ${result.gepaCycle.performance.qualityScore.toFixed(3)}, Strengths: ${result.gepaCycle.performance.strengths.join(', ')}`,
+                status: 'complete',
+                data: safeSerialize(result.gepaCycle.performance)
+              });
+
+              // A: Actions
+              sendEvent('reasoning', {
+                step: '3',
+                title: 'A: Actions',
+                content: `Dominance Rank: ${result.gepaCycle.actions.dominance.rank}, Iteration: ${result.gepaCycle.actions.iteration.method}`,
+                status: 'complete',
+                data: safeSerialize(result.gepaCycle.actions)
+              });
+
+              // Final answer
+              sendEvent('answer', {
+                text: result.answer,
+                metadata: {
+                  mode: 'lite-officer',
+                  domain,
+                  processing_time_ms: processingTime,
+                  quality_score: result.gepaCycle.performance.qualityScore,
+                  gepaCycle: {
+                    goals: result.gepaCycle.goals.smart,
+                    strengths: result.gepaCycle.performance.strengths,
+                    needs: result.gepaCycle.performance.needs,
+                    actions: result.gepaCycle.actions.iteration.method,
+                    soar: result.gepaCycle.performance.soar,
+                  }
+                }
+              });
+
+              controller.close();
+            } catch (error: any) {
+              logger.error('Lite-Officer (GEPA) execution failed', { error: error.message });
+              sendEvent('error', {
+                error: error.message || 'GEPA execution failed'
+              });
+              controller.close();
+            }
+          }
+        });
+
+        return new Response(readableStream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          },
+        });
+      } else {
+        // Non-streaming mode
+        try {
+          const result = await gepaEngine.execute(query, domain);
+          const processingTime = Date.now() - startTime;
+
+          const reasoningSteps = [
+            {
+              step: '0',
+              title: 'G: Goals',
+              content: `SMART Goals: ${result.gepaCycle.goals.smart.join('; ')}`,
+              status: 'complete' as const,
+              data: result.gepaCycle.goals
+            },
+            {
+              step: '1',
+              title: 'E: Evidence',
+              content: `Indicators: ${result.gepaCycle.evidence.indicators.join('; ')}`,
+              status: 'complete' as const,
+              data: result.gepaCycle.evidence
+            },
+            {
+              step: '2',
+              title: 'P: Performance',
+              content: `Quality: ${result.gepaCycle.performance.qualityScore.toFixed(3)}, Strengths: ${result.gepaCycle.performance.strengths.join(', ')}, Needs: ${result.gepaCycle.performance.needs.join(', ')}`,
+              status: 'complete' as const,
+              data: result.gepaCycle.performance
+            },
+            {
+              step: '3',
+              title: 'A: Actions',
+              content: `Dominance: ${result.gepaCycle.actions.dominance.rank}, Iteration: ${result.gepaCycle.actions.iteration.method}`,
+              status: 'complete' as const,
+              data: result.gepaCycle.actions
+            }
+          ];
+
+          return NextResponse.json({
+            success: true,
+            answer: result.answer,
+            reasoningSteps,
+            metadata: {
+              mode: 'lite-officer',
+              domain,
+              processing_time_ms: processingTime,
+              quality_score: result.gepaCycle.performance.qualityScore,
+              gepaCycle: {
+                id: result.gepaCycle.id,
+                goals: result.gepaCycle.goals,
+                evidence: result.gepaCycle.evidence,
+                performance: result.gepaCycle.performance,
+                actions: result.gepaCycle.actions,
+                metadata: result.gepaCycle.metadata,
+              }
+            }
+          });
+        } catch (error: any) {
+          logger.error('Lite-Officer (GEPA) execution failed', { error: error.message });
+          return NextResponse.json({
+            success: false,
+            error: error.message || 'GEPA execution failed',
             details: error.stack
           }, { status: 500 });
         }
