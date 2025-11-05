@@ -295,6 +295,38 @@ export class DSPySignatureRegistry {
   getAllModules(): DSPyModule[] {
     return Array.from(this.modules.values());
   }
+
+  /**
+   * Get default module for a domain, or fallback to general module
+   */
+  getDefaultModule(): DSPyModule | undefined {
+    // Try to get optimization module as default
+    return this.modules.get('optimization') || 
+           this.modules.get('multi_domain_analysis') ||
+           this.modules.values().next().value;
+  }
+
+  /**
+   * Get or create module for domain
+   */
+  getOrCreateModule(domain: string): DSPyModule {
+    // Try domain-specific first
+    const domainModule = this.modules.get(`${domain}_analysis`) || 
+                        this.modules.get(domain);
+    if (domainModule) {
+      return domainModule;
+    }
+
+    // Try general analysis modules
+    const generalModule = this.modules.get('optimization') ||
+                         this.modules.get('multi_domain_analysis');
+    if (generalModule) {
+      return generalModule;
+    }
+
+    // Create a simple default module
+    return new OptimizationModule();
+  }
 }
 
 // ============================================================================

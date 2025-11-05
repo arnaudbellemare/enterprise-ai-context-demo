@@ -41,7 +41,7 @@ export default function ChatReasoningPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentReasoning, setCurrentReasoning] = useState<ReasoningStep[]>([]);
   const [currentTime, setCurrentTime] = useState('');
-  const [mode, setMode] = useState<'expert' | 'lite'>('expert'); // 'expert' = unified pipeline, 'lite' = permutation-lite
+  const [mode, setMode] = useState<'expert' | 'lite' | 'lite-gamp'>('expert'); // 'expert' = unified pipeline, 'lite' = permutation-lite, 'lite-gamp' = permutation-lite with GAMP
   const [attachedDocuments, setAttachedDocuments] = useState<AttachedDocument[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessingDocument, setIsProcessingDocument] = useState(false);
@@ -470,6 +470,17 @@ export default function ChatReasoningPage() {
                   >
                     LITE
                   </button>
+                  <button
+                    onClick={() => setMode('lite-gamp')}
+                    className={`px-3 py-1 text-xs font-bold transition-all ${
+                      mode === 'lite-gamp'
+                        ? 'bg-cyan-400 text-black'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    title="Lite-GAMP Mode: Permutation-Lite with GAMP (5-layer with graph reasoning)"
+                  >
+                    LITE-GAMP
+                  </button>
                 </div>
               </div>
             </div>
@@ -652,7 +663,7 @@ export default function ChatReasoningPage() {
                     type="text"
                     placeholder="Ask anything... (or drop a document)"
                     className="w-full px-4 py-3 border-2 border-gray-300 bg-white text-gray-900 focus:border-gray-900 focus:shadow-lg transition-all placeholder-gray-500"
-                    style={{ fontFamily: 'VT323, "Courier New", monospace', fontSize: '20px', letterSpacing: '1px' }}
+                    style={{ fontFamily: 'VT323, "Courier New", monospace', fontSize: '14px', letterSpacing: '0.5px' }}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     disabled={isLoading || isProcessingDocument}
@@ -686,7 +697,9 @@ export default function ChatReasoningPage() {
               <div className="mt-2 text-xs text-gray-500" style={{ fontFamily: 'Proxima Nova, -apple-system, BlinkMacSystemFont, sans-serif' }}>
                 {mode === 'expert' 
                   ? 'Expert Mode: Full Unified Permutation Pipeline (11+ components)'
-                  : 'Lite Mode: Permutation-Lite (4-layer streamlined pipeline)'}
+                  : mode === 'lite'
+                  ? 'Lite Mode: Permutation-Lite (4-layer streamlined pipeline)'
+                  : 'Lite-GAMP Mode: Permutation-Lite with GAMP (5-layer with graph reasoning)'}
                 {attachedDocuments.length > 0 && ` | ${attachedDocuments.length} document(s) attached`}
               </div>
             </form>

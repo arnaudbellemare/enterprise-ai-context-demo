@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AdvancedContextSystem } from '../../../lib/advanced-context-system';
 import { executeUnifiedPipeline } from '../../../lib/unified-permutation-pipeline';
 import { executePermutationLite } from '../../../lib/permutation-lite/permutation-lite-pipeline';
+import { PermutationLiteGAMPPipeline } from '../../../lib/permutation-lite/permutation-lite-gamp-pipeline';
 import { createLogger } from '../../../lib/walt/logger';
 
 export const runtime = 'nodejs';
@@ -251,7 +252,7 @@ export async function POST(request: NextRequest) {
   let query: string = '';
   let domain: string = 'general';
   let sessionId: string = 'default';
-  let mode: 'expert' | 'lite' = 'expert'; // Default to expert (unified pipeline)
+  let mode: 'expert' | 'lite' | 'lite-gamp' = 'expert'; // Default to expert (unified pipeline)
   let stream: boolean = true; // Enable streaming by default
   let attachedDocuments: any[] = [];
 
@@ -260,7 +261,7 @@ export async function POST(request: NextRequest) {
     query = body.query || '';
     domain = body.domain || 'general';
     sessionId = body.sessionId || 'default';
-    mode = body.mode || 'expert'; // 'expert' = unified pipeline, 'lite' = permutation-lite
+    mode = body.mode || 'expert'; // 'expert' = unified pipeline, 'lite' = permutation-lite, 'lite-gamp' = permutation-lite with GAMP
     stream = body.stream !== false; // Default to streaming enabled
     attachedDocuments = body.attachedDocuments || [];
 
@@ -293,7 +294,390 @@ export async function POST(request: NextRequest) {
     // ROUTE TO APPROPRIATE PIPELINE BASED ON MODE
     // =================================================================
     
-    if (mode === 'lite') {
+    if (mode === 'lite-gamp') {
+      // PERMUTATION-LITE-GAMP MODE: 5-layer architecture with GAMP graph reasoning
+      logger.info('Executing Permutation-Lite-GAMP pipeline', { stream });
+      
+      // Streaming mode: Use SSE for real-time updates
+      if (stream) {
+        const encoder = new TextEncoder();
+        const readableStream = new ReadableStream({
+          async start(controller) {
+            const sendEvent = (event: string, data: any) => {
+              try {
+                // Use a closure to track visited objects for circular reference detection
+                const seen = new WeakSet();
+                const safeSerialize = (obj: any, depth = 0): any => {
+                  if (depth > 10) return '[Max Depth]';
+                  if (obj === null || obj === undefined) return null;
+                  if (typeof obj === 'function') return undefined;
+                  if (obj instanceof Error) return { message: obj.message, name: obj.name };
+                  if (obj instanceof Map) return Object.fromEntries(obj);
+                  if (obj instanceof Set) return Array.from(obj);
+                  if (typeof obj === 'object') {
+                    if (seen.has(obj)) return '[Circular]';
+                    seen.add(obj);
+                    if (Array.isArray(obj)) {
+                      return obj.map(item => safeSerialize(item, depth + 1));
+                    }
+                    const result: any = {};
+                    for (const key in obj) {
+                      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        try {
+                          const value = safeSerialize(obj[key], depth + 1);
+                          if (value !== undefined) {
+                            result[key] = value;
+                          }
+                        } catch (e) {
+                          result[key] = '[Serialize Error]';
+                        }
+                      }
+                    }
+                    return result;
+                  }
+                  return obj;
+                };
+                
+                const safeData = JSON.stringify(safeSerialize(data));
+                controller.enqueue(
+                  encoder.encode(`event: ${event}\ndata: ${safeData}\n\n`)
+                );
+              } catch (error) {
+                // Stream closed or serialization error
+                console.error('Error encoding event:', error);
+                // Send a minimal error event
+                try {
+                  controller.enqueue(
+                    encoder.encode(`event: ${event}\ndata: ${JSON.stringify({ error: 'Serialization failed', event })}\n\n`)
+                  );
+                } catch (e) {
+                  // Stream is closed, ignore
+                }
+              }
+            };
+
+            try {
+              // Initialize GAMP pipeline
+              sendEvent('reasoning', {
+                step: '0',
+                title: 'Initialization',
+                content: 'Initializing Permutation-Lite-GAMP pipeline...',
+                status: 'in_progress'
+              });
+
+              const pipeline = new PermutationLiteGAMPPipeline({
+                enableGAMP: true,
+                enableOptimization: true,
+                enableLearning: true,
+                enableVerification: false, // RVS removed - was useless
+                enableTeacherStudent: true, // Enable Teacher-Student to avoid Ollama direct calls
+                useGEPAArborWorkflow: true, // Enable full GEPA + DSPy + Ax LLM with 10 iterations until convergence
+                enableREFRAG: true, // Enable REFRAG for query reformulation
+                fastMode: false, // NEVER skip Context Engineering 2.0 - it's essential
+                gampConfig: {
+                  maxGraphNodes: 50,
+                  maxGraphEdges: 100,
+                  scientificDomains: [], // Empty array = activate for any domain based on difficulty only
+                  irtThreshold: 0.3, // Lower threshold to ensure GAMP activates for most queries
+                  minNoveltyThreshold: 0.5,
+                }
+              });
+
+              sendEvent('reasoning', {
+                step: '0',
+                title: 'Initialization',
+                content: 'Pipeline initialized with GAMP enabled',
+                status: 'complete'
+              });
+
+              // Execute pipeline
+              sendEvent('reasoning', {
+                step: '1',
+                title: 'Routing',
+                content: 'Detecting domain and calculating difficulty...',
+                status: 'in_progress'
+              });
+
+              const result = await pipeline.execute(query, domain);
+
+              const processingTime = Date.now() - startTime;
+
+              // Helper to safely serialize data
+              const safeSerialize = (obj: any) => {
+                if (!obj) return undefined;
+                try {
+                  return JSON.parse(JSON.stringify(obj, (key, value) => {
+                    if (typeof value === 'function') return undefined;
+                    if (value === undefined) return null;
+                    if (value instanceof Error) return value.message;
+                    if (value instanceof Map) return Object.fromEntries(value);
+                    if (value instanceof Set) return Array.from(value);
+                    return value;
+                  }));
+                } catch {
+                  return undefined;
+                }
+              };
+
+              // Stream results
+              sendEvent('reasoning', {
+                step: '1',
+                title: 'Routing',
+                content: `Domain: ${result.metadata?.domain || domain}, Difficulty: ${result.metadata?.difficulty?.toFixed(3) || 'N/A'}`,
+                status: 'complete',
+                data: safeSerialize(result.metadata?.routing)
+              });
+
+              if (result.metadata?.graphReasoning) {
+                const gampActivated = (result.metadata.graphReasoning.pathsDiscovered || 0) > 0;
+                sendEvent('reasoning', {
+                  step: '2',
+                  title: 'Graph Reasoning (GAMP)',
+                  content: `GAMP activated: ${gampActivated ? '✅' : '❌'}, Paths: ${result.metadata.graphReasoning.pathsDiscovered || 0}`,
+                  status: 'complete',
+                  data: safeSerialize(result.metadata.graphReasoning)
+                });
+              }
+
+              if (result.metadata?.optimization) {
+                sendEvent('reasoning', {
+                  step: '3',
+                  title: 'Optimization (GEPA)',
+                  content: `Quality: ${result.metadata.optimization.quality?.toFixed(2) || 'N/A'}`,
+                  status: 'complete',
+                  data: safeSerialize(result.metadata.optimization)
+                });
+              }
+
+              if (result.metadata?.verification) {
+                sendEvent('reasoning', {
+                  step: '4',
+                  title: 'Verification (RVS)',
+                  content: `Verified: ${result.metadata.verification.verified ? '✅' : '❌'}, Confidence: ${result.metadata.verification.confidence?.toFixed(2) || 'N/A'}`,
+                  status: 'complete',
+                  data: safeSerialize(result.metadata.verification)
+                });
+              }
+
+              // Send final answer - safely serialize metadata
+              const safeMetadata = {
+                mode: 'lite-gamp',
+                domain: result.metadata?.domain || domain,
+                difficulty: result.metadata?.difficulty,
+                quality_score: result.metadata?.quality_score || 0.5,
+                processing_time_ms: processingTime,
+                cost: result.metadata?.performance?.cost || 0.001,
+                layers_executed: result.metadata?.layers_executed || [],
+                gamp_activated: (result.metadata?.graphReasoning?.pathsDiscovered || 0) > 0,
+                paths_discovered: result.metadata?.graphReasoning?.pathsDiscovered || 0,
+                routing: result.metadata?.routing ? {
+                  difficulty: result.metadata.routing.difficulty,
+                  domain: result.metadata.routing.domain,
+                  confidence: result.metadata.routing.confidence,
+                  route: result.metadata.routing.route
+                } : undefined,
+                optimization: result.metadata?.optimization ? {
+                  optimizedPrompt: result.metadata.optimization.optimizedPrompt?.substring(0, 200),
+                  quality: result.metadata.optimization.quality,
+                  cost: result.metadata.optimization.cost,
+                  generations: result.metadata.optimization.generations
+                } : undefined,
+                learning: result.metadata?.learning ? {
+                  memoriesStored: result.metadata.learning.memoriesStored,
+                  memoriesUsed: result.metadata.learning.memoriesUsed,
+                  successRate: result.metadata.learning.successRate
+                } : undefined,
+                verification: result.metadata?.verification ? {
+                  verified: result.metadata.verification.verified,
+                  confidence: result.metadata.verification.confidence,
+                  iterations: result.metadata.verification.iterations
+                } : undefined,
+                graphReasoning: result.metadata?.graphReasoning ? {
+                  pathsDiscovered: result.metadata.graphReasoning.pathsDiscovered,
+                  topPath: result.metadata.graphReasoning.topPath ? {
+                    problem: result.metadata.graphReasoning.topPath.problem,
+                    solution: result.metadata.graphReasoning.topPath.solution,
+                    effect: result.metadata.graphReasoning.topPath.effect,
+                    novelty: result.metadata.graphReasoning.topPath.novelty,
+                    scientificRationality: result.metadata.graphReasoning.topPath.scientificRationality,
+                    factuality: result.metadata.graphReasoning.topPath.factuality,
+                    overallScore: result.metadata.graphReasoning.topPath.overallScore
+                  } : null,
+                  graphStats: result.metadata.graphReasoning.graphStats,
+                  agentEvaluations: result.metadata.graphReasoning.agentEvaluations,
+                  executionTime: result.metadata.graphReasoning.executionTime
+                } : undefined
+              };
+
+              sendEvent('answer', {
+                text: result.answer || 'No answer generated',
+                metadata: safeMetadata
+              });
+
+              controller.close();
+            } catch (error: any) {
+              logger.error('Permutation-Lite-GAMP streaming failed', { error: error.message });
+              sendEvent('error', {
+                error: error.message || 'Permutation-Lite-GAMP execution failed'
+              });
+              controller.close();
+            }
+          }
+        });
+
+        return new Response(readableStream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          },
+        });
+      } else {
+        // Non-streaming mode
+        try {
+          const pipeline = new PermutationLiteGAMPPipeline({
+            enableGAMP: true,
+            enableOptimization: true,
+            enableLearning: true,
+            enableVerification: false, // RVS removed - was useless
+            enableTeacherStudent: true,
+            useGEPAArborWorkflow: true, // Enable full GEPA + DSPy + Ax LLM with 10 iterations until convergence
+            enableREFRAG: true, // Enable REFRAG for query reformulation
+            fastMode: false, // NEVER skip Context Engineering 2.0 - it's essential
+            gampConfig: {
+              maxGraphNodes: 50,
+              maxGraphEdges: 100,
+              scientificDomains: [], // Empty array = activate for any domain based on difficulty only
+              irtThreshold: 0.3, // Lower threshold to ensure GAMP activates for most queries
+              minNoveltyThreshold: 0.5,
+            }
+          });
+
+          const result = await pipeline.execute(query, domain);
+          const processingTime = Date.now() - startTime;
+
+          // Helper to safely serialize data
+          const safeSerialize = (obj: any) => {
+            if (!obj) return undefined;
+            try {
+              const seen = new WeakSet();
+              return JSON.parse(JSON.stringify(obj, (key, value) => {
+                if (typeof value === 'function') return undefined;
+                if (value === undefined) return null;
+                if (value === null) return null;
+                if (value instanceof Error) return { message: value.message, name: value.name };
+                if (value instanceof Map) return Object.fromEntries(value);
+                if (value instanceof Set) return Array.from(value);
+                if (typeof value === 'object' && value !== null) {
+                  if (seen.has(value)) return '[Circular Reference]';
+                  seen.add(value);
+                }
+                return value;
+              }));
+            } catch (error) {
+              console.warn('Safe serialize failed:', error);
+              return undefined;
+            }
+          };
+
+          const reasoningSteps = [
+            {
+              step: '1',
+              title: 'Routing',
+              content: `Domain: ${result.metadata?.domain || domain}, Difficulty: ${result.metadata?.difficulty?.toFixed(3) || 'N/A'}`,
+              status: 'complete' as const,
+              data: safeSerialize(result.metadata?.routing)
+            },
+            ...(result.metadata?.graphReasoning ? [{
+              step: '2',
+              title: 'Graph Reasoning (GAMP)',
+              content: `GAMP: ${(result.metadata.graphReasoning.pathsDiscovered || 0) > 0 ? '✅ Activated' : '❌ Not activated'}, Paths: ${result.metadata.graphReasoning.pathsDiscovered || 0}`,
+              status: 'complete' as const,
+              data: safeSerialize(result.metadata.graphReasoning)
+            }] : []),
+            ...(result.metadata?.optimization ? [{
+              step: '3',
+              title: 'Optimization (GEPA)',
+              content: `Quality: ${result.metadata.optimization.quality?.toFixed(2) || 'N/A'}`,
+              status: 'complete' as const,
+              data: safeSerialize(result.metadata.optimization)
+            }] : []),
+            ...(result.metadata?.verification ? [{
+              step: '4',
+              title: 'Verification (RVS)',
+              content: `Verified: ${result.metadata.verification.verified ? '✅' : '❌'}, Confidence: ${result.metadata.verification.confidence?.toFixed(2) || 'N/A'}`,
+              status: 'complete' as const,
+              data: safeSerialize(result.metadata.verification)
+            }] : [])
+          ];
+
+          // Safely serialize metadata for JSON response
+          const safeMetadata = {
+            mode: 'lite-gamp',
+            domain: result.metadata?.domain || domain,
+            difficulty: result.metadata?.difficulty,
+            quality_score: result.metadata?.quality_score || 0.5,
+            processing_time_ms: processingTime,
+            cost: result.metadata?.performance?.cost || 0.001,
+            layers_executed: result.metadata?.layers_executed || [],
+            gamp_activated: (result.metadata?.graphReasoning?.pathsDiscovered || 0) > 0,
+            paths_discovered: result.metadata?.graphReasoning?.pathsDiscovered || 0,
+            routing: result.metadata?.routing ? {
+              difficulty: result.metadata.routing.difficulty,
+              domain: result.metadata.routing.domain,
+              confidence: result.metadata.routing.confidence,
+              route: result.metadata.routing.route
+            } : undefined,
+            optimization: result.metadata?.optimization ? {
+              optimizedPrompt: result.metadata.optimization.optimizedPrompt?.substring(0, 200),
+              quality: result.metadata.optimization.quality,
+              cost: result.metadata.optimization.cost,
+              generations: result.metadata.optimization.generations
+            } : undefined,
+            learning: result.metadata?.learning ? {
+              memoriesStored: result.metadata.learning.memoriesStored,
+              memoriesUsed: result.metadata.learning.memoriesUsed,
+              successRate: result.metadata.learning.successRate
+            } : undefined,
+            verification: result.metadata?.verification ? {
+              verified: result.metadata.verification.verified,
+              confidence: result.metadata.verification.confidence,
+              iterations: result.metadata.verification.iterations
+            } : undefined,
+            graphReasoning: result.metadata?.graphReasoning ? {
+              pathsDiscovered: result.metadata.graphReasoning.pathsDiscovered,
+              topPath: result.metadata.graphReasoning.topPath ? {
+                problem: result.metadata.graphReasoning.topPath.problem,
+                solution: result.metadata.graphReasoning.topPath.solution,
+                effect: result.metadata.graphReasoning.topPath.effect,
+                novelty: result.metadata.graphReasoning.topPath.novelty,
+                scientificRationality: result.metadata.graphReasoning.topPath.scientificRationality,
+                factuality: result.metadata.graphReasoning.topPath.factuality,
+                overallScore: result.metadata.graphReasoning.topPath.overallScore
+              } : null,
+              graphStats: result.metadata.graphReasoning.graphStats,
+              agentEvaluations: result.metadata.graphReasoning.agentEvaluations,
+              executionTime: result.metadata.graphReasoning.executionTime
+            } : undefined
+          };
+
+          return NextResponse.json({
+            success: true,
+            answer: result.answer || 'No answer generated',
+            reasoningSteps,
+            metadata: safeMetadata
+          });
+
+        } catch (error: any) {
+          logger.error('Permutation-Lite-GAMP execution failed', { error: error.message });
+          return NextResponse.json({
+            success: false,
+            error: error.message || 'Permutation-Lite-GAMP execution failed',
+            details: error.stack
+          }, { status: 500 });
+        }
+      }
+    } else if (mode === 'lite') {
       // PERMUTATION-LITE MODE: Simplified 4-layer architecture
       logger.info('Executing Permutation-Lite pipeline', { stream });
       
@@ -304,11 +688,54 @@ export async function POST(request: NextRequest) {
           async start(controller) {
             const sendEvent = (event: string, data: any) => {
               try {
+                // Use a closure to track visited objects for circular reference detection
+                const seen = new WeakSet();
+                const safeSerialize = (obj: any, depth = 0): any => {
+                  if (depth > 10) return '[Max Depth]';
+                  if (obj === null || obj === undefined) return null;
+                  if (typeof obj === 'function') return undefined;
+                  if (obj instanceof Error) return { message: obj.message, name: obj.name };
+                  if (obj instanceof Map) return Object.fromEntries(obj);
+                  if (obj instanceof Set) return Array.from(obj);
+                  if (typeof obj === 'object') {
+                    if (seen.has(obj)) return '[Circular]';
+                    seen.add(obj);
+                    if (Array.isArray(obj)) {
+                      return obj.map(item => safeSerialize(item, depth + 1));
+                    }
+                    const result: any = {};
+                    for (const key in obj) {
+                      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        try {
+                          const value = safeSerialize(obj[key], depth + 1);
+                          if (value !== undefined) {
+                            result[key] = value;
+                          }
+                        } catch (e) {
+                          result[key] = '[Serialize Error]';
+                        }
+                      }
+                    }
+                    return result;
+                  }
+                  return obj;
+                };
+                
+                const safeData = JSON.stringify(safeSerialize(data));
                 controller.enqueue(
-                  encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+                  encoder.encode(`event: ${event}\ndata: ${safeData}\n\n`)
                 );
               } catch (error) {
-                // Stream closed
+                // Stream closed or serialization error
+                console.error('Error encoding event:', error);
+                // Send a minimal error event
+                try {
+                  controller.enqueue(
+                    encoder.encode(`event: ${event}\ndata: ${JSON.stringify({ error: 'Serialization failed', event })}\n\n`)
+                  );
+                } catch (e) {
+                  // Stream is closed, ignore
+                }
               }
             };
 
@@ -506,11 +933,54 @@ export async function POST(request: NextRequest) {
           async start(controller) {
             const sendEvent = (event: string, data: any) => {
               try {
+                // Use a closure to track visited objects for circular reference detection
+                const seen = new WeakSet();
+                const safeSerialize = (obj: any, depth = 0): any => {
+                  if (depth > 10) return '[Max Depth]';
+                  if (obj === null || obj === undefined) return null;
+                  if (typeof obj === 'function') return undefined;
+                  if (obj instanceof Error) return { message: obj.message, name: obj.name };
+                  if (obj instanceof Map) return Object.fromEntries(obj);
+                  if (obj instanceof Set) return Array.from(obj);
+                  if (typeof obj === 'object') {
+                    if (seen.has(obj)) return '[Circular]';
+                    seen.add(obj);
+                    if (Array.isArray(obj)) {
+                      return obj.map(item => safeSerialize(item, depth + 1));
+                    }
+                    const result: any = {};
+                    for (const key in obj) {
+                      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        try {
+                          const value = safeSerialize(obj[key], depth + 1);
+                          if (value !== undefined) {
+                            result[key] = value;
+                          }
+                        } catch (e) {
+                          result[key] = '[Serialize Error]';
+                        }
+                      }
+                    }
+                    return result;
+                  }
+                  return obj;
+                };
+                
+                const safeData = JSON.stringify(safeSerialize(data));
                 controller.enqueue(
-                  encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+                  encoder.encode(`event: ${event}\ndata: ${safeData}\n\n`)
                 );
               } catch (error) {
-                // Stream closed
+                // Stream closed or serialization error
+                console.error('Error encoding event:', error);
+                // Send a minimal error event
+                try {
+                  controller.enqueue(
+                    encoder.encode(`event: ${event}\ndata: ${JSON.stringify({ error: 'Serialization failed', event })}\n\n`)
+                  );
+                } catch (e) {
+                  // Stream is closed, ignore
+                }
               }
             };
 

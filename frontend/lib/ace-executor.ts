@@ -300,34 +300,19 @@ Provide only a number (0-100):`;
       return data.response;
     } catch (error) {
       console.error('LLM call failed:', error);
-      // Fallback to mock response for development
-      return this.generateMockResponse(prompt);
+      // Fail gracefully instead of returning mock
+      throw new Error(`ACE Executor LLM call failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * Generate mock response for development/testing
+   * REMOVED: generateMockResponse
+   * This method is no longer used - we fail gracefully instead of returning mocks
+   * Keeping method signature for backward compatibility but it should never be called
    */
-  private generateMockResponse(prompt: string): string {
-    if (prompt.includes('JSON')) {
-      return JSON.stringify({
-        complexity: Math.floor(Math.random() * 10) + 1,
-        approach: 'structured_workflow',
-        challenges: ['Data extraction', 'Format validation']
-      });
-    }
-    
-    if (prompt.includes('workflow')) {
-      return JSON.stringify({
-        steps: [
-          { action: 'Extract data', expected: 'Structured output' },
-          { action: 'Validate format', expected: 'Validated data' },
-          { action: 'Generate result', expected: 'Final output' }
-        ]
-      });
-    }
-    
-    return `Mock response for: ${prompt.substring(0, 50)}...`;
+  private generateMockResponse(_prompt: string): string {
+    console.error('❌ ERROR: generateMockResponse called - this should never happen!');
+    throw new Error('Mock responses are disabled. LLM calls must succeed or fail gracefully.');
   }
 
   /**

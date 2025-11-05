@@ -14,6 +14,8 @@ import {
   type EntropyReductionConfig,
   type LayeredMemoryConfig
 } from './context-engineering-2';
+import { extendedIntelligenceMetrics, type ContextQualityMetrics } from './extended-intelligence-metrics';
+import { contextQualityDashboard } from './context-quality-dashboard';
 
 export class AdvancedContextSystem {
   private contextManager: DynamicContextManager;
@@ -189,13 +191,81 @@ export class AdvancedContextSystem {
     const finalContext = await this.memory.getContext(sessionId, query, 20);
     const analytics = await this.memory.getSessionAnalytics(sessionId);
 
+    // 11. Record extended intelligence metrics
+    const contextQuality: ContextQualityMetrics = {
+      relevance: qualityReport.currentQuality.relevance || 0.5,
+      coherence: qualityReport.currentQuality.coherence || 0.5,
+      completeness: qualityReport.currentQuality.completeness || 0.5,
+      efficiency: this.calculateContextEfficiency(finalContext, entropyReduced),
+      freshness: this.calculateFreshness(finalContext),
+      diversity: this.calculateDiversity(finalContext),
+    };
+    
+    contextQualityDashboard.recordQuality(contextQuality);
+    
+    // Note: Full extended intelligence metrics require agent-only answer for comparison
+    // This would be recorded in the pipeline when we have both agent-only and context-enhanced answers
+
     return {
       response,
       context: finalContext,
       quality: qualityReport.currentQuality,
       optimizations: optimizationResult.optimizations,
-      analytics
+      analytics: {
+        ...analytics,
+        contextQuality,
+        extendedIntelligence: {
+          contextContribution: contextQuality,
+          intelligenceExtension: contextQuality.efficiency,
+        },
+      },
     };
+  }
+  
+  /**
+   * Calculate context efficiency (quality improvement per token)
+   */
+  private calculateContextEfficiency(context: ContextDelta[], entropyReduced: any): number {
+    if (context.length === 0) return 0;
+    
+    const totalTokens = context.reduce((sum, c) => sum + (c.content.length / 4), 0); // Approximate tokens
+    const entropyReduction = entropyReduced.entropyReduction || 0;
+    
+    // Efficiency = entropy reduction / tokens (higher is better)
+    return totalTokens > 0 ? Math.min(1, entropyReduction / (totalTokens / 100)) : 0;
+  }
+  
+  /**
+   * Calculate context freshness (how recent is the context)
+   */
+  private calculateFreshness(context: ContextDelta[]): number {
+    if (context.length === 0) return 0;
+    
+    const now = Date.now();
+    const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+    
+    const freshnessScores = context.map(c => {
+      const age = now - (c.metadata.timestamp || now);
+      return Math.max(0, 1 - (age / maxAge));
+    });
+    
+    return freshnessScores.reduce((sum, score) => sum + score, 0) / freshnessScores.length;
+  }
+  
+  /**
+   * Calculate context diversity (how diverse are the sources)
+   */
+  private calculateDiversity(context: ContextDelta[]): number {
+    if (context.length === 0) return 0;
+    
+    const sources = new Set(context.map(c => c.metadata.domain || 'general'));
+    const types = new Set(context.map(c => c.type));
+    
+    // Diversity = unique sources / total items (normalized)
+    const sourceDiversity = Math.min(1, sources.size / context.length);
+    const typeDiversity = Math.min(1, types.size / context.length);
+    
+    return (sourceDiversity * 0.6) + (typeDiversity * 0.4);
   }
 
   /**

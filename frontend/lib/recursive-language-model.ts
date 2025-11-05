@@ -617,8 +617,8 @@ context_preview = context_slice(0, 1000)
 result = rlm_query("What is the main topic?", context_preview)
 \`\`\``;
     } else {
-      // Recursive LM - return focused answer
-      return `Based on the provided context, here is a focused answer to the query. [Simulated recursive LM response]`;
+      // Recursive LM - return error instead of simulated response
+      throw new Error('RLM recursive query failed: No valid response generated. Please check Ollama connection and query parameters.');
     }
   }
 }

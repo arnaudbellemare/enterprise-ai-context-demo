@@ -161,11 +161,16 @@ export class FullPromptMII {
     
     const optimizationTime = Date.now() - startTime;
     
+    const originalTokens = baseInstruction.split(' ').length;
+    const optimizedTokens = finalInstruction.split(' ').length;
+    const tokenChange = originalTokens - optimizedTokens;
+    const tokenChangePercent = (tokenChange / originalTokens) * 100;
+    
     const result: PromptMIIOptimizationResult = {
       originalInstruction: baseInstruction,
       optimizedInstruction: finalInstruction,
-      tokenReduction: baseInstruction.split(' ').length - finalInstruction.split(' ').length,
-      tokenReductionPercent: ((baseInstruction.split(' ').length - finalInstruction.split(' ').length) / baseInstruction.split(' ').length) * 100,
+      tokenReduction: tokenChange,
+      tokenReductionPercent: tokenChangePercent, // Can be negative if tokens increased
       performanceImprovement: instruction.metadata.performanceMetrics.efficiency,
       optimizationTime,
       iterations: optimizationResult.iterations,
@@ -175,7 +180,14 @@ export class FullPromptMII {
     this.optimizationHistory.push(result);
     
     console.log(`✅ PromptMII instruction generated:`);
-    console.log(`   Token reduction: ${result.tokenReductionPercent.toFixed(1)}%`);
+    if (tokenChangePercent > 0) {
+      console.log(`   Token reduction: ${tokenChangePercent.toFixed(1)}%`);
+    } else if (tokenChangePercent < 0) {
+      console.log(`   Token increase: ${Math.abs(tokenChangePercent).toFixed(1)}% (${originalTokens} → ${optimizedTokens} tokens)`);
+      console.log(`   ⚠️  PromptMII increased tokens - original prompt may be too short to benefit from optimization`);
+    } else {
+      console.log(`   Token count unchanged: ${originalTokens} tokens`);
+    }
     console.log(`   Performance improvement: ${(result.performanceImprovement * 100).toFixed(1)}%`);
     console.log(`   Optimization time: ${optimizationTime}ms`);
     

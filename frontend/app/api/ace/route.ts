@@ -6,10 +6,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ACEFramework, ACEUtils, Playbook } from '@/lib/ace-framework';
 
-// Mock LLM model for demonstration
-const mockModel = {
-  generate: async (prompt: string) => {
-    return `Mock LLM response for: ${prompt.substring(0, 100)}...`;
+// Real Ollama LLM client for ACE Framework
+const ollamaModel = {
+  generate: async (prompt: string): Promise<string> => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      
+      const response = await fetch("http://localhost:11434/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gemma3:4b",
+          messages: [
+            { role: "system", content: "You are an expert context engineering assistant. Provide real, substantive responses." },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const text = data.choices?.[0]?.message?.content || '';
+      
+      if (!text || text.trim().length === 0) {
+        throw new Error('Ollama returned empty response');
+      }
+      
+      return text;
+    } catch (error: any) {
+      console.error('❌ Ollama call failed in ACE:', error);
+      throw new Error(`LLM generation failed: ${error.message || 'Unknown error'}`);
+    }
   }
 };
 
@@ -30,11 +66,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize ACE framework
+    // Initialize ACE framework with real Ollama model
     let aceFramework: ACEFramework;
     
     if (playbookData) {
-      aceFramework = new ACEFramework(mockModel);
+      aceFramework = new ACEFramework(ollamaModel);
       aceFramework.importPlaybook(JSON.stringify(playbookData));
     } else {
       // Create initial playbook with workflow knowledge
@@ -54,7 +90,7 @@ export async function POST(request: NextRequest) {
       ];
       
       const initialPlaybook = ACEUtils.createInitialPlaybook(initialKnowledge);
-      aceFramework = new ACEFramework(mockModel, initialPlaybook);
+      aceFramework = new ACEFramework(ollamaModel, initialPlaybook);
     }
 
     let result: any = {};
@@ -138,7 +174,7 @@ export async function GET(request: NextRequest) {
     ];
     
     const initialPlaybook = ACEUtils.createInitialPlaybook(initialKnowledge);
-    const aceFramework = new ACEFramework(mockModel, initialPlaybook);
+    const aceFramework = new ACEFramework(ollamaModel, initialPlaybook);
 
     let result: any = {};
 
