@@ -50,6 +50,7 @@ import { doragHybridRetrieval } from '../gamp/dorag-hybrid-retrieval';
 // Chain Association Activation imports
 import { chainAssociationActivation } from '../gamp/chain-association-activation';
 import { pipelineCache } from '../pipeline-cache';
+import { getMistakeLearningSystem } from '../mistake-learning-system';
 
 // ============================================================
 // INTERFACES
@@ -160,13 +161,37 @@ export interface PermutationLiteGAMPResult {
       total_time_ms: number;
       cost: number;
     };
-    routing?: RoutingResult;
-    optimization?: OptimizationResult;
+    routing?: {
+      domain: string;
+      difficulty: number;
+      route: string;
+      confidence: number;
+    };
+    optimization?: {
+      optimizedPrompt?: string;
+      quality: number;
+      cost: number;
+      generations: number;
+    };
     graphReasoning?: GraphReasoningResult;  // NEW: GAMP results
-    learning?: LearningResult;
+    learning?: {
+      memoriesStored: number;
+      memoriesUsed: number;
+      successRate: number;
+    };
     verification?: any; // RVS removed - was useless, keeping for compatibility
     toolsSynthesized?: number;
     toolsRetrieved?: number;
+    contextEngineering?: {
+      contextsCount: number;
+      quality: any;
+      inferredNeeds: number;
+    };
+    teacherStudent?: {
+      teacherConfidence?: number;
+      studentLearned?: boolean;
+      sourcesCount: number;
+    };
   };
 }
 
@@ -341,7 +366,7 @@ export class PermutationLiteGAMPPipeline {
     console.log(`   ✓ Route: ${routingResult.route}`);
 
     // Check if GAMP should be activated
-    const shouldActivateGAMP = this.shouldActivateGAMP(routingResult);
+    const shouldActivateGAMP = this.shouldActivateGAMP(routingResult, query);
     if (this.config.enableGAMP && shouldActivateGAMP) {
       const threshold = this.config.gampConfig?.irtThreshold ?? 0.5;
       console.log(`   🔬 GAMP activation: YES (IRT ${routingResult.difficulty.toFixed(2)} >= ${threshold})`);
@@ -357,6 +382,18 @@ export class PermutationLiteGAMPPipeline {
     let optimizationResult: OptimizationResult | undefined;
     let graphReasoningResult: GraphReasoningResult | undefined;
     let learningResult: LearningResult | undefined;
+
+    // ============================================================
+    // INTELLIGENT ROUTING: Skip unnecessary components for simple queries
+    // ============================================================
+    const isSimpleQuery = routingResult.difficulty < 0.4 && query.length < 100;
+    const shouldSkipOptimization = this.config.fastMode || isSimpleQuery;
+    const shouldSkipLearning = this.config.fastMode || isSimpleQuery;
+    const shouldSkipGAMP = !shouldActivateGAMP || (isSimpleQuery && routingResult.difficulty < 0.3);
+    
+    if (isSimpleQuery) {
+      console.log(`   🎯 Simple query detected - skipping heavy optimization and learning`);
+    }
 
     // ============================================================
     // CONTEXT ENGINEERING 2.0 (Always run - essential for quality)
@@ -380,27 +417,47 @@ export class PermutationLiteGAMPPipeline {
       }
     })();
 
-    if (this.config.enableOptimization || (this.config.enableGAMP && shouldActivateGAMP) || this.config.enableLearning) {
-      console.log(`\n⚙️  LAYER 2, 2.5, 3: OPTIMIZATION + GRAPH REASONING + LEARNING + CONTEXT ENGINEERING 2.0 (Parallel Execution)${this.config.fastMode ? ' (Fast Mode - skipping heavy optimization)' : ''}`);
+    // ============================================================
+    // TEACHER-STUDENT (Run in parallel with optimization/GAMP/learning)
+    // ============================================================
+    let teacherStudentResult: any = null;
+    const teacherStudentPromise = (this.config.enableTeacherStudent && !this.config.fastMode)
+      ? (async () => {
+          try {
+            console.log('🎓 TEACHER-STUDENT-JUDGE (running in parallel)');
+            const result = await this.executeTeacherStudent(query, routingResult.domain);
+            console.log(`   ✓ Teacher confidence: ${result?.teacherResponse?.confidence?.toFixed(2) || 'N/A'}`);
+            return result;
+          } catch (error) {
+            console.warn('⚠️ Teacher-Student failed (non-fatal):', error);
+            return null;
+          }
+        })()
+      : Promise.resolve(null);
+
+    if (this.config.enableOptimization || (this.config.enableGAMP && !shouldSkipGAMP) || this.config.enableLearning) {
+      console.log(`\n⚙️  LAYER 2, 2.5, 3: OPTIMIZATION + GRAPH REASONING + LEARNING + CONTEXT ENGINEERING 2.0 + TEACHER-STUDENT (Parallel Execution)${this.config.fastMode ? ' (Fast Mode - skipping heavy optimization)' : ''}`);
       const parallelStartTime = Date.now();
 
-      // Parallel execution: GEPA, GAMP, Learning, and Context Engineering 2.0 (always run)
+      // Parallel execution: GEPA, GAMP, Learning, Context Engineering 2.0, and Teacher-Student
       const parallelTasks: Promise<any>[] = [
-        this.config.enableOptimization && !this.config.fastMode
+        this.config.enableOptimization && !shouldSkipOptimization
           ? this.executeOptimization(query, routingResult)
           : Promise.resolve(undefined),
-        (this.config.enableGAMP && shouldActivateGAMP)
+        (this.config.enableGAMP && !shouldSkipGAMP)
           ? this.executeGraphReasoning(query, routingResult.domain)
           : Promise.resolve(undefined),
-        this.config.enableLearning && !this.config.fastMode
+        this.config.enableLearning && !shouldSkipLearning
           ? this.executeLearning(query, routingResult.domain)
           : Promise.resolve(undefined),
         contextEngineeringPromise, // Always run Context Engineering 2.0
+        teacherStudentPromise, // Run Teacher-Student in parallel
       ];
       
-      const [optResult, graphResult, learnResult, contextResult] = await Promise.all(parallelTasks);
+      const [optResult, graphResult, learnResult, contextResult, teacherResult] = await Promise.all(parallelTasks);
       
       contextEngineeringResult = contextResult || null;
+      teacherStudentResult = teacherResult || null;
 
       optimizationResult = optResult;
       graphReasoningResult = graphResult;
@@ -439,18 +496,6 @@ export class PermutationLiteGAMPPipeline {
     }
 
     // ============================================================
-    // TEACHER-STUDENT-JUDGE (Skip in fast mode - uses direct Ollama instead)
-    // ============================================================
-    let teacherStudentResult: any = null;
-    if (this.config.enableTeacherStudent && !this.config.fastMode) {
-      console.log('\n🎓 TEACHER-STUDENT-JUDGE');
-      teacherStudentResult = await this.executeTeacherStudent(query, routingResult.domain);
-      console.log(`   ✓ Teacher confidence: ${teacherStudentResult?.teacherResponse?.confidence?.toFixed(2) || 'N/A'}`);
-    } else if (this.config.fastMode) {
-      console.log('\n⚡ Fast Mode: Skipping Teacher-Student (using direct Ollama for speed)');
-    }
-
-    // ============================================================
     // GENERATE INITIAL ANSWER
     // ============================================================
     // Always use generateAnswer, but include Teacher-Student response as context
@@ -472,8 +517,16 @@ export class PermutationLiteGAMPPipeline {
       console.log('\n🔄 DO-RAG REFINEMENT: Applying multi-stage refinement...');
       
       try {
-        // Get knowledge graph and retrieved context for refinement
-        const knowledgeGraph = await this.buildLightweightKnowledgeGraph(query, routingResult.domain);
+        // Get knowledge graph and retrieved context for refinement (use cached graph if available)
+        const kgCacheKey = `gamp:graph:${routingResult.domain}:${query.substring(0, 100)}`;
+        let knowledgeGraph = pipelineCache.get<KnowledgeGraph>(kgCacheKey);
+        if (!knowledgeGraph) {
+          knowledgeGraph = await this.buildLightweightKnowledgeGraph(query, routingResult.domain);
+          // Cache graph for 1 hour (TTL: 3600000ms)
+          pipelineCache.set(kgCacheKey, knowledgeGraph, 3600000);
+        } else {
+          console.log('   💾 DO-RAG Refinement: Using cached knowledge graph');
+        }
         const retrievedContext = [
           ...(learningResult?.memoriesUsed ? ['Retrieved from ReasoningBank memories'] : []),
           ...(graphReasoningResult.topPath ? [
@@ -531,7 +584,15 @@ export class PermutationLiteGAMPPipeline {
     // ============================================================
     if (this.config.enableLearning) {
       const qualityScore = this.calculateQualityScore(routingResult, optimizationResult, undefined, graphReasoningResult);
+      
+      // Store memories (success or failure)
       this.storeMemories(query, answer, routingResult.domain, qualityScore, graphReasoningResult?.topPath ? [graphReasoningResult.topPath] : []).catch(console.error);
+      
+      // Learn from mistakes if quality is low
+      if (qualityScore < 0.6) {
+        console.log('\n📚 MISTAKE LEARNING: Analyzing low-quality response...');
+        this.learnFromMistake(query, answer, routingResult.domain, qualityScore, teacherStudentResult).catch(console.error);
+      }
     }
 
     // ============================================================
@@ -562,8 +623,12 @@ export class PermutationLiteGAMPPipeline {
       console.error('❌ ERROR: Answer is empty! Check generateAnswer() method.');
     }
 
+    // Clean output format: Separate user-facing answer from metadata
     return {
+      // User-facing answer (clean, no metadata)
       answer: finalAnswer,
+      
+      // Metadata (separate, for debugging/analytics)
       metadata: {
         domain: routingResult.domain,
         difficulty: routingResult.difficulty,
@@ -573,13 +638,48 @@ export class PermutationLiteGAMPPipeline {
           total_time_ms: totalTime,
           cost: totalCost,
         },
-        routing: routingResult,
-        optimization: optimizationResult,
-        graphReasoning: graphReasoningResult,
-        learning: learningResult,
-        verification: undefined, // RVS removed - was useless
-        toolsSynthesized: learningResult?.alitaG?.toolsSynthesized || 0,
-        toolsRetrieved: learningResult?.alitaG?.toolsRetrieved || 0,
+        routing: {
+          domain: routingResult.domain,
+          difficulty: routingResult.difficulty,
+          route: routingResult.route,
+          confidence: routingResult.confidence,
+        },
+        optimization: optimizationResult ? {
+          optimizedPrompt: optimizationResult.optimizedPrompt,
+          quality: optimizationResult.quality,
+          cost: optimizationResult.cost,
+          generations: optimizationResult.generations,
+        } : undefined,
+        graphReasoning: graphReasoningResult ? {
+          pathsDiscovered: graphReasoningResult.pathsDiscovered,
+          topPath: graphReasoningResult.topPath ? {
+            problem: graphReasoningResult.topPath.problem,
+            solution: graphReasoningResult.topPath.solution,
+            effect: graphReasoningResult.topPath.effect,
+            novelty: graphReasoningResult.topPath.novelty,
+            scientificRationality: graphReasoningResult.topPath.scientificRationality,
+            factuality: graphReasoningResult.topPath.factuality,
+            overallScore: graphReasoningResult.topPath.overallScore,
+          } : null,
+          graphStats: graphReasoningResult.graphStats,
+          agentEvaluations: graphReasoningResult.agentEvaluations,
+          executionTime: graphReasoningResult.executionTime,
+        } : undefined,
+        learning: learningResult ? {
+          memoriesStored: learningResult.memoriesStored,
+          memoriesUsed: learningResult.memoriesUsed,
+          successRate: learningResult.successRate,
+        } : undefined,
+        contextEngineering: contextEngineeringResult ? {
+          contextsCount: contextEngineeringResult.context?.length || 0,
+          quality: contextEngineeringResult.quality,
+          inferredNeeds: contextEngineeringResult.analytics?.inferredNeeds?.length || 0,
+        } : undefined,
+        teacherStudent: teacherStudentResult ? {
+          teacherConfidence: teacherStudentResult.teacherResponse?.confidence,
+          studentLearned: teacherStudentResult.studentResponse?.learned_from_teacher,
+          sourcesCount: teacherStudentResult.teacherResponse?.sources?.length || 0,
+        } : undefined,
       },
     };
   }
@@ -588,7 +688,7 @@ export class PermutationLiteGAMPPipeline {
   // GAMP ACTIVATION LOGIC
   // ============================================================
 
-  private shouldActivateGAMP(routingResult: RoutingResult): boolean {
+  private shouldActivateGAMP(routingResult: RoutingResult, query: string): boolean {
     const gampConfig = this.config.gampConfig;
     if (!gampConfig) return false;
     
@@ -596,17 +696,48 @@ export class PermutationLiteGAMPPipeline {
     const isHighDifficulty = routingResult.difficulty >= (gampConfig.irtThreshold ?? 0.5);
     
     // If scientific domains are specified, check domain match
-    // Otherwise, activate for any domain if difficulty is high enough
     if (gampConfig.scientificDomains && gampConfig.scientificDomains.length > 0) {
-    const isScientificDomain = gampConfig.scientificDomains.some(
-      domain => routingResult.domain.toLowerCase().includes(domain.toLowerCase())
-    );
+      const isScientificDomain = gampConfig.scientificDomains.some(
+        domain => routingResult.domain.toLowerCase().includes(domain.toLowerCase())
+      );
       // For scientific domains, require both domain match AND high difficulty
-    return isScientificDomain && isHighDifficulty;
+      if (isScientificDomain && isHighDifficulty) {
+        return true; // Scientific queries always benefit from GAMP
+      }
     }
     
-    // No scientific domain restriction - activate based on difficulty only
-    return isHighDifficulty;
+    // For non-scientific domains, be more selective
+    // GAMP is designed for research/exploration, not factual lookups
+    const queryLower = query.toLowerCase();
+    
+    // Skip GAMP for factual lookups (premium, cost, price, rate, what is, how much)
+    const factualKeywords = ['premium', 'cost', 'price', 'rate', 'what is', 'how much', 'how many'];
+    const isFactualLookup = factualKeywords.some(kw => queryLower.includes(kw));
+    if (isFactualLookup) {
+      console.log('   🎯 Skipping GAMP: Factual lookup query (GAMP not needed)');
+      return false;
+    }
+    
+    // Only activate for research/exploration queries if difficulty is high
+    if (isHighDifficulty && routingResult.difficulty > 0.6) {
+      const researchKeywords = ['investigate', 'explore', 'discover', 'analyze', 'research', 'study', 'relationship', 'mechanism', 'how does'];
+      const hasResearchIntent = researchKeywords.some(kw => queryLower.includes(kw));
+      
+      if (hasResearchIntent) {
+        console.log('   ✅ Activating GAMP: Research-oriented query with high difficulty');
+        return true;
+      }
+    }
+    
+    // For very high difficulty (> 0.7), might benefit from GAMP even without explicit research keywords
+    if (routingResult.difficulty > 0.7) {
+      console.log('   ✅ Activating GAMP: Very high difficulty (>0.7)');
+      return true;
+    }
+    
+    // Default: skip GAMP for non-scientific, non-research queries
+    console.log('   🎯 Skipping GAMP: Query type not suitable for graph reasoning');
+    return false;
   }
 
   // ============================================================
@@ -1315,6 +1446,14 @@ export class PermutationLiteGAMPPipeline {
     query: string,
     domain: string
   ): Promise<KnowledgeGraph> {
+    // Check cache first
+    const cacheKey = `kg:build:${domain}:${query.substring(0, 100)}`;
+    const cachedGraph = pipelineCache.get<KnowledgeGraph>(cacheKey);
+    if (cachedGraph) {
+      console.log('   💾 Knowledge Graph: Using cached graph');
+      return cachedGraph;
+    }
+    
     // Retrieve relevant memories
     const memories = await this.reasoningBank.retrieveRelevantMemories(query, domain, 10);
 
@@ -1386,6 +1525,9 @@ export class PermutationLiteGAMPPipeline {
     if (graph.edges.length > maxEdges) {
       graph.edges = graph.edges.slice(0, maxEdges);
     }
+
+    // Cache the built graph for 1 hour (TTL: 3600000ms)
+    pipelineCache.set(cacheKey, graph, 3600000);
 
     return graph;
   }
@@ -1486,21 +1628,57 @@ export class PermutationLiteGAMPPipeline {
       }
     }
 
-    // Add GAMP insights
+    // Add GAMP insights (only if quality is high enough)
     if (graphResult?.topPath) {
-      context += `## Research Insights from Graph Analysis (GAMP):\n`;
-      context += `Problem Identified: ${graphResult.topPath.problem}\n`;
-      context += `Solution Approach: ${graphResult.topPath.solution}\n`;
-      context += `Expected Effect: ${graphResult.topPath.effect}\n`;
-      context += `Novelty Score: ${graphResult.topPath.novelty.toFixed(2)}\n`;
-      context += `Scientific Rationality: ${graphResult.topPath.scientificRationality.toFixed(2)}\n`;
-      context += `Factuality Score: ${graphResult.topPath.factuality.toFixed(2)}\n\n`;
+      // Quality thresholds: only include GAMP results if they meet minimum quality
+      const noveltyThreshold = 0.6;
+      const factualityThreshold = 0.5;
+      
+      const hasHighNovelty = graphResult.topPath.novelty >= noveltyThreshold;
+      const hasHighFactuality = graphResult.topPath.factuality >= factualityThreshold;
+      
+      // For scientific domains, also check scientific rationality
+      const isScientificDomain = ['biology', 'chemistry', 'physics', 'medicine', 'science'].some(
+        sd => domain.toLowerCase().includes(sd)
+      );
+      const hasHighScientificRationality = isScientificDomain 
+        ? graphResult.topPath.scientificRationality >= 0.4
+        : true; // Don't require for non-scientific domains
+      
+      // Only include GAMP insights if they meet quality thresholds
+      if ((hasHighNovelty || hasHighFactuality) && hasHighScientificRationality) {
+        context += `## Research Insights from Graph Analysis (GAMP):\n`;
+        context += `Problem Identified: ${graphResult.topPath.problem}\n`;
+        context += `Solution Approach: ${graphResult.topPath.solution}\n`;
+        context += `Expected Effect: ${graphResult.topPath.effect}\n`;
+        context += `Novelty Score: ${graphResult.topPath.novelty.toFixed(2)} (${hasHighNovelty ? '✅ High' : '⚠️ Moderate'})\n`;
+        context += `Scientific Rationality: ${graphResult.topPath.scientificRationality.toFixed(2)}\n`;
+        context += `Factuality Score: ${graphResult.topPath.factuality.toFixed(2)} (${hasHighFactuality ? '✅ High' : '⚠️ Moderate'})\n\n`;
+      } else {
+        console.log('   ⚠️ GAMP results below quality threshold - skipping integration');
+        console.log(`      Novelty: ${graphResult.topPath.novelty.toFixed(2)} (need ${noveltyThreshold}), Factuality: ${graphResult.topPath.factuality.toFixed(2)} (need ${factualityThreshold})`);
+        // Don't add low-quality GAMP results - they add noise without value
+      }
     }
 
     // Add learning insights
     if (learningResult?.memoriesUsed && learningResult.memoriesUsed > 0) {
       context += `## Relevant Knowledge from Memory (ReasoningBank):\n`;
       context += `Using ${learningResult.memoriesUsed} relevant memories from past experiences.\n\n`;
+    }
+
+    // Add mistake lessons (prevention strategies from past mistakes)
+    try {
+      const mistakeLessons = await this.retrieveMistakeLessons(query, domain);
+      if (mistakeLessons.length > 0) {
+        context += `## Mistake Prevention (Learned from Past Errors):\n`;
+        mistakeLessons.forEach((lesson, index) => {
+          context += `${index + 1}. ${lesson}\n`;
+        });
+        context += `\n`;
+      }
+    } catch (error) {
+      // Silently fail - mistake lessons are optional
     }
 
     context += `\n\n## Instructions:\n`;
@@ -1739,6 +1917,61 @@ export class PermutationLiteGAMPPipeline {
     }
 
     return Math.min(score, 0.99);
+  }
+
+  /**
+   * Learn from mistakes (low-quality responses)
+   */
+  private async learnFromMistake(
+    query: string,
+    incorrectAnswer: string,
+    domain: string,
+    qualityScore: number,
+    teacherStudentResult?: any
+  ): Promise<void> {
+    try {
+      const mistakeLearningSystem = getMistakeLearningSystem(this.reasoningBank);
+      
+      // Get correct response from teacher if available
+      const correctResponse = teacherStudentResult?.teacherResponse?.answer;
+      
+      // Build context
+      const context = `Quality Score: ${qualityScore.toFixed(2)} (low quality indicates mistake)\nDomain: ${domain}`;
+      
+      // Analyze mistake
+      const analysis = await mistakeLearningSystem.analyzeMistake(
+        query,
+        incorrectAnswer,
+        correctResponse,
+        context,
+        domain
+      );
+      
+      // Learn from mistake
+      await mistakeLearningSystem.learnFromMistake(analysis);
+      
+      console.log(`   ✓ Learned from mistake: ${analysis.mistakeType} - ${analysis.preventionStrategy.substring(0, 60)}...`);
+    } catch (error) {
+      console.warn('⚠️ Mistake learning failed (non-fatal):', error);
+    }
+  }
+
+  /**
+   * Retrieve mistake lessons for similar queries
+   */
+  private async retrieveMistakeLessons(query: string, domain: string): Promise<string[]> {
+    try {
+      const mistakeLearningSystem = getMistakeLearningSystem(this.reasoningBank);
+      const lessons = await mistakeLearningSystem.retrieveMistakeLessons(query, domain, 3);
+      
+      if (lessons.length > 0) {
+        return lessons.map(lesson => `⚠️ Previous Mistake: ${lesson.preventionStrategy}`);
+      }
+      return [];
+    } catch (error) {
+      console.warn('⚠️ Mistake lesson retrieval failed (non-fatal):', error);
+      return [];
+    }
   }
 
   private async storeMemories(
