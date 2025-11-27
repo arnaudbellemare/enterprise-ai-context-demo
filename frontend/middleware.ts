@@ -40,6 +40,9 @@ const PUBLIC_ROUTES = [
   '/api/chat-reasoning',  // Public chat interface
   '/api/permutation-lite',  // PERMUTATION Lite for testing
   '/api/answer',  // LLM answer generation for PERMUTATION Lite
+  '/api/email/classify-and-respond',  // Email classification and response generation
+  '/api/email/send',  // Email sending service
+  '/api/email/webhook',  // Email webhook receiver
 ];
 
 /**

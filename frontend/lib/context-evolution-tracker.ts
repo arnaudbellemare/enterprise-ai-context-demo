@@ -339,6 +339,7 @@ export class ContextEvolutionTracker {
    */
   private cleanupHistory(): void {
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+    const beforeCount = this.evolutionHistory.length;
     
     this.evolutionHistory = this.evolutionHistory.filter(event => 
       event.timestamp > cutoff
@@ -346,7 +347,10 @@ export class ContextEvolutionTracker {
     
     this.qualityHistory = this.qualityHistory.slice(-100); // Keep last 100 quality measurements
     
-    console.log(`🧹 Cleaned up evolution history: ${this.evolutionHistory.length} events, ${this.qualityHistory.length} quality points`);
+    // Only log if something was actually cleaned up
+    if (beforeCount > this.evolutionHistory.length || this.qualityHistory.length > 100) {
+      console.log(`🧹 Cleaned up evolution history: ${this.evolutionHistory.length} events, ${this.qualityHistory.length} quality points`);
+    }
   }
 
   private generateId(): string {
