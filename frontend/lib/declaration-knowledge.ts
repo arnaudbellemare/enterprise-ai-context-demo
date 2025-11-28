@@ -127,6 +127,40 @@ export interface WaterDamageRule {
   emergencyResponse: {
     immediateAction: string[];
     contactProcedures: string[];
+    emergencyPhone?: string;
+    guideLink?: string;
+  };
+  stepByStepProcess?: {
+    phase1_UrgentIntervention: {
+      title: string;
+      steps: string[];
+      description: string;
+    };
+    phase2_InsuranceDeclaration: {
+      title: string;
+      steps: string[];
+      description: string;
+    };
+    phase3_DamageAssessment: {
+      title: string;
+      steps: string[];
+      description: string;
+    };
+    phase4_QuoteApproval: {
+      title: string;
+      steps: string[];
+      description: string;
+    };
+    phase5_WorkLaunch: {
+      title: string;
+      steps: string[];
+      description: string;
+    };
+    phase6_WorkAcceptance: {
+      title: string;
+      steps: string[];
+      description: string;
+    };
   };
   insurance: {
     syndicateCovers: string[];
@@ -142,6 +176,7 @@ export interface WaterDamageRule {
     standardRestoration: string[];
     improvementsCoverage: string;
   };
+  tenantCommunication?: string;
 }
 
 export interface WaterDamageIncidentManagement {
@@ -871,9 +906,23 @@ export interface CoOwnershipProtocols {
       contact: string;
     };
     airConditioning: {
+      hydroPayment: {
+        billing: 'Billing for air conditioning electricity is processed through Hydro payments, ensuring accurate tracking of usage',
+        process: 'Billing for air conditioning electricity is processed through Hydro payments'
+      },
+      breakerRules: {
+        critical: 'Never turn off your unit\'s circuit breaker',
+        reason: 'Turning off the circuit breaker can cause electrical faults and maintain safe operation of air conditioning units',
+        compliance: 'Users must follow breaker rules to prevent electrical faults and maintain safe operation of air conditioning units'
+      },
+      powerManagement: {
+        guidelines: 'Effective air conditioning use requires managing power consumption to avoid overloads and ensure efficiency',
+        privateUnitResponsibility: 'Each unit owner is responsible for their air conditioning unit and related electrical consumption'
+      },
       errorCodeManual: string;
       privateUnitResponsibility: string;
       contact: string;
+      manualAppLinks: 'Manual and app links available in Welcome Guide for A/C operation and troubleshooting'
     };
   };
   renovations: {
@@ -1261,7 +1310,69 @@ export const ENTICY_DECLARATION_RULES: Partial<DeclarationRules> = {
         'Fill Monday.com incident form',
         'Notify project manager',
         'Contact emergency restoration company'
-      ]
+      ],
+      emergencyPhone: '514-777-1731',
+      guideLink: 'Water damage guide link available in Welcome Guide'
+    },
+    stepByStepProcess: {
+      phase1_UrgentIntervention: {
+        title: 'Urgent Intervention and Leak Control',
+        steps: [
+          'Handle the emergency of the disaster',
+          'Dispatch of a post-disaster company',
+          'Dispatch of the trade to stop the leak (plumber, etc.)',
+          'Repair of the origin of the loss once the quotation is accepted by the Board'
+        ],
+        description: 'Immediate action is required to control water leaks and prevent further damage before proceeding with other steps.'
+      },
+      phase2_InsuranceDeclaration: {
+        title: 'Documentation and Insurance Declaration',
+        steps: [
+          'Declaration to the insurance',
+          'Declaration of the co-owner to his insurance',
+          'Declaration of the syndicate to its insurance company',
+          'Denunciation between the parties',
+          'Co-owner: transmission of insurance file',
+          'Syndicate: notice of commitment sent to the private unit that caused the loss',
+          'If the loss comes from common equipment belonging to the syndicate, the latter will assume full responsibility'
+        ],
+        description: 'Thorough documentation of the damage and prompt declaration to insurers are essential for a smooth claims process.'
+      },
+      phase3_DamageAssessment: {
+        title: 'Damage Assessment',
+        steps: [
+          'The claims experts appointed by the insurance companies will determine the work to be done',
+          'Any leasehold improvements, i.e., cosmetic additions or embellishments to the private unit are covered only by the owner\'s insurance',
+          'Estimate of the work by one of two contractors'
+        ],
+        description: 'Experts assess the extent of the damage, obtain syndicate approval, and initiate necessary repairs to restore the property.'
+      },
+      phase4_QuoteApproval: {
+        title: 'Approval of Quotes',
+        steps: [
+          'Approval required by the Board of Directors',
+          'Approval required by claim adjusters'
+        ],
+        description: 'Both Board and insurance adjusters must approve quotes before work begins.'
+      },
+      phase5_WorkLaunch: {
+        title: 'Launch of Work',
+        steps: [
+          'Work schedule',
+          'Move-in/Move-out organization (if required)'
+        ],
+        description: 'Work begins according to approved schedule, with temporary relocation if necessary.'
+      },
+      phase6_WorkAcceptance: {
+        title: 'Acceptance of the Work',
+        steps: [
+          'Final inspection to confirm repairs',
+          'Letter of re-invoicing (liability)',
+          'Request reimbursement from the unit that generated the claim',
+          'Expenses requested: emergency work, repairs, management fees, other justifiable expenses related to the disaster'
+        ],
+        description: 'The process ends with a final inspection to confirm repairs, billing the responsible party, and issuing last reminders.'
+      }
     },
     insurance: {
       syndicateCovers: [
@@ -1281,12 +1392,14 @@ export const ENTICY_DECLARATION_RULES: Partial<DeclarationRules> = {
       syndicateResponsible: [
         'Standard restoration',
         'Repairs to original condition',
-        'Common area damage'
+        'Common area damage',
+        'If loss comes from common equipment belonging to the syndicate, the syndicate assumes full responsibility'
       ],
       coOwnerResponsible: [
         'Personal belongings',
         'Improvements',
-        'Additional living expenses'
+        'Additional living expenses',
+        'Leasehold improvements (cosmetic additions or embellishments)'
       ]
     },
     reconstruction: {
@@ -1297,7 +1410,8 @@ export const ENTICY_DECLARATION_RULES: Partial<DeclarationRules> = {
         'Basic finishes'
       ],
       improvementsCoverage: 'Co-owner insurance covers difference between standard and improvements'
-    }
+    },
+    tenantCommunication: 'Important to pass water damage guide document to tenants if unit is rented, so they are aware of procedures to follow in case of water leak'
   },
 
   commonAreas: {
@@ -2180,9 +2294,23 @@ export const ENTICY_DECLARATION_RULES: Partial<DeclarationRules> = {
         contact: 'administration@ascentiaimmobilier.com'
       },
       airConditioning: {
+        hydroPayment: {
+          billing: 'Billing for air conditioning electricity is processed through Hydro payments, ensuring accurate tracking of usage',
+          process: 'Billing for air conditioning electricity is processed through Hydro payments'
+        },
+        breakerRules: {
+          critical: 'Never turn off your unit\'s circuit breaker',
+          reason: 'Turning off the circuit breaker can cause electrical faults and maintain safe operation of air conditioning units',
+          compliance: 'Users must follow breaker rules to prevent electrical faults and maintain safe operation of air conditioning units'
+        },
+        powerManagement: {
+          guidelines: 'Effective air conditioning use requires managing power consumption to avoid overloads and ensure efficiency',
+          privateUnitResponsibility: 'Each unit owner is responsible for their air conditioning unit and related electrical consumption'
+        },
         errorCodeManual: 'Refer to error code manual provided by email',
         privateUnitResponsibility: 'If problem is private and only affects unit, co-owner responsible to call specialist',
-        contact: 'administration@ascentiaimmobilier.com'
+        contact: 'administration@ascentiaimmobilier.com',
+        manualAppLinks: 'Manual and app links available in Welcome Guide for A/C operation and troubleshooting'
       }
     },
     renovations: {

@@ -203,10 +203,10 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     id: 'move-in-out-request',
     name: 'MOVE-IN/MOVE-OUT REQUEST',
     description: 'Move-in/move-out requests, moving fees, elevator reservations, fob requests, new resident setup, or moving deposits',
-    keywords: ['move-in', 'move-out', 'moving', 'déménagement', 'emménagement', 'elevator reservation', 'fob', 'puce', 'chip', 'deed of sale', 'acte de vente', 'possession', 'new resident', 'nouveau résident', 'dépôt de déménagement', 'moving deposit', 'dépôt de garantie', 'damage deposit', 'état des lieux', 'inspection', 'ascenseur réservé', 'ascenseur de service'],
+    keywords: ['move-in', 'move-out', 'moving', 'déménagement', 'emménagement', 'elevator reservation', 'lock elevator', 'lock an elevator', 'elevator lock', 'fob', 'puce', 'chip', 'deed of sale', 'acte de vente', 'possession', 'new resident', 'nouveau résident', 'dépôt de déménagement', 'moving deposit', 'dépôt de garantie', 'damage deposit', 'état des lieux', 'inspection', 'ascenseur réservé', 'ascenseur de service', 'verrouiller ascenseur', 'bloquer ascenseur'],
     patterns: [
-      /\b(move-in|move-out|moving|déménagement|emménagement)\b/gi,
-      /\b(elevator.*reservation|réservation.*ascenseur|moving.*day|jour.*déménagement|ascenseur.*réservé|ascenseur.*service)\b/gi,
+      /\b(move-in|move-out|moving|déménagement|emménagement|moving out|moving in)\b/gi,
+      /\b(elevator.*reservation|réservation.*ascenseur|moving.*day|jour.*déménagement|ascenseur.*réservé|ascenseur.*service|lock.*elevator|lock.*an.*elevator|elevator.*lock|verrouiller.*ascenseur|bloquer.*ascenseur)\b/gi,
       /\b(moving.*fee|frais.*déménagement|\$250.*move|supervision.*fee)\b/gi,
       /\b(deed.*sale|acte.*vente|possession|signing.*notary)\b/gi,
       /\b(new.*resident|nouveau.*résident|fob.*request|puce|chip.*request)\b/gi,
@@ -288,12 +288,15 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
   {
     id: 'access-control-request',
     name: 'ACCESS CONTROL REQUEST',
-    description: 'Requests for buzzer/intercom setup, access cards, keys, elevator access, package lockers, Expedibox, or building access configuration',
-    keywords: ['buzzer', 'intercom', 'sonnerie', 'puce', 'chip', 'access card', 'key', 'clé', 'elevator', 'ascenseur', 'door', 'porte', 'access', 'accès', 'phone number', 'numéro de téléphone', 'package', 'colis', 'locker', 'casier', 'lockers', 'casiers', 'expedibox', 'box', 'boite', 'enregistré', 'registered', 'registration', 'code', 'code d\'accès', 'access code'],
+    description: 'Requests for buzzer/intercom setup, access cards, keys, package lockers, Expedibox, or building access configuration (NOT for elevator reservations during moves)',
+    keywords: ['buzzer', 'intercom', 'sonnerie', 'puce', 'chip', 'access card', 'key', 'clé', 'door', 'porte', 'access', 'accès', 'phone number', 'numéro de téléphone', 'package', 'colis', 'locker', 'casier', 'lockers', 'casiers', 'expedibox', 'box', 'boite', 'enregistré', 'registered', 'registration', 'code', 'code d\'accès', 'access code'],
     patterns: [
       /\b(buzzer|intercom|sonnerie|sonner)\b/gi,
       /\b(puce|chip|access card|key card|clé)\b/gi,
+      // Exclude elevator requests related to moving - those should go to MOVE-IN/MOVE-OUT REQUEST
       /\b(elevator|ascenseur).*(call|calling)|(calling|appeler).*(elevator|ascenseur)\b/gi,
+      // Don't match elevator if moving/move/déménagement is mentioned
+      /^(?!.*(?:moving|move|déménagement|emménagement)).*(elevator|ascenseur).*(lock|reservation|reserve|réservation|verrouiller|bloquer)/gi,
       /\b(door.*open|ouvrir.*porte|composer.*\d+.*ouvrir)\b/gi,
       /\b(phone.*number|numéro.*téléphone|téléphone)\b/gi,
       /\b(condo.*\d{4}|unit.*\d{4}).*(buzzer|intercom|puce|access)\b/gi,
@@ -697,6 +700,13 @@ export function classifyEmailRuleBased(emailText: string): EmailClassification {
       let score = 0;
       const matchedKeywords: string[] = [];
       const matchedPatterns: string[] = [];
+
+      // Special handling: If this is ACCESS CONTROL REQUEST and email mentions moving/move/déménagement,
+      // reduce score significantly to avoid false positives
+      if (template.id === 'access-control-request' && 
+          (text.includes('moving') || text.includes('move') || text.includes('déménagement') || text.includes('emménagement'))) {
+        score -= 20; // Heavy penalty for ACCESS CONTROL when moving is mentioned
+      }
 
       // Check keywords
       for (const keyword of template.keywords) {

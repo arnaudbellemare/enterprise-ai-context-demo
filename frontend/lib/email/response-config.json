@@ -1,0 +1,126 @@
+{
+  "version": "1.0.0",
+  "responseConfigs": [
+    {
+      "templateId": "water-damage-incident",
+      "subjectPattern": {
+        "en": "Re: Water Damage - Unit {unitNumber} - File Follow-up",
+        "fr": "Re: Dégât d'eau - Unité {unitNumber} - Suivi du dossier",
+        "fallback": "Re: {originalSubject}"
+      },
+      "requiresHumanReview": {
+        "condition": "confidence < 0.7 OR hasAmounts",
+        "default": false
+      }
+    },
+    {
+      "templateId": "eviction-request",
+      "subjectPattern": {
+        "en": "Re: Eviction - Unit {unitNumber} - Follow-up",
+        "fr": "Re: Éviction - Unité {unitNumber} - Suivi",
+        "fallback": "Re: {originalSubject}"
+      },
+      "requiresHumanReview": {
+        "condition": "always",
+        "default": true
+      }
+    },
+    {
+      "templateId": "regulation-violation",
+      "subjectPattern": {
+        "en": "Re: Regulation Violation - Unit {unitNumber}",
+        "fr": "Re: Infraction aux règlements - Unité {unitNumber}",
+        "fallback": "Re: {originalSubject}"
+      },
+      "requiresHumanReview": {
+        "condition": "confidence < 0.8",
+        "default": false
+      }
+    },
+    {
+      "templateId": "renovation-request",
+      "subjectPattern": {
+        "en": "Re: Renovation Request - Unit {unitNumber}",
+        "fr": "Re: Demande de rénovation - Unité {unitNumber}",
+        "fallback": "Re: Demande de rénovation"
+      },
+      "requiresHumanReview": {
+        "condition": "confidence < 0.75",
+        "default": false
+      }
+    },
+    {
+      "templateId": "move-in-out-request",
+      "subjectPattern": {
+        "en": "Re: Move-in/Move-out - Unit {unitNumber}",
+        "fr": "Re: Déménagement - Unité {unitNumber}",
+        "fallback": "Re: Déménagement"
+      },
+      "requiresHumanReview": {
+        "condition": "never",
+        "default": false
+      }
+    },
+    {
+      "templateId": "access-control-request",
+      "subjectPattern": {
+        "en": "Re: Intercom/Buzzer Request - Unit {unitNumber}",
+        "fr": "Re: Demande d'intercom/buzzer - Unité {unitNumber}",
+        "fallback": "Re: Demande d'intercom/buzzer"
+      },
+      "requiresHumanReview": {
+        "condition": "never",
+        "default": false
+      }
+    },
+    {
+      "templateId": "work-building",
+      "subjectPattern": {
+        "en": "Re: Work Required - Unit {unitNumber}",
+        "fr": "Re: Travaux requis - Unité {unitNumber}",
+        "fallback": "Re: Travaux requis"
+      },
+      "requiresHumanReview": {
+        "condition": "confidence < 0.7",
+        "default": false
+      }
+    },
+    {
+      "templateId": "customer-request",
+      "subjectPattern": {
+        "en": "Re: {originalSubject}",
+        "fr": "Re: {originalSubject}",
+        "fallback": "Re: {originalSubject}"
+      },
+      "requiresHumanReview": {
+        "condition": "confidence < 0.6",
+        "default": false
+      }
+    },
+    {
+      "templateId": "financial-report",
+      "subjectPattern": {
+        "en": "Re: {originalSubject}",
+        "fr": "Re: {originalSubject}",
+        "fallback": "Re: {originalSubject}"
+      },
+      "requiresHumanReview": {
+        "condition": "confidence < 0.7",
+        "default": false
+      }
+    },
+    {
+      "templateId": "legal-document-request",
+      "subjectPattern": {
+        "en": "Re: Co-ownership Certificate (Law 16) - Unit {unitNumber}",
+        "fr": "Re: Certificat de copropriété (Loi 16) - Unité {unitNumber}",
+        "fallback": "Re: Certificat de copropriété (Loi 16)"
+      },
+      "requiresHumanReview": {
+        "condition": "never",
+        "default": false
+      }
+    }
+  ]
+}
+

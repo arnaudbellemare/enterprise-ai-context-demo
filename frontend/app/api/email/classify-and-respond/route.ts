@@ -11,12 +11,15 @@ import {
   requiresBoardApproval,
   formatNotaryCertificateResponse,
   getMoveInOutFees,
+  getMoveSupervisionFee,
   getAccessoryPricing,
   getPoolRules,
   getGymRules,
   getManagementContact,
   formatNewCoOwnerWelcomeMessage,
-  getNewCoOwnerRequirements
+  getNewCoOwnerRequirements,
+  getAttestationFee,
+  getCoOwnershipProtocols
 } from '@/lib/declaration-knowledge';
 
 /**
@@ -65,6 +68,9 @@ async function generateEmailResponse(
   const template = classification.template;
   const entities = classification.extractedEntities;
   
+  // Detect language from email
+  const language = detectLanguage(originalEmail.body);
+  
   // Extract key information
   const unitMatch = originalEmail.body.match(/unit[ée]\s*#?\s*(\d{4})/i) || 
                     originalEmail.body.match(/unité\s*#?\s*(\d{4})/i) ||
@@ -79,55 +85,63 @@ async function generateEmailResponse(
   switch (template.id) {
     case 'water-damage-incident':
       responseSubject = unitNumber 
-        ? `Re: Dégât d'eau - Unité ${unitNumber} - Suivi du dossier`
+        ? (language === 'en' ? `Re: Water Damage - Unit ${unitNumber} - File Follow-up` : `Re: Dégât d'eau - Unité ${unitNumber} - Suivi du dossier`)
         : `Re: ${originalEmail.subject}`;
-      responseBody = generateWaterDamageResponse(classification, originalEmail, unitNumber);
+      responseBody = generateWaterDamageResponse(classification, originalEmail, unitNumber, language);
       requiresHumanReview = classification.confidence < 0.7 || (entities.amounts?.length ?? 0) > 0;
       break;
       
     case 'eviction-request':
       responseSubject = unitNumber
-        ? `Re: Éviction - Unité ${unitNumber} - Suivi`
+        ? (language === 'en' ? `Re: Eviction - Unit ${unitNumber} - Follow-up` : `Re: Éviction - Unité ${unitNumber} - Suivi`)
         : `Re: ${originalEmail.subject}`;
-      responseBody = generateEvictionResponse(classification, originalEmail, unitNumber);
+      responseBody = generateEvictionResponse(classification, originalEmail, unitNumber, language);
       requiresHumanReview = true; // Always review eviction responses
       break;
       
     case 'regulation-violation':
       responseSubject = unitNumber
-        ? `Re: Infraction aux règlements - Unité ${unitNumber}`
+        ? (language === 'en' ? `Re: Regulation Violation - Unit ${unitNumber}` : `Re: Infraction aux règlements - Unité ${unitNumber}`)
         : `Re: ${originalEmail.subject}`;
-      responseBody = generateViolationResponse(classification, originalEmail, unitNumber);
+      responseBody = generateViolationResponse(classification, originalEmail, unitNumber, language);
       requiresHumanReview = classification.confidence < 0.8;
       break;
       
     case 'renovation-request':
-      responseSubject = `Re: Demande de rénovation${unitNumber ? ` - Unité ${unitNumber}` : ''}`;
-      responseBody = generateRenovationResponse(classification, originalEmail, unitNumber);
+      responseSubject = language === 'en' 
+        ? `Re: Renovation Request${unitNumber ? ` - Unit ${unitNumber}` : ''}`
+        : `Re: Demande de rénovation${unitNumber ? ` - Unité ${unitNumber}` : ''}`;
+      responseBody = generateRenovationResponse(classification, originalEmail, unitNumber, language);
       requiresHumanReview = classification.confidence < 0.75;
       break;
       
     case 'move-in-out-request':
-      responseSubject = `Re: Déménagement${unitNumber ? ` - Unité ${unitNumber}` : ''}`;
+      responseSubject = language === 'en'
+        ? `Re: Move-in/Move-out${unitNumber ? ` - Unit ${unitNumber}` : ''}`
+        : `Re: Déménagement${unitNumber ? ` - Unité ${unitNumber}` : ''}`;
       responseBody = generateMoveInOutResponse(classification, originalEmail, unitNumber);
       requiresHumanReview = false;
       break;
       
     case 'customer-request':
       responseSubject = `Re: ${originalEmail.subject}`;
-      responseBody = generateCustomerRequestResponse(classification, originalEmail);
+      responseBody = generateCustomerRequestResponse(classification, originalEmail, language);
       requiresHumanReview = classification.confidence < 0.6;
       break;
       
     case 'work-building':
-      responseSubject = `Re: Travaux requis${unitNumber ? ` - Unité ${unitNumber}` : ''}`;
-      responseBody = generateWorkBuildingResponse(classification, originalEmail, unitNumber);
+      responseSubject = language === 'en'
+        ? `Re: Work Required${unitNumber ? ` - Unit ${unitNumber}` : ''}`
+        : `Re: Travaux requis${unitNumber ? ` - Unité ${unitNumber}` : ''}`;
+      responseBody = generateWorkBuildingResponse(classification, originalEmail, unitNumber, language);
       requiresHumanReview = classification.confidence < 0.7;
       break;
       
     case 'access-control-request':
-      responseSubject = `Re: Demande d'intercom/buzzer${unitNumber ? ` - Unité ${unitNumber}` : ''}`;
-      responseBody = generateAccessControlResponse(classification, originalEmail, unitNumber);
+      responseSubject = language === 'en'
+        ? `Re: Intercom/Buzzer Request${unitNumber ? ` - Unit ${unitNumber}` : ''}`
+        : `Re: Demande d'intercom/buzzer${unitNumber ? ` - Unité ${unitNumber}` : ''}`;
+      responseBody = generateAccessControlResponse(classification, originalEmail, unitNumber, language);
       requiresHumanReview = false;
       break;
       
@@ -194,11 +208,26 @@ async function generateEmailResponse(
 function generateWaterDamageResponse(
   classification: EmailClassification,
   originalEmail: EmailRequest,
-  unitNumber: string | null
+  unitNumber: string | null,
+  language: 'fr' | 'en' = 'fr'
 ): string {
   const entities = classification.extractedEntities;
   const hasPhotos = originalEmail.body.toLowerCase().includes('photo') || 
                     (originalEmail.attachments?.length ?? 0) > 0;
+  
+  if (language === 'en') {
+    return `Hello,
+
+We have received your email regarding the water damage${unitNumber ? ` in unit ${unitNumber}` : ''}.
+
+${hasPhotos ? 'We have received the attached photos and forwarded them to our team for evaluation.\n\n' : ''}${(entities.dates?.length ?? 0) > 0 ? `We note that the incident occurred on ${entities.dates![0]}.\n\n` : ''}Our team will review your file and contact you as soon as possible to schedule the necessary repair work.
+
+${(entities.amounts?.length ?? 0) > 0 ? `Regarding the amounts mentioned, our claims adjuster will evaluate the costs and coordinate with the syndicate's insurance.\n\n` : ''}If you have urgent questions, please do not hesitate to contact us.
+
+Best regards,
+Management Team
+Gestion Velora`;
+  }
   
   return `Bonjour,
 
@@ -216,7 +245,8 @@ Gestion Velora`;
 function generateEvictionResponse(
   classification: EmailClassification,
   originalEmail: EmailRequest,
-  unitNumber: string | null
+  unitNumber: string | null,
+  language: 'fr' | 'en' = 'fr'
 ): string {
   const evictionProcess = getEvictionProcess();
   const evictionRule = getDeclarationRule('eviction');
@@ -248,7 +278,8 @@ Gestion Velora`;
 function generateViolationResponse(
   classification: EmailClassification,
   originalEmail: EmailRequest,
-  unitNumber: string | null
+  unitNumber: string | null,
+  language: 'fr' | 'en' = 'fr'
 ): string {
   const emailBody = originalEmail.body.toLowerCase();
   const entities = classification.extractedEntities;
@@ -274,6 +305,28 @@ function generateViolationResponse(
     const secondFine = getFineAmount('smoking', 2);
     const thirdFine = getFineAmount('smoking', 3);
     
+    if (language === 'en') {
+      return `Hello,
+
+We have received your report regarding the smoking violation${unitNumber ? ` in unit ${unitNumber}` : ''}${mentionsTime ? ' reported last night' : ''}.
+
+In accordance with the declaration of co-ownership and building regulations, smoking is prohibited in units, balconies, and common areas. We will proceed with the examination of this situation and apply appropriate measures, including issuing a fine of ${firstFine} for this first violation.
+
+The co-owner of the unit concerned will be informed of this violation and the possible consequences in case of recurrence:
+- First violation: ${firstFine}
+- Second violation: ${secondFine}
+- Additional violations: ${thirdFine}
+- Continuous violations: ${(smokingRule && 'escalation' in smokingRule && smokingRule.escalation?.continuousViolation) || '$50 per day after the first notice'}
+
+In case of repeated violations despite warnings, the Board of Directors may proceed with an eviction application to the Tribunal administratif du logement (TAL).
+
+Thank you for your report to maintain quality of life and safety in our building.
+
+Best regards,
+Management Team
+Gestion Velora`;
+    }
+    
     return `Bonjour,
 
 Nous avons bien reçu votre signalement concernant l'infraction de fumer${unitNumber ? ` dans l'unité ${unitNumber}` : ''}${mentionsTime ? ' signalée hier soir' : ''}.
@@ -295,6 +348,20 @@ L'équipe de gestion
 Gestion Velora`;
   }
   
+  if (language === 'en') {
+    return `Hello,
+
+We have received your report regarding a regulation violation${unitNumber ? ` in unit ${unitNumber}` : ''}.
+
+In accordance with the declaration of co-ownership, we will proceed with the examination of this situation and take appropriate measures. You will receive a follow-up in the coming business days.
+
+Thank you for your collaboration to maintain quality of life in our building.
+
+Best regards,
+Management Team
+Gestion Velora`;
+  }
+  
   return `Bonjour,
 
 Nous avons bien reçu votre signalement concernant une infraction aux règlements${unitNumber ? ` dans l'unité ${unitNumber}` : ''}.
@@ -311,7 +378,8 @@ Gestion Velora`;
 function generateRenovationResponse(
   classification: EmailClassification,
   originalEmail: EmailRequest,
-  unitNumber: string | null
+  unitNumber: string | null,
+  language: 'fr' | 'en' = 'fr'
 ): string {
   const requirements = getRenovationRequirements();
   const needsBoardApproval = requiresBoardApproval('renovation');
@@ -338,6 +406,44 @@ L'équipe de gestion
 Gestion Velora`;
 }
 
+/**
+ * Detect email language with caching for performance
+ */
+const languageCache = new Map<string, 'fr' | 'en'>();
+const MAX_CACHE_SIZE = 100;
+
+function detectLanguage(text: string): 'fr' | 'en' {
+  if (!text || typeof text !== 'string') {
+    return 'en'; // Default to English for invalid input
+  }
+
+  // Check cache first (use first 100 chars as key)
+  const cacheKey = text.substring(0, 100).toLowerCase();
+  if (languageCache.has(cacheKey)) {
+    return languageCache.get(cacheKey)!;
+  }
+
+  const frenchWords = ['bonjour', 'merci', 'déménagement', 'copropriétaire', 'syndicat', 'réunion', 'demande', 'ascenseur', 'unité', 'frais', 'dépôt', 'garantie'];
+  const englishWords = ['hello', 'thank', 'moving', 'condo', 'board', 'meeting', 'request', 'elevator', 'unit', 'fee', 'deposit', 'guarantee'];
+
+  const lowerText = text.toLowerCase();
+  const frenchCount = frenchWords.filter(word => lowerText.includes(word)).length;
+  const englishCount = englishWords.filter(word => lowerText.includes(word)).length;
+
+  const result = frenchCount > englishCount ? 'fr' : 'en';
+  
+  // Cache result with LRU eviction
+  if (languageCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = languageCache.keys().next().value;
+    if (firstKey) {
+      languageCache.delete(firstKey);
+    }
+  }
+  languageCache.set(cacheKey, result);
+  
+  return result;
+}
+
 function generateMoveInOutResponse(
   classification: EmailClassification,
   originalEmail: EmailRequest,
@@ -346,6 +452,19 @@ function generateMoveInOutResponse(
   const fees = getMoveInOutFees();
   const moveRule = getDeclarationRule('moveInOut');
   const emailBody = originalEmail.body.toLowerCase();
+  const entities = classification.extractedEntities;
+  const language = detectLanguage(originalEmail.body);
+  
+  // Check if they're asking about elevator locking specifically
+  const asksForElevatorLock = emailBody.includes('lock') && 
+                              (emailBody.includes('elevator') || emailBody.includes('ascenseur')) &&
+                              (emailBody.includes('moving') || emailBody.includes('move') || emailBody.includes('déménagement') || emailBody.includes('emménagement'));
+  
+  // Extract date/time if mentioned
+  const moveDate = entities.dates?.[0] || 
+                   (emailBody.match(/(?:tomorrow|demain|today|aujourd'hui|monday|tuesday|wednesday|thursday|friday|saturday|sunday|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)/i)?.[0]) ||
+                   null;
+  const moveTime = emailBody.match(/\b(\d{1,2}):?(\d{2})?\s*(am|pm|h|heure|heures)?\b/i)?.[0] || null;
   
   // Check if they're asking about fees specifically
   const asksAboutFees = emailBody.includes('fee') || 
@@ -355,25 +474,246 @@ function generateMoveInOutResponse(
                         emailBody.includes('deposit') ||
                         emailBody.includes('dépôt');
   
+  // Check if it's move-in or move-out
+  const isMoveOut = emailBody.includes('move out') || 
+                    emailBody.includes('moving out') || 
+                    emailBody.includes('déménagement') ||
+                    emailBody.includes('emménagement') && !emailBody.includes('move in');
+  const isMoveIn = emailBody.includes('move in') || 
+                   emailBody.includes('moving in') || 
+                   emailBody.includes('emménagement') && !emailBody.includes('move out');
+  
+  if (asksForElevatorLock) {
+    const supervisionFee = getMoveSupervisionFee();
+    
+    // Calculate days until move
+    const moveDateObj = moveDate ? (() => {
+      try {
+        if (moveDate.match(/tomorrow|demain/i)) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          return tomorrow;
+        }
+        return new Date(moveDate);
+      } catch {
+        return null;
+      }
+    })() : null;
+    
+    const daysDiff = moveDateObj ? Math.ceil((moveDateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
+    
+    if (language === 'en') {
+      return `Hello,
+
+We have received your request to reserve the elevator for your move${unitNumber ? ` from unit ${unitNumber}` : ''}.
+
+${moveDate ? `Requested date: ${moveDate}${moveTime ? ` at ${moveTime}` : ''}\n\n` : ''}IMPORTANT - Advance notice required: Your request must be submitted between 10 and 15 days before the planned move date. ${daysDiff !== null ? (daysDiff < 10 ? `\n\n⚠️ ATTENTION: Your move is scheduled in ${daysDiff} day(s), which is less than the minimum 10-day notice. Please contact us immediately to discuss available options.` : daysDiff > 15 ? `\n\nNote: Your request is submitted ${daysDiff} days in advance, which exceeds the recommended 15-day notice. We will confirm the reservation in the coming days.` : '') : ''}
+
+COSTS AND FEES:
+- Move supervision fee: ${supervisionFee} (elevator fee included)
+- Damage deposit: ${fees.damageDeposit} (fully refundable within 10 days after the move if no damage is found)
+
+MOVING PROCESS:
+
+1. Submit request (10-15 days in advance)
+   - Exact date and time desired
+   - Estimated duration of the move
+   - Number of people participating in the move
+
+2. Confirmation and approval
+   - We will check elevator availability
+   - You will receive written confirmation with details
+
+3. Payment of damage deposit
+   - The deposit of ${fees.damageDeposit} must be received before the move
+   - This deposit covers any potential damage to common areas (corridors, walls, elevator)
+
+4. Protection of common areas (day of move)
+   - Security or management will protect corridors, walls, and elevator
+   - Protective materials will be provided and installed by our team
+
+5. Inspection before and after
+   - An inspection will be conducted before and after the move
+   - Any damage found will be documented
+
+6. Deposit refund
+   - If no damage is found, the deposit will be refunded within 10 days after the move
+
+AUTHORIZED HOURS: Monday to Saturday, 8 AM to 6 PM
+
+To confirm your reservation, please provide:
+- Exact date and time of the move
+- Estimated duration
+- Number of people participating in the move
+
+Once we receive this information, we will confirm the elevator reservation and provide detailed instructions for the day of the move.
+
+Best regards,
+Management Team
+Gestion Velora`;
+    }
+    
+    // French version
+    return `Bonjour,
+
+Nous avons bien reçu votre demande de réservation d'ascenseur pour votre déménagement${unitNumber ? ` de l'unité ${unitNumber}` : ''}.
+
+${moveDate ? `Date demandée : ${moveDate}${moveTime ? ` à ${moveTime}` : ''}\n\n` : ''}IMPORTANT - Délai de préavis requis : Votre demande doit être soumise entre 10 et 15 jours avant la date de déménagement prévue. ${daysDiff !== null ? (daysDiff < 10 ? `\n\n⚠️ ATTENTION : Votre déménagement est prévu dans ${daysDiff} jour(s), ce qui est inférieur au délai minimum de 10 jours. Veuillez nous contacter immédiatement pour discuter des options disponibles.` : daysDiff > 15 ? `\n\nNote : Votre demande est soumise ${daysDiff} jours à l'avance, ce qui dépasse le délai recommandé de 15 jours. Nous vous confirmerons la réservation dans les prochains jours.` : '') : ''}
+
+COÛTS ET FRAIS :
+- Frais de supervision du déménagement : ${supervisionFee} (frais d'ascenseur inclus)
+- Dépôt de garantie : ${fees.damageDeposit} (entièrement remboursable dans les 10 jours suivant le déménagement si aucun dommage n'est constaté)
+
+PROCESSUS DE DÉMÉNAGEMENT :
+
+1. Soumission de la demande (10-15 jours à l'avance)
+   - Date et heure précises souhaitées
+   - Durée estimée du déménagement
+   - Nombre de personnes participant au déménagement
+
+2. Confirmation et approbation
+   - Nous vérifierons la disponibilité de l'ascenseur
+   - Vous recevrez une confirmation écrite avec les détails
+
+3. Paiement du dépôt de garantie
+   - Le dépôt de ${fees.damageDeposit} doit être reçu avant le déménagement
+   - Ce dépôt couvre d'éventuels dommages aux parties communes (corridors, murs, ascenseur)
+
+4. Protection des parties communes (jour du déménagement)
+   - La sécurité ou la gestion protégera les corridors, murs et ascenseur
+   - Les matériaux de protection seront fournis et installés par notre équipe
+
+5. Inspection avant et après
+   - Une inspection sera effectuée avant et après le déménagement
+   - Tout dommage constaté sera documenté
+
+6. Remboursement du dépôt
+   - Si aucun dommage n'est constaté, le dépôt vous sera remboursé dans les 10 jours suivant le déménagement
+
+HEURES AUTORISÉES : Lundi au samedi, de 8h à 18h
+
+Pour confirmer votre réservation, veuillez nous fournir :
+- Date et heure précises du déménagement
+- Durée estimée
+- Nombre de personnes participant au déménagement
+
+Une fois ces informations reçues, nous confirmerons la réservation de l'ascenseur et vous fournirons les instructions détaillées pour le jour du déménagement.
+
+Cordialement,
+L'équipe de gestion
+Gestion Velora`;
+  }
+  
+  const supervisionFee = getMoveSupervisionFee();
+  const moveDateObj = moveDate ? (() => {
+    try {
+      if (moveDate.match(/tomorrow|demain/i)) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return tomorrow;
+      }
+      return new Date(moveDate);
+    } catch {
+      return null;
+    }
+  })() : null;
+  
+  const daysUntilMove = moveDateObj ? Math.ceil((moveDateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
+  
+  if (language === 'en') {
+    return `Hello,
+
+We have received your move request${unitNumber ? ` for unit ${unitNumber}` : ''}.
+
+IMPORTANT - Advance notice required: Your request must be submitted between 10 and 15 days before the planned move date. ${daysUntilMove !== null ? (daysUntilMove < 10 ? `\n\n⚠️ ATTENTION: Your move is scheduled in ${daysUntilMove} day(s), which is less than the minimum 10-day notice. Please contact us immediately to discuss available options.` : daysUntilMove > 15 ? `\n\nNote: Your request is submitted ${daysUntilMove} days in advance, which exceeds the recommended 15-day notice. We will confirm the reservation in the coming days.` : '') : ''}
+
+COSTS AND FEES:
+- Move supervision fee: ${supervisionFee} (elevator fee included)
+- Damage deposit: ${fees.damageDeposit} (fully refundable within 10 days after the move if no damage is found)
+
+MOVING PROCESS:
+
+1. Submit request (10-15 days in advance)
+   - Exact date and time desired
+   - Estimated duration of the move
+   - Number of people participating in the move
+   - Send to: info@gestionvelora.com
+
+2. Confirmation and approval
+   - We will check elevator availability
+   - You will receive written confirmation with details
+
+3. Payment of damage deposit
+   - The deposit of ${fees.damageDeposit} must be received before the move
+   - This deposit covers any potential damage to common areas (corridors, walls, elevator)
+
+4. Protection of common areas (day of move)
+   - Security or management will protect corridors, walls, and elevator
+   - Protective materials will be provided and installed by our team
+
+5. Inspection before and after
+   - An inspection will be conducted before and after the move
+   - Any damage found will be documented
+
+6. Deposit refund
+   - If no damage is found, the deposit will be refunded within 10 days after the move
+
+AUTHORIZED HOURS: ${moveRule?.hours || 'Monday to Saturday, 8 AM to 6 PM'}
+
+ELEVATOR RESERVATION: Required to avoid scheduling conflicts. The elevator will be reserved exclusively for your move during the confirmed period.
+
+${asksAboutFees ? '' : `\nFor more information about fees or to confirm your reservation, please contact us at info@gestionvelora.com.\n`}
+
+We will confirm available dates and times in the coming business days.
+
+Best regards,
+Management Team
+Gestion Velora`;
+  }
+  
+  // French version
   return `Bonjour,
 
 Nous avons bien reçu votre demande de déménagement${unitNumber ? ` pour l'unité ${unitNumber}` : ''}.
 
-Conformément à la déclaration de copropriété et au guide de bienvenue, voici les informations importantes :
+IMPORTANT - Délai de préavis requis : Votre demande doit être soumise entre 10 et 15 jours avant la date de déménagement prévue. ${daysUntilMove !== null ? (daysUntilMove < 10 ? `\n\n⚠️ ATTENTION : Votre déménagement est prévu dans ${daysUntilMove} jour(s), ce qui est inférieur au délai minimum de 10 jours. Veuillez nous contacter immédiatement pour discuter des options disponibles.` : daysUntilMove > 15 ? `\n\nNote : Votre demande est soumise ${daysUntilMove} jours à l'avance, ce qui dépasse le délai recommandé de 15 jours. Nous vous confirmerons la réservation dans les prochains jours.` : '') : ''}
 
-Avis préalable requis : ${fees.advanceNotice} avant la date de déménagement prévue. Veuillez nous envoyer votre demande à info@gestionvelora.com avec les dates et heures souhaitées.
+COÛTS ET FRAIS :
+- Frais de supervision du déménagement : ${supervisionFee} (frais d'ascenseur inclus)
+- Dépôt de garantie : ${fees.damageDeposit} (entièrement remboursable dans les 10 jours suivant le déménagement si aucun dommage n'est constaté)
 
-${asksAboutFees ? `Frais de déménagement :
-- Frais d'ascenseur : ${fees.elevatorFee}
-- Dépôt de garantie : ${fees.damageDeposit} (entièrement remboursable)
+PROCESSUS DE DÉMÉNAGEMENT :
 
-` : ''}Confirmation requise : Le déménagement doit être confirmé et approuvé par la gestion avant de procéder. Les déménagements non autorisés peuvent entraîner des amendes.
+1. Soumission de la demande (10-15 jours à l'avance)
+   - Date et heure précises souhaitées
+   - Durée estimée du déménagement
+   - Nombre de personnes participant au déménagement
+   - Envoyer à : info@gestionvelora.com
 
-Heures autorisées : ${moveRule?.hours || 'Lundi au samedi, 8 h à 18 h'}
+2. Confirmation et approbation
+   - Nous vérifierons la disponibilité de l'ascenseur
+   - Vous recevrez une confirmation écrite avec les détails
 
-Réservation d'ascenseur : Requis pour éviter les conflits d'horaire
+3. Paiement du dépôt de garantie
+   - Le dépôt de ${fees.damageDeposit} doit être reçu avant le déménagement
+   - Ce dépôt couvre d'éventuels dommages aux parties communes (corridors, murs, ascenseur)
 
-Protection des parties communes : Il est impératif de protéger adéquatement les corridors, murs et ascenseur lors du déménagement. Une inspection avant et après sera effectuée. Le dépôt de garantie vous sera restitué dans les 10 jours suivant le déménagement si aucun dommage n'est constaté.
+4. Protection des parties communes (jour du déménagement)
+   - La sécurité ou la gestion protégera les corridors, murs et ascenseur
+   - Les matériaux de protection seront fournis et installés par notre équipe
+
+5. Inspection avant et après
+   - Une inspection sera effectuée avant et après le déménagement
+   - Tout dommage constaté sera documenté
+
+6. Remboursement du dépôt
+   - Si aucun dommage n'est constaté, le dépôt vous sera remboursé dans les 10 jours suivant le déménagement
+
+HEURES AUTORISÉES : ${moveRule?.hours || 'Lundi au samedi, de 8h à 18h'}
+
+RÉSERVATION D'ASCENSEUR : Requis pour éviter les conflits d'horaire. L'ascenseur sera réservé exclusivement pour votre déménagement pendant la période confirmée.
+
+${asksAboutFees ? '' : `\nPour plus d'informations sur les frais ou pour confirmer votre réservation, veuillez nous contacter à info@gestionvelora.com.\n`}
 
 Nous vous confirmerons les dates et heures disponibles dans les prochains jours ouvrables.
 
@@ -384,7 +724,8 @@ Gestion Velora`;
 
 function generateCustomerRequestResponse(
   classification: EmailClassification,
-  originalEmail: EmailRequest
+  originalEmail: EmailRequest,
+  language: 'fr' | 'en' = 'fr'
 ): string {
   const emailBody = originalEmail.body.toLowerCase();
   const entities = classification.extractedEntities;
@@ -429,7 +770,8 @@ Gestion Velora`;
 function generateWorkBuildingResponse(
   classification: EmailClassification,
   originalEmail: EmailRequest,
-  unitNumber: string | null
+  unitNumber: string | null,
+  language: 'fr' | 'en' = 'fr'
 ): string {
   const emailBody = originalEmail.body.toLowerCase();
   const entities = classification.extractedEntities;
@@ -607,7 +949,8 @@ Gestion Velora`;
 function generateAccessControlResponse(
   classification: EmailClassification,
   originalEmail: EmailRequest,
-  unitNumber: string | null
+  unitNumber: string | null,
+  language: 'fr' | 'en' = 'fr'
 ): string {
   const entities = classification.extractedEntities;
   const emailBody = originalEmail.body.toLowerCase();
@@ -909,6 +1252,72 @@ function generateLegalDocumentResponse(
 ): string {
   const emailBody = originalEmail.body.toLowerCase();
   const entities = classification.extractedEntities;
+  const language = detectLanguage(originalEmail.body);
+  
+  // Check if it's a simple attestation/insurance request (not full Law 16 certificate)
+  const isSimpleRequest = (emailBody.includes('attestation') || emailBody.includes('insurance') || emailBody.includes('assurance')) &&
+                          !emailBody.includes('law 16') && 
+                          !emailBody.includes('loi 16') &&
+                          !emailBody.includes('certificate') &&
+                          !emailBody.includes('certificat') &&
+                          !emailBody.includes('notary') &&
+                          !emailBody.includes('notaire');
+  
+  if (isSimpleRequest) {
+    const attestationFee = getAttestationFee();
+    const notaryProtocol = getCoOwnershipProtocols()?.notarySales;
+    const legalInfo = getDeclarationRule('legal');
+    
+    if (language === 'en') {
+      return `Hello,
+
+We have received your request for the attestation and/or insurance documents for the building.
+
+LEGAL BASIS:
+In accordance with Article 1068.1 of the Civil Code of Quebec (C.c.Q.), the syndicate may provide attestation documents regarding the state of the co-ownership. The declaration of co-ownership establishes the administrative fees for such requests.
+
+COST:
+The administrative fee for providing attestation documents is ${attestationFee} per request, as established in the declaration of co-ownership and in accordance with applicable regulations.
+
+PROCESS:
+1. An invoice will be sent to your email address via SquareUp
+2. You can pay the invoice by credit card through the SquareUp platform
+3. Once payment is received and confirmed, we will process your request
+4. The documents (attestation and/or insurance information) will be sent to you
+
+This process ensures secure payment processing and timely delivery of the requested documents.
+
+If you have any questions about the process or need assistance, please do not hesitate to contact us.
+
+Best regards,
+Management Team
+Gestion Velora`;
+    }
+    
+    return `Bonjour,
+
+Nous avons bien reçu votre demande concernant l'attestation et/ou l'assurance de l'immeuble.
+
+BASE LÉGALE :
+Conformément à l'article 1068.1 du Code civil du Québec (C.c.Q.), le syndicat peut fournir des documents d'attestation concernant l'état de la copropriété. La déclaration de copropriété établit les frais administratifs pour de telles demandes.
+
+COÛT :
+Les frais administratifs pour la fourniture de documents d'attestation sont de ${attestationFee} par demande, tel qu'établi dans la déclaration de copropriété et conformément aux règlements applicables.
+
+PROCESSUS :
+1. Une facture vous sera envoyée par courriel via SquareUp
+2. Vous pourrez payer la facture par carte de crédit via la plateforme SquareUp
+3. Une fois le paiement reçu et confirmé, nous traiterons votre demande
+4. Les documents (attestation et/ou informations d'assurance) vous seront envoyés
+
+Ce processus assure un traitement sécurisé des paiements et une livraison rapide des documents demandés.
+
+Si vous avez des questions concernant le processus ou besoin d'assistance, n'hésitez pas à nous contacter.
+
+Cordialement,
+L'équipe de gestion
+Gestion Velora`;
+  }
   
   // Extract unit-specific information from email
   const unitMatch = originalEmail.body.match(/unit[ée]\s*#?\s*(\d{4})/i) || 
