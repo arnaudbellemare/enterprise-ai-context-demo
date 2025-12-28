@@ -48,9 +48,10 @@ export interface ResponseSchema {
 
 /**
  * Model selection strategy based on email complexity
+ * Using Perplexity (teacher) and Gemma3:4b (student) - NO GPT models
  */
 export interface ModelSelection {
-  model: 'gpt-3.5-turbo' | 'gpt-4o-mini' | 'gpt-4' | 'grok-4';
+  model: 'perplexity-sonar-pro' | 'perplexity-sonar' | 'gemma3:4b' | 'ollama-gemma';
   reasoning: string;
   cost_estimate: number;
   latency_estimate: number;

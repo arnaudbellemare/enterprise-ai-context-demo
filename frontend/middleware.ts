@@ -43,6 +43,12 @@ const PUBLIC_ROUTES = [
   '/api/email/classify-and-respond',  // Email classification and response generation
   '/api/email/send',  // Email sending service
   '/api/email/webhook',  // Email webhook receiver
+  '/api/email-oauth',  // Email OAuth flow (Outlook, Gmail)
+  '/api/email-connect',  // Email account connection status
+  '/api/email-fetch',  // Email fetching from connected accounts
+  '/api/email-imap',  // IMAP email fetching (direct, no OAuth)
+  '/api/email-graph-direct',  // Direct Graph API access with manual token
+  '/api/email-accounts',  // Email accounts management (connect, fetch, debug, list-all)
 ];
 
 /**

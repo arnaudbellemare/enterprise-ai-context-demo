@@ -83,13 +83,26 @@ export async function GET(req: NextRequest) {
 
       const userInfo = await userResponse.json();
 
-      // Redirect to frontend with tokens (in production, store securely)
+      // SAVE TOKENS PERMANENTLY TO DATABASE
+      const { saveEmailAccount } = await import('../../../../lib/email-token-manager');
+
+      const account = await saveEmailAccount(
+        'default', // userId - replace with actual user ID from session
+        'gmail',
+        userInfo.email,
+        tokens.access_token,
+        tokens.refresh_token || null,
+        tokens.expires_in || 3600
+      );
+
+      console.log(`[Gmail OAuth] Saved account ${account.id} for ${account.email}`);
+
+      // Redirect to frontend with success (NO TOKENS IN URL!)
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/email-testing?` +
         `gmail_connected=true&` +
-        `email=${userInfo.email}&` +
-        `access_token=${tokens.access_token}&` +
-        `refresh_token=${tokens.refresh_token || ''}`
+        `account_id=${account.id}&` +
+        `email=${userInfo.email}`
       );
     } catch (error: any) {
       return NextResponse.redirect(
@@ -100,4 +113,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 }
+
+
+
 

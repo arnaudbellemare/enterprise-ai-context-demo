@@ -47,6 +47,7 @@ export interface FewShotExample {
   entities: Record<string, any>;
   confidence: number;
   userId?: string;
+  similarity?: number; // Cosine similarity score from vector search
 }
 
 // Pre-built templates
@@ -664,7 +665,7 @@ export function extractPropertyManagementEntities(text: string): {
 
   // Remove duplicates
   Object.keys(entities).forEach(key => {
-    entities[key as keyof typeof entities] = [...new Set(entities[key as keyof typeof entities])] as any;
+    entities[key as keyof typeof entities] = Array.from(new Set(entities[key as keyof typeof entities])) as any;
   });
 
   return entities;
@@ -774,14 +775,26 @@ export async function classifyEmailWithLLM(
   fewShotExamples: FewShotExample[] = [],
   llmProvider?: any
 ): Promise<EmailClassification> {
+  // Use embedding-based example selection if no examples provided
+  let examplesToUse = fewShotExamples;
+  
+  if (examplesToUse.length === 0) {
+    try {
+      const { selectOptimalExamples } = await import('./email-classification/embedding-selector');
+      examplesToUse = await selectOptimalExamples(emailText, 15); // Increased from 5 to 15
+    } catch (error) {
+      console.warn('Failed to load embedding selector, using provided examples:', error);
+    }
+  }
+
   // Build few-shot prompt
-  const examplesText = fewShotExamples
-    .slice(0, 5) // Use up to 5 examples
+  const examplesText = examplesToUse
+    .slice(0, 15) // Use up to 15 examples (increased from 5)
     .map((ex, idx) => {
       return `Example ${idx + 1}:
 Email: "${ex.email.substring(0, 200)}..."
 Template: ${ex.template}
-Confidence: ${ex.confidence}`;
+Confidence: ${ex.confidence}${ex.similarity ? ` (Similarity: ${ex.similarity.toFixed(2)})` : ''}`;
     })
     .join('\n\n');
 
@@ -790,7 +803,7 @@ Confidence: ${ex.confidence}`;
 Available Templates:
 ${EMAIL_TEMPLATES.map(t => `- ${t.name}: ${t.description}`).join('\n')}
 
-${fewShotExamples.length > 0 ? `\nFew-Shot Examples:\n${examplesText}\n\n` : ''}
+${examplesToUse.length > 0 ? `\nFew-Shot Examples (${examplesToUse.length} semantically similar examples):\n${examplesText}\n\n` : ''}
 
 Classify this email into ONE of the templates above:
 
@@ -842,9 +855,21 @@ Respond in JSON format:
                         EMAIL_TEMPLATES[0];
         
         const extractedEntities = parsed.entities || extractPropertyManagementEntities(emailText);
+        const rawConfidence = Math.min(1.0, Math.max(0.0, parsed.confidence || 0.7));
+        
+        // Calibrate confidence score
+        let calibratedConfidence = rawConfidence;
+        try {
+          const { getConfidenceCalibrator } = await import('./email-classification/confidence-calibrator');
+          const calibrator = getConfidenceCalibrator();
+          calibratedConfidence = calibrator.calibrateConfidence(rawConfidence, template.id);
+        } catch (error) {
+          console.warn('Failed to calibrate confidence, using raw score:', error);
+        }
+        
         return {
           template,
-          confidence: Math.min(1.0, Math.max(0.0, parsed.confidence || 0.7)),
+          confidence: calibratedConfidence,
           reasoning: parsed.reasoning || 'LLM classification',
           extractedEntities: {
             ...extractedEntities,

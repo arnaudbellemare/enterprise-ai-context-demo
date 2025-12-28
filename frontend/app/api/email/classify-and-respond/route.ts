@@ -995,23 +995,125 @@ function generateAccessControlResponse(
                            emailBody.includes('juste') ||
                            emailBody.includes('seulement'));
   
-  // Handle package/locker registration issues
+  // Handle package/locker registration issues with tenant verification
   if (isPackageIssue && (needsRegistration || hasPackageCodeIssue)) {
-    return `Bonjour,
+    // Check if unit number is provided
+    const hasUnitNumber = !!unitNumber;
+    
+    // Determine what information is missing
+    const missingInfo: string[] = [];
+    if (!unitNumber) missingInfo.push('numéro d\'unité');
+    if (!phoneNumber) missingInfo.push('numéro de téléphone');
+    
+    // Check if tenant information needs verification
+    const needsTenantVerification = hasPackageCodeIssue || 
+                                    emailBody.includes('ancien') ||
+                                    emailBody.includes('previous') ||
+                                    emailBody.includes('locataire') ||
+                                    emailBody.includes('tenant');
+    
+    if (needsTenantVerification && hasUnitNumber) {
+      // Tenant verification scenario - need to verify in system and request documents
+      return `Bonjour,
 
 Nous avons bien reçu votre demande concernant${unitNumber ? ` l'unité ${unitNumber}` : ' votre unité'}.
 
-Concernant votre colis dans les casiers, nous pouvons vous aider à récupérer votre colis même s'il est enregistré à l'ancienne locataire. Veuillez nous contacter directement par téléphone ou venir au bureau de gestion avec une pièce d'identité pour que nous puissions vous donner accès à votre colis.
+PROCESSUS DE VÉRIFICATION DU LOCATAIRE :
 
-Pour votre enregistrement dans le système (intercom et casiers), nous allons procéder à votre inscription dès que possible.${phoneNumber ? ` Nous avons noté votre numéro de téléphone (${phoneNumber}) pour la configuration.` : ' Pour compléter votre enregistrement, nous aurons besoin de votre numéro de téléphone.'}
+Pour procéder à la vérification de vos informations dans notre système et vous donner accès à votre colis, nous devons d'abord confirmer votre identité et votre statut de locataire.
 
-${phoneNumber ? '' : 'Veuillez nous fournir votre numéro de téléphone pour que nous puissions vous enregistrer dans le système.\n\n'}Une fois l'enregistrement terminé, vous recevrez les codes d'accès pour les casiers et votre intercom sera configuré.
+ÉTAPE 1 - Vérification dans le système :
+${unitNumber ? `Nous allons vérifier dans notre système les informations du locataire pour l'unité ${unitNumber}.` : 'Pour procéder, nous avons besoin de votre numéro d\'unité.'}
 
-Si vous avez des questions urgentes, n'hésitez pas à nous contacter directement.
+${unitNumber ? `Si vos informations dans le système sont correctes, nous pourrons consulter le code de livraison avec la date et l'heure exacte de la notification de livraison que vous avez reçue.` : ''}
+
+ÉTAPE 2 - Documents requis pour mise à jour du système :
+
+Si vos informations dans le système nécessitent une mise à jour ou si certaines informations sont manquantes, veuillez nous fournir les documents suivants :
+
+• Bail (copie du contrat de location)
+• Copie de l'assurance habitation
+• Nom complet du locataire
+• Adresse courriel
+• Règlement de l'immeuble signé
+• Numéro de téléphone${phoneNumber ? ` (nous avons noté : ${phoneNumber})` : ''}
+
+${unitNumber ? `Une fois ces documents reçus et vérifiés pour l'unité ${unitNumber}, nous pourrons :` : 'Une fois ces documents reçus et vérifiés, nous pourrons :'}
+
+1. Vérifier le code de livraison avec la date et l'heure exacte de la notification
+2. Mettre à jour vos informations dans le système
+3. Vous donner accès à votre colis dans les casiers
+4. Configurer votre intercom et codes d'accès
+
+${unitNumber ? `Pour l'unité ${unitNumber}, ` : ''}veuillez nous envoyer ces documents par courriel à info@gestionvelora.com ou les apporter au bureau de gestion.
+
+Si vous avez des questions urgentes concernant votre colis, n'hésitez pas à nous contacter directement.
 
 Cordialement,
 L'équipe de gestion
 Gestion Velora`;
+    } else if (!hasUnitNumber) {
+      // Missing unit number - need it first
+      return `Bonjour,
+
+Nous avons bien reçu votre demande concernant votre colis dans les casiers.
+
+Pour procéder à la vérification de vos informations et vous donner accès à votre colis, nous avons besoin de votre numéro d'unité.
+
+INFORMATIONS REQUISES :
+
+1. Numéro d'unité (obligatoire)
+${phoneNumber ? `2. Numéro de téléphone : ${phoneNumber} (déjà noté)` : '2. Numéro de téléphone'}
+
+Une fois que nous aurons votre numéro d'unité, nous pourrons :
+• Vérifier vos informations dans le système
+• Consulter le code de livraison avec la date et l'heure exacte de la notification
+• Vous donner accès à votre colis
+
+Si vos informations dans le système nécessitent une mise à jour, nous vous demanderons également de nous fournir :
+• Bail (copie du contrat de location)
+• Copie de l'assurance habitation
+• Nom complet du locataire
+• Adresse courriel
+• Règlement de l'immeuble signé
+
+Veuillez nous fournir votre numéro d'unité pour que nous puissions procéder.
+
+Cordialement,
+L'équipe de gestion
+Gestion Velora`;
+    } else {
+      // Has unit number but may need documents
+      return `Bonjour,
+
+Nous avons bien reçu votre demande concernant${unitNumber ? ` l'unité ${unitNumber}` : ' votre unité'}.
+
+Nous allons vérifier vos informations dans notre système pour l'unité ${unitNumber}.${phoneNumber ? ` Nous avons noté votre numéro de téléphone (${phoneNumber}).` : ''}
+
+VÉRIFICATION EN COURS :
+
+1. Vérification des informations du locataire pour l'unité ${unitNumber}
+2. Consultation du code de livraison avec la date et l'heure exacte de la notification de livraison
+3. Vérification de votre enregistrement dans le système (intercom et casiers)
+
+${phoneNumber ? '' : 'Pour compléter votre enregistrement, nous aurons besoin de votre numéro de téléphone.\n\n'}
+
+Si vos informations dans le système sont complètes et correctes, nous pourrons vous donner accès à votre colis et configurer votre intercom.
+
+Si certaines informations sont manquantes ou nécessitent une mise à jour, nous vous demanderons de nous fournir :
+• Bail (copie du contrat de location)
+• Copie de l'assurance habitation
+• Nom complet du locataire
+• Adresse courriel
+• Règlement de l'immeuble signé
+${phoneNumber ? '' : '• Numéro de téléphone'}
+
+Nous vous contacterons sous peu avec les résultats de la vérification et les prochaines étapes.
+
+Cordialement,
+L'équipe de gestion
+Gestion Velora`;
+    }
   }
   
   if (isFollowUp && wantsNameChange) {
@@ -1694,9 +1796,17 @@ export async function POST(req: NextRequest) {
     // Classify email
     const classification = await classifyEmailHybrid(
       emailText,
-      [], // fewShotExamples - can be populated from database
+      [], // fewShotExamples - will be populated by embedding selector
       undefined // llmProvider - can be added if needed
     );
+    
+    // Continuous learning: Auto-label high confidence, queue uncertain examples
+    try {
+      const { handleProductionEmail } = await import('@/lib/email-classification/continuous-learning');
+      await handleProductionEmail(emailData, classification);
+    } catch (error) {
+      console.warn('Continuous learning failed (non-critical):', error);
+    }
     
     // Generate response
     const generatedResponse = await generateEmailResponse(classification, emailData);

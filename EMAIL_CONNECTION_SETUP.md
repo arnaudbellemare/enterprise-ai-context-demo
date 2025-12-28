@@ -222,3 +222,6 @@ GET /api/email-oauth/gmail?action=auth
 4. **Build up labeled examples** (20-30 per template)
 5. **Set up automatic fetching** (coming soon: scheduled sync)
 
+
+
+

@@ -61,29 +61,91 @@ export class GmailConnector {
     this.refreshToken = refreshToken;
   }
 
-  async fetchEmails(maxResults: number = 50, query?: string): Promise<EmailMessage[]> {
+  async fetchEmails(maxResults: number = 50, query?: string, fetchAll: boolean = false): Promise<EmailMessage[]> {
     const messages: EmailMessage[] = [];
 
     try {
-      // List messages
-      const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}${query ? `&q=${encodeURIComponent(query)}` : ''}`;
+      // Build query to exclude deleted/trash emails
+      const excludeDeleted = '-in:trash -is:deleted';
+      const finalQuery = query 
+        ? `${query} ${excludeDeleted}` 
+        : excludeDeleted;
       
-      const listResponse = await fetch(listUrl, {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json'
+      let pageToken: string | undefined = undefined;
+      const batchSize = fetchAll ? 500 : maxResults;
+      let totalFetched = 0;
+      const maxTotal = fetchAll ? 10000 : maxResults; // Safety limit for fetchAll
+
+      do {
+        // List messages with pagination
+        let listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${Math.min(batchSize, maxTotal - totalFetched)}`;
+        if (finalQuery) {
+          listUrl += `&q=${encodeURIComponent(finalQuery)}`;
         }
-      });
+        if (pageToken) {
+          listUrl += `&pageToken=${encodeURIComponent(pageToken)}`;
+        }
+        
+        const listResponse = await fetch(listUrl, {
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-      if (!listResponse.ok) {
-        throw new Error(`Gmail API error: ${listResponse.statusText}`);
-      }
+        if (!listResponse.ok) {
+          throw new Error(`Gmail API error: ${listResponse.statusText}`);
+        }
 
-      const listData = await listResponse.json();
-      const messageIds = listData.messages?.map((m: any) => m.id) || [];
+        const listData = await listResponse.json();
+        const messageIds = listData.messages?.map((m: any) => m.id) || [];
+        pageToken = listData.nextPageToken;
 
-      // Fetch full message details
-      for (const messageId of messageIds.slice(0, maxResults)) {
+        // Fetch full message details
+        for (const messageId of messageIds) {
+          try {
+            const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`;
+            const messageResponse = await fetch(messageUrl, {
+              headers: {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (messageResponse.ok) {
+              const messageData = await messageResponse.json();
+              const email = this.parseGmailMessage(messageData);
+              messages.push(email);
+              totalFetched++;
+            }
+          } catch (error) {
+            console.error(`Failed to fetch message ${messageId}:`, error);
+          }
+        }
+
+        // Stop if we've reached the limit or no more pages
+        if (!fetchAll || totalFetched >= maxTotal || !pageToken) {
+          break;
+        }
+      } while (pageToken && totalFetched < maxTotal);
+
+      return messages;
+    } catch (error: any) {
+      throw new Error(`Gmail fetch failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Fetch specific emails by IDs (for background classification)
+   */
+  async fetchEmailsByIds(messageIds: string[]): Promise<EmailMessage[]> {
+    const messages: EmailMessage[] = [];
+    
+    // Fetch in parallel batches (20 at a time)
+    const batchSize = 20;
+    for (let i = 0; i < messageIds.length; i += batchSize) {
+      const batch = messageIds.slice(i, i + batchSize);
+      const batchPromises = batch.map(async (messageId: string) => {
         try {
           const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`;
           const messageResponse = await fetch(messageUrl, {
@@ -95,18 +157,20 @@ export class GmailConnector {
 
           if (messageResponse.ok) {
             const messageData = await messageResponse.json();
-            const email = this.parseGmailMessage(messageData);
-            messages.push(email);
+            return this.parseGmailMessage(messageData);
           }
         } catch (error) {
           console.error(`Failed to fetch message ${messageId}:`, error);
         }
-      }
+        return null;
+      });
 
-      return messages;
-    } catch (error: any) {
-      throw new Error(`Gmail fetch failed: ${error.message}`);
+      const batchResults = await Promise.all(batchPromises);
+      const validEmails = batchResults.filter(email => email !== null) as EmailMessage[];
+      messages.push(...validEmails);
     }
+
+    return messages;
   }
 
   private parseGmailMessage(messageData: any): EmailMessage {
@@ -197,40 +261,121 @@ export class OutlookConnector {
     this.refreshToken = refreshToken;
   }
 
-  async fetchEmails(maxResults: number = 50, filter?: string): Promise<EmailMessage[]> {
+  async fetchEmails(maxResults: number = 50, filter?: string, fetchAll: boolean = false): Promise<EmailMessage[]> {
     try {
-      const filterParam = filter ? `&$filter=${encodeURIComponent(filter)}` : '';
-      const url = `https://graph.microsoft.com/v1.0/me/messages?$top=${maxResults}&$orderby=receivedDateTime desc${filterParam}`;
+      // Fetch from Inbox only (excludes DeletedItems folder automatically)
+      // Note: Microsoft Graph API doesn't support isDeleted filter on messages
+      // Instead, we fetch from Inbox folder which excludes deleted items
+      const allMessages: EmailMessage[] = [];
+      let skip = 0;
+      const pageSize = fetchAll ? 500 : maxResults;
+      const maxTotal = fetchAll ? 10000 : maxResults; // Safety limit for fetchAll
 
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json'
+      while (skip < maxTotal) {
+        const filterParam = filter ? `&$filter=${encodeURIComponent(filter)}` : '';
+        const url = `https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$top=${Math.min(pageSize, maxTotal - skip)}&$skip=${skip}&$orderby=receivedDateTime desc${filterParam}`;
+
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          let errorMessage = `Outlook API error: ${response.status} ${response.statusText}`;
+          let errorDetails: any = null;
+          
+          // Try to get detailed error from response
+          try {
+            const errorText = await response.text();
+            errorDetails = errorText;
+            
+            try {
+              const errorData = JSON.parse(errorText);
+              if (errorData.error) {
+                errorMessage = `Outlook API error: ${errorData.error.code || 'Unknown'} - ${errorData.error.message || response.statusText}`;
+                errorDetails = errorData;
+              }
+            } catch {
+              // Not JSON, use text as-is
+            }
+          } catch {
+            // If response isn't readable, use status text
+          }
+          
+          console.error('[Outlook Connector] API Error:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorDetails,
+            tokenPrefix: this.accessToken.substring(0, 20) + '...'
+          });
+          
+          // Provide specific guidance for common errors
+          if (response.status === 401) {
+            errorMessage += '. Your access token may have expired or is invalid.';
+            if (errorDetails?.error?.code === 'InvalidAuthenticationToken') {
+              errorMessage += ' The token is invalid. Please reconnect your Outlook account.';
+            } else {
+              errorMessage += ' Please reconnect your Outlook account.';
+            }
+          } else if (response.status === 403) {
+            errorMessage += '. Insufficient permissions. Please ensure Mail.Read permission is granted in Azure Portal.';
+          }
+          
+          throw new Error(errorMessage);
         }
-      });
 
-      if (!response.ok) {
-        throw new Error(`Outlook API error: ${response.statusText}`);
+        const data = await response.json();
+        const pageMessages = (data.value || []).map((msg: any) => this.parseOutlookMessage(msg));
+        allMessages.push(...pageMessages);
+
+        // Stop if we got fewer messages than requested (last page) or reached limit
+        if (pageMessages.length < pageSize || allMessages.length >= maxTotal || !data['@odata.nextLink']) {
+          break;
+        }
+
+        skip += pageSize;
       }
 
-      const data = await response.json();
-      return (data.value || []).map((msg: any) => this.parseOutlookMessage(msg));
+      return allMessages;
     } catch (error: any) {
       throw new Error(`Outlook fetch failed: ${error.message}`);
     }
   }
 
   private parseOutlookMessage(msg: any): EmailMessage {
+    const fromAddress = msg.from?.emailAddress?.address || msg.from?.emailAddress?.name || 'Unknown';
+    const fromName = msg.from?.emailAddress?.name;
+    const fromDisplay = fromName ? `${fromName} <${fromAddress}>` : fromAddress;
+    
+    // Extract text from HTML if needed
+    let textBody = msg.body?.content || '';
+    if (msg.body?.contentType === 'html' && textBody) {
+      // Simple HTML stripping (in production, use proper HTML parser)
+      textBody = textBody.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+    }
+
+    // Safely extract recipients
+    const toRecipients = (msg.toRecipients || []).map((r: any) => {
+      return r?.emailAddress?.address || r?.emailAddress?.name || '';
+    }).filter(Boolean);
+    
+    const ccRecipients = (msg.ccRecipients || []).map((r: any) => {
+      return r?.emailAddress?.address || r?.emailAddress?.name || '';
+    }).filter(Boolean);
+
     return {
-      id: msg.id,
-      from: msg.from?.emailAddress?.address || '',
-      to: msg.toRecipients?.map((r: any) => r.emailAddress.address) || [],
-      cc: msg.ccRecipients?.map((r: any) => r.emailAddress.address) || [],
-      subject: msg.subject || '',
-      body: msg.body?.content || '',
-      htmlBody: msg.body?.contentType === 'html' ? msg.body.content : undefined,
-      date: msg.receivedDateTime,
-      attachments: msg.hasAttachments ? [] : undefined // Would need separate API call
+      id: msg.id || `msg-${Date.now()}-${Math.random()}`,
+      from: fromDisplay,
+      to: toRecipients,
+      cc: ccRecipients,
+      subject: msg.subject || '(No Subject)',
+      body: textBody || '',
+      htmlBody: msg.body?.contentType === 'html' ? (msg.body.content || '') : undefined,
+      date: msg.receivedDateTime || msg.sentDateTime || new Date().toISOString(),
+      attachments: msg.hasAttachments ? [] : undefined, // Would need separate API call
+      labels: msg.isRead ? ['READ'] : ['UNREAD']
     };
   }
 }

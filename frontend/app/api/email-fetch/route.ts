@@ -1,15 +1,18 @@
 /**
  * Email Fetch API
  * Fetches emails from connected accounts and auto-classifies them
+ * WITH AUTOMATIC TOKEN REFRESH!
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { GmailConnector, OutlookConnector } from '../../../lib/email-connector';
 import { classifyEmailHybrid } from '../../../lib/email-template-classifier';
 import { getExamples } from '../../../lib/email-examples-store';
-
-// Import connected accounts (in production, use database)
-const connectedAccounts = new Map();
+import {
+  getEmailAccount,
+  getValidAccessToken,
+  updateLastSync
+} from '../../../lib/email-token-manager';
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,8 +31,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get account configuration (in production, fetch from database)
-    const account = connectedAccounts.get(accountId);
+    // Get account from database
+    const account = await getEmailAccount(accountId);
     if (!account) {
       return NextResponse.json(
         { error: 'Account not found. Please connect your email account first.' },
@@ -37,20 +40,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get VALID access token (automatically refreshes if expired!)
+    const accessToken = await getValidAccessToken(accountId);
+
     let emails: any[] = [];
     let connector: GmailConnector | OutlookConnector;
 
     // Fetch emails based on provider
     if (account.provider === 'gmail') {
       connector = new GmailConnector(
-        account.config.accessToken,
-        account.config.refreshToken
+        accessToken,
+        account.refreshToken || ''
       );
       emails = await connector.fetchEmails(maxResults);
     } else if (account.provider === 'outlook') {
       connector = new OutlookConnector(
-        account.config.accessToken,
-        account.config.refreshToken
+        accessToken,
+        account.refreshToken || ''
       );
       emails = await connector.fetchEmails(maxResults);
     } else if (account.provider === 'imap') {
@@ -100,19 +106,18 @@ export async function POST(req: NextRequest) {
         )
       : emails.map(email => ({ ...email, classification: null }));
 
-    // Update last sync time
-    account.lastSync = new Date().toISOString();
-    connectedAccounts.set(accountId, account);
+    // Update last sync time in database
+    await updateLastSync(accountId);
 
     return NextResponse.json({
       success: true,
       emails: classifiedEmails,
       count: classifiedEmails.length,
       account: {
-        id: accountId,
+        id: account.id,
         email: account.email,
         provider: account.provider,
-        lastSync: account.lastSync
+        lastSync: new Date().toISOString()
       }
     });
 
@@ -127,4 +132,7 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+
+
 

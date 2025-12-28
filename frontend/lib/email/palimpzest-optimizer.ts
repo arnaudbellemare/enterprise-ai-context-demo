@@ -8,22 +8,23 @@ import { TenantEmailSchema, ModelSelection, TokenTrimmingConfig } from './palimp
 
 /**
  * Model cost estimates (per 1K tokens, approximate)
+ * Using Perplexity (teacher) and Gemma3:4b (student) - NO GPT models
  */
 const MODEL_COSTS = {
-  'gpt-3.5-turbo': 0.0015, // $0.0015 per 1K tokens
-  'gpt-4o-mini': 0.003,    // $0.003 per 1K tokens
-  'gpt-4': 0.03,          // $0.03 per 1K tokens
-  'grok-4': 0.01          // Estimated
+  'perplexity-sonar-pro': 0.001,   // Perplexity Sonar Pro (teacher)
+  'perplexity-sonar': 0.0005,      // Perplexity Sonar (cheaper teacher)
+  'gemma3:4b': 0.0,                // Gemma3:4b local (free student)
+  'ollama-gemma': 0.0              // Ollama Gemma (free)
 };
 
 /**
  * Model latency estimates (ms per request, approximate)
  */
 const MODEL_LATENCY = {
-  'gpt-3.5-turbo': 200,
-  'gpt-4o-mini': 300,
-  'gpt-4': 1000,
-  'grok-4': 500
+  'perplexity-sonar-pro': 1500,    // Perplexity with web search
+  'perplexity-sonar': 1000,        // Perplexity without web search
+  'gemma3:4b': 300,                // Local Gemma3:4b (fast)
+  'ollama-gemma': 300              // Ollama Gemma
 };
 
 export class EmailOptimizer {
@@ -31,50 +32,50 @@ export class EmailOptimizer {
    * Select optimal model based on email characteristics (PALIMPZEST optimization)
    * 
    * Strategy:
-   * - Cheap model (GPT-3.5) for high-confidence, simple queries
-   * - Medium model (GPT-4o-mini) for structured extraction
-   * - Expensive model (GPT-4) only for complex, low-confidence queries
+   * - Gemma3:4b (free, local) for high-confidence, simple queries
+   * - Gemma3:4b (free, local) for structured extraction
+   * - Perplexity Sonar Pro (teacher with web search) only for complex, low-confidence queries
    */
   selectModel(email: Partial<TenantEmailSchema>, complexity: number = 0.5): ModelSelection {
     const confidence = email.confidence || 0.5;
     const emailClass = email.class || 'general';
     
-    // High confidence + simple class = cheap model
+    // High confidence + simple class = use Gemma3:4b (free, local)
     if (confidence > 0.8 && emailClass !== 'general' && complexity < 0.3) {
       return {
-        model: 'gpt-3.5-turbo',
-        reasoning: 'High confidence classification, simple query',
-        cost_estimate: MODEL_COSTS['gpt-3.5-turbo'] * 0.5, // ~500 tokens
-        latency_estimate: MODEL_LATENCY['gpt-3.5-turbo']
+        model: 'gemma3:4b',
+        reasoning: 'High confidence classification, simple query - using Gemma3:4b (free)',
+        cost_estimate: MODEL_COSTS['gemma3:4b'], // Free
+        latency_estimate: MODEL_LATENCY['gemma3:4b']
       };
     }
     
-    // Structured extraction needed = medium model
+    // Structured extraction needed = use Gemma3:4b (still free, good quality)
     if (email.extracted_slots?.unit && email.extracted_slots?.issue_type) {
       return {
-        model: 'gpt-4o-mini',
-        reasoning: 'Structured extraction needed, balanced cost/quality',
-        cost_estimate: MODEL_COSTS['gpt-4o-mini'] * 0.8, // ~800 tokens
-        latency_estimate: MODEL_LATENCY['gpt-4o-mini']
+        model: 'gemma3:4b',
+        reasoning: 'Structured extraction needed - using Gemma3:4b (free, good quality)',
+        cost_estimate: MODEL_COSTS['gemma3:4b'], // Free
+        latency_estimate: MODEL_LATENCY['gemma3:4b']
       };
     }
     
-    // Complex queries = expensive model
+    // Complex queries = use Perplexity (teacher with web search)
     if (emailClass === 'general' || confidence < 0.6 || complexity > 0.7) {
       return {
-        model: 'gpt-4',
-        reasoning: 'Complex query, low confidence, or high complexity',
-        cost_estimate: MODEL_COSTS['gpt-4'] * 1.5, // ~1500 tokens
-        latency_estimate: MODEL_LATENCY['gpt-4']
+        model: 'perplexity-sonar-pro',
+        reasoning: 'Complex query, low confidence, or high complexity - using Perplexity Sonar Pro',
+        cost_estimate: MODEL_COSTS['perplexity-sonar-pro'] * 1.5, // ~1500 tokens
+        latency_estimate: MODEL_LATENCY['perplexity-sonar-pro']
       };
     }
     
-    // Default to cheap model
+    // Default to Gemma3:4b (free, local)
     return {
-      model: 'gpt-3.5-turbo',
-      reasoning: 'Default to cost-effective model',
-      cost_estimate: MODEL_COSTS['gpt-3.5-turbo'] * 0.5,
-      latency_estimate: MODEL_LATENCY['gpt-3.5-turbo']
+      model: 'gemma3:4b',
+      reasoning: 'Default to Gemma3:4b (free, local)',
+      cost_estimate: MODEL_COSTS['gemma3:4b'],
+      latency_estimate: MODEL_LATENCY['gemma3:4b']
     };
   }
 

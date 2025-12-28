@@ -62,10 +62,12 @@ The email classification system uses **23 pre-built templates** to categorize pr
 #### 6. WORK NEEDING TO BE DONE IN THE BUILDING
 - **ID**: `work-building`
 - **Priority**: 9
-- **Description**: Maintenance requests, repairs, construction, HVAC issues, or building work needed
-- **Keywords**: repair, maintenance, fix, broken, leak, plumbing, electrical, heating, construction, work, hvac, air conditioning, thermostat, heat, technician, service call, inspect, inspection
-- **When to use**: Maintenance requests, HVAC issues, repairs, building work
+- **Description**: Maintenance requests, repairs, construction, HVAC issues, plumbing maintenance, drain cleaning, blocked toilets, common areas issues (doors, windows), or building work needed
+- **Keywords**: repair, maintenance, fix, broken, leak, plumbing, electrical, heating, construction, work, hvac, air conditioning, thermostat, heat, technician, service call, inspect, inspection, door, porte, entrance, entrée, lobby, hall, common areas, parties communes, wide open, grande ouverte, supplier, fournisseur
+- **When to use**: Maintenance requests, HVAC issues, repairs, building work, common areas issues (broken doors, windows)
 - **Example**: "The heating in unit 2405 is not working, please send a technician"
+- **Common Areas Example**: "I saw the big door at entrance was wide open and apparently broken. Please contact someone to repair the door as winter is here and also for safety."
+- **Special Handling**: Common areas issues (broken doors, windows) receive a specific response acknowledging awareness, mentioning technical team working with supplier, and promising email updates to all residents if repairs take more than a few days
 
 ---
 

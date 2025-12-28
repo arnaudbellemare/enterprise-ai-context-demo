@@ -1,0 +1,56 @@
+[
+  {
+    "date": "2025-12-06",
+    "timestamp": "2025-12-06T16:24:24.050Z",
+    "labeledExamples": 17,
+    "templatesCovered": 8,
+    "examplesByTemplate": {
+      "LEGAL DOCUMENT REQUEST": 2,
+      "MOVE-IN/MOVE-OUT REQUEST": 2,
+      "WORK NEEDING TO BE DONE IN THE BUILDING": 3,
+      "REGULATION VIOLATION": 2,
+      "ACCESS CONTROL REQUEST": 2,
+      "CUSTOMER REQUEST": 2,
+      "RENOVATION REQUEST": 2,
+      "WATER DAMAGE INCIDENT": 2
+    },
+    "avgConfidence": 0.9882352941176471,
+    "queueSize": 0
+  },
+  {
+    "date": "2025-12-06",
+    "timestamp": "2025-12-06T16:25:00.325Z",
+    "labeledExamples": 17,
+    "templatesCovered": 8,
+    "examplesByTemplate": {
+      "LEGAL DOCUMENT REQUEST": 2,
+      "MOVE-IN/MOVE-OUT REQUEST": 2,
+      "WORK NEEDING TO BE DONE IN THE BUILDING": 3,
+      "REGULATION VIOLATION": 2,
+      "ACCESS CONTROL REQUEST": 2,
+      "CUSTOMER REQUEST": 2,
+      "RENOVATION REQUEST": 2,
+      "WATER DAMAGE INCIDENT": 2
+    },
+    "avgConfidence": 0.9882352941176471,
+    "queueSize": 3
+  },
+  {
+    "date": "2025-12-06",
+    "timestamp": "2025-12-06T16:25:07.630Z",
+    "labeledExamples": 17,
+    "templatesCovered": 8,
+    "examplesByTemplate": {
+      "LEGAL DOCUMENT REQUEST": 2,
+      "MOVE-IN/MOVE-OUT REQUEST": 2,
+      "WORK NEEDING TO BE DONE IN THE BUILDING": 3,
+      "REGULATION VIOLATION": 2,
+      "ACCESS CONTROL REQUEST": 2,
+      "CUSTOMER REQUEST": 2,
+      "RENOVATION REQUEST": 2,
+      "WATER DAMAGE INCIDENT": 2
+    },
+    "avgConfidence": 0.9882352941176471,
+    "queueSize": 3
+  }
+]

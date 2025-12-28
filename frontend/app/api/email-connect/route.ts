@@ -1,12 +1,15 @@
 /**
  * Email Connection API
  * Handles connecting to Gmail, Outlook, and IMAP accounts
+ * NOW WITH PERSISTENT STORAGE!
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-// In-memory storage (replace with database in production)
-const connectedAccounts: Map<string, any> = new Map();
+import {
+  getUserEmailAccounts,
+  disconnectEmailAccount,
+  saveEmailAccount
+} from '../../../lib/email-token-manager';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,29 +23,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const accountId = `${userId || 'default'}-${email}`;
+    // For OAuth providers, they should use /api/email-oauth/[provider]
+    // This endpoint is mainly for IMAP direct connections
+    if (provider === 'gmail' || provider === 'outlook') {
+      return NextResponse.json(
+        {
+          error: `Use OAuth flow for ${provider}: /api/email-oauth/${provider}?action=auth`
+        },
+        { status: 400 }
+      );
+    }
 
-    // Store account configuration
-    connectedAccounts.set(accountId, {
-      id: accountId,
-      provider,
+    // Store IMAP account (if implementing IMAP)
+    const account = await saveEmailAccount(
+      userId || 'default',
+      provider as any,
       email,
-      userId: userId || 'default',
-      connected: true,
-      lastSync: new Date().toISOString(),
-      config: {
-        ...config,
-        // Don't store sensitive data in plain text in production
-        // Use encryption or secure storage
-      }
-    });
+      config.accessToken || '',
+      config.refreshToken || null,
+      3600
+    );
 
     return NextResponse.json({
       success: true,
       account: {
-        id: accountId,
-        provider,
-        email,
+        id: account.id,
+        provider: account.provider,
+        email: account.email,
         connected: true
       }
     });
@@ -60,23 +67,34 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const userId = searchParams.get('userId') || 'default';
+  try {
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId') || 'default';
 
-  const accounts = Array.from(connectedAccounts.values())
-    .filter(acc => acc.userId === userId)
-    .map(acc => ({
-      id: acc.id,
-      provider: acc.provider,
-      email: acc.email,
-      connected: acc.connected,
-      lastSync: acc.lastSync
-    }));
+    const accounts = await getUserEmailAccounts(userId);
 
-  return NextResponse.json({
-    accounts,
-    count: accounts.length
-  });
+    return NextResponse.json({
+      accounts: accounts.map(acc => ({
+        id: acc.id,
+        provider: acc.provider,
+        email: acc.email,
+        connected: acc.isActive,
+        lastSync: acc.lastSync,
+        connectedAt: acc.connectedAt
+      })),
+      count: accounts.length
+    });
+  } catch (error: any) {
+    console.error('Get accounts error:', error);
+    return NextResponse.json(
+      {
+        accounts: [],
+        count: 0,
+        error: error.message
+      },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(req: NextRequest) {
@@ -92,15 +110,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const account = connectedAccounts.get(accountId);
-    if (!account || account.userId !== userId) {
-      return NextResponse.json(
-        { error: 'Account not found' },
-        { status: 404 }
-      );
-    }
-
-    connectedAccounts.delete(accountId);
+    await disconnectEmailAccount(accountId, userId);
 
     return NextResponse.json({
       success: true,
@@ -117,4 +127,7 @@ export async function DELETE(req: NextRequest) {
     );
   }
 }
+
+
+
 
